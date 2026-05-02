@@ -223,7 +223,7 @@ class ModerationEvent:
 
     Fields:
     - timestamp:     ISO-8601 UTC string.
-    - channel:       linkedin | x | bluesky | youtube | all.
+    - channel:       linkedin | x | bluesky | threads | youtube | all.
     - reason_code:   truth-gate reason string (e.g. unsupported_numeric).
     - decision:      'kept' (user overrode removal) or 'removed'.
     - sentence_hash: SHA-256[:16] of the flagged sentence (privacy-preserving).

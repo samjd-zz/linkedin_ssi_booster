@@ -47,6 +47,7 @@ _CHANNEL_LENGTH_BUDGETS: dict[str, int] = {
     "linkedin": 3000,
     "x":        257,   # 280 - 23 URL chars
     "bluesky":  300,
+    "threads":  500,
     "youtube":  500,
     "all":      3000,
 }

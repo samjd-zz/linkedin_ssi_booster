@@ -1,4 +1,4 @@
-"""
+﻿"""
 Ollama Local LLM Service
 Generates LinkedIn posts using a locally-running Ollama model.
 
@@ -18,7 +18,7 @@ from typing import Any, Optional
 import ollama
 
 import json
-from services.shared import PERSONA_SYSTEM_PROMPT, YOUTUBE_SHORT_SYSTEM_PROMPT, SSI_COMPONENT_INSTRUCTIONS, X_CHAR_LIMIT, X_URL_CHARS, clean_llm_text, format_post_paragraphs
+from services.shared import PERSONA_SYSTEM_PROMPT, YOUTUBE_SHORT_SYSTEM_PROMPT, SSI_COMPONENT_INSTRUCTIONS, X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, clean_llm_text, format_post_paragraphs
 from services.console_grounding import build_grounding_facts_block, ProjectFact, truth_gate
 from services.avatar_intelligence import build_extracted_grounding_context, ExtractedEvidenceFact
 
@@ -27,6 +27,25 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL = "llama3.2"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_NUM_CTX = 16384
+
+
+def _load_ollama_think() -> bool | str | None:
+    """Read Ollama thinking-mode config.
+
+    Gemma 4 can return empty visible content for longer prompts unless
+    thinking is explicitly disabled through Ollama's native chat API.
+    """
+    raw = (os.getenv("OLLAMA_THINK", "false") or "").strip().lower()
+    if raw in {"", "none", "auto", "default"}:
+        return None
+    if raw in {"true", "1", "yes", "on"}:
+        return True
+    if raw in {"false", "0", "no", "off"}:
+        return False
+    if raw in {"low", "medium", "high"}:
+        return raw
+    logger.warning("Invalid OLLAMA_THINK=%r; using false", raw)
+    return False
 
 
 
@@ -88,12 +107,14 @@ class OllamaService:
         except ValueError:
             logger.warning("Invalid OLLAMA_NUM_CTX=%r; using default %d", raw_num_ctx, DEFAULT_NUM_CTX)
             self.num_ctx = DEFAULT_NUM_CTX
+        self.think = _load_ollama_think()
         self.client = ollama.Client(host=base_url)
         logger.info(
-            "OllamaService initialised — model=%s, host=%s, num_ctx=%d",
+            "OllamaService initialised - model=%s, host=%s, num_ctx=%d, think=%s",
             model,
             base_url,
             self.num_ctx,
+            self.think,
         )
 
     def _chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
@@ -108,6 +129,7 @@ class OllamaService:
         def _attempt(model: str) -> str:
             response = self.client.chat(
                 model=model,
+                think=self.think,
                 options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -179,6 +201,7 @@ You are in interactive console chat mode.
         try:
             response = self.client.chat(
                 model=self.model,
+                think=self.think,
                 options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
                 messages=[{"role": "system", "content": system_prompt}, *normalized_messages],
             )
@@ -213,12 +236,21 @@ You are in interactive console chat mode.
 
         if channel == "x":
             max_length = X_CHAR_LIMIT
-            _platform_block = f"""\nIMPORTANT — this post is for X (Twitter), NOT LinkedIn:
+            _platform_block = f"""\nIMPORTANT â€” this post is for X (Twitter), NOT LinkedIn:
 - Hard limit: {X_CHAR_LIMIT} characters total (count every character including spaces and punctuation)
-- Write ONE tight paragraph only — no multi-paragraph structure
-- No hashtags — they will NOT be appended for X
-- No 'Read more' or filler CTAs — the post must stand completely alone
+- Write ONE tight paragraph only â€” no multi-paragraph structure
+- No hashtags â€” they will NOT be appended for X
+- No 'Read more' or filler CTAs â€” the post must stand completely alone
 - Every word must earn its place; cut ruthlessly until it fits
+"""
+        elif channel == "threads":
+            max_length = THREADS_CHAR_LIMIT
+            _platform_block = f"""\nIMPORTANT â€” this post is for Threads, NOT LinkedIn:
+- Hard limit: {THREADS_CHAR_LIMIT} characters total (count every character including spaces and punctuation)
+- Write 1-3 tight sentences or two very short paragraphs
+- No hashtags â€” they will NOT be appended for Threads
+- Keep it conversational, direct, and human; the post should feel like a thought someone would actually reply to
+- Do NOT use LinkedIn-style structure, professional polish, or filler CTAs
 """
         elif channel == "youtube":
             max_length = 500
@@ -239,7 +271,14 @@ Maximum length: {max_length} characters including hashtags.{_platform_block}
 SSI optimisation goal:
 {ssi_instruction}{_continuity_block}"""
 
-        user_prompt = f"""Write a LinkedIn post about: {title}
+        platform_label = {
+            "x": "X post",
+            "bluesky": "Bluesky post",
+            "threads": "Threads post",
+            "youtube": "YouTube Short script",
+        }.get(channel, "LinkedIn post")
+
+        user_prompt = f"""Write a {platform_label} about: {title}
 Angle to take: {angle}
 
 {grounding_block}
@@ -248,13 +287,13 @@ Balance rules (non-negotiable):
 - Every factual claim must come from the topic description or the profile facts above. Do not invent stats, dates, company names, or metrics.
 - If you mention a specific project by name, only attribute technologies or challenges that appear in that project's Detail field above. Never transfer concepts from the article onto a project unless they are explicitly listed in its detail.
 - Reference your own background at most once, and only when it maps directly to a profile fact provided. If none connect naturally, skip the personal reference.
-- Use a hook in the first line that stops the scroll — a surprising claim, a bold question, or a short scene.
+- Use a hook in the first line that stops the scroll â€” a surprising claim, a bold question, or a short scene.
 - The post should feel authentic to someone who actually built this, not generic AI content.
-Do NOT include hashtags in your output — they will be appended automatically."""
+Do NOT include hashtags in your output â€” they will be appended automatically."""
 
         text = self._chat(system_prompt, user_prompt, max_tokens=768)
 
-        # Lightweight truth gate — strip sentences with unsupported claims
+        # Lightweight truth gate â€” strip sentences with unsupported claims
         text = truth_gate(text, f"{title}. {angle}", grounding_facts or [], interactive=interactive, channel=channel)
 
         # Format into paragraphs with hashtags on their own line
@@ -270,7 +309,7 @@ Do NOT include hashtags in your output — they will be appended automatically."
                     truncated = truncated[: idx + 1]
                     break
             else:
-                # No sentence boundary found — cut at last word boundary
+                # No sentence boundary found â€” cut at last word boundary
                 truncated = truncated[: truncated.rfind(" ")].rstrip()
             text = truncated
             logger.debug(f"YouTube Short script truncated to {len(text)} chars")
@@ -286,12 +325,12 @@ Do NOT include hashtags in your output — they will be appended automatically."
     ) -> "Optional[list[str]]":
         """
         Generate a 2-post thread (X or Bluesky) from an article.
-        Uses Ollama structured JSON output (format schema) for reliable splitting —
+        Uses Ollama structured JSON output (format schema) for reliable splitting â€”
         no regex parsing required.
         Returns a list of exactly 2 strings, or None if article_text is too short.
         """
         if not article_text or len(article_text.strip()) < 100:
-            logger.warning(f"Skipping thread generation — article text too short: {source_url}")
+            logger.warning(f"Skipping thread generation â€” article text too short: {source_url}")
             return None
 
         ssi_instruction = SSI_COMPONENT_INSTRUCTIONS.get(ssi_component, SSI_COMPONENT_INSTRUCTIONS["engage_with_insights"])
@@ -324,6 +363,7 @@ Article: {article_text[:3000]}"""
         def _thread_attempt(model: str) -> "Optional[list[str]]":
             resp = self.client.chat(
                 model=model,
+                think=self.think,
                 options={"num_predict": 600, "num_ctx": self.num_ctx},
                 format=_thread_schema,
                 messages=[
@@ -364,8 +404,8 @@ The comment should contain:
 - The source URL: {source_url}
 - Optionally 1 short sentence that adds context or invites engagement
 
-Keep it concise — the post body carries the main content.
-Output plain text only — no Markdown.
+Keep it concise â€” the post body carries the main content.
+Output plain text only â€” no Markdown.
 
 Post:
 {post_text}"""
@@ -391,44 +431,53 @@ Post:
         """
         Summarise a curated article into a LinkedIn post with personal commentary.
         Returns None if article_text is too short to be useful.
-        post_mode=True: omits hashtags and URL from the body — both go in the first comment instead.
+        post_mode=True: omits hashtags and URL from the body â€” both go in the first comment instead.
         """
         if not article_text or len(article_text.strip()) < 100:
-            logger.warning(f"Skipping curation — article text too short ({len(article_text.strip())} chars): {source_url}")
+            logger.warning(f"Skipping curation â€” article text too short ({len(article_text.strip())} chars): {source_url}")
             return None
         ssi_instruction = SSI_COMPONENT_INSTRUCTIONS.get(ssi_component, SSI_COMPONENT_INSTRUCTIONS["engage_with_insights"])
 
         if channel == "x":
             _text_budget = X_CHAR_LIMIT - X_URL_CHARS
-            format_instructions = f"""IMPORTANT — this post is for X (Twitter), NOT LinkedIn:
+            format_instructions = f"""IMPORTANT â€” this post is for X (Twitter), NOT LinkedIn:
 - Hard limit: {_text_budget} characters for your text (the source URL adds {X_URL_CHARS} chars, totalling {X_CHAR_LIMIT})
-- Write 1-3 tight sentences — no paragraphs, no structure, no hashtags
+- Write 1-3 tight sentences â€” no paragraphs, no structure, no hashtags
 - Ground your take in something SPECIFIC from this article: a number, a technique, a concrete claim, or a decision. Do NOT write a generic AI observation.
-- Forbidden openers: "Everyone thinks", "Scaling AI", "AI is", "The future of", "Everyone knows" — be specific to what this article actually covers
+- Forbidden openers: "Everyone thinks", "Scaling AI", "AI is", "The future of", "Everyone knows" â€” be specific to what this article actually covers
 - Sound like someone who shipped it: direct, technical, occasionally contrarian
 - Do NOT start with a quotation mark character
-Do NOT include the article URL — it will be appended automatically."""
+Do NOT include the article URL â€” it will be appended automatically."""
+        elif channel == "threads":
+            _url_overhead = (2 + len(source_url)) if source_url else 0
+            _text_budget = max(80, THREADS_CHAR_LIMIT - _url_overhead)
+            format_instructions = f"""IMPORTANT â€” this post is for Threads, NOT LinkedIn:
+- Hard character limit: {_text_budget} characters for your text ({_url_overhead} chars reserved for the URL, total max = {THREADS_CHAR_LIMIT})
+- Write 1-3 complete sentences or two very short paragraphs. Target under {_text_budget - 40} characters â€” leave margin so nothing gets cut.
+- Keep it conversational and direct. It should feel like a sharp thought someone might reply to, not a LinkedIn mini-essay.
+- No hashtags, no bullets, no markdown, and do NOT start with a quotation mark character.
+Do NOT include the article URL â€” it will be appended automatically."""
         elif channel == "bluesky":
             _url_overhead = 2 + len(source_url)
             _text_budget = 300 - _url_overhead
-            format_instructions = f"""IMPORTANT — this post is for Bluesky, NOT LinkedIn:
+            format_instructions = f"""IMPORTANT â€” this post is for Bluesky, NOT LinkedIn:
 - Hard character limit: {_text_budget} characters for your text ({_url_overhead} chars reserved for the URL, total max = 300)
-- Write 1-2 short complete sentences. Target under {_text_budget - 40} characters — leave margin so nothing gets cut.
+- Write 1-2 short complete sentences. Target under {_text_budget - 40} characters â€” leave margin so nothing gets cut.
 - ONE RULE ABOVE ALL: every sentence MUST end with a period, exclamation mark, or question mark. Never end mid-thought.
-- Ground your take in something SPECIFIC from this article — no generic AI observations
+- Ground your take in something SPECIFIC from this article â€” no generic AI observations
 - No hashtags, no bullet points, do NOT start with a quotation mark character
-Do NOT include the article URL — it will be appended automatically."""
+Do NOT include the article URL â€” it will be appended automatically."""
         elif channel == "youtube":
             format_instructions = f"""{YOUTUBE_SHORT_SYSTEM_PROMPT}
-CRITICAL HARD LIMIT: your entire response MUST be 500 characters or fewer — count every character before you output.
+CRITICAL HARD LIMIT: your entire response MUST be 500 characters or fewer â€” count every character before you output.
 Do NOT include hashtags, URLs, or any markdown.
 If you are close to 500 characters, stop at the last complete sentence that fits."""
         elif post_mode:
             format_instructions = """Output rules:
-- Plain text only — no Markdown, no **, no ##, no backticks. LinkedIn does not render Markdown.
+- Plain text only â€” no Markdown, no **, no ##, no backticks. LinkedIn does not render Markdown.
 - 4-8 sentences in short punchy paragraphs.
 - 3-5 hashtags on the last line.
-- Do NOT include the article URL — it will be appended automatically.
+- Do NOT include the article URL â€” it will be appended automatically.
 
 Balance rules (non-negotiable):
 - Every factual claim must come from either the article text or the profile facts below. If a stat, date, company name, or metric is not explicitly present in those sources, do not include it.
@@ -438,10 +487,10 @@ Balance rules (non-negotiable):
 - Do not invent percentages, performance numbers, timelines, or outcomes that are not stated in the article or profile facts."""
         else:
             format_instructions = """Output rules:
-- Plain text only — no Markdown, no **, no ##, no backticks. LinkedIn does not render Markdown.
+- Plain text only â€” no Markdown, no **, no ##, no backticks. LinkedIn does not render Markdown.
 - 4-8 sentences in short punchy paragraphs.
 - 3-5 hashtags on the last line.
-- Do NOT include the article URL in your output — it will be appended automatically.
+- Do NOT include the article URL in your output â€” it will be appended automatically.
 
 Balance rules (non-negotiable):
 - Every factual claim must come from either the article text or the profile facts below. If a stat, date, company name, or metric is not explicitly present in those sources, do not include it.
@@ -476,7 +525,7 @@ Balance rules (non-negotiable):
 {article_text[:4500]}
 ---
 
-Write a LinkedIn post reacting to this article.
+Write a {"Threads post" if channel == "threads" else "Bluesky post" if channel == "bluesky" else "X post" if channel == "x" else "YouTube Short script" if channel == "youtube" else "LinkedIn post"} reacting to this article.
 
 {ssi_instruction}
 
@@ -490,7 +539,7 @@ Write a LinkedIn post reacting to this article.
             max_tokens=800,
         ))
 
-        # Lightweight truth gate — strip sentences with unsupported claims
+        # Lightweight truth gate â€” strip sentences with unsupported claims
         if result:
             result = truth_gate(result, article_text, grounding_facts or [], interactive=interactive, channel=channel)
 
@@ -502,6 +551,7 @@ Write a LinkedIn post reacting to this article.
             return result
 
         logger.warning(
-            "Curation output was empty after cleanup — skipping article: %s", source_url
+            "Curation output was empty after cleanup â€” skipping article: %s", source_url
         )
         return None
+

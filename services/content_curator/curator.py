@@ -18,7 +18,7 @@ from typing import Any
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
-from services.shared import X_CHAR_LIMIT, X_URL_CHARS
+from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
 from services.console_grounding import ProjectFact, truth_gate_result
 
@@ -379,7 +379,7 @@ class ContentCurator:
 
         message_type='idea'  — creates Buffer Ideas for manual review.
         message_type='post'  — schedules posts directly to the queue.
-        channel='all'        — LinkedIn + X + Bluesky + YouTube per article.
+        channel='all'        — LinkedIn + X + Bluesky + Threads + YouTube per article.
         """
         
         articles = fetch_relevant_articles(spacy_nlp=self._spacy_nlp)
@@ -563,7 +563,7 @@ class ContentCurator:
         candidate_id: str,
         created_ideas: list,
     ) -> list | None:
-        """Generate LinkedIn + X + Bluesky + YouTube posts for one article."""
+        """Generate LinkedIn + X + Bluesky + Threads + YouTube posts for one article."""
         _conf_route = "n/a"
         _conf_reason = "not generated"
 
@@ -605,6 +605,19 @@ class ContentCurator:
                 x_post = x_post.rstrip() + f"\n\n{article['link']}"
 
         time.sleep(request_delay)
+        threads_post = self.ai.summarise_for_curation(
+            article["summary"], article["link"], ssi_component, "threads",
+            grounding_facts=grounding_facts, extracted_facts=extracted_facts,
+            interactive=interactive, github_context=self.github_context,
+        )
+        if threads_post:
+            url_overhead = (2 + len(article["link"])) if article.get("link") else 0
+            threads_budget = max(80, THREADS_CHAR_LIMIT - url_overhead)
+            threads_post = truncate_at_sentence(threads_post, threads_budget)
+            if article["link"] and article["link"] not in threads_post:
+                threads_post = threads_post.rstrip() + f"\n\n{article['link']}"
+
+        time.sleep(request_delay)
         bsky_post = self.ai.summarise_for_curation(
             article["summary"], article["link"], ssi_component, "bluesky",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
@@ -641,6 +654,7 @@ class ContentCurator:
         self._print_article_header(article, "all", ssi_component, _conf_route, _conf_reason)
         print(str(Fore.GREEN) + f"\n🔵 LINKEDIN POST:" + str(Style.RESET_ALL) + f"\n{li_text}")
         print(str(Fore.BLUE) + f"\n𝕏  X POST:" + str(Style.RESET_ALL) + f"\n{x_post}")
+        print(str(Fore.WHITE) + f"\nTHREADS POST:" + str(Style.RESET_ALL) + f"\n{threads_post}")
         print(str(Fore.MAGENTA) + f"\n🦋 BLUESKY POST:" + str(Style.RESET_ALL) + f"\n{bsky_post}")
         if yt_script:
             print(str(Fore.RED) + str(Style.BRIGHT) + "\n🎬 YOUTUBE SHORT SCRIPT:" + str(Style.RESET_ALL) + f"\n{yt_script}\n")
@@ -688,6 +702,11 @@ class ContentCurator:
                     self.buffer.create_scheduled_post(self.buffer.get_x_channel_id(), x_post, channel="x")
                 except BufferChannelNotConnectedError as exc:
                     logger.warning(str(Fore.YELLOW) + f"⚠️  X channel not configured — skipping. ({exc})" + str(Style.RESET_ALL))
+            if threads_post:
+                try:
+                    self.buffer.create_scheduled_post(self.buffer.get_threads_channel_id(), threads_post, channel="threads")
+                except BufferChannelNotConnectedError as exc:
+                    logger.warning(str(Fore.YELLOW) + f"⚠️  Threads channel not configured — skipping. ({exc})" + str(Style.RESET_ALL))
             if bsky_post:
                 try:
                     self.buffer.create_scheduled_post(self.buffer.get_bluesky_channel_id(), bsky_post, channel="bluesky")
@@ -778,6 +797,13 @@ class ContentCurator:
         elif channel == "x":
             x_budget = X_CHAR_LIMIT - X_URL_CHARS
             post_text = truncate_at_sentence(post_text, x_budget)
+            if article["link"] and article["link"] not in post_text:
+                post_text = post_text.rstrip() + f"\n\n{article['link']}"
+
+        elif channel == "threads":
+            url_overhead = (2 + len(article["link"])) if article.get("link") else 0
+            threads_budget = max(80, THREADS_CHAR_LIMIT - url_overhead)
+            post_text = truncate_at_sentence(post_text, threads_budget)
             if article["link"] and article["link"] not in post_text:
                 post_text = post_text.rstrip() + f"\n\n{article['link']}"
         elif channel == "bluesky":
@@ -871,6 +897,9 @@ class ContentCurator:
                 return created_ideas
             elif channel == "x":
                 channel_id = self.buffer.get_x_channel_id()
+
+            elif channel == "threads":
+                channel_id = self.buffer.get_threads_channel_id()
             elif channel == "bluesky":
                 channel_id = self.buffer.get_bluesky_channel_id()
             else:

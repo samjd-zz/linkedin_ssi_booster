@@ -1,6 +1,10 @@
 import os
 import pytest
-from services.buffer_service import BufferService, BufferQueueFullError
+from services.buffer_service import (
+    BufferService,
+    BufferQueueFullError,
+    BufferChannelNotConnectedError,
+)
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -31,3 +35,29 @@ def test_get_published_posts(buffer_service):
         assert "text" in post
         assert "status" in post
         assert post["status"].lower() == "sent" or post["status"].lower() == "published"
+
+
+def test_get_threads_channel_id_from_connected_channels(monkeypatch):
+    service = BufferService("test-token")
+    monkeypatch.setattr(
+        service,
+        "get_channels",
+        lambda: [
+            {"service": "linkedin", "name": "eden-redman", "id": "li-1"},
+            {"service": "threads", "name": "edenredman", "id": "threads-1"},
+        ],
+    )
+
+    assert service.get_threads_channel_id() == "threads-1"
+
+
+def test_get_threads_channel_id_raises_when_missing(monkeypatch):
+    service = BufferService("test-token")
+    monkeypatch.setattr(
+        service,
+        "get_channels",
+        lambda: [{"service": "linkedin", "name": "eden-redman", "id": "li-1"}],
+    )
+
+    with pytest.raises(BufferChannelNotConnectedError):
+        service.get_threads_channel_id()

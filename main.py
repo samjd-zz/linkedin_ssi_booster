@@ -8,9 +8,9 @@ Social Selling Index (SSI) across all four components.
 AI backend: Ollama (local) — requires Ollama running on OLLAMA_BASE_URL
 
 Usage:
-    python main.py --schedule [--week N] [--dry-run] [--interactive] [--channel linkedin,youtube]
+    python main.py --schedule [--week N] [--dry-run] [--interactive] [--channel linkedin,youtube,threads]
             # --schedule: generate and schedule posts (or preview with --dry-run)
-    python main.py --curate               [--dry-run] [--interactive] [--channel linkedin,youtube] [--type idea|post]
+    python main.py --curate               [--dry-run] [--interactive] [--channel linkedin,youtube,threads] [--type idea|post]
     python main.py --console
     python main.py --report
 """
@@ -344,7 +344,7 @@ def main():
     parser.add_argument("--bsky-stats", action="store_true", help="Fetch and display live Bluesky profile stats")
     parser.add_argument("--week",      type=int, default=1, help="Week number from content calendar (1-4)")
     parser.add_argument("--dry-run",   action="store_true", help="Preview posts without pushing to Buffer")
-    _VALID_CHANNELS = {"linkedin", "x", "bluesky", "youtube", "all"}
+    _VALID_CHANNELS = {"linkedin", "x", "bluesky", "threads", "youtube", "all"}
 
     def _parse_channels(value: str) -> list[str]:
         parts = [v.strip() for v in value.split(",") if v.strip()]
@@ -356,7 +356,7 @@ def main():
         return parts
 
     parser.add_argument("--channel",   type=_parse_channels, default=["linkedin"],
-                        help="Target channel(s) as comma-separated list: linkedin,x,bluesky,youtube,all (default: linkedin)")
+                        help="Target channel(s) as comma-separated list: linkedin,x,bluesky,threads,youtube,all (default: linkedin)")
     parser.add_argument("--type",      choices=["idea", "post"], default="idea",
                         help="idea: add to Buffer Ideas board; post: schedule directly to next available queue slot (default: idea)")
     parser.add_argument("--debug",     action="store_true", help="Enable DEBUG-level logging (shows raw API payloads and responses)")
@@ -421,10 +421,13 @@ def main():
         channel_ids: dict[str, str | None] = {"linkedin": buffer.get_linkedin_channel_id()}
         x_id = os.getenv("BUFFER_X_CHANNEL_ID")
         bsky_id = os.getenv("BUFFER_BLUESKY_CHANNEL_ID")
+        threads_id = os.getenv("BUFFER_THREADS_CHANNEL_ID")
         if x_id:
             channel_ids["x"] = x_id
         if bsky_id:
             channel_ids["bluesky"] = bsky_id
+        if threads_id:
+            channel_ids["threads"] = threads_id
         stats = reconcile_published(buffer, {k: v for k, v in channel_ids.items() if v is not None})
         print(str(Fore.GREEN) + "\n✅  Reconcile complete" + str(Style.RESET_ALL))
         for k, v in stats.items():
@@ -521,6 +524,7 @@ def main():
         if not week_topics:
             logger.error("No content found for week %d", args.week)
             return
+
         if "," in args.channel:
             channels = args.channel.split(",")
         else:
@@ -600,7 +604,7 @@ def main():
                         interactive=args.interactive,
                     )
                     # Hashtags are only appended for LinkedIn-style posts.
-                    if channel not in ("x", "youtube"):
+                    if channel not in ("x", "bluesky", "threads", "youtube"):
                         hashtag_str = " ".join(f"#{h.lstrip('#')}" for h in topic.get("hashtags", []))
                         if hashtag_str and hashtag_str not in post:
                             post = post.rstrip() + f"\n\n{hashtag_str}"

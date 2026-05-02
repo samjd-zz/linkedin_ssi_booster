@@ -107,6 +107,8 @@ class PostScheduler:
             return [self.buffer.get_x_channel_id()]
         elif channel == "bluesky":
             return [self.buffer.get_bluesky_channel_id()]
+        elif channel == "threads":
+            return [self.buffer.get_threads_channel_id()]
         elif channel == "youtube":
             return [self.buffer.get_youtube_channel_id()]
         elif channel == "all":
@@ -119,10 +121,17 @@ class PostScheduler:
                 ids.append(self.buffer.get_bluesky_channel_id())
             except BufferChannelNotConnectedError as e:
                 logger.warning(f"Bluesky channel not configured; skipping in all-channel mode. ({e})")
-            ids.append(self.buffer.get_youtube_channel_id())
+            try:
+                ids.append(self.buffer.get_threads_channel_id())
+            except BufferChannelNotConnectedError as e:
+                logger.warning(f"Threads channel not configured; skipping in all-channel mode. ({e})")
+            try:
+                ids.append(self.buffer.get_youtube_channel_id())
+            except BufferChannelNotConnectedError as e:
+                logger.warning(f"YouTube channel not configured; skipping in all-channel mode. ({e})")
             return ids
         else:
-            raise ValueError(f"Unknown channel {channel!r}. Use 'linkedin', 'x', 'bluesky', 'youtube', or 'all'.")
+            raise ValueError(f"Unknown channel {channel!r}. Use 'linkedin', 'x', 'bluesky', 'threads', 'youtube', or 'all'.")
 
     def _next_slot(self, day_name: str, reference: Optional[datetime] = None) -> str:
         """Calculate the next occurrence of a given weekday posting slot."""
@@ -151,7 +160,7 @@ class PostScheduler:
         Posts are distributed across configured posting slots.
         Max posts/week per channel = number of configured slots.
         Posts are selected according to SSI focus weights from the environment.
-        channel: 'linkedin' | 'x' | 'bluesky' | 'youtube' | 'all'
+        channel: 'linkedin' | 'x' | 'bluesky' | 'threads' | 'youtube' | 'all'
         """
         channel_ids = self._resolve_channel_ids(channel)
         # If posting_schedule is empty, use Buffer's default queueing (no time override)

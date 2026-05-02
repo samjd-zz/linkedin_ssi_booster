@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 X_CHAR_LIMIT = 280  # Standard X character limit
 X_URL_CHARS  = 23   # Every URL on X counts as exactly 23 characters
+THREADS_CHAR_LIMIT = 500  # Standard Threads post limit
 
 # ---------------------------------------------------------------------------
 # Persona — configurable via .env

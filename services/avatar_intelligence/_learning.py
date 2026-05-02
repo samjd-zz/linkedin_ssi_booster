@@ -67,7 +67,7 @@ def record_moderation_event(
         sentence:     The flagged sentence (hashed before storage).
         reason_code:  Truth-gate reason string (e.g. 'unsupported_numeric').
         decision:     'kept' or 'removed'.
-        channel:      Publication channel (linkedin, x, bluesky, youtube, all).
+        channel:      Publication channel (linkedin, x, bluesky, threads, youtube, all).
         article_ref:  URL or title of the source article.
         project_refs: Project IDs or names referenced in the sentence.
     """

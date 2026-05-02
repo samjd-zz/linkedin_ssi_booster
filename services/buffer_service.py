@@ -137,6 +137,15 @@ class BufferService:
                 return ch["id"]
         raise BufferChannelNotConnectedError("No Bluesky channel found in Buffer. Connect your Bluesky profile first.")
 
+    def get_threads_channel_id(self) -> Optional[str]:
+        """Find the Threads channel ID."""
+        channels = self.get_channels()
+        for ch in channels:
+            if ch.get("service") == "threads":
+                logger.info(f"Found Threads channel: {ch['name']} (id: {ch['id']})")
+                return ch["id"]
+        raise BufferChannelNotConnectedError("No Threads channel found in Buffer. Connect your Threads profile first.")
+
     def get_youtube_channel_id(self) -> Optional[str]:
         """Find the YouTube channel ID."""
         channels = self.get_channels()
