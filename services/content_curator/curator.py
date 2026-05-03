@@ -368,7 +368,7 @@ class ContentCurator:
         dry_run: bool = False,
         max_ideas: int = 5,
         request_delay: float = 5.0,
-        channel: str =  "linkedin",
+        channel: str | list[str] =  "linkedin",
         message_type: str = "idea",
         interactive: bool = False,
         avatar_explain: bool = False,
@@ -380,6 +380,7 @@ class ContentCurator:
         message_type='idea'  — creates Buffer Ideas for manual review.
         message_type='post'  — schedules posts directly to the queue.
         channel='all'        — LinkedIn + X + Bluesky + Threads + YouTube per article.
+        channel can be a string or list of strings for multiple channels.
         """
         
         articles = fetch_relevant_articles(spacy_nlp=self._spacy_nlp)
@@ -488,27 +489,20 @@ class ContentCurator:
 
             logger.info("Generating [%s|%s] for: %s...", message_type, ssi_component, article["title"][:60])
 
+            # Normalize channel to list
+            if isinstance(channel, str):
+                if channel == "all":
+                    channel_list = ["all"]
+                elif "," in channel:
+                    channel_list = [ch.strip() for ch in channel.split(",") if ch.strip()]
+                else:
+                    channel_list = [channel]
+            else:  # list
+                channel_list = channel
+
             if created_ideas is None:  # Already stopped due to buffer full
                 break
-            if "," in channel:
-                for ch in channel.split(","):
-                    result = self._process_single_channel(
-                        article=article,
-                        ssi_component=ssi_component,
-                        grounding_facts=grounding_facts,
-                        extracted_facts=extracted_facts,
-                        channel=ch,
-                        message_type=message_type,
-                        dry_run=dry_run,
-                        interactive=interactive,
-                        avatar_explain=avatar_explain,
-                        dot_report=dot_report,
-                        candidate_id=_candidate_id,
-                        created_ideas=created_ideas,
-                    )
-                if result is None:  # buffer full — stop
-                    break
-            elif channel == "all":
+            if channel_list == ["all"]:
                 created_ideas = self._process_all_channels(
                     article=article,
                     ssi_component=ssi_component,
@@ -525,13 +519,32 @@ class ContentCurator:
                 )
                 if created_ideas is None:  # buffer full — stop
                     break
+            elif len(channel_list) > 1:
+                for ch in channel_list:
+                    result = self._process_single_channel(
+                        article=article,
+                        ssi_component=ssi_component,
+                        grounding_facts=grounding_facts,
+                        extracted_facts=extracted_facts,
+                        channel=ch,
+                        message_type=message_type,
+                        dry_run=dry_run,
+                        interactive=interactive,
+                        avatar_explain=avatar_explain,
+                        dot_report=dot_report,
+                        candidate_id=_candidate_id,
+                        created_ideas=created_ideas,
+                    )
+                    if result is None:  # buffer full — stop
+                        created_ideas = None
+                        break
             else:
                 result = self._process_single_channel(
                     article=article,
                     ssi_component=ssi_component,
                     grounding_facts=grounding_facts,
                     extracted_facts=extracted_facts,
-                    channel=channel,
+                    channel=channel_list[0],
                     message_type=message_type,
                     dry_run=dry_run,
                     interactive=interactive,
@@ -541,6 +554,7 @@ class ContentCurator:
                     created_ideas=created_ideas,
                 )
                 if result is None:  # buffer full — stop
+                    created_ideas = None
                     break
         return created_ideas
 
