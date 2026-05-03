@@ -339,6 +339,8 @@ class ContentCurator:
             logger.debug("DoT report unavailable (curate): %s", _dot_err)
 
     def _print_article_header(self, article: dict[str, Any], channel: str, ssi_component: str, conf_route: str, conf_reason: str) -> None:
+        if channel == "youtube":
+            print(str(Fore.RED) + str(Style.BRIGHT) + "\n🎬 YOUTUBE SHORT SCRIPT (copy to lipsync.video):" + str(Style.RESET_ALL))
         print(str(Fore.CYAN) + f"\n{'='*60}" + str(Style.RESET_ALL))
         print(str(Fore.WHITE) + str(Style.BRIGHT) + f"📰 SOURCE: {article['source']}" + str(Style.RESET_ALL))
         print(str(Fore.WHITE) + str(Style.BRIGHT) + f"📄 ARTICLE: {article['title']}" + str(Style.RESET_ALL))
@@ -556,6 +558,29 @@ class ContentCurator:
                 if result is None:  # buffer full — stop
                     created_ideas = None
                     break
+
+        # Print summary
+        if created_ideas:
+            from collections import Counter
+            channel_counts = Counter(idea.get("channel", "unknown") for idea in created_ideas if isinstance(idea, dict))
+            ssi_counts = Counter(idea.get("ssi_component", "unknown") for idea in created_ideas if isinstance(idea, dict))
+            
+            print(str(Fore.CYAN) + str(Style.BRIGHT) + f"\n{'='*60}" + str(Style.RESET_ALL))
+            print(str(Fore.GREEN) + str(Style.BRIGHT) + f"✅ Curation Summary" + str(Style.RESET_ALL))
+            print(str(Fore.WHITE) + f"Total {message_type}s created: {len(created_ideas)}" + str(Style.RESET_ALL))
+            
+            if channel_counts:
+                print(str(Fore.CYAN) + "By channel:" + str(Style.RESET_ALL))
+                for ch, count in sorted(channel_counts.items()):
+                    print(f"  • {ch}: {count}")
+            
+            if ssi_counts:
+                print(str(Fore.CYAN) + "By SSI component:" + str(Style.RESET_ALL))
+                for comp, count in sorted(ssi_counts.items()):
+                    print(f"  • {comp}: {count}")
+            
+            print(str(Fore.CYAN) + str(Style.BRIGHT) + f"{'='*60}" + str(Style.RESET_ALL))
+
         return created_ideas
 
     # ------------------------------------------------------------------
@@ -896,10 +921,6 @@ class ContentCurator:
                     f"TITLE: {article['title']}\nSSI COMPONENT: {ssi_component}\nSOURCE: {article['link']}\n\n{post_text}\n",
                     encoding="utf-8",
                 )
-                print(str(Fore.RED) + str(Style.BRIGHT) + "\n🎬 YOUTUBE SHORT SCRIPT (copy to lipsync.video):" + str(Style.RESET_ALL))
-                print(str(Fore.WHITE) + f"📄 TITLE:  {article['title']}" + str(Style.RESET_ALL))
-                print(str(Fore.CYAN) + f"🎯 SSI:    {ssi_component}" + str(Style.RESET_ALL))
-                print(f"\n{post_text}\n")
                 print(str(Fore.GREEN) + f"💾 Saved to: {script_path}" + str(Style.RESET_ALL))
                 print(str(Fore.YELLOW) + "⚠️  Buffer YouTube requires a video — script not pushed." + str(Style.RESET_ALL))
                 self._save_published_title(article["title"])
