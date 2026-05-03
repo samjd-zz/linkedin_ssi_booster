@@ -9,11 +9,13 @@ from typing import Optional
 from services.derivative_of_truth._constants import (
     EVIDENCE_WEIGHTS,
     REASONING_WEIGHTS,
+    TRACK_TRUTH_TRAJECTORY,
     TRUTH_GRADIENT_FLAG_THRESHOLD,
     UNCERTAINTY_CONFLICT,
     UNCERTAINTY_LONG_CHAIN,
     UNCERTAINTY_LOW_CREDIBILITY,
     UNCERTAINTY_SPARSE,
+    USE_PLN_ENHANCED_SCORING,
     _CONFLICT_PENALTY,
     _LONG_CHAIN_PENALTY,
     _LOW_CRED_PENALTY,
@@ -49,8 +51,8 @@ def score_claim_with_truth_gradient(
     claim: str,
     evidence_paths: list[EvidencePath],
     raw_confidence: float = 0.5,
-    use_pln: bool = False,
-    track_trajectory: bool = False,
+    use_pln: bool = USE_PLN_ENHANCED_SCORING,
+    track_trajectory: bool = TRACK_TRUTH_TRAJECTORY,
 ) -> TruthGradientResult:
     """Compute the truth gradient score for *claim* given its *evidence_paths*.
     
@@ -59,7 +61,9 @@ def score_claim_with_truth_gradient(
         evidence_paths: Supporting/undermining evidence paths
         raw_confidence: Prior confidence estimate [0,1]
         use_pln: If True, use PLN-enhanced scoring instead of legacy weights
+                 (defaults to USE_PLN_ENHANCED_SCORING constant)
         track_trajectory: If True, store trajectory point for dT/dt tracking
+                         (defaults to TRACK_TRUTH_TRAJECTORY constant)
     
     Returns:
         TruthGradientResult with truth_gradient, uncertainty, and optional truth_derivative
