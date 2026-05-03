@@ -368,7 +368,7 @@ class ContentCurator:
         dry_run: bool = False,
         max_ideas: int = 5,
         request_delay: float = 5.0,
-        channel: str = "linkedin",
+        channel: str =  "linkedin",
         message_type: str = "idea",
         interactive: bool = False,
         avatar_explain: bool = False,
@@ -381,6 +381,7 @@ class ContentCurator:
         message_type='post'  — schedules posts directly to the queue.
         channel='all'        — LinkedIn + X + Bluesky + YouTube per article.
         """
+        
         articles = fetch_relevant_articles(spacy_nlp=self._spacy_nlp)
         try:
             from services.selection_learning import compute_acceptance_priors, rank_articles as _rank_arts
@@ -399,7 +400,7 @@ class ContentCurator:
             logger.info("🧠 --learn mode (no --dry-run): extracting knowledge only — skipping generation entirely")
 
         for article in articles:
-            if not learn and len(created_ideas) >= max_ideas:
+            if created_ideas is not None and not learn and len(created_ideas) >= max_ideas:
                 break
             if article["title"] in published:
                 logger.info("Skipping already-published idea: %s", article["title"][:60])
@@ -487,7 +488,27 @@ class ContentCurator:
 
             logger.info("Generating [%s|%s] for: %s...", message_type, ssi_component, article["title"][:60])
 
-            if channel == "all":
+            if created_ideas is None:  # Already stopped due to buffer full
+                break
+            if "," in channel:
+                for ch in channel.split(","):
+                    result = self._process_single_channel(
+                        article=article,
+                        ssi_component=ssi_component,
+                        grounding_facts=grounding_facts,
+                        extracted_facts=extracted_facts,
+                        channel=ch,
+                        message_type=message_type,
+                        dry_run=dry_run,
+                        interactive=interactive,
+                        avatar_explain=avatar_explain,
+                        dot_report=dot_report,
+                        candidate_id=_candidate_id,
+                        created_ideas=created_ideas,
+                    )
+                if result is None:  # buffer full — stop
+                    break
+            elif channel == "all":
                 created_ideas = self._process_all_channels(
                     article=article,
                     ssi_component=ssi_component,
@@ -521,7 +542,6 @@ class ContentCurator:
                 )
                 if result is None:  # buffer full — stop
                     break
-
         return created_ideas
 
     # ------------------------------------------------------------------
@@ -705,7 +725,6 @@ class ContentCurator:
         created_ideas: list,
     ) -> list | None:
         """Generate and route a post for a single channel / idea mode."""
-        effective_channel = "linkedin" if (message_type == "post" and channel == "linkedin") else channel
 
         try:
             from services.avatar_intelligence import build_continuity_context
@@ -721,7 +740,7 @@ class ContentCurator:
             article_text=article["summary"],
             source_url=article["link"],
             ssi_component=ssi_component,
-            channel=effective_channel,
+            channel=channel,
             post_mode=(message_type == "post"),
             grounding_facts=grounding_facts,
             extracted_facts=extracted_facts,
@@ -752,16 +771,16 @@ class ContentCurator:
         except Exception as _mem_exc:
             logger.warning("Narrative memory update failed (continuing): %s", _mem_exc)
 
-        if effective_channel == "linkedin":
+        if channel == "linkedin":
             post_text = append_url_and_hashtags(post_text, article["link"])
-        elif effective_channel == "youtube":
+        elif channel == "youtube":
             post_text = truncate_at_sentence(post_text, 500)
-        elif effective_channel == "x":
+        elif channel == "x":
             x_budget = X_CHAR_LIMIT - X_URL_CHARS
             post_text = truncate_at_sentence(post_text, x_budget)
             if article["link"] and article["link"] not in post_text:
                 post_text = post_text.rstrip() + f"\n\n{article['link']}"
-        elif effective_channel == "bluesky":
+        elif channel == "bluesky":
             url_overhead = (2 + len(article["link"])) if article.get("link") else 0
             bsky_budget = 300 - url_overhead
             post_text = truncate_at_sentence(post_text, bsky_budget)
@@ -772,7 +791,7 @@ class ContentCurator:
             post_text=post_text,
             article_summary=article["summary"],
             grounding_facts=grounding_facts,
-            channel=effective_channel,
+            channel=channel,
             article_ref=article.get("link", article["title"]),
             requested_mode=message_type,
         )
@@ -786,7 +805,7 @@ class ContentCurator:
                     article_title=article.get("title", ""),
                     article_source=article.get("source", ""),
                     ssi_component=ssi_component,
-                    channel=effective_channel,
+                    channel=channel,
                     post_text=post_text,
                     buffer_id=None,
                     route=_conf_route,
@@ -799,7 +818,7 @@ class ContentCurator:
         print(str(Fore.GREEN) + f"\n✍️  GENERATED POST:" + str(Style.RESET_ALL) + f"\n{post_text}")
 
         if avatar_explain:
-            self._print_avatar_explain(post_text, article, grounding_facts, effective_channel, ssi_component, extracted_facts=extracted_facts)
+            self._print_avatar_explain(post_text, article, grounding_facts, channel, ssi_component, extracted_facts=extracted_facts)
         if dot_report:
             self._print_dot_report(post_text, article, grounding_facts, extracted_facts)
 
@@ -827,7 +846,7 @@ class ContentCurator:
 
         effective_message_type = "idea" if _conf_route == "idea" else message_type
         if effective_message_type == "post":
-            if effective_channel == "youtube":
+            if channel == "youtube":
                 yt_dir = Path("yt-vid-data")
                 yt_dir.mkdir(exist_ok=True)
                 safe_title = re.sub(r"[^\w\-]", "_", article["title"][:60]).strip("_")
@@ -850,14 +869,14 @@ class ContentCurator:
                     "script_path": str(script_path),
                 })
                 return created_ideas
-            elif effective_channel == "x":
+            elif channel == "x":
                 channel_id = self.buffer.get_x_channel_id()
-            elif effective_channel == "bluesky":
+            elif channel == "bluesky":
                 channel_id = self.buffer.get_bluesky_channel_id()
             else:
                 channel_id = self.buffer.get_linkedin_channel_id()
             try:
-                post = self.buffer.create_scheduled_post(channel_id, post_text, channel=effective_channel)
+                post = self.buffer.create_scheduled_post(channel_id, post_text, channel=channel)
                 self._save_published_title(article["title"])
                 try:
                     from services.selection_learning import update_candidate_buffer_id as _upd

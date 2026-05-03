@@ -488,35 +488,31 @@ def main():
         from services.content_curator import ContentCurator
         confidence_policy = args.confidence_policy or AVATAR_CONFIDENCE_POLICY
         curator = ContentCurator(ai_service=ai, buffer_service=buffer, confidence_policy=confidence_policy, github_context=_github_context)
-        curate_channels: list[str] = args.channel if isinstance(args.channel, list) else [args.channel]
-        for ch in curate_channels:
-            if args.learn and not args.dry_run:
-                logger.info("🧠 Learn-only mode: fetching articles and extracting knowledge (no posts generated)")
-            else:
-                logger.info("🔍 Curating AI news sources (channel: %s, type: %s)...", ch, args.type)
-            try:
-                ideas = curator.curate_and_create_ideas(dry_run=args.dry_run, channel=ch, message_type=args.type, request_delay=5.0, interactive=args.interactive, avatar_explain=args.avatar_explain, dot_report=args.dot_report, learn=args.learn)
-            except BufferQueueFullError as e:
-                print(str(Fore.YELLOW) + f"\n⚠️  Buffer queue is full — no new posts were scheduled.\n   {e}\n   Free up slots at https://publish.buffer.com before running again." + str(Style.RESET_ALL))
-                continue
-            except BufferRateLimitError as e:
-                print(
-                    str(Fore.YELLOW)
-                    + f"\n⚠️  Buffer API rate limit reached.\n   {e}\n"
-                    + "   Wait for the retry window, then run the command again."
-                    + str(Style.RESET_ALL)
-                )
-                continue
-            except BufferChannelNotConnectedError as e:
-                print(
-                    str(Fore.YELLOW)
-                    + f"\n⚠️  Requested channel is not connected in Buffer.\n   {e}\n"
-                    + "   Connect the channel in Buffer or run with a different --channel value."
-                    + str(Style.RESET_ALL)
-                )
-                continue
-            noun = "posts" if args.type == "post" else "ideas"
-            print(str(Fore.GREEN) + f"\n✅  Created {len(ideas or [])} {noun} in Buffer ({ch})" + str(Style.RESET_ALL))
+
+        try:
+            ideas = curator.curate_and_create_ideas(dry_run=args.dry_run, channel=args.channel, message_type=args.type, request_delay=5.0, interactive=args.interactive, avatar_explain=args.avatar_explain, dot_report=args.dot_report, learn=args.learn)
+        except BufferQueueFullError as e:
+            print(str(Fore.YELLOW) + f"\n⚠️  Buffer queue is full — no new posts were scheduled.\n   {e}\n   Free up slots at https://publish.buffer.com before running again." + str(Style.RESET_ALL))
+            return
+        except BufferRateLimitError as e:
+            print(
+                str(Fore.YELLOW)
+                + f"\n⚠️  Buffer API rate limit reached.\n   {e}\n"
+                + "   Wait for the retry window, then run the command again."
+                + str(Style.RESET_ALL)
+            )
+            return
+        except BufferChannelNotConnectedError as e:
+            print(
+                str(Fore.YELLOW)
+                + f"\n⚠️  Requested channel is not connected in Buffer.\n   {e}\n"
+                + "   Connect the channel in Buffer or run with a different --channel value."
+                + str(Style.RESET_ALL)
+            )
+            return
+        noun = "posts" if args.type == "post" else "ideas"
+
+        
         return
 
 
@@ -525,14 +521,12 @@ def main():
         if not week_topics:
             logger.error("No content found for week %d", args.week)
             return
-
-        target_channels: list[str] = args.channel if isinstance(args.channel, list) else [args.channel]
-        # --schedule has no "all" handler — expand it here
-        if target_channels == ["all"]:
-            target_channels = ["linkedin", "x", "bluesky", "youtube"]
-
-
-        for channel in target_channels:
+        if "," in args.channel:
+            channels = args.channel.split(",")
+        else:
+            channels = [args.channel]
+        
+        for channel in channels:
             logger.info("📝 Generating %d posts for week %d (channel: %s)...", len(week_topics), args.week, channel)
             posts = []
             from services.avatar_intelligence import (
