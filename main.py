@@ -373,6 +373,12 @@ def main():
                         help="Fetch published Buffer posts and reconcile with generated candidates to build acceptance priors")
     parser.add_argument("--classify", action="store_true",
                         help="Batch-classify articles via Model2Vec before curation (requires: pip install model2vec)")
+    parser.add_argument("--add-category", nargs=3, metavar=("NAME", "DESCRIPTION", "SSI_COMPONENT"),
+                        help="Add a custom category: --add-category 'AI Research' 'Machine learning papers and studies' establish_brand")
+    parser.add_argument("--list-categories", action="store_true",
+                        help="List all available Model2Vec categories with descriptions and SSI component mapping")
+    parser.add_argument("--remove-category", nargs="+", metavar="NAME",
+                        help="Remove custom categories by name: --remove-category 'AI Research' 'Government Tech'")
     args = parser.parse_args()
 
     if args.debug:
@@ -465,6 +471,69 @@ def main():
                     print(f"  {tp['url']}")
         return
 
+    if args.list_categories:
+        from services.model2vec_service import get_model2vec_service
+        svc = get_model2vec_service()
+        if not svc.is_available():
+            print(str(Fore.YELLOW) + "\n⚠️  Model2Vec is not available (install with: pip install model2vec numpy)" + str(Style.RESET_ALL))
+            return
+        categories = svc.list_categories()
+        if not categories:
+            print(str(Fore.YELLOW) + "\n⚠️  No categories found" + str(Style.RESET_ALL))
+            return
+        print(str(Fore.CYAN) + str(Style.BRIGHT) + f"\n🏷️  Model2Vec Categories ({len(categories)} total)" + str(Style.RESET_ALL))
+        print()
+        for name, meta in sorted(categories.items()):
+            is_custom = meta.get("custom", "False") == "True"
+            ssi = meta.get("ssi_component", "")
+            desc = meta.get("description", "")
+            custom_marker = str(Fore.MAGENTA) + " [custom]" + str(Style.RESET_ALL) if is_custom else ""
+            print(str(Fore.WHITE) + str(Style.BRIGHT) + f"  {name}" + str(Style.RESET_ALL) + custom_marker)
+            print(f"    {desc[:100]}{'...' if len(desc) > 100 else ''}")
+            print(str(Fore.YELLOW) + f"    → {ssi}" + str(Style.RESET_ALL))
+            print()
+        return
+
+    if args.add_category:
+        from services.model2vec_service import get_model2vec_service
+        svc = get_model2vec_service()
+        if not svc.is_available():
+            print(str(Fore.YELLOW) + "\n⚠️  Model2Vec is not available (install with: pip install model2vec numpy)" + str(Style.RESET_ALL))
+            return
+        name, description, ssi_component = args.add_category
+        valid_ssi = {"establish_brand", "find_right_people", "engage_with_insights", "build_relationships"}
+        if ssi_component not in valid_ssi:
+            print(str(Fore.RED) + f"\n❌  Invalid SSI component: {ssi_component}" + str(Style.RESET_ALL))
+            print(f"    Valid options: {', '.join(sorted(valid_ssi))}")
+            return
+        success = svc.add_category(name, description, ssi_component)
+        if success:
+            print(str(Fore.GREEN) + f"\n✅  Added custom category: '{name}'" + str(Style.RESET_ALL))
+            print(f"    Description: {description[:80]}{'...' if len(description) > 80 else ''}")
+            print(str(Fore.YELLOW) + f"    SSI Component: {ssi_component}" + str(Style.RESET_ALL))
+        else:
+            print(str(Fore.RED) + f"\n❌  Failed to add category '{name}' (may already exist)" + str(Style.RESET_ALL))
+        return
+
+    if args.remove_category:
+        from services.model2vec_service import get_model2vec_service
+        svc = get_model2vec_service()
+        if not svc.is_available():
+            print(str(Fore.YELLOW) + "\n⚠️  Model2Vec is not available (install with: pip install model2vec numpy)" + str(Style.RESET_ALL))
+            return
+        names = args.remove_category
+        results = svc.remove_categories(names)
+        successes = [n for n, r in zip(names, results) if r]
+        failures = [n for n, r in zip(names, results) if not r]
+        if successes:
+            print(str(Fore.GREEN) + f"\n✅  Removed {len(successes)} category(ies):" + str(Style.RESET_ALL))
+            for name in successes:
+                print(f"    • {name}")
+        if failures:
+            print(str(Fore.RED) + f"\n❌  Failed to remove {len(failures)} category(ies):" + str(Style.RESET_ALL))
+            for name in failures:
+                print(f"    • {name} (not found or is a default category)")
+        return
 
     if not (args.schedule or args.curate or args.console):
         parser.print_help()

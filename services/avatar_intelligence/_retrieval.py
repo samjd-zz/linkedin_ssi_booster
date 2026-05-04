@@ -203,6 +203,7 @@ def retrieve_evidence(
     query: str,
     facts: Sequence[_EvidenceT],
     limit: int = 5,
+    category_filter: str | None = None,
 ) -> list[_EvidenceT]:
     """Score and retrieve the most relevant evidence facts for a query.
 
@@ -213,6 +214,13 @@ def retrieve_evidence(
 
     Returns up to *limit* facts; falls back to all facts when nothing scores.
     The split between project and domain evidence is configurable via .env.
+
+    Args:
+        query: The search query string
+        facts: Sequence of evidence facts to search
+        limit: Maximum number of facts to return
+        category_filter: Optional category name to filter domain facts by
+                        (e.g., "Artificial Intelligence", "Technology")
     """
     if not facts:
         return []
@@ -230,6 +238,15 @@ def retrieve_evidence(
 
     evidence_facts: list[EvidenceFact] = [f for f in facts if isinstance(f, EvidenceFact)]
     domain_facts: list[DomainEvidenceFact] = [f for f in facts if isinstance(f, DomainEvidenceFact)]
+
+    # Apply category filter to domain facts if specified
+    if category_filter and domain_facts:
+        category_lower = category_filter.lower()
+        domain_facts = [
+            f for f in domain_facts
+            if category_lower in f.domain.lower() or any(category_lower in tag.lower() for tag in f.tags)
+        ]
+        logger.debug("Category filter '%s' reduced domain facts from %d to %d", category_filter, len([f for f in facts if isinstance(f, DomainEvidenceFact)]), len(domain_facts))
 
     results: list[Union[EvidenceFact, DomainEvidenceFact]] = []
     n_evidence = min(project_count, len(evidence_facts))

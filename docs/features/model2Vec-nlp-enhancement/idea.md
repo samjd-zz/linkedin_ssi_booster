@@ -149,13 +149,13 @@ Map Model2Vec's 10 default categories to SSI components:
 - [ ] Update docs/testing-and-dev.md with test coverage details
 - [ ] Add usage examples and configuration guide
 
-### Not Yet Implemented (Future Enhancements)
+### Phase 5: Advanced Features ✅ COMPLETE
 
-- [ ] Custom category management UI/CLI tools
-- [ ] Category-based persona retrieval in avatar intelligence
-- [ ] Category performance analytics and reporting
-- [ ] Category insights in learning reports
-- [ ] Truth gate category validation layer
+- [x] Custom category management UI/CLI tools (`--add-category`, `--list-categories`, `--remove-category`)
+- [x] Category-based persona retrieval in avatar intelligence (`_retrieval.py` — `category_filter` parameter on `retrieve_evidence()`)
+- [x] Category performance analytics and reporting (`services/selection_learning/_category_analytics.py`)
+- [x] Category insights in learning reports (`_learning.py` — category distribution appended to `--avatar-learn-report`)
+- [x] Truth gate category validation layer (`model2vec_service.py` — `validate_category_alignment()` + curator DoT report integration)
 
 ## Success Criteria
 
@@ -188,7 +188,7 @@ Map Model2Vec's 10 default categories to SSI components:
 - [x] ✅ Selection learning incorporates category performance data (category boost in ranking)
 - [x] ✅ Category metadata tracked in CandidateRecord for learning
 - [ ] ⏳ Category preferences learned automatically through acceptance priors (foundation in place)
-- [ ] ⏳ Learning reports include category insights (requires reporting enhancement)
+- [x] ✅ Learning reports include category insights (`--avatar-learn-report` now shows category distribution from candidates log)
 - [ ] ⏳ Continual learning pipeline enhanced with category-aware feedback (requires analytics)
 
 ## Production Readiness

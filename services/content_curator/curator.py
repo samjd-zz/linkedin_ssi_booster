@@ -346,6 +346,40 @@ class ContentCurator:
         except Exception as _dot_err:
             logger.debug("DoT report unavailable (curate): %s", _dot_err)
 
+        # Category alignment validation — only when classify is active
+        if self._classify:
+            try:
+                from services.model2vec_service import validate_category_alignment
+                article_text = f"{article.get('title', '')} {article.get('summary', '')}".strip()
+                _align = validate_category_alignment(
+                    post_text=post_text,
+                    article_text=article_text,
+                    article_category=article.get("primary_category", ""),
+                    article_ssi_component=article.get("primary_ssi_component", ""),
+                )
+                if _align.post_category:
+                    _c = str(Fore.CYAN)
+                    _r = str(Style.RESET_ALL)
+                    _dim = str(Style.DIM)
+                    if _align.flagged:
+                        _align_col = str(Fore.RED)
+                        _align_sym = "⚠️ "
+                    elif _align.alignment_score >= 0.7:
+                        _align_col = str(Fore.GREEN)
+                        _align_sym = "✅"
+                    else:
+                        _align_col = str(Fore.YELLOW)
+                        _align_sym = "◑ "
+                    print(
+                        f"  {_c}Category Alignment:{_r} "
+                        f"{_align_sym} {_align_col}{_align.alignment_score:.2f}{_r}"
+                        f"  {_dim}post={_align.post_category} / article={_align.article_category}{_r}"
+                    )
+                    if _align.flagged:
+                        print(f"  {str(Fore.RED)}⚠️  {_align.flag_reason}{_r}")
+            except Exception as _align_err:
+                logger.debug("Category alignment check unavailable: %s", _align_err)
+
     def _print_article_header(self, article: dict[str, Any], channel: str, ssi_component: str, conf_route: str, conf_reason: str) -> None:
         print(str(Fore.CYAN) + f"\n{'='*60}" + str(Style.RESET_ALL))
         print(str(Fore.WHITE) + str(Style.BRIGHT) + f"📰 SOURCE: {article['source']}" + str(Style.RESET_ALL))

@@ -568,3 +568,115 @@ def batch_classify_articles(
     ]
     svc = get_model2vec_service()
     return svc.batch_classify(texts, top_k=top_k)
+
+
+# ---------------------------------------------------------------------------
+# Truth gate category validation
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class CategoryAlignmentResult:
+    """Result of validating category alignment between post and article."""
+
+    post_category: str
+    post_ssi_component: str
+    article_category: str
+    article_ssi_component: str
+    category_match: bool
+    ssi_match: bool
+    alignment_score: float  # 0.0 = no alignment, 1.0 = perfect alignment
+    flagged: bool
+    flag_reason: str = ""
+
+
+def validate_category_alignment(
+    post_text: str,
+    article_text: str,
+    article_category: str = "",
+    article_ssi_component: str = "",
+) -> CategoryAlignmentResult:
+    """Validate that a generated post aligns with its source article's category.
+
+    Classifies the post text and compares against the article's known category
+    (from prior classification) or re-classifies the article text if not provided.
+
+    Args:
+        post_text: The generated post text to validate
+        article_text: The source article text (title + summary)
+        article_category: Pre-classified article category (optional)
+        article_ssi_component: Pre-classified article SSI component (optional)
+
+    Returns:
+        CategoryAlignmentResult with alignment scores and flag status
+    """
+    svc = get_model2vec_service()
+
+    if not svc.is_available():
+        return CategoryAlignmentResult(
+            post_category="",
+            post_ssi_component="",
+            article_category=article_category,
+            article_ssi_component=article_ssi_component,
+            category_match=True,  # no model = no flag
+            ssi_match=True,
+            alignment_score=1.0,
+            flagged=False,
+            flag_reason="model2vec unavailable",
+        )
+
+    # Classify the post
+    post_result = svc.classify_text(post_text[:2000], top_k=3)
+    post_category = post_result.primary_category
+    post_ssi = post_result.primary_ssi_component
+
+    # Get article category — use provided values or re-classify
+    if not article_category and article_text:
+        art_result = svc.classify_text(article_text[:2000], top_k=1)
+        article_category = art_result.primary_category
+        article_ssi_component = art_result.primary_ssi_component
+
+    # Compute alignment
+    category_match = post_category == article_category if (post_category and article_category) else True
+    ssi_match = post_ssi == article_ssi_component if (post_ssi and article_ssi_component) else True
+
+    # Alignment score: 1.0 = both match, 0.5 = SSI matches only, 0.0 = neither
+    if category_match and ssi_match:
+        alignment_score = 1.0
+    elif ssi_match:
+        alignment_score = 0.7
+    elif category_match:
+        alignment_score = 0.5
+    else:
+        # Check if post category is in top-3 article categories
+        post_top_cats = {p.category for p in post_result.predictions}
+        if article_category in post_top_cats:
+            alignment_score = 0.4
+        else:
+            alignment_score = 0.0
+
+    flagged = alignment_score < 0.4
+    flag_reason = ""
+    if flagged:
+        flag_reason = (
+            f"Post category '{post_category}' (SSI: {post_ssi}) does not align "
+            f"with article category '{article_category}' (SSI: {article_ssi_component})"
+        )
+
+    logger.debug(
+        "Category alignment: post=%s/%s article=%s/%s score=%.2f flagged=%s",
+        post_category, post_ssi, article_category, article_ssi_component,
+        alignment_score, flagged,
+    )
+
+    return CategoryAlignmentResult(
+        post_category=post_category,
+        post_ssi_component=post_ssi,
+        article_category=article_category,
+        article_ssi_component=article_ssi_component,
+        category_match=category_match,
+        ssi_match=ssi_match,
+        alignment_score=alignment_score,
+        flagged=flagged,
+        flag_reason=flag_reason,
+    )

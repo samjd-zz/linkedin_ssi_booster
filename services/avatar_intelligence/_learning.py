@@ -465,6 +465,46 @@ def build_learning_report() -> LearningReport:
     )
 
 
+def _load_category_insights() -> dict[str, Any]:
+    """Load category distribution from the selection learning candidates log.
+
+    Returns a dict with:
+      - category_counts: {category: count}
+      - ssi_counts: {ssi_component: count}
+      - top_category: str
+      - total_classified: int
+    """
+    try:
+        from services.selection_learning._constants import CANDIDATES_LOG_PATH
+        from services.selection_learning._storage import JsonlStore
+
+        records = JsonlStore.read(CANDIDATES_LOG_PATH)
+        category_counts: Counter[str] = Counter()
+        ssi_counts: Counter[str] = Counter()
+        total_classified = 0
+
+        for rec in records:
+            cat = rec.get("primary_category", "")
+            ssi = rec.get("primary_ssi_component", "")
+            if cat:
+                category_counts[cat] += 1
+                total_classified += 1
+            if ssi:
+                ssi_counts[ssi] += 1
+
+        top_category = category_counts.most_common(1)[0][0] if category_counts else ""
+        return {
+            "category_counts": dict(category_counts.most_common(10)),
+            "ssi_counts": dict(ssi_counts),
+            "top_category": top_category,
+            "total_classified": total_classified,
+            "total_candidates": len(records),
+        }
+    except Exception as exc:
+        logger.debug("Category insights unavailable: %s", exc)
+        return {}
+
+
 def format_learning_report(report: LearningReport) -> str:
     """Format a LearningReport as a human-readable plain-text block."""
     lines = [
@@ -496,6 +536,33 @@ def format_learning_report(report: LearningReport) -> str:
         lines.append("")
     else:
         lines.append("No recommendations (insufficient data or no patterns detected).")
+
+    # Category insights section — loaded from selection learning candidates log
+    cat_insights = _load_category_insights()
+    if cat_insights and cat_insights.get("total_classified", 0) > 0:
+        total_cands = cat_insights.get("total_candidates", 0)
+        total_classified = cat_insights["total_classified"]
+        lines.append("── Category Insights (Model2Vec) ───────────────────────")
+        lines.append(f"Candidates logged : {total_cands}")
+        lines.append(f"Classified        : {total_classified} ({total_classified * 100 // max(total_cands, 1)}%)")
+        lines.append("")
+
+        cat_counts = cat_insights.get("category_counts", {})
+        if cat_counts:
+            lines.append("Top categories by article volume:")
+            for cat, count in cat_counts.items():
+                pct = count * 100 // max(total_classified, 1)
+                bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
+                lines.append(f"  {cat:<25} {bar}  {count:>4} ({pct}%)")
+            lines.append("")
+
+        ssi_counts = cat_insights.get("ssi_counts", {})
+        if ssi_counts:
+            lines.append("SSI component distribution (from category mapping):")
+            for ssi, count in sorted(ssi_counts.items(), key=lambda x: x[1], reverse=True):
+                pct = count * 100 // max(total_classified, 1)
+                lines.append(f"  {ssi:<30} {count:>4} ({pct}%)")
+            lines.append("")
 
     lines.append("────────────────────────────────────────────────────────")
     return "\n".join(lines)

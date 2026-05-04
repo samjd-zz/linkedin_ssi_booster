@@ -75,9 +75,23 @@ This tool handles the repeatable parts:
 
 **Advanced Reporting CLI Flags:**
 
-- `--classify` — Batch-classify articles via Model2Vec during curation. Automatically attaches primary category and SSI component mapping to each article, which are then used for article ranking and SSI component alignment. Gracefully degrades if model2vec is not installed (install with `pip install model2vec`). Categories are cached and included in dry-run output for inspection before publication.
+- `--classify` — Batch-classify articles via Model2Vec during curation. Automatically attaches primary category and SSI component mapping to each article, which are then used for article ranking and SSI component alignment. Gracefully degrades if model2vec is not installed (install with `pip install model2vec`). Categories are cached and included in dry-run output for inspection before publication. When combined with `--dot-report`, also shows a **category alignment score** comparing the generated post's category against the source article's category.
 
-- `--dot-report` — Show a Derivative of Truth (truth gradient, evidence, uncertainty) report for every generated post (with `--schedule`) or curated idea (with `--curate`).
+- `--list-categories` — List all available Model2Vec categories (10 default + any custom) with descriptions and SSI component mapping. No curation run required.
+
+- `--add-category NAME DESCRIPTION SSI_COMPONENT` — Add a custom classification category. The category is immediately available for `--classify` runs. SSI component must be one of: `establish_brand`, `find_right_people`, `engage_with_insights`, `build_relationships`.
+
+  ```bash
+  python main.py --add-category 'Government Tech' 'Public sector AI, digital government, and civic technology' engage_with_insights
+  ```
+
+- `--remove-category NAME [NAME...]` — Remove one or more custom categories. Default categories cannot be removed.
+
+  ```bash
+  python main.py --remove-category 'Government Tech' 'Open Source'
+  ```
+
+- `--dot-report` — Show a Derivative of Truth (truth gradient, evidence, uncertainty) report for every generated post (with `--schedule`) or curated idea (with `--curate`). When combined with `--classify`, also shows a category alignment validation score.
 
 - `--avatar-explain` — Show evidence IDs and grounding summary after each generation.
 
