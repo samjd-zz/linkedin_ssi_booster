@@ -113,6 +113,26 @@ def extract_and_append_knowledge(
         )
         existing_graph = ExtractedKnowledgeGraph(schema_version="1.0", facts=[])
 
+    # Classify the article text once using Model2Vec — stamp every extracted fact
+    # with the article's primary category and SSI component.
+    _article_category: str = ""
+    _article_ssi_component: str = ""
+    try:
+        from services.model2vec_service import get_model2vec_service
+        _m2v = get_model2vec_service()
+        if _m2v.is_available():
+            _classify_text = f"{source_title} {article_text[:1000]}".strip()
+            _cls_result = _m2v.classify_text(_classify_text, top_k=1)
+            if _cls_result.predictions:
+                _article_category = _cls_result.primary_category
+                _article_ssi_component = _cls_result.primary_ssi_component
+                logger.debug(
+                    "extract_and_append_knowledge: article classified as '%s' (SSI: %s)",
+                    _article_category, _article_ssi_component,
+                )
+    except Exception as _cls_exc:
+        logger.debug("extract_and_append_knowledge: category classification skipped: %s", _cls_exc)
+
     existing_ids: set[str] = {f.id for f in existing_graph.facts}
     # Cross-URL dedup: build a set of normalised statement hashes so the same boilerplate
     # text fetched from multiple URLs (e.g. Elastic sidebar, InfoQ consent form) is only
@@ -733,6 +753,8 @@ def extract_and_append_knowledge(
             tags=tags,
             confidence=confidence,
             extraction_method="spacy_nlp" if spacy_available else "regex_fallback",
+            primary_category=_article_category,
+            primary_ssi_component=_article_ssi_component,
         )
         new_facts.append(fact)
         existing_ids.add(fact_id)

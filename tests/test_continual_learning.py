@@ -523,6 +523,55 @@ def test_extract_and_append_knowledge_confidence_field(tmp_path):
         assert fact.confidence == "high"
 
 
+def test_extract_and_append_knowledge_category_fields_default_empty(tmp_path):
+    """When Model2Vec is unavailable, primary_category and primary_ssi_component are empty strings."""
+    path = tmp_path / "ek.json"
+    path.write_text(json.dumps({"schemaVersion": "1.0", "facts": []}), encoding="utf-8")
+
+    # Model2Vec is not installed in the test environment — fields should default to ""
+    result = extract_and_append_knowledge(
+        ARTICLE,
+        source_url="https://example.com/article",
+        source_title="Test Article",
+        path=path,
+        dry_run=False,
+    )
+    for fact in result:
+        assert isinstance(fact.primary_category, str)
+        assert isinstance(fact.primary_ssi_component, str)
+
+
+def test_loader_backward_compat_missing_category_fields(tmp_path):
+    """Loader must handle existing JSON facts that lack primary_category/primary_ssi_component."""
+    from services.avatar_intelligence._loaders import _load_extracted_knowledge
+
+    # Write a fact without the new fields (simulates pre-upgrade data)
+    old_fact = {
+        "id": "ext-abc123",
+        "statement": "Python 3.12 introduced significant performance improvements.",
+        "source_url": "https://example.com/python",
+        "source_title": "Python 3.12 Release",
+        "extracted_at": "2026-01-01T00:00:00+00:00",
+        "entities": [],
+        "tags": ["python"],
+        "confidence": "medium",
+        "extraction_method": "spacy_nlp",
+        # NOTE: primary_category and primary_ssi_component intentionally absent
+    }
+    path = tmp_path / "ek.json"
+    path.write_text(
+        json.dumps({"schemaVersion": "1.0", "facts": [old_fact]}), encoding="utf-8"
+    )
+
+    graph, errors = _load_extracted_knowledge(path)
+    assert not errors
+    assert graph is not None
+    assert len(graph.facts) == 1
+    fact = graph.facts[0]
+    assert fact.primary_category == ""
+    assert fact.primary_ssi_component == ""
+
+
 # ---------------------------------------------------------------------------
 # AvatarState integration
 # ---------------------------------------------------------------------------

@@ -105,15 +105,19 @@ class ExtractedFact:
     """A fact extracted by the NLP pipeline from an external article or feed.
 
     Fields:
-    - id:                SHA-256[:12] of source_url + statement (dedup key).
-    - statement:         The extracted factual statement.
-    - source_url:        URL of the originating article or feed item.
-    - source_title:      Title of the originating article or feed item.
-    - extracted_at:      ISO-8601 UTC timestamp of extraction.
-    - entities:          Named entities detected by spaCy (PERSON, ORG, etc.).
-    - tags:              Keyword tags derived from themes/entities.
-    - confidence:        'high' | 'medium' | 'low'.
-    - extraction_method: Which pipeline produced this fact (e.g. 'spacy_nlp').
+    - id:                    SHA-256[:12] of source_url + statement (dedup key).
+    - statement:             The extracted factual statement.
+    - source_url:            URL of the originating article or feed item.
+    - source_title:          Title of the originating article or feed item.
+    - extracted_at:          ISO-8601 UTC timestamp of extraction.
+    - entities:              Named entities detected by spaCy (PERSON, ORG, etc.).
+    - tags:                  Keyword tags derived from themes/entities.
+    - confidence:            'high' | 'medium' | 'low'.
+    - extraction_method:     Which pipeline produced this fact (e.g. 'spacy_nlp').
+    - primary_category:      Model2Vec category of the source article (e.g. 'Artificial Intelligence').
+                             Empty string when Model2Vec is unavailable or disabled.
+    - primary_ssi_component: SSI component mapped from primary_category
+                             (e.g. 'establish_brand'). Empty string when unavailable.
     """
 
     id: str
@@ -125,6 +129,8 @@ class ExtractedFact:
     tags: list[str] = field(default_factory=list)
     confidence: str = "medium"
     extraction_method: str = "spacy_nlp"
+    primary_category: str = ""
+    primary_ssi_component: str = ""
 
 
 @dataclass

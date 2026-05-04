@@ -23,9 +23,9 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total tests | Passed | Failed |
 | ----------- | ------ | ------ |
-| 488         | 488    | 0      |
+| 490         | 490    | 0      |
 
-All tests pass as of May 3, 2026 (Python 3.12.2, pytest 7.4.4). The suite now also covers:
+All tests pass as of May 4, 2026 (Python 3.12.2, pytest 7.4.4). The suite now also covers:
 
 - Knowledge Graph subsystem (NetworkX)
 - Hybrid BM25+graph retrieval and persona-aware reranking (now active in production via `ContentCurator`)

@@ -202,6 +202,8 @@ def _load_extracted_knowledge(path: Path) -> tuple["ExtractedKnowledgeGraph | No
             tags=f.get("tags", []),
             confidence=f.get("confidence", "medium"),
             extraction_method=f.get("extraction_method", "spacy_nlp"),
+            primary_category=f.get("primary_category", ""),
+            primary_ssi_component=f.get("primary_ssi_component", ""),
         )
         for f in data.get("facts", [])
     ]
