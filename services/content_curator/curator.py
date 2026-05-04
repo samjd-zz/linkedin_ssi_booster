@@ -57,12 +57,14 @@ class ContentCurator:
         confidence_policy: str = "balanced",
         enable_spacy_summarization: bool = True,
         github_context: str = "",
+        classify: bool = False,
     ) -> None:
         self.ai = ai_service
         self.buffer = buffer_service
         self.confidence_policy = confidence_policy
         self.enable_spacy_summarization = enable_spacy_summarization
         self.github_context = github_context
+        self._classify = classify
         self.curation_grounding_keywords = load_curation_grounding_keywords()
         self.curation_grounding_tag_expansions = load_curation_grounding_tag_expansions()
         self._avatar_facts: list = []
@@ -330,7 +332,13 @@ class ContentCurator:
                 + [article_to_evidence_path(article, post_text)]
             )
             _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
-            _dot_report_dict = report_truth_gradient(post_text, _dot_result, verbose=True)
+            _dot_report_dict = report_truth_gradient(
+                post_text,
+                _dot_result,
+                verbose=True,
+                primary_category=article.get("primary_category"),
+                primary_ssi_component=article.get("primary_ssi_component"),
+            )
             _dot_colour = str(Fore.RED) if _dot_result.flagged else str(Fore.CYAN)
             from services.derivative_of_truth._reporting import format_dot_report_header
             print(format_dot_report_header("Derivative of Truth Report (curate)"))
@@ -370,12 +378,13 @@ class ContentCurator:
         dry_run: bool = False,
         max_ideas: int = 5,
         request_delay: float = 5.0,
-        channel: str | list[str] =  "linkedin",
+        channel: str | list[str] = "linkedin",
         message_type: str = "idea",
         interactive: bool = False,
         avatar_explain: bool = False,
         dot_report: bool = False,
         learn: bool = False,
+        classify: bool = False,
     ) -> list | None:
         """Fetch articles, generate posts, apply routing, push to Buffer.
 
@@ -385,7 +394,8 @@ class ContentCurator:
         channel can be a string or list of strings for multiple channels.
         """
         
-        articles = fetch_relevant_articles(spacy_nlp=self._spacy_nlp)
+        _do_classify = self._classify or classify
+        articles = fetch_relevant_articles(spacy_nlp=self._spacy_nlp, classify=_do_classify)
         try:
             from services.selection_learning import compute_acceptance_priors, rank_articles as _rank_arts
             _priors = compute_acceptance_priors()
@@ -674,7 +684,8 @@ class ContentCurator:
         print(str(Fore.MAGENTA) + f"\n🦋 BLUESKY POST:" + str(Style.RESET_ALL) + f"\n{bsky_post}")
         if yt_script:
             print(str(Fore.RED) + str(Style.BRIGHT) + "\n🎬 YOUTUBE SHORT SCRIPT:" + str(Style.RESET_ALL) + f"\n{yt_script}\n")
-
+            print("GitHub: https://buff.ly/tfajNLI")
+            print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
         if avatar_explain:
             self._print_avatar_explain(li_text, article, grounding_facts, "all", ssi_component, extracted_facts=extracted_facts)
         if dot_report:
@@ -899,6 +910,8 @@ class ContentCurator:
                     encoding="utf-8",
                 )
                 print(str(Fore.GREEN) + f"💾 Saved to: {script_path}" + str(Style.RESET_ALL))
+                print("GitHub: https://buff.ly/tfajNLI")
+                print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
                 print(str(Fore.YELLOW) + "⚠️  Buffer YouTube requires a video — script not pushed." + str(Style.RESET_ALL))
                 self._save_published_title(article["title"])
                 created_ideas.append({

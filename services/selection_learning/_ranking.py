@@ -52,6 +52,22 @@ class RankingService:
         matches = sum(1 for kw in keywords if kw.lower() in text)
         return min(matches / 10.0, 1.0)
 
+    @staticmethod
+    def _category_boost(article: dict[str, Any], ssi_component: str) -> float:
+        """Return a small boost (1.0–1.15) when the article's Model2Vec category
+        aligns with the requested SSI component.
+
+        This rewards articles whose primary_category maps to the SSI component
+        that is currently targeted, nudging them toward the top of the ranking
+        without overriding relevance or freshness signals.
+        """
+        primary_ssi = article.get("primary_ssi_component", "")
+        if not primary_ssi or not ssi_component:
+            return 1.0
+        if primary_ssi == ssi_component:
+            return 1.15  # 15% boost for on-target category
+        return 1.0
+
     def rank_articles(
         self,
         articles: list[dict[str, Any]],
@@ -64,7 +80,7 @@ class RankingService:
         use_boost_factors: bool = True,
         extract_themes: bool = True,
     ) -> list[dict[str, Any]]:
-        """Re-rank *articles* using relevance, freshness, prior, and boosts."""
+        """Re-rank *articles* using relevance, freshness, prior, boosts, and category alignment."""
         kw_list = keywords or []
 
         if extract_themes:
@@ -89,12 +105,15 @@ class RankingService:
 
             if use_boost_factors:
                 boost = PriorService.get_boost_factor(source, ssi_component, themes, priors)
-                final_score = base_score * boost
+                # Apply category alignment boost from Model2Vec classification
+                cat_boost = self._category_boost(article, ssi_component)
+                final_score = base_score * boost * cat_boost
                 logger.debug(
-                    "selection_learning: ranked article '%s' - base=%.3f boost=%.2f final=%.3f",
+                    "selection_learning: ranked article '%s' - base=%.3f boost=%.2f cat_boost=%.2f final=%.3f",
                     article.get("title", "")[:50],
                     base_score,
                     boost,
+                    cat_boost,
                     final_score,
                 )
             else:

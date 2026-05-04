@@ -11,6 +11,8 @@ def report_truth_gradient(
     claim: str,
     result: TruthGradientResult,
     verbose: bool = False,
+    primary_category: str | None = None,
+    primary_ssi_component: str | None = None,
 ) -> dict[str, Any]:
     """Produce a structured report dict for a truth gradient result."""
     report: dict[str, Any] = {
@@ -25,6 +27,8 @@ def report_truth_gradient(
         "truth_derivative": (
             round(result.truth_derivative, 4) if result.truth_derivative is not None else None
         ),  # Phase 2: dT/dt
+        "primary_category": primary_category,  # Model2Vec classification
+        "primary_ssi_component": primary_ssi_component,  # SSI component from category
     }
     if verbose:
         report["evidence_paths"] = [
@@ -104,6 +108,15 @@ def format_truth_gradient_report(report: dict[str, Any]) -> str:
         dt_color = Fore.GREEN if dt_dt > 0 else (Fore.RED if dt_dt < 0 else Fore.YELLOW)
         derivative_str = f"   {c}dT/dt:{r} {dt_color}{dt_dt:+.4f}/hr{r}"
     
+    # Model2Vec category classification
+    category_str = ""
+    if report.get("primary_category"):
+        cat = report["primary_category"]
+        ssi = report.get("primary_ssi_component", "")
+        category_str = f"  {c}Category:{r} {Fore.MAGENTA}{cat}{r}"
+        if ssi:
+            category_str += f"  {c}→{r} {Fore.YELLOW}{ssi}{r}"
+    
     lines = [
         divider,
         f"  {status}  {gradient_bar}  {Fore.WHITE}{tg:.4f}{r}  {mode_indicator}{derivative_str}",
@@ -113,6 +126,8 @@ def format_truth_gradient_report(report: dict[str, Any]) -> str:
         ),
         f"  {c}Claim:{r} {report['claim_snippet']}",
     ]
+    if category_str:
+        lines.append(category_str)
 
     if report.get("uncertainty_sources"):
         src_list = ", ".join(

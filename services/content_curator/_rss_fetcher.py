@@ -16,6 +16,21 @@ except ImportError:  # pragma: no cover
 
 from services.content_curator._config import CURATOR_MAX_PER_FEED, RSS_FEEDS, KEYWORDS
 
+# Model2Vec classification is optional — imported lazily to avoid hard dependency
+_classify_articles_fn = None
+
+
+def _get_batch_classify():
+    """Lazily import batch_classify_articles to avoid circular imports and hard deps."""
+    global _classify_articles_fn
+    if _classify_articles_fn is None:
+        try:
+            from services.model2vec_service import batch_classify_articles
+            _classify_articles_fn = batch_classify_articles
+        except Exception:
+            _classify_articles_fn = None
+    return _classify_articles_fn
+
 logger = logging.getLogger(__name__)
 
 
@@ -152,8 +167,50 @@ def fetch_article_text(url: str, max_chars: int = 3000, spacy_nlp=None) -> str:
         return ""
 
 
-def fetch_relevant_articles(max_per_feed: int = CURATOR_MAX_PER_FEED, spacy_nlp=None) -> list:
-    """Fetch recent articles matching our keyword list."""
+def _attach_classifications(articles: list) -> None:
+    """Batch-classify articles and attach category metadata in-place.
+
+    Each article dict gains two optional keys:
+      - ``primary_category``: str — top predicted category name (or "")
+      - ``primary_ssi_component``: str — SSI component mapped from category (or "")
+
+    Classification failures are silently swallowed so the pipeline continues.
+    """
+    if not articles:
+        return
+    fn = _get_batch_classify()
+    if fn is None:
+        return
+    try:
+        results = fn(articles, top_k=1)
+        for article, result in zip(articles, results):
+            article["primary_category"] = result.primary_category
+            article["primary_ssi_component"] = result.primary_ssi_component
+            if result.primary_category:
+                logger.debug(
+                    "  🏷️  [%s] → %s (%.3f)",
+                    article.get("title", "")[:50],
+                    result.primary_category,
+                    result.top_confidence,
+                )
+    except Exception as exc:
+        logger.debug("Model2Vec: batch classification failed (continuing): %s", exc)
+
+
+def fetch_relevant_articles(
+    max_per_feed: int = CURATOR_MAX_PER_FEED,
+    spacy_nlp=None,
+    classify: bool = False,
+) -> list:
+    """Fetch recent articles matching our keyword list.
+
+    When *classify* is True (or CURATE_CLASSIFY env var is set), articles are
+    batch-classified by Model2Vec and gain ``primary_category`` /
+    ``primary_ssi_component`` metadata keys.
+    """
+    import os
+    _classify = classify or os.getenv("CURATE_CLASSIFY", "false").lower() == "true"
+
     articles = []
     for feed_info in RSS_FEEDS:
         try:
@@ -174,9 +231,16 @@ def fetch_relevant_articles(max_per_feed: int = CURATOR_MAX_PER_FEED, spacy_nlp=
                         "summary":   summary,
                         "link":      link,
                         "published": entry.get("published", ""),
+                        "primary_category": "",
+                        "primary_ssi_component": "",
                     })
                     logger.info("  🧲 Matched: [%s] %s", feed_info["name"], title[:60])
         except Exception as exc:
             logger.warning("Failed to fetch %s: %s", feed_info["name"], exc)
     logger.info("🗞️  Found %d relevant articles across %d feeds", len(articles), len(RSS_FEEDS))
+
+    if _classify and articles:
+        logger.info("🏷️  Classifying %d articles via Model2Vec…", len(articles))
+        _attach_classifications(articles)
+
     return articles

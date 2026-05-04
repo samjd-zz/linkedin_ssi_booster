@@ -27,6 +27,10 @@ class CandidateRecord:
     themes: list[str] = field(default_factory=list)
     sentiment: dict[str, Any] = field(default_factory=dict)
     user_feedback: dict[str, Any] = field(default_factory=dict)
+    # Model2Vec classification metadata (optional — populated when --classify is used)
+    primary_category: str = ""
+    primary_ssi_component: str = ""
+    category_confidence: float = 0.0
 
 
 @dataclass

@@ -38,7 +38,7 @@ UNCERTAINTY_LOW_CREDIBILITY = "low_credibility"
 TRUTH_GRADIENT_FLAG_THRESHOLD: float = 0.35
 
 # Phase 1 & 2: PLN-enhanced mode configuration
-USE_PLN_ENHANCED_SCORING: bool = True  # Toggle PLN vs. legacy scoring
+USE_PLN_ENHANCED_SCORING: bool = False  # Toggle PLN vs. legacy scoring
 TRACK_TRUTH_TRAJECTORY: bool = True  # Enable dT/dt trajectory tracking
 
 # Weights for the composite truth gradient formula.

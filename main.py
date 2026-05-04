@@ -371,6 +371,8 @@ def main():
                         help="Extract and persist knowledge from curated articles into extracted_knowledge.json (skipped on --dry-run unless this flag is also set)")
     parser.add_argument("--reconcile", action="store_true",
                         help="Fetch published Buffer posts and reconcile with generated candidates to build acceptance priors")
+    parser.add_argument("--classify", action="store_true",
+                        help="Batch-classify articles via Model2Vec before curation (requires: pip install model2vec)")
     args = parser.parse_args()
 
     if args.debug:
@@ -490,10 +492,10 @@ def main():
         from services.shared import AVATAR_CONFIDENCE_POLICY
         from services.content_curator import ContentCurator
         confidence_policy = args.confidence_policy or AVATAR_CONFIDENCE_POLICY
-        curator = ContentCurator(ai_service=ai, buffer_service=buffer, confidence_policy=confidence_policy, github_context=_github_context)
+        curator = ContentCurator(ai_service=ai, buffer_service=buffer, confidence_policy=confidence_policy, github_context=_github_context, classify=args.classify)
 
         try:
-            ideas = curator.curate_and_create_ideas(dry_run=args.dry_run, channel=args.channel, message_type=args.type, request_delay=5.0, interactive=args.interactive, avatar_explain=args.avatar_explain, dot_report=args.dot_report, learn=args.learn)
+            ideas = curator.curate_and_create_ideas(dry_run=args.dry_run, channel=args.channel, message_type=args.type, request_delay=5.0, interactive=args.interactive, avatar_explain=args.avatar_explain, dot_report=args.dot_report, learn=args.learn, classify=args.classify)
         except BufferQueueFullError as e:
             print(str(Fore.YELLOW) + f"\n⚠️  Buffer queue is full — no new posts were scheduled.\n   {e}\n   Free up slots at https://publish.buffer.com before running again." + str(Style.RESET_ALL))
             return
@@ -590,6 +592,8 @@ def main():
                     print(str(Fore.WHITE) + f"📄 TITLE:  {topic['title']}" + str(Style.RESET_ALL))
                     print(str(Fore.CYAN) + f"🎯 SSI:    {topic['ssi_component']}" + str(Style.RESET_ALL))
                     print(f"\n{post}\n")
+                    print("GitHub: https://buff.ly/tfajNLI")
+                    print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
                     if not args.dry_run:
                         print(str(Fore.GREEN) + f"💾 Saved to: {script_path}" + str(Style.RESET_ALL))
                     posts.append({**topic, "generated_text": post})

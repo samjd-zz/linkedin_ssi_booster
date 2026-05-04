@@ -13,3 +13,4 @@ python-dotenv>=1.0.0
 spacy>=3.7.0
 networkx>=3.2
 trafilatura>=2.0.0
+model2vec>=0.1.0
