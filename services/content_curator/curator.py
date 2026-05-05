@@ -385,8 +385,6 @@ class ContentCurator:
         print(str(Fore.WHITE) + str(Style.BRIGHT) + f"📰 SOURCE: {article['source']}" + str(Style.RESET_ALL))
         print(str(Fore.WHITE) + str(Style.BRIGHT) + f"📄 ARTICLE: {article['title']}" + str(Style.RESET_ALL))
         print(str(Fore.CYAN) + f"📡 CHANNEL: {channel}" + str(Style.RESET_ALL))
-        if channel == "youtube":
-            print(str(Fore.RED) + str(Style.BRIGHT) + "\n🎬 YOUTUBE SHORT SCRIPT (copy to lipsync.video):" + str(Style.RESET_ALL))
         print(str(Fore.CYAN) + f"🎯 SSI COMPONENT: {ssi_component}" + str(Style.RESET_ALL))
         print(str(Fore.YELLOW) + f"🔒 CONFIDENCE ROUTE: {conf_route} — {conf_reason}" + str(Style.RESET_ALL))
         print(
@@ -442,9 +440,9 @@ class ContentCurator:
         published = set() if dry_run else self._load_published_titles()
         created_ideas: list | None = []
 
-        learn_only = learn and not dry_run
+        learn_only = learn
         if learn_only:
-            logger.info("🧠 --learn mode (no --dry-run): extracting knowledge only — skipping generation entirely")
+            logger.info("🧠 --learn mode: extracting knowledge only — skipping generation%s", " (dry run)" if dry_run else "")
 
         for article in articles:
             if created_ideas is not None and not learn and len(created_ideas) >= max_ideas:

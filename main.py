@@ -657,7 +657,7 @@ def main():
                     )
                     if not args.dry_run:
                         script_path.write_text(script_content, encoding="utf-8")
-                    print(str(Fore.RED) + str(Style.BRIGHT) + f"\n🎬 YOUTUBE SHORT SCRIPT (channel: {channel}):" + str(Style.RESET_ALL))
+                    print(str(Fore.RED) + str(Style.BRIGHT) + f"🎬 YOUTUBE SHORT SCRIPT (channel: {channel}):" + str(Style.RESET_ALL))
                     print(str(Fore.WHITE) + f"📄 TITLE:  {topic['title']}" + str(Style.RESET_ALL))
                     print(str(Fore.CYAN) + f"🎯 SSI:    {topic['ssi_component']}" + str(Style.RESET_ALL))
                     print(f"\n{post}\n")
