@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="120"
-  style="width:300px;height:300px;">
+  <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
 # LinkedIn SSI Booster - POWERED by Buffer.com!
@@ -9,11 +8,16 @@
 
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Version alpha-v0.0.2.5](https://img.shields.io/badge/version-alpha--v0.0.2.5-orange.svg)]()
 
+<p align="right">
+  <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80">
+</p>
+
 **LinkedIn SSI Booster** isn't just a prompt wrapper — it's an adaptive continual learning automation system for content, curation, and persona growth. It combines spaCy-based NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX-powered knowledge graph, and local memory to generate, curate, rank, and route posts with more control and explainability than a basic AI writer workflow.
 
-Sign up for Buffer with my partner link — http://join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
+Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
 
-## 🧠 Intelligence Stack 
+## 🧠 Intelligence Stack
+
 ##### _<ul><u>— Why This Is Smarter Than Just 'AI Writes Posts'</u></ul>_
 
 - **Advanced NLP with spaCy** — Theme/claim extraction, semantic similarity, sentiment/tone analysis, and two advanced curation/grounding features:
