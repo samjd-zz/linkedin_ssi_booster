@@ -5,7 +5,7 @@
 
 # LinkedIn SSI Booster - POWERED by Buffer.com!
 
-#### _<u> — Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Agent with Domain-Knowledge-Graph</u>_
+##### _<u> — Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Agent with Domain-Knowledge-Graph</u>_
 
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Version alpha-v0.0.2.5](https://img.shields.io/badge/version-alpha--v0.0.2.5-orange.svg)]()
 
