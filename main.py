@@ -731,7 +731,12 @@ def main():
                     _ev_proj2 = int(os.getenv("EVIDENCE_PROJECT_COUNT", "3"))
                     _ev_dom2 = int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
                     _relevant = retrieve_evidence(grounding_query, _all_facts, limit=_ev_proj2 + _ev_dom2)  # type: ignore[arg-type]
-                    _gen_extracted_facts = normalize_extracted_facts(_gen_avatar_state)
+                    
+                    # Retrieve only relevant extracted facts (not all of them)
+                    _gen_extracted_facts_all = normalize_extracted_facts(_gen_avatar_state)
+                    _ev_extracted = int(os.getenv("EVIDENCE_EXTRACTED_COUNT", "2"))
+                    _relevant_extracted = retrieve_evidence(grounding_query, _gen_extracted_facts_all, limit=_ev_extracted)  # type: ignore[arg-type]
+                    
                     _, _gate_meta = _tgr_exp(post, topic.get("angle", ""), grounding_facts)
                     _explain = build_explain_output(
                         evidence_facts=_relevant,
@@ -740,7 +745,7 @@ def main():
                         ssi_component=topic.get('ssi_component', 'establish_brand'),
                         dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
                         spacy_sim_scores=_gate_meta.spacy_sim_scores,
-                        extracted_facts=_gen_extracted_facts,
+                        extracted_facts=_relevant_extracted,
                     )
                     print(format_explain_output(_explain))
 
