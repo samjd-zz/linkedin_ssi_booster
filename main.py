@@ -627,7 +627,7 @@ def main():
 
             for topic in week_topics:
                 logger.info("  Generating: %s", topic['title'])
-                grounding_query = f"{topic['title']}. {topic['angle']}. {topic.get('ssi_component', 'general')}"
+                grounding_query = f"{topic['title']}. {topic['angle']}. {topic.get('ssi_component', 'establish_brand')}"
                 # Combine both fact types
                 _gen_avatar_facts = normalize_evidence_facts(_gen_avatar_state)
                 _gen_domain_facts = normalize_domain_facts(_gen_avatar_state)
@@ -648,7 +648,7 @@ def main():
                     post = ai.generate_youtube_short_script(
                         title=topic["title"],
                         angle=topic["angle"],
-                        ssi_component=topic.get("ssi_component", "general"),
+                        ssi_component=topic.get("ssi_component", "establish_brand"),
                         grounding_facts=grounding_facts,
                         interactive=args.interactive,
                     )
@@ -657,14 +657,14 @@ def main():
                     script_path = Path("yt-vid-data") / f"{timestamp}_{safe_title}.txt"
                     script_content = (
                         f"TITLE: {topic['title']}\n"
-                        f"SSI COMPONENT: {topic.get('ssi_component', 'general')}\n\n"
+                        f"SSI COMPONENT: {topic.get('ssi_component', 'establish_brand')}\n\n"
                         f"{post}\n"
                     )
                     if not args.dry_run:
                         script_path.write_text(script_content, encoding="utf-8")
                     print(str(Fore.RED) + str(Style.BRIGHT) + f"🎬 YOUTUBE SHORT SCRIPT (channel: {channel}):" + str(Style.RESET_ALL))
                     print(str(Fore.WHITE) + f"📄 TITLE:  {topic['title']}" + str(Style.RESET_ALL))
-                    print(str(Fore.CYAN) + f"🎯 SSI:    {topic.get('ssi_component', 'general')}" + str(Style.RESET_ALL))
+                    print(str(Fore.CYAN) + f"🎯 SSI:    {topic.get('ssi_component', 'establish_brand')}" + str(Style.RESET_ALL))
                     print(f"\n{post}\n")
                     print("GitHub: https://buff.ly/tfajNLI")
                     print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
@@ -675,7 +675,7 @@ def main():
                     post = ai.generate_linkedin_post(
                         title=topic["title"],
                         angle=topic["angle"],
-                        ssi_component=topic.get("ssi_component", "general"),
+                        ssi_component=topic.get("ssi_component", "establish_brand"),
                         hashtags=topic.get("hashtags", []),
                         grounding_facts=grounding_facts,
                         channel=channel,
@@ -691,7 +691,7 @@ def main():
                 if channel != "youtube":
                     print(str(Fore.CYAN) + f"\n{'='*60}" + str(Style.RESET_ALL))
                     print(str(Fore.WHITE) + str(Style.BRIGHT) + f"📝 TOPIC: {topic['title']} (channel: {channel})" + str(Style.RESET_ALL))
-                    print(str(Fore.CYAN) + f"🎯 SSI COMPONENT: {topic.get('ssi_component', 'general')}" + str(Style.RESET_ALL))
+                    print(str(Fore.CYAN) + f"🎯 SSI COMPONENT: {topic.get('ssi_component', 'establish_brand')}" + str(Style.RESET_ALL))
                     print(f"\n{post}\n")
 
                 if args.dot_report:
@@ -737,7 +737,7 @@ def main():
                         evidence_facts=_relevant,
                         article_ref=topic.get("title", ""),
                         channel=channel,
-                        ssi_component=topic.get('ssi_component', 'general'),
+                        ssi_component=topic.get('ssi_component', 'establish_brand'),
                         dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
                         spacy_sim_scores=_gate_meta.spacy_sim_scores,
                         extracted_facts=_gen_extracted_facts,
