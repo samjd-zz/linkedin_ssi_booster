@@ -2,7 +2,7 @@
   <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
-# LinkedIn SSI Booster - POWERED by Buffer.com!
+# LinkedIn SSI Booster - :muscle: POWERED by Buffer.com!
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Agent with Domain-Knowledge-Graph</u>
 
