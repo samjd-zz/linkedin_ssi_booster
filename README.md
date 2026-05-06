@@ -327,7 +327,7 @@ Run the full stack — Ollama LLM server + SSI Booster app — with a single com
 ```bash
 cp .env.example .env
 # Edit .env — set BUFFER_API_KEY, OLLAMA_MODEL, persona vars, etc.
-# Leave OLLAMA_BASE_URL as http://localhost:11434 — docker-compose overrides it automatically.
+# Leave OLLAMA_BASE_URL as http://localhost:11434 — docker compose overrides it automatically.
 ```
 
 Also copy the required data files (these are bind-mounted into the container at runtime):
