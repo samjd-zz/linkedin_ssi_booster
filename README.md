@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="120">
+</p>
+
 # LinkedIn SSI Booster
 
 #### _<u> — Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Agent with Domain-Knowledge-Graph</u>_
