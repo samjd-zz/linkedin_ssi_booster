@@ -234,14 +234,14 @@ The avatar supports fully automatic, incremental continual learning from new con
 
 - **Console mode** (`--console`) includes extracted knowledge in the grounding pool alongside persona and domain facts, so the persona can answer questions using anything learned from `--learn` runs. Use `/reload` inside a running console session to re-read `extracted_knowledge.json` (and all other avatar files) without restarting — useful when running a `--learn` job concurrently in a second terminal.
 
-- **Inline truth score** — after every AI-generated reply, console mode prints a minimal 1-line DoT + fact-pool sim indicator:
+- **Inline truth score** — when `--console --verify` flags are used together, console mode prints a minimal 1-line DoT + fact-pool sim indicator after every AI-generated reply:
 
   ```
   Sam> [reply text]
     ● DoT 0.82  fact sim 0.71
   ```
 
-  The symbol colour reflects the DoT score: `●` green (≥ 0.75 — well-grounded), `◑` yellow (≥ 0.45 — moderate), `○` red (< 0.45 — weakly supported). `fact sim` shows the best spaCy similarity across persona/domain facts for the reply sentences (omitted if no facts matched). Article-based spaCy sim is excluded as there is no article in a conversation. Only AI-generated replies receive the indicator; deterministic grounded replies do not.
+  The symbol colour reflects the DoT score: `●` green (≥ 0.75 — well-grounded), `◑` yellow (≥ 0.45 — moderate), `○` red (< 0.45 — weakly supported). `fact sim` shows the best spaCy similarity across persona/domain facts for the reply sentences (omitted if no facts matched). Article-based spaCy sim is excluded as there is no article in a conversation. Only AI-generated replies receive the indicator; deterministic grounded replies do not. **By default (console mode without `--verify`), DoT scanning and similarity checks are OFF** — add `--verify` to enable them.
 
 **Noise filtering pipeline** — before a sentence is stored, a multi-layer quality filter rejects low-signal content that would pollute the knowledge base:
 
@@ -364,6 +364,9 @@ docker compose run --rm app python main.py --curate
 # Interactive persona console (TTY required)
 docker compose run --rm -it app python main.py --console
 
+# Console mode with DoT verification enabled
+docker compose run --rm -it app python main.py --console --verify
+
 # Record today's SSI scores
 docker compose run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
 ```
@@ -397,6 +400,12 @@ cp data/avatar/domain_knowledge_java.json data/avatar/domain_knowledge_java.json
 cp data/avatar/domain_knowledge_python.json data/avatar/domain_knowledge_python.json
 cp content_calendar.example.py content_calendar.py
 python main.py --schedule --week 1 --dry-run
+
+# Console mode (DoT scanning OFF by default)
+python main.py --console
+
+# Console mode with DoT verification enabled
+python main.py --console --verify
 ```
 
 ### ⚙️ Environment Variables

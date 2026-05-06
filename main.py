@@ -121,8 +121,12 @@ from services.console_grounding import (
 from services.ollama_service import OllamaService
 from services.github_service import build_github_profile_context
 
-def run_console(ai: OllamaService, github_context: str = "") -> None:
-    """Run interactive persona chat mode in the terminal."""
+def run_console(ai: OllamaService, github_context: str = "", verify: bool = False) -> None:
+    """Run interactive persona chat mode in the terminal.
+    
+    When verify=True, DoT report scanning and spaCy similarity checks are displayed
+    for each generated response.
+    """
     # Patterns that should always route to LLM (not deterministic fact citation)
     GENERATIVE_REQUEST_PHRASES = [
         "write", "generate", "give me", "post", "reply", "respond", "script", "make me", "create",
@@ -218,7 +222,11 @@ def run_console(ai: OllamaService, github_context: str = "") -> None:
         spaCy article sim is intentionally excluded — it requires a source article
         text and is always empty when article_text="" (console mode has no article).
         Fact-pool sim (best match across persona/domain facts) works in all contexts.
+        
+        Only runs when verify=True.
         """
+        if not verify:
+            return
         try:
             _, _meta = _tg_result(reply, "", _profile_facts)
             dot = _meta.truth_gradient
@@ -338,6 +346,7 @@ def main():
     parser.add_argument("--schedule",  action="store_true", help="Generate and schedule posts to Buffer (use with --dry-run to preview only)")
     parser.add_argument("--curate",    action="store_true", help="Curate AI news and create ideas in Buffer")
     parser.add_argument("--console",   action="store_true", help="Open interactive persona chat mode (no Buffer calls)")
+    parser.add_argument("--verify",    action="store_true", help="Enable DoT report scanning and spaCy similarity checks in console mode (requires --console)")
     parser.add_argument("--report",    action="store_true", help="Print SSI component report")
     parser.add_argument("--save-ssi",  nargs=4, metavar=("BRAND", "FIND", "ENGAGE", "BUILD"),
                         type=float, help="Record today's SSI scores: --save-ssi 10.49 9.69 11.0 12.15")
@@ -553,7 +562,7 @@ def main():
     )
 
     if args.console:
-        run_console(ai=ai, github_context=_github_context)
+        run_console(ai=ai, github_context=_github_context, verify=args.verify)
         return
 
     if args.curate:
