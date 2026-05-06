@@ -605,12 +605,8 @@ def main():
             logger.error("No content found for week %d", args.week)
             return
 
-        if "," in args.channel:
-            channels = args.channel.split(",")
-        else:
-            channels = [args.channel]
-        
-        for channel in channels:
+        # args.channel is already a list from _parse_channels
+        for channel in args.channel:
             logger.info("📝 Generating %d posts for week %d (channel: %s)...", len(week_topics), args.week, channel)
             posts = []
             from services.avatar_intelligence import (
