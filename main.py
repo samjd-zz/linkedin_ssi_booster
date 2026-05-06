@@ -732,10 +732,25 @@ def main():
                     _ev_dom2 = int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
                     _relevant = retrieve_evidence(grounding_query, _all_facts, limit=_ev_proj2 + _ev_dom2)  # type: ignore[arg-type]
                     
-                    # Retrieve only relevant extracted facts (not all of them)
+                    # Score and filter extracted facts by relevance (retrieve_evidence doesn't support ExtractedEvidenceFact type)
                     _gen_extracted_facts_all = normalize_extracted_facts(_gen_avatar_state)
                     _ev_extracted = int(os.getenv("EVIDENCE_EXTRACTED_COUNT", "2"))
-                    _relevant_extracted = retrieve_evidence(grounding_query, _gen_extracted_facts_all, limit=_ev_extracted)  # type: ignore[arg-type]
+                    _q_tokens = set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", grounding_query.lower()))
+                    _scored_extracted = []
+                    for _fact in _gen_extracted_facts_all:
+                        _text = " ".join([
+                            getattr(_fact, "statement", ""),
+                            getattr(_fact, "source_title", ""),
+                            " ".join(getattr(_fact, "tags", []) or []),
+                            " ".join(getattr(_fact, "entities", []) or []),
+                        ])
+                        _tokens = set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", _text.lower()))
+                        _score = len(_q_tokens & _tokens)
+                        _scored_extracted.append((_score, _fact))
+                    _scored_extracted.sort(key=lambda x: x[0], reverse=True)
+                    _relevant_extracted = [f for s, f in _scored_extracted if s > 0][:_ev_extracted]
+                    if not _relevant_extracted and _gen_extracted_facts_all:
+                        _relevant_extracted = list(_gen_extracted_facts_all)[:_ev_extracted]
                     
                     _, _gate_meta = _tgr_exp(post, topic.get("angle", ""), grounding_facts)
                     _explain = build_explain_output(
