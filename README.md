@@ -146,7 +146,7 @@ Want to automate your LinkedIn growth with the best scheduling tool? [Sign up fo
 
 ---
 
-## 🧮 Derivative of Truth (DoT) + Probabilistic Logic Networks (PLN) Reasoning
+## 🧮 Derivative of Truth (DoT) + Probabilistic Logic Networks (PLN)
 
 The SSI Booster now features a full Probabilistic Logic Networks (PLN) inference engine, bringing advanced reasoning and explainability to every truth gradient calculation. With PLN, the system doesn't just check if a claim is supported — it can now model deduction, induction, abduction, and revision, dynamically weighing evidence and tracking the evolution of truth over time.
 
