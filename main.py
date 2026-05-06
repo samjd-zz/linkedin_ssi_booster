@@ -494,7 +494,7 @@ def main():
         print()
         for name, meta in sorted(categories.items()):
             is_custom = meta.get("custom", "False") == "True"
-            ssi = meta.get("ssi_component", "")
+            ssi = meta.get("ssi_component", "general")
             desc = meta.get("description", "")
             custom_marker = str(Fore.MAGENTA) + " [custom]" + str(Style.RESET_ALL) if is_custom else ""
             print(str(Fore.WHITE) + str(Style.BRIGHT) + f"  {name}" + str(Style.RESET_ALL) + custom_marker)
@@ -741,7 +741,7 @@ def main():
                         evidence_facts=_relevant,
                         article_ref=topic.get("title", ""),
                         channel=channel,
-                        ssi_component=topic.get("ssi_component", ""),
+                        ssi_component=topic.get('ssi_component', 'general'),
                         dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
                         spacy_sim_scores=_gate_meta.spacy_sim_scores,
                         extracted_facts=_gen_extracted_facts,
