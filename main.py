@@ -631,7 +631,7 @@ def main():
 
             for topic in week_topics:
                 logger.info("  Generating: %s", topic['title'])
-                grounding_query = f"{topic['title']}. {topic['angle']}. {topic['ssi_component']}"
+                grounding_query = f"{topic['title']}. {topic['angle']}. {topic.get('ssi_component', 'general')}"
                 # Combine both fact types
                 _gen_avatar_facts = normalize_evidence_facts(_gen_avatar_state)
                 _gen_domain_facts = normalize_domain_facts(_gen_avatar_state)
