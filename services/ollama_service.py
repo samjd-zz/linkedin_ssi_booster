@@ -13,7 +13,7 @@ import os
 import re
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
 import ollama
 
@@ -29,7 +29,7 @@ DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_NUM_CTX = 16384
 
 
-def _load_ollama_think() -> bool | str | None:
+def _load_ollama_think() -> bool | Literal['low', 'medium', 'high'] | None:
     """Read Ollama thinking-mode config.
 
     Gemma 4 can return empty visible content for longer prompts unless
@@ -43,14 +43,14 @@ def _load_ollama_think() -> bool | str | None:
     if raw in {"false", "0", "no", "off"}:
         return False
     if raw in {"low", "medium", "high"}:
-        return raw
+        return raw  # type: ignore[return-value]
     logger.warning("Invalid OLLAMA_THINK=%r; using false", raw)
     return False
 
 
 
 class OllamaService:
-
+    think: bool | Literal['low', 'medium', 'high'] | None
 
     def generate_youtube_short_script(
         self,
