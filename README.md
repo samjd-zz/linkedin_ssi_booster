@@ -13,7 +13,8 @@
 
 Sign up for Buffer with my partner link — http://join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
 
-## 🧠 Intelligence Stack — Why This Is Smarter Than Just 'AI Writes Posts'
+## 🧠 Intelligence Stack 
+##### _<ul>— Why This Is Smarter Than Just 'AI Writes Posts'</ul>_
 
 - **Advanced NLP with spaCy** — Theme/claim extraction, semantic similarity, sentiment/tone analysis, and two advanced curation/grounding features:
   - **Fact Suggestion:** When the truth gate drops a sentence, spaCy suggests the closest matching fact or evidence from your persona graph, or recommends how to rephrase for grounding.
