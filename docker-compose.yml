@@ -18,11 +18,11 @@ services:
     #           count: all
     #           capabilities: [gpu]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      test: [ "CMD", "ollama", "list" ]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 5
+      start_period: 10s
 
   # ── Ollama model initialiser (runs once, then exits) ──────────────────────
   # Pulls the configured model so it is ready before the app starts.
@@ -71,10 +71,10 @@ services:
       # Mount content_calendar.py and .env so edits on the host take effect
       # without rebuilding the image.
       - ./content_calendar.py:/app/content_calendar.py:ro
-    stdin_open: true   # keep stdin open for --console interactive mode
-    tty: true          # allocate a pseudo-TTY for coloured output
+    stdin_open: true # keep stdin open for --console interactive mode
+    tty: true # allocate a pseudo-TTY for coloured output
     # Default: print help. Override with `docker compose run app python main.py --schedule`
-    command: ["python", "main.py", "--help"]
+    command: [ "python", "main.py", "--help" ]
     restart: "no"
 
 volumes:
