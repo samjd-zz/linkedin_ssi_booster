@@ -8,11 +8,12 @@
 
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Version alpha-v0.0.2.5](https://img.shields.io/badge/version-alpha--v0.0.2.5-orange.svg)]()
 
-<p align="right">
-  <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80">
-</p>
 
-**LinkedIn SSI Booster** isn't just a prompt wrapper — it's an adaptive continual learning automation system for content, curation, and persona growth. It combines spaCy-based NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX-powered knowledge graph, and local memory to generate, curate, rank, and route posts with more control and explainability than a basic AI writer workflow.
+<img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
+<img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
+
+
+**LinkedIn SSI Booster** is an adaptive automation system that goes beyond simple prompting. By integrating spaCy, BM25 retrieval, and NetworkX-based knowledge graphs, it orchestrates content generation and curation through a verifiable, multi-layered pipeline.
 
 Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
 
