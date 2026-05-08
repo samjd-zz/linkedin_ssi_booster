@@ -121,16 +121,70 @@ def build_deterministic_grounded_reply(
             "Try asking with a specific technology or company keyword."
         )
 
+    # Categorize facts by source type
     _is_domain = lambda f: f.source.startswith("domain:") or f.company == "Domain Knowledge"
+    _is_extracted = lambda f: f.source.startswith("extracted_knowledge:")
+    _is_persona = lambda f: f.source.startswith("persona:") and not _is_domain(f) and not _is_extracted(f)
 
+    # Check if user explicitly requested a specific artifact file
+    query_lower = query.lower()
+    requested_extracted = "extracted_knowledge" in query_lower
+    requested_persona = "persona_graph" in query_lower
+    requested_domain = "domain_knowledge" in query_lower
+    requested_narrative = "narrative_memory" in query_lower
+
+    extracted_facts = [f for f in facts if _is_extracted(f)]
     domain_facts = [f for f in facts if _is_domain(f)]
-    project_facts = [f for f in facts if not _is_domain(f)]
+    persona_facts = [f for f in facts if _is_persona(f)]
 
     lines: list[str] = []
 
-    if project_facts:
+    # If user explicitly requested extracted_knowledge, show ONLY that
+    if requested_extracted:
+        if not extracted_facts:
+            return "I don't have any extracted knowledge available yet. Use --curate --learn to extract knowledge from articles."
+        lines.append("Here's what I've learned from articles and content I've processed:")
+        for i, f in enumerate(extracted_facts, 1):
+            lines.append(f"{i}. {f.details}")
+            if f.tags:
+                lines.append(f"   Tags: {', '.join(sorted(f.tags))}")
+            lines.append(f"   [source: {f.source}]")
+        return "\n".join(lines)
+
+    # If user explicitly requested persona_graph, show ONLY that
+    if requested_persona:
+        if not persona_facts:
+            return "I don't have any persona facts loaded from persona_graph.json."
+        lines.append("Here are the projects I can confirm from persona_graph.json:")
+        for f in persona_facts:
+            lines.append(f"- Project: {f.project}")
+            if f.company:
+                lines.append(f"  Company: {f.company}")
+            lines.append(f"  Years: {f.years}")
+            lines.append(f"  Details: {f.details}")
+            lines.append(f"  [source: {f.source}]")
+        return "\n".join(lines)
+
+    # If user explicitly requested domain_knowledge, show ONLY that
+    if requested_domain:
+        if not domain_facts:
+            return "I don't have any domain knowledge loaded from domain_knowledge packs."
+        lines.append("Here is what I know from domain_knowledge packs:")
+        for f in domain_facts:
+            lines.append(f"- Topic: {f.project}")
+            lines.append(f"  Fact: {f.details}")
+            lines.append(f"  Tags: {', '.join(sorted(f.tags)) if f.tags else 'n/a'}")
+            lines.append(f"  [source: {f.source}]")
+        return "\n".join(lines)
+
+    # If user explicitly requested narrative_memory, show message (not yet implemented)
+    if requested_narrative:
+        return "Narrative memory is not yet implemented. This will store episodic memories and experiences."
+
+    # Otherwise, show all relevant facts (mixed mode for general queries)
+    if persona_facts:
         lines.append("Here are the projects I can confirm from loaded profile context:")
-        for f in project_facts:
+        for f in persona_facts:
             lines.append(f"- Project: {f.project}")
             if constraints.require_companies or f.company:
                 lines.append(f"  Company: {f.company}")
@@ -139,7 +193,7 @@ def build_deterministic_grounded_reply(
             lines.append(f"  [source: {f.source}]")
 
     if domain_facts:
-        if project_facts:
+        if persona_facts:
             lines.append("")
         lines.append("Here is what I know from domain knowledge:")
         for f in domain_facts:
@@ -147,6 +201,15 @@ def build_deterministic_grounded_reply(
             lines.append(f"  Fact: {f.details}")
             lines.append(f"  Tags: {', '.join(sorted(f.tags)) if f.tags else 'n/a'}")
             lines.append(f"  [source: {f.source}]")
+
+    if extracted_facts:
+        if persona_facts or domain_facts:
+            lines.append("")
+        lines.append("Here's what I've learned from articles:")
+        for i, f in enumerate(extracted_facts, 1):
+            lines.append(f"{i}. {f.details}")
+            if f.tags:
+                lines.append(f"   Tags: {', '.join(sorted(f.tags))}")
 
     if constraints.tech_tags:
         lines.append(f"\nFilter applied: {', '.join(sorted(constraints.tech_tags))}")
