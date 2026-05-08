@@ -851,6 +851,8 @@ class ContentCurator:
 
         if channel == "linkedin":
             post_text = append_url_and_hashtags(post_text, article["link"])
+        elif channel == "facebook":
+            post_text = append_url_and_hashtags(post_text, article["link"])
         elif channel == "youtube":
             post_text = truncate_at_sentence(post_text, 500)
         elif channel == "x":
@@ -959,6 +961,8 @@ class ContentCurator:
                 channel_id = self.buffer.get_threads_channel_id()
             elif channel == "bluesky":
                 channel_id = self.buffer.get_bluesky_channel_id()
+            elif channel == "facebook":
+                channel_id = self.buffer.get_facebook_channel_id()
             else:
                 channel_id = self.buffer.get_linkedin_channel_id()
             try:

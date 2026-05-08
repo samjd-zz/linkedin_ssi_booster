@@ -90,16 +90,17 @@ The following terms are recognized by the console router and trigger tech-tag gr
 
 ## Channel behavior
 
-The README documents channel-specific output rules across LinkedIn, X, Bluesky, Threads, YouTube, and `all`. LinkedIn appends source URLs and hashtags programmatically, while X, Bluesky, and Threads are shorter single-post outputs without hashtag appending, and YouTube produces spoken Short scripts that are saved locally rather than sent to Buffer.
+The README documents channel-specific output rules across LinkedIn, X, Bluesky, Threads, Facebook, YouTube, and `all`. LinkedIn appends source URLs and hashtags programmatically, while X, Bluesky, Threads, and Facebook are shorter single-post outputs without hashtag appending, and YouTube produces spoken Short scripts that are saved locally rather than sent to Buffer.
 
-| Channel    | Behavior                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------- |
-| `linkedin` | Default channel; source URL and hashtags are appended programmatically for curation output.             |
-| `x`        | 280-character limit, single paragraph, no hashtag append.                                               |
-| `bluesky`  | 300-character limit, X-like post behavior.                                                              |
-| `threads`  | 500-character limit, conversational short post behavior, no hashtag append.                             |
-| `youtube`  | Generates a spoken script, prints it, and saves it to `yt-vid-data/`; not pushed to Buffer.             |
-| `all`      | Runs LinkedIn, X, Bluesky, Threads, and YouTube together, with YouTube handled as a local script artifact. |
+| Channel    | Behavior                                                                                                             |
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| `linkedin` | Default channel; source URL and hashtags are appended programmatically for curation output.                          |
+| `x`        | 280-character limit, single paragraph, no hashtag append.                                                            |
+| `bluesky`  | 300-character limit, X-like post behavior.                                                                           |
+| `threads`  | 500-character limit, conversational short post behavior, no hashtag append.                                          |
+| `facebook` | Similar to LinkedIn; source URL and hashtags are appended programmatically for curation output.                      |
+| `youtube`  | Generates a spoken script, prints it, and saves it to `yt-vid-data/`; not pushed to Buffer.                          |
+| `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together, with YouTube handled as a local script artifact. |
 
 ## Curation pipeline
 

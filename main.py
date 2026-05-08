@@ -353,7 +353,7 @@ def main():
     parser.add_argument("--bsky-stats", action="store_true", help="Fetch and display live Bluesky profile stats")
     parser.add_argument("--week",      type=int, default=1, help="Week number from content calendar (1-4)")
     parser.add_argument("--dry-run",   action="store_true", help="Preview posts without pushing to Buffer")
-    _VALID_CHANNELS = {"linkedin", "x", "bluesky", "threads", "youtube", "all"}
+    _VALID_CHANNELS = {"linkedin", "x", "bluesky", "threads", "youtube", "facebook", "all"}
 
     def _parse_channels(value: str) -> list[str]:
         parts = [v.strip() for v in value.split(",") if v.strip()]
