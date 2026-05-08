@@ -325,8 +325,9 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             if len(history) > max_turns * 2:
                 history = history[-max_turns * 2 :]
             try:
-                # Use learned knowledge as additional context
-                enhanced_context = f"{_grounding_context}\n\n{learned_context}" if _grounding_context else learned_context
+                # Use learned knowledge as PRIMARY context (put it first and emphasize it)
+                # The learned knowledge should be the focus, with persona context as background
+                enhanced_context = f"{learned_context}\n\n{_grounding_context}" if _grounding_context else learned_context
                 reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
             except Exception as e:
                 print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
