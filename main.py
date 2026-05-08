@@ -138,8 +138,20 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         "linkedin", "youtube", "x", "bluesky", "twitter", "tiktok", "thread", "mastodon", "deck", "slide"
     ]
 
+    def _print_status() -> None:
+        """Print current console mode status."""
+        _status_line = str(Style.DIM) + "  Status: " + str(Style.RESET_ALL)
+        _status_line += str(Fore.GREEN if verify else Fore.RED) + f"verify={'ON' if verify else 'OFF'}" + str(Style.RESET_ALL)
+        _status_line += str(Style.DIM) + " | " + str(Style.RESET_ALL)
+        _status_line += str(Fore.GREEN if avatar_explain else Fore.RED) + f"avatar-explain={'ON' if avatar_explain else 'OFF'}" + str(Style.RESET_ALL)
+        _status_line += str(Style.DIM) + " | " + str(Style.RESET_ALL)
+        _status_line += str(Fore.GREEN if dot_report else Fore.RED) + f"dot-report={'ON' if dot_report else 'OFF'}" + str(Style.RESET_ALL)
+        print(_status_line)
+
     print(str(Fore.CYAN) + str(Style.BRIGHT) + "\n🧠 Persona Console Mode — Enhanced Query Routing" + str(Style.RESET_ALL))
     print("- No Buffer actions will be performed in this mode.")
+    print()
+    _print_status()
     print()
     print(str(Fore.WHITE) + str(Style.BRIGHT) + "3 Query Routing Modes:" + str(Style.RESET_ALL))
     print()
@@ -160,7 +172,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     print("    • write a LinkedIn post about...")
     print("    • How are you today?")
     print()
-    print(str(Fore.WHITE) + "  Commands: /help, /reset, /reload, /exit" + str(Style.RESET_ALL))
+    print(str(Fore.WHITE) + "  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report" + str(Style.RESET_ALL))
     print()
 
 
@@ -298,8 +310,11 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit")
+            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
+            print("  /verify — toggle DoT + similarity verification on/off")
+            print("  /avatar-explain — toggle avatar-explain report on/off")
+            print("  /dot-report — toggle DoT report on/off")
             continue
         if cmd == "/reset":
             history.clear()
@@ -312,6 +327,24 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 + f"Knowledge reloaded — {len(_profile_facts)} grounding facts now active."
                 + str(Style.RESET_ALL)
             )
+            continue
+        if cmd == "/verify":
+            verify = not verify
+            _status = str(Fore.GREEN) + "ON" + str(Style.RESET_ALL) if verify else str(Fore.RED) + "OFF" + str(Style.RESET_ALL)
+            print(f"Verify mode: {_status}")
+            _print_status()
+            continue
+        if cmd == "/avatar-explain":
+            avatar_explain = not avatar_explain
+            _status = str(Fore.GREEN) + "ON" + str(Style.RESET_ALL) if avatar_explain else str(Fore.RED) + "OFF" + str(Style.RESET_ALL)
+            print(f"Avatar-explain mode: {_status}")
+            _print_status()
+            continue
+        if cmd == "/dot-report":
+            dot_report = not dot_report
+            _status = str(Fore.GREEN) + "ON" + str(Style.RESET_ALL) if dot_report else str(Fore.RED) + "OFF" + str(Style.RESET_ALL)
+            print(f"DoT report mode: {_status}")
+            _print_status()
             continue
 
         # Parse query to determine routing mode

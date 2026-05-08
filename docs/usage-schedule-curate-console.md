@@ -8,11 +8,14 @@ The CLI centers on three main workflows: scheduling from a private content calen
 python main.py --schedule --week 1 --dry-run
 python main.py --curate --dry-run
 python main.py --console
+python main.py --console --verify
+python main.py --console --avatar-explain
+python main.py --console --dot-report
 python main.py --report
 python main.py --save-ssi 10.49 9.69 11.0 12.15
 ```
 
-`--schedule` uses `content_calendar.py`, `--curate` uses live RSS feeds filtered by niche keywords, and `--console` opens an interactive persona chat with deterministic grounding for factual project, career, and domain knowledge queries. The documentation also lists `/help`, `/reset`, and `/exit` as console commands.
+`--schedule` uses `content_calendar.py`, `--curate` uses live RSS feeds filtered by niche keywords, and `--console` opens an interactive persona chat with deterministic grounding for factual project, career, and domain knowledge queries. Console mode supports flags for verification (`--verify`), avatar explanations (`--avatar-explain`), and DoT reports (`--dot-report`), or you can toggle these modes during a session using in-console commands.
 
 ## Schedule mode
 
@@ -43,10 +46,13 @@ python main.py --curate --avatar-explain
 
 ### Console mode — welcome screen and query routing
 
-When you run `--console`, the startup screen explains the three query modes:
+When you run `--console`, the startup screen explains the three query modes and shows the current status of diagnostic modes:
 
 ```
 🧠 Persona Console Mode — Enhanced Query Routing
+- No Buffer actions will be performed in this mode.
+
+  Status: verify=OFF | avatar-explain=OFF | dot-report=OFF
 
 3 Query Routing Modes:
 
@@ -66,7 +72,34 @@ When you run `--console`, the startup screen explains the three query modes:
     • What projects have you worked on?
     • write a LinkedIn post about...
     • How are you today?
+
+  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report
 ```
+
+#### Console Commands
+
+Console mode supports the following slash commands:
+
+| Command            | Description                                                               |
+| ------------------ | ------------------------------------------------------------------------- |
+| `/help`            | Display all available commands                                            |
+| `/reset`           | Clear conversation history                                                |
+| `/reload`          | Re-read persona graph, domain packs, and extracted_knowledge.json         |
+| `/exit` or `/quit` | Exit console mode                                                         |
+| `/verify`          | Toggle DoT + similarity verification on/off                               |
+| `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
+| `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off |
+
+**Status Display**: The status line shows the current state of all three diagnostic modes. When a mode is enabled, it displays in **green**; when disabled, it displays in **red**.
+
+**Toggle Behavior**: When you toggle a mode with `/verify`, `/avatar-explain`, or `/dot-report`, the command displays confirmation and updates the status line. You can enable/disable any combination of modes during your session without restarting console mode.
+
+**Visual Feedback**: When diagnostic modes are active, console displays progress indicators for long-running operations:
+
+- 🤔 **Thinking...** — LLM is generating a response
+- 📊 **Verifying...** — Running DoT + similarity checks (when `/verify` is on)
+- 🧠 **Generating avatar-explain...** — Building evidence report (when `/avatar-explain` is on)
+- 📈 **Generating DoT report...** — Calculating truth gradient (when `/dot-report` is on)
 
 **Simplified Query Routing (3 Modes)**
 
