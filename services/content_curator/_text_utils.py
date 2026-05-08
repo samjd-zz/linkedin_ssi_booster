@@ -51,7 +51,7 @@ def append_url_and_hashtags(text: str, url: str) -> str:
     body, hashtags = extract_hashtags(text)
     result = body.rstrip()
     if url and url not in result:
-        result += f"\n\n{url}"
+        result += f"\n\nStory: {url}"
     if hashtags:
         result += f"\n\n{hashtags}"
     return result
