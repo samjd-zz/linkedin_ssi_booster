@@ -35,6 +35,32 @@ DOMAIN_KNOWLEDGE_PHRASES: frozenset[str] = frozenset([
     "can you explain", "teach me", "what's",
 ])
 
+# Phrases that explicitly request direct artifact routing (deterministic citation)
+EXPLICIT_ARTIFACT_PHRASES: frozenset[str] = frozenset([
+    "show me extracted knowledge",
+    "list extracted knowledge",
+    "show extracted knowledge",
+    "show me persona",
+    "list persona",
+    "show persona",
+    "show me domain knowledge",
+    "list domain knowledge",
+    "show domain knowledge",
+    "from extracted knowledge",
+    "from persona",
+    "from domain knowledge",
+])
+
+# Phrases that request using learned knowledge as context
+LEARNED_KNOWLEDGE_PHRASES: frozenset[str] = frozenset([
+    "from your learned knowledge",
+    "from your learning",
+    "from what you learned",
+    "based on what you learned",
+    "using your learned knowledge",
+    "with your learned knowledge",
+])
+
 DEFAULT_TAG_EXPANSIONS: dict[str, set[str]] = {
     "java": {"spring", "jms", "oracle", "weblogic", "solr", "lucene", "elasticsearch"},
 }

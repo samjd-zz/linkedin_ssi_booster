@@ -33,6 +33,8 @@ from services.console_grounding._profile_parser import (
 from services.console_grounding._retrieval import (
     build_deterministic_grounded_reply,
     build_grounding_facts_block,
+    build_learned_knowledge_context,
+    get_latest_extracted_knowledge,
     parse_query_constraints,
     retrieve_relevant_facts,
 )
@@ -85,6 +87,8 @@ __all__ = [
     # retrieval
     "build_deterministic_grounded_reply",
     "build_grounding_facts_block",
+    "build_learned_knowledge_context",
+    "get_latest_extracted_knowledge",
     "parse_query_constraints",
     "retrieve_relevant_facts",
     # gate helpers

@@ -47,12 +47,21 @@ class QueryConstraints:
     require_companies: bool
     require_domain_knowledge: bool
     tech_tags: set[str]
+    explicit_artifact_request: bool = False  # User explicitly asks to see artifacts
+    use_learned_knowledge: bool = False  # User asks to use "learned knowledge"
+    route_mode: str = "llm_with_context"  # "llm_with_context", "deterministic_citation", "learned_context"
 
     @property
     def requires_grounding(self) -> bool:
+        """Legacy property - now only returns True for explicit artifact requests."""
+        return self.explicit_artifact_request
+
+    @property
+    def requires_context(self) -> bool:
+        """Returns True if artifacts should be used as LLM context (default behavior)."""
         return (
             self.require_projects
             or self.require_companies
             or self.require_domain_knowledge
             or bool(self.tech_tags)
-        )
+        ) and not self.explicit_artifact_request

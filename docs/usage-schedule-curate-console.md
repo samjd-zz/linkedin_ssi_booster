@@ -51,7 +51,17 @@ When you run `--console`, the startup screen explains the three query modes:
 💬 Free-form persona chat (AI-generated, grounded in persona)
 ```
 
-Routing is **deterministic** — no model call is made for grounded queries. The router detects intent from the query text and retrieves the best-matching facts from the in-memory fact pool, which combines persona graph facts and domain knowledge facts.
+**NEW: Enhanced Query Routing (5 Modes)**
+
+The console now uses intelligent routing with 5 distinct modes:
+
+1. **Explicit Generative Requests** → LLM with full context (e.g., "write", "generate", "create")
+2. **Explicit Artifact Requests** → Deterministic citation (e.g., "show me extracted knowledge", "list persona")
+3. **"From Your Learned Knowledge"** → Use latest 5 extracted knowledge as context
+4. **Domain/Project/Tech Queries** → Use artifacts as LLM context (default for "what is", "explain", tech keywords)
+5. **Everything Else** → LLM only (general chat)
+
+**Key Change:** Most queries now route to the LLM with artifacts as context, providing natural AI responses grounded in facts. Deterministic citation only happens when explicitly requested (e.g., "show me extracted knowledge").
 
 #### Query routing rules
 

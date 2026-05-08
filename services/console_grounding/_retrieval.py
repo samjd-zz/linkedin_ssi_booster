@@ -6,6 +6,8 @@ import os
 
 from services.console_grounding._config import (
     DOMAIN_KNOWLEDGE_PHRASES,
+    EXPLICIT_ARTIFACT_PHRASES,
+    LEARNED_KNOWLEDGE_PHRASES,
     get_console_grounding_keywords,
     get_console_grounding_tag_expansions_from_graph,
 )
@@ -17,7 +19,30 @@ def parse_query_constraints(
     tech_keywords: set[str] | None = None,
     tag_expansions: dict[str, set[str]] | None = None,
 ) -> QueryConstraints:
+    """Parse query to determine routing mode and constraints.
+    
+    New routing logic:
+    - Explicit artifact phrases (e.g., "show me extracted knowledge") → deterministic citation
+    - "From your learned knowledge" → use latest 5 extracted knowledge as context
+    - Domain/project/tech queries → use artifacts as LLM context (default)
+    - Everything else → LLM only
+    """
     q = query.lower()
+    
+    # Check for explicit artifact requests (deterministic citation mode)
+    explicit_artifact_request = any(phrase in q for phrase in EXPLICIT_ARTIFACT_PHRASES)
+    
+    # Check for "learned knowledge" requests
+    use_learned_knowledge = any(phrase in q for phrase in LEARNED_KNOWLEDGE_PHRASES)
+    
+    # Determine route mode
+    if explicit_artifact_request:
+        route_mode = "deterministic_citation"
+    elif use_learned_knowledge:
+        route_mode = "learned_context"
+    else:
+        route_mode = "llm_with_context"
+    
     require_projects = any(w in q for w in ["project", "projects", "worked on", "built", "resume"])
     require_companies = any(w in q for w in ["company", "companies", "where", "worked at", "employer"])
     require_domain_knowledge = any(phrase in q for phrase in DOMAIN_KNOWLEDGE_PHRASES)
@@ -38,6 +63,9 @@ def parse_query_constraints(
         require_companies=require_companies,
         require_domain_knowledge=require_domain_knowledge,
         tech_tags=tags,
+        explicit_artifact_request=explicit_artifact_request,
+        use_learned_knowledge=use_learned_knowledge,
+        route_mode=route_mode,
     )
 
 
@@ -148,4 +176,33 @@ def build_grounding_facts_block(facts: list[ProjectFact], limit: int | None = No
         lines.append(
             f"- Project: {fact.project} | Company: {fact.company} | Years: {fact.years} | Detail: {fact.details}"
         )
+    return "\n".join(lines)
+
+
+def get_latest_extracted_knowledge(all_facts: list[ProjectFact], limit: int = 5) -> list[ProjectFact]:
+    """Get the latest N extracted knowledge facts for 'learned knowledge' queries.
+    
+    Filters for extracted_knowledge source and returns the most recent ones.
+    """
+    extracted = [f for f in all_facts if f.source.startswith("extracted_knowledge:")]
+    # Return latest N (they're already in order from the loader)
+    return extracted[:limit]
+
+
+def build_learned_knowledge_context(facts: list[ProjectFact]) -> str:
+    """Build a context block from learned knowledge for LLM prompts.
+    
+    Used when user says "from your learned knowledge" or similar phrases.
+    """
+    if not facts:
+        return "I don't have any learned knowledge available yet."
+    
+    lines = [
+        "Here's what I've learned recently from articles and content I've processed:"
+    ]
+    for i, fact in enumerate(facts, 1):
+        lines.append(f"{i}. {fact.details}")
+        if fact.tags:
+            lines.append(f"   Tags: {', '.join(sorted(fact.tags))}")
+    
     return "\n".join(lines)
