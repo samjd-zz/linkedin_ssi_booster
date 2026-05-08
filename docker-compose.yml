@@ -10,13 +10,13 @@ services:
       - ollama_data:/root/.ollama
     # Uncomment the section below to enable NVIDIA GPU passthrough.
     # Requires the NVIDIA Container Toolkit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
     healthcheck:
       test: [ "CMD", "ollama", "list" ]
       interval: 10s
