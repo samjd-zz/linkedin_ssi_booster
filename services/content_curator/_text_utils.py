@@ -53,5 +53,5 @@ def append_url_and_hashtags(text: str, url: str) -> str:
     if url and url not in result:
         result += f"\n\nStory source: {url}"
     if hashtags:
-        result += f"\n\n{hashtags}"
+        result += f"\n\n{hashtags} #BufferAPI"
     return result
