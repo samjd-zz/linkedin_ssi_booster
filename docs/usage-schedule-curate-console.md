@@ -46,22 +46,46 @@ python main.py --curate --avatar-explain
 When you run `--console`, the startup screen explains the three query modes:
 
 ```
-📋 Project & career questions (deterministic, cited answers)
-🧠 Domain knowledge questions (routed to domain facts)
-💬 Free-form persona chat (AI-generated, grounded in persona)
+🧠 Persona Console Mode — Enhanced Query Routing
+
+3 Query Routing Modes:
+
+  1️⃣  Explicit File Request → Deterministic citation (raw facts)
+    • persona_graph
+    • extracted_knowledge
+    • domain_knowledge
+    • narrative_memory
+
+  2️⃣  Learned Knowledge → Latest 5 extracted facts as context
+    • from your learned knowledge, what are the AI trends?
+    • based on what you learned, explain...
+
+  3️⃣  Everything Else → LLM with artifact context (default)
+    • What is RAG?
+    • Explain vector search
+    • What projects have you worked on?
+    • write a LinkedIn post about...
+    • How are you today?
 ```
 
-**NEW: Enhanced Query Routing (5 Modes)**
+**Simplified Query Routing (3 Modes)**
 
-The console now uses intelligent routing with 5 distinct modes:
+The console uses intelligent routing with 3 distinct modes:
 
-1. **Explicit Generative Requests** → LLM with full context (e.g., "write", "generate", "create")
-2. **Explicit Artifact Requests** → Deterministic citation (e.g., "show me extracted knowledge", "list persona")
-3. **"From Your Learned Knowledge"** → Use latest 5 extracted knowledge as context
-4. **Domain/Project/Tech Queries** → Use artifacts as LLM context (default for "what is", "explain", tech keywords)
-5. **Everything Else** → LLM only (general chat)
+1. **Explicit File Name Requests** → Deterministic citation (raw facts from data/avatar directory)
+   - Only triggers when you explicitly mention a file name: `persona_graph`, `extracted_knowledge`, `domain_knowledge`, or `narrative_memory`
+   - Returns raw facts directly from the artifact files
 
-**Key Change:** Most queries now route to the LLM with artifacts as context, providing natural AI responses grounded in facts. Deterministic citation only happens when explicitly requested (e.g., "show me extracted knowledge").
+2. **"From Your Learned Knowledge"** → Use latest 5 extracted knowledge as context
+   - Triggers on phrases like "from your learned knowledge", "based on what you learned"
+   - Retrieves the 5 most recent items from extracted_knowledge.json and uses them as LLM context
+
+3. **Everything Else** → LLM with artifact context (default)
+   - All other queries (domain questions, project questions, tech queries, generative requests, general chat)
+   - Always retrieves relevant facts from persona/domain/extracted knowledge and uses as LLM context
+   - Provides natural AI responses grounded in your knowledge base
+
+**Key Design:** Most queries route to the LLM with artifacts as context, providing natural AI responses grounded in facts. Deterministic citation only happens when you explicitly request a file by name.
 
 #### Query routing rules
 
