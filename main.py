@@ -124,11 +124,13 @@ from services.console_grounding import (
 from services.ollama_service import OllamaService
 from services.github_service import build_github_profile_context
 
-def run_console(ai: OllamaService, github_context: str = "", verify: bool = False) -> None:
+def run_console(ai: OllamaService, github_context: str = "", verify: bool = False, avatar_explain: bool = False, dot_report: bool = False) -> None:
     """Run interactive persona chat mode in the terminal.
     
     When verify=True, DoT report scanning and spaCy similarity checks are displayed
     for each generated response.
+    When avatar_explain=True, evidence IDs and grounding summary are printed after each LLM reply.
+    When dot_report=True, Derivative of Truth report is printed after each LLM reply.
     """
     # Patterns that should always route to LLM (not deterministic fact citation)
     GENERATIVE_REQUEST_PHRASES = [
@@ -177,15 +179,23 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     )
     from services.console_grounding._models import ProjectFact as _ProjectFact
 
-    def _load_knowledge_state() -> tuple[list, str]:
-        """Load (or reload) avatar knowledge state and return (_profile_facts, _grounding_context)."""
+    def _load_knowledge_state() -> tuple[list, str, list, list, list]:
+        """Load (or reload) avatar knowledge state.
+        
+        Returns: (_profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts)
+        """
         avatar_state = _lav_console()
         avatar_facts = normalize_evidence_facts(avatar_state)
+        
+        domain_facts_raw = []
         domain_pf: list = []
         try:
-            domain_pf = domain_facts_to_project_facts(normalize_domain_facts(avatar_state))
+            domain_facts_raw = normalize_domain_facts(avatar_state)
+            domain_pf = domain_facts_to_project_facts(domain_facts_raw)
         except Exception as exc:
             logger.warning("Domain knowledge not loaded for console mode: %s", exc)
+        
+        extracted_raw = []
         extracted_pf: list = []
         try:
             extracted_raw = normalize_extracted_facts(avatar_state)
@@ -202,13 +212,14 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             ]
         except Exception as exc:
             logger.warning("Extracted knowledge not loaded for console mode: %s", exc)
+        
         profile_facts = evidence_facts_to_project_facts(avatar_facts) + domain_pf + extracted_pf
         grounding_ctx = build_grounding_context(avatar_facts)
         if github_context:
             grounding_ctx = f"{grounding_ctx}\n\n{github_context}" if grounding_ctx else github_context
-        return profile_facts, grounding_ctx
+        return profile_facts, grounding_ctx, list(avatar_facts), domain_facts_raw, extracted_raw
 
-    _profile_facts, _grounding_context = _load_knowledge_state()
+    _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
     logger.info(
         "Console mode: loaded %d grounding facts (%d total)",
         len(_profile_facts),
@@ -295,7 +306,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Conversation history cleared.")
             continue
         if cmd == "/reload":
-            _profile_facts, _grounding_context = _load_knowledge_state()
+            _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
             print(
                 str(Fore.CYAN)
                 + f"Knowledge reloaded — {len(_profile_facts)} grounding facts now active."
@@ -335,6 +346,57 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             history.append({"role": "assistant", "content": reply})
             print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
             _print_truth_score(reply)
+            
+            # Print avatar-explain report if requested
+            if avatar_explain:
+                try:
+                    from services.avatar_intelligence import build_explain_output, format_explain_output
+                    from services.console_grounding import truth_gate_result as _tgr_r2
+                    _, _gate_meta_r2 = _tgr_r2(reply, user_input, _profile_facts)
+                    # Get the latest extracted facts from raw data (not ProjectFact objects)
+                    _latest_extracted = list(_raw_extracted_facts)[-5:] if _raw_extracted_facts else []
+                    _explain_r2 = build_explain_output(
+                        evidence_facts=[],  # Route 2 uses extracted knowledge, not persona facts
+                        article_ref=user_input,
+                        channel="console",
+                        ssi_component="general",
+                        dot_per_sentence_scores=_gate_meta_r2.dot_per_sentence_scores,
+                        spacy_sim_scores=_gate_meta_r2.spacy_sim_scores,
+                        extracted_facts=_latest_extracted,
+                    )
+                    print(format_explain_output(_explain_r2))
+                except Exception as _exp_err:
+                    logger.debug("Avatar explain unavailable for Route 2: %s", _exp_err)
+            
+            # Print DoT report if requested
+            if dot_report:
+                try:
+                    from services.derivative_of_truth import (
+                        EvidencePath,
+                        EVIDENCE_TYPE_SECONDARY,
+                        REASONING_TYPE_LOGICAL,
+                        score_claim_with_truth_gradient,
+                        report_truth_gradient,
+                        format_truth_gradient_report,
+                    )
+                    from services.derivative_of_truth._reporting import format_dot_report_header
+                    _dot_paths_r2 = [
+                        EvidencePath(
+                            source=f"extracted_knowledge:{f.source.split(':')[-1] if ':' in f.source else f.source}",
+                            evidence_type=EVIDENCE_TYPE_SECONDARY,
+                            reasoning_type=REASONING_TYPE_LOGICAL,
+                            credibility=0.7,
+                        )
+                        for f in learned_facts
+                    ]
+                    _dot_result_r2 = score_claim_with_truth_gradient(reply, _dot_paths_r2)
+                    _dot_report_dict_r2 = report_truth_gradient(reply, _dot_result_r2, verbose=True)
+                    print(format_dot_report_header())
+                    print(format_truth_gradient_report(_dot_report_dict_r2))
+                    print()
+                except Exception as _dot_err:
+                    logger.debug("DoT report unavailable for Route 2: %s", _dot_err)
+            
             continue
 
         # Route 3: Everything else → LLM with artifact context (default)
@@ -355,6 +417,57 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         history.append({"role": "assistant", "content": reply})
         print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
         _print_truth_score(reply)
+        
+        # Print avatar-explain report if requested
+        if avatar_explain:
+            try:
+                from services.avatar_intelligence import build_explain_output, format_explain_output
+                from services.console_grounding import truth_gate_result as _tgr_r3
+                _, _gate_meta_r3 = _tgr_r3(reply, user_input, _profile_facts)
+                # Map ProjectFact sources back to original fact objects
+                # For Route 3, we retrieve relevant facts and need to map them back
+                # Use all raw facts as evidence for the explain report
+                _explain_r3 = build_explain_output(
+                    evidence_facts=list(_raw_evidence_facts) + _raw_domain_facts,
+                    article_ref=user_input,
+                    channel="console",
+                    ssi_component="general",
+                    dot_per_sentence_scores=_gate_meta_r3.dot_per_sentence_scores,
+                    spacy_sim_scores=_gate_meta_r3.spacy_sim_scores,
+                    extracted_facts=list(_raw_extracted_facts) if _raw_extracted_facts else None,
+                )
+                print(format_explain_output(_explain_r3))
+            except Exception as _exp_err:
+                logger.debug("Avatar explain unavailable for Route 3: %s", _exp_err)
+        
+        # Print DoT report if requested
+        if dot_report:
+            try:
+                from services.derivative_of_truth import (
+                    EvidencePath,
+                    EVIDENCE_TYPE_SECONDARY,
+                    REASONING_TYPE_LOGICAL,
+                    score_claim_with_truth_gradient,
+                    report_truth_gradient,
+                    format_truth_gradient_report,
+                )
+                from services.derivative_of_truth._reporting import format_dot_report_header
+                _dot_paths_r3 = [
+                    EvidencePath(
+                        source=f.source,
+                        evidence_type=EVIDENCE_TYPE_SECONDARY,
+                        reasoning_type=REASONING_TYPE_LOGICAL,
+                        credibility=0.7,
+                    )
+                    for f in facts
+                ]
+                _dot_result_r3 = score_claim_with_truth_gradient(reply, _dot_paths_r3)
+                _dot_report_dict_r3 = report_truth_gradient(reply, _dot_result_r3, verbose=True)
+                print(format_dot_report_header())
+                print(format_truth_gradient_report(_dot_report_dict_r3))
+                print()
+            except Exception as _dot_err:
+                logger.debug("DoT report unavailable for Route 3: %s", _dot_err)
 
 
 def main():
@@ -578,7 +691,7 @@ def main():
     )
 
     if args.console:
-        run_console(ai=ai, github_context=_github_context, verify=args.verify)
+        run_console(ai=ai, github_context=_github_context, verify=args.verify, avatar_explain=args.avatar_explain, dot_report=args.dot_report)
         return
 
     if args.curate:
