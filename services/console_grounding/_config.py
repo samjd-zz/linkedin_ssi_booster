@@ -54,6 +54,16 @@ LEARNED_KNOWLEDGE_PHRASES: frozenset[str] = frozenset([
     "with your learned knowledge",
 ])
 
+# Phrases that request searching learned knowledge
+SEARCH_LEARNED_KNOWLEDGE_PHRASES: frozenset[str] = frozenset([
+    "search your learned knowledge",
+    "search your learning",
+    "search from your learned knowledge",
+    "find in your learned knowledge",
+    "look for in your learned knowledge",
+    "query your learned knowledge",
+])
+
 DEFAULT_TAG_EXPANSIONS: dict[str, set[str]] = {
     "java": {"spring", "jms", "oracle", "weblogic", "solr", "lucene", "elasticsearch"},
 }

@@ -8,6 +8,7 @@ from services.console_grounding._config import (
     DOMAIN_KNOWLEDGE_PHRASES,
     EXPLICIT_ARTIFACT_PHRASES,
     LEARNED_KNOWLEDGE_PHRASES,
+    SEARCH_LEARNED_KNOWLEDGE_PHRASES,
     get_console_grounding_keywords,
     get_console_grounding_tag_expansions_from_graph,
 )
@@ -34,6 +35,9 @@ def parse_query_constraints(
     
     # Check for "learned knowledge" requests
     use_learned_knowledge = any(phrase in q for phrase in LEARNED_KNOWLEDGE_PHRASES)
+    
+    # Check for "search learned knowledge" requests
+    search_learned_knowledge = any(phrase in q for phrase in SEARCH_LEARNED_KNOWLEDGE_PHRASES)
     
     # Determine route mode
     if explicit_artifact_request:
@@ -65,6 +69,7 @@ def parse_query_constraints(
         tech_tags=tags,
         explicit_artifact_request=explicit_artifact_request,
         use_learned_knowledge=use_learned_knowledge,
+        search_learned_knowledge=search_learned_knowledge,
         route_mode=route_mode,
     )
 
@@ -250,6 +255,58 @@ def get_latest_extracted_knowledge(all_facts: list[ProjectFact], limit: int = 5)
     extracted = [f for f in all_facts if f.source.startswith("extracted_knowledge:")]
     # Return latest N (they're already in order from the loader)
     return extracted[:limit]
+
+
+def search_learned_knowledge(
+    query: str,
+    all_facts: list[ProjectFact],
+    limit: int = 5,
+) -> list[ProjectFact]:
+    """Search extracted knowledge facts by keyword overlap with query.
+    
+    Scores each extracted knowledge fact based on:
+    - Number of query words found in fact details (case-insensitive)
+    - Tag overlap with query keywords
+    
+    Returns top N facts sorted by relevance score.
+    """
+    extracted = [f for f in all_facts if f.source.startswith("extracted_knowledge:")]
+    if not extracted:
+        return []
+    
+    # Tokenize query into keywords (filter out common stop words)
+    stop_words = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "with", "by", "from", "your", "my", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "should", "could", "may", "might", "must", "can", "about", "what", "which", "who", "when", "where", "why", "how", "this", "that", "these", "those", "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them"}
+    query_lower = query.lower()
+    query_words = [w for w in query_lower.split() if w not in stop_words and len(w) > 2]
+    
+    if not query_words:
+        # Fallback to latest if no meaningful keywords
+        return extracted[:limit]
+    
+    scored: list[tuple[int, ProjectFact]] = []
+    for fact in extracted:
+        score = 0
+        fact_lower = fact.details.lower()
+        
+        # Score by keyword overlap in details
+        for word in query_words:
+            if word in fact_lower:
+                score += 3
+        
+        # Score by tag overlap
+        fact_tags_lower = {tag.lower() for tag in fact.tags}
+        for word in query_words:
+            if word in fact_tags_lower:
+                score += 5
+        
+        scored.append((score, fact))
+    
+    # Sort by score descending
+    scored.sort(key=lambda x: x[0], reverse=True)
+    
+    # Return top N with score > 0, or fallback to latest if no matches
+    top = [f for s, f in scored if s > 0][:limit]
+    return top if top else extracted[:limit]
 
 
 def build_learned_knowledge_context(facts: list[ProjectFact]) -> str:

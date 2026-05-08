@@ -362,8 +362,13 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             continue
 
         # Route 2: "From your learned knowledge" → Use latest 5 extracted knowledge as context
+        # If user asks to search, use keyword-based search instead of latest 5
         if constraints.use_learned_knowledge:
-            learned_facts = get_latest_extracted_knowledge(_profile_facts, limit=5)
+            if constraints.search_learned_knowledge:
+                from services.console_grounding._retrieval import search_learned_knowledge
+                learned_facts = search_learned_knowledge(user_input, _profile_facts, limit=5)
+            else:
+                learned_facts = get_latest_extracted_knowledge(_profile_facts, limit=5)
             learned_context = build_learned_knowledge_context(learned_facts)
             history.append({"role": "user", "content": user_input})
             if len(history) > max_turns * 2:

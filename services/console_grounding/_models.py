@@ -49,6 +49,7 @@ class QueryConstraints:
     tech_tags: set[str]
     explicit_artifact_request: bool = False  # User explicitly asks to see artifacts
     use_learned_knowledge: bool = False  # User asks to use "learned knowledge"
+    search_learned_knowledge: bool = False  # User asks to search learned knowledge
     route_mode: str = "llm_with_context"  # "llm_with_context", "deterministic_citation", "learned_context"
 
     @property

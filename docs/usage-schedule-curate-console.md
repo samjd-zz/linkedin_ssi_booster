@@ -62,9 +62,11 @@ When you run `--console`, the startup screen explains the three query modes and 
     • domain_knowledge
     • narrative_memory
 
-  2️⃣  Learned Knowledge → Latest 5 extracted facts as context
+  2️⃣  Learned Knowledge → Latest 5 extracted facts as context (or search)
     • from your learned knowledge, what are the AI trends?
     • based on what you learned, explain...
+    • search your learned knowledge for RAG techniques
+    • find in your learned knowledge about microservices
 
   3️⃣  Everything Else → LLM with artifact context (default)
     • What is RAG?
@@ -109,9 +111,12 @@ The console uses intelligent routing with 3 distinct modes:
    - Only triggers when you explicitly mention a file name: `persona_graph`, `extracted_knowledge`, `domain_knowledge`, or `narrative_memory`
    - Returns raw facts directly from the artifact files
 
-2. **"From Your Learned Knowledge"** → Use latest 5 extracted knowledge as context
+2. **"From Your Learned Knowledge"** → Use latest 5 extracted knowledge as context (or search)
    - Triggers on phrases like "from your learned knowledge", "based on what you learned"
    - Retrieves the 5 most recent items from extracted_knowledge.json and uses them as LLM context
+   - **Search Mode**: When you say "search your learned knowledge" or similar, it performs keyword-based search instead of returning latest 5
+   - Search phrases: "search your learned knowledge", "search your learning", "find in your learned knowledge", "query your learned knowledge"
+   - Search scores facts by keyword overlap and tag matching, returning top 5 most relevant results
 
 3. **Everything Else** → LLM with artifact context (default)
    - All other queries (domain questions, project questions, tech queries, generative requests, general chat)
