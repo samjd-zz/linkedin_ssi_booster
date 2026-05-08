@@ -339,16 +339,24 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 # Use learned knowledge as PRIMARY context (put it first and emphasize it)
                 # The learned knowledge should be the focus, with persona context as background
                 enhanced_context = f"{learned_context}\n\n{_grounding_context}" if _grounding_context else learned_context
+                print(str(Fore.CYAN) + "🤔 Thinking..." + str(Style.RESET_ALL), end="", flush=True)
                 reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
+                print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
             except Exception as e:
+                print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
                 print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
                 continue
             history.append({"role": "assistant", "content": reply})
             print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
-            _print_truth_score(reply)
+            
+            if verify:
+                print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
+                _print_truth_score(reply)
+                print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
             
             # Print avatar-explain report if requested
             if avatar_explain:
+                print(str(Fore.CYAN) + "🧠 Generating avatar-explain..." + str(Style.RESET_ALL), end="", flush=True)
                 try:
                     from services.avatar_intelligence import build_explain_output, format_explain_output
                     from services.console_grounding import truth_gate_result as _tgr_r2
@@ -364,12 +372,15 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                         spacy_sim_scores=_gate_meta_r2.spacy_sim_scores,
                         extracted_facts=_latest_extracted,
                     )
+                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                     print(format_explain_output(_explain_r2))
                 except Exception as _exp_err:
+                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                     logger.debug("Avatar explain unavailable for Route 2: %s", _exp_err)
             
             # Print DoT report if requested
             if dot_report:
+                print(str(Fore.CYAN) + "📈 Generating DoT report..." + str(Style.RESET_ALL), end="", flush=True)
                 try:
                     from services.derivative_of_truth import (
                         EvidencePath,
@@ -391,10 +402,12 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                     ]
                     _dot_result_r2 = score_claim_with_truth_gradient(reply, _dot_paths_r2)
                     _dot_report_dict_r2 = report_truth_gradient(reply, _dot_result_r2, verbose=True)
+                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                     print(format_dot_report_header())
                     print(format_truth_gradient_report(_dot_report_dict_r2))
                     print()
                 except Exception as _dot_err:
+                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                     logger.debug("DoT report unavailable for Route 2: %s", _dot_err)
             
             continue
@@ -410,16 +423,24 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         try:
             # Use retrieved facts as additional context
             enhanced_context = f"{_grounding_context}\n\n{facts_context}" if _grounding_context else facts_context
+            print(str(Fore.CYAN) + "🤔 Thinking..." + str(Style.RESET_ALL), end="", flush=True)
             reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
+            print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
         except Exception as e:
+            print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
             print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
             continue
         history.append({"role": "assistant", "content": reply})
         print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
-        _print_truth_score(reply)
+        
+        if verify:
+            print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
+            _print_truth_score(reply)
+            print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
         
         # Print avatar-explain report if requested
         if avatar_explain:
+            print(str(Fore.CYAN) + "🧠 Generating avatar-explain..." + str(Style.RESET_ALL), end="", flush=True)
             try:
                 from services.avatar_intelligence import build_explain_output, format_explain_output
                 from services.console_grounding import truth_gate_result as _tgr_r3
@@ -436,12 +457,15 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                     spacy_sim_scores=_gate_meta_r3.spacy_sim_scores,
                     extracted_facts=list(_raw_extracted_facts) if _raw_extracted_facts else None,
                 )
+                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                 print(format_explain_output(_explain_r3))
             except Exception as _exp_err:
+                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                 logger.debug("Avatar explain unavailable for Route 3: %s", _exp_err)
         
         # Print DoT report if requested
         if dot_report:
+            print(str(Fore.CYAN) + "📈 Generating DoT report..." + str(Style.RESET_ALL), end="", flush=True)
             try:
                 from services.derivative_of_truth import (
                     EvidencePath,
@@ -463,10 +487,12 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 ]
                 _dot_result_r3 = score_claim_with_truth_gradient(reply, _dot_paths_r3)
                 _dot_report_dict_r3 = report_truth_gradient(reply, _dot_result_r3, verbose=True)
+                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                 print(format_dot_report_header())
                 print(format_truth_gradient_report(_dot_report_dict_r3))
                 print()
             except Exception as _dot_err:
+                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                 logger.debug("DoT report unavailable for Route 3: %s", _dot_err)
 
 
