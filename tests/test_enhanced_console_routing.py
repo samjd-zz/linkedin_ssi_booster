@@ -12,34 +12,47 @@ from services.console_grounding import (
 from services.console_grounding._models import ProjectFact
 
 
-class TestEnhancedQueryRouting:
-    """Test the new 5-mode query routing logic."""
+class TestSimplifiedQueryRouting:
+    """Test the new 3-mode query routing logic."""
 
-    def test_explicit_artifact_request_extracted_knowledge(self):
-        """Test explicit request for extracted knowledge routes to deterministic citation."""
-        query = "show me extracted knowledge"
+    def test_explicit_file_name_persona_graph(self):
+        """Test explicit file name 'persona_graph' routes to deterministic citation."""
+        query = "persona_graph"
         constraints = parse_query_constraints(query)
         
         assert constraints.explicit_artifact_request is True
-        assert constraints.requires_grounding is True
         assert constraints.route_mode == "deterministic_citation"
 
-    def test_explicit_artifact_request_persona(self):
-        """Test explicit request for persona routes to deterministic citation."""
-        query = "list persona"
+    def test_explicit_file_name_extracted_knowledge(self):
+        """Test explicit file name 'extracted_knowledge' routes to deterministic citation."""
+        query = "extracted_knowledge"
         constraints = parse_query_constraints(query)
         
         assert constraints.explicit_artifact_request is True
-        assert constraints.requires_grounding is True
         assert constraints.route_mode == "deterministic_citation"
 
-    def test_explicit_artifact_request_domain_knowledge(self):
-        """Test explicit request for domain knowledge routes to deterministic citation."""
-        query = "show domain knowledge about RAG"
+    def test_explicit_file_name_domain_knowledge(self):
+        """Test explicit file name 'domain_knowledge' routes to deterministic citation."""
+        query = "domain_knowledge"
         constraints = parse_query_constraints(query)
         
         assert constraints.explicit_artifact_request is True
-        assert constraints.requires_grounding is True
+        assert constraints.route_mode == "deterministic_citation"
+
+    def test_explicit_file_name_narrative_memory(self):
+        """Test explicit file name 'narrative_memory' routes to deterministic citation."""
+        query = "narrative_memory"
+        constraints = parse_query_constraints(query)
+        
+        assert constraints.explicit_artifact_request is True
+        assert constraints.route_mode == "deterministic_citation"
+
+    def test_file_name_in_sentence(self):
+        """Test file name mentioned in a sentence still triggers deterministic routing."""
+        query = "Show me the persona_graph file"
+        constraints = parse_query_constraints(query)
+        
+        assert constraints.explicit_artifact_request is True
         assert constraints.route_mode == "deterministic_citation"
 
     def test_learned_knowledge_request(self):
@@ -49,7 +62,7 @@ class TestEnhancedQueryRouting:
         
         assert constraints.use_learned_knowledge is True
         assert constraints.route_mode == "learned_context"
-        assert constraints.requires_grounding is False
+        assert constraints.explicit_artifact_request is False
 
     def test_learned_knowledge_variations(self):
         """Test various learned knowledge phrase variations."""
@@ -64,53 +77,62 @@ class TestEnhancedQueryRouting:
             assert constraints.use_learned_knowledge is True
             assert constraints.route_mode == "learned_context"
 
-    def test_domain_knowledge_query_routes_to_context(self):
+    def test_domain_knowledge_query_routes_to_llm_context(self):
         """Test domain knowledge queries route to LLM with context (not deterministic)."""
         query = "What is RAG?"
         constraints = parse_query_constraints(query)
         
         assert constraints.require_domain_knowledge is True
         assert constraints.explicit_artifact_request is False
-        assert constraints.requires_context is True
+        assert constraints.use_learned_knowledge is False
         assert constraints.route_mode == "llm_with_context"
 
-    def test_project_query_routes_to_context(self):
+    def test_project_query_routes_to_llm_context(self):
         """Test project queries route to LLM with context (not deterministic)."""
         query = "What projects have you worked on?"
         constraints = parse_query_constraints(query)
         
         assert constraints.require_projects is True
         assert constraints.explicit_artifact_request is False
-        assert constraints.requires_context is True
+        assert constraints.use_learned_knowledge is False
         assert constraints.route_mode == "llm_with_context"
 
-    def test_tech_keyword_query_routes_to_context(self):
+    def test_tech_keyword_query_routes_to_llm_context(self):
         """Test tech keyword queries route to LLM with context."""
         query = "Tell me about your Spring Boot experience"
         constraints = parse_query_constraints(query)
         
         assert "spring boot" in constraints.tech_tags or "spring" in constraints.tech_tags
         assert constraints.explicit_artifact_request is False
-        assert constraints.requires_context is True
+        assert constraints.use_learned_knowledge is False
         assert constraints.route_mode == "llm_with_context"
 
-    def test_general_chat_routes_to_llm_only(self):
-        """Test general chat queries route to LLM only (no context)."""
+    def test_general_chat_routes_to_llm_context(self):
+        """Test general chat queries route to LLM with context (default)."""
         query = "How are you today?"
         constraints = parse_query_constraints(query)
         
         assert constraints.explicit_artifact_request is False
         assert constraints.use_learned_knowledge is False
-        assert constraints.requires_context is False
         assert constraints.route_mode == "llm_with_context"
 
-    def test_generative_request_not_affected_by_routing(self):
-        """Test generative requests (write, generate) are handled separately in main.py."""
-        # These are handled by GENERATIVE_REQUEST_PHRASES in main.py before routing
+    def test_generative_request_routes_to_llm_context(self):
+        """Test generative requests route to LLM with context (default)."""
         query = "write a LinkedIn post about AI"
         constraints = parse_query_constraints(query)
         
-        # Should still parse normally, main.py handles the generative routing
+        # Should route to default LLM with context
+        assert constraints.explicit_artifact_request is False
+        assert constraints.use_learned_knowledge is False
+        assert constraints.route_mode == "llm_with_context"
+
+    def test_show_me_extracted_knowledge_not_file_name(self):
+        """Test 'show me extracted knowledge' does NOT trigger deterministic routing."""
+        query = "show me extracted knowledge"
+        constraints = parse_query_constraints(query)
+        
+        # This should NOT match because we only match exact file names
+        assert constraints.explicit_artifact_request is False
         assert constraints.route_mode == "llm_with_context"
 
 
@@ -211,44 +233,6 @@ class TestExtractedKnowledgeHelpers:
         context = build_learned_knowledge_context([])
         
         assert "don't have any learned knowledge" in context
-
-
-class TestQueryConstraintsProperties:
-    """Test the new properties on QueryConstraints."""
-
-    def test_requires_grounding_only_true_for_explicit_requests(self):
-        """Test requires_grounding is only True for explicit artifact requests."""
-        # Explicit request
-        constraints = parse_query_constraints("show me extracted knowledge")
-        assert constraints.requires_grounding is True
-        
-        # Domain knowledge query (should use context, not grounding)
-        constraints = parse_query_constraints("What is RAG?")
-        assert constraints.requires_grounding is False
-
-    def test_requires_context_true_for_domain_project_tech(self):
-        """Test requires_context is True for domain/project/tech queries."""
-        # Domain knowledge
-        constraints = parse_query_constraints("What is RAG?")
-        assert constraints.requires_context is True
-        
-        # Project query
-        constraints = parse_query_constraints("What projects have you worked on?")
-        assert constraints.requires_context is True
-        
-        # Tech keyword
-        constraints = parse_query_constraints("Tell me about Java")
-        assert constraints.requires_context is True
-
-    def test_requires_context_false_for_explicit_and_general(self):
-        """Test requires_context is False for explicit requests and general chat."""
-        # Explicit request
-        constraints = parse_query_constraints("show me persona")
-        assert constraints.requires_context is False
-        
-        # General chat
-        constraints = parse_query_constraints("How are you?")
-        assert constraints.requires_context is False
 
 
 class TestBackwardCompatibility:

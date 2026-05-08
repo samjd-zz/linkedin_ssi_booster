@@ -35,20 +35,13 @@ DOMAIN_KNOWLEDGE_PHRASES: frozenset[str] = frozenset([
     "can you explain", "teach me", "what's",
 ])
 
-# Phrases that explicitly request direct artifact routing (deterministic citation)
+# File names from data/avatar directory (without .json extension)
+# When user explicitly mentions these, route to deterministic citation
 EXPLICIT_ARTIFACT_PHRASES: frozenset[str] = frozenset([
-    "show me extracted knowledge",
-    "list extracted knowledge",
-    "show extracted knowledge",
-    "show me persona",
-    "list persona",
-    "show persona",
-    "show me domain knowledge",
-    "list domain knowledge",
-    "show domain knowledge",
-    "from extracted knowledge",
-    "from persona",
-    "from domain knowledge",
+    "persona_graph",
+    "extracted_knowledge",
+    "domain_knowledge",
+    "narrative_memory",
 ])
 
 # Phrases that request using learned knowledge as context

@@ -139,29 +139,24 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     print(str(Fore.CYAN) + str(Style.BRIGHT) + "\n🧠 Persona Console Mode — Enhanced Query Routing" + str(Style.RESET_ALL))
     print("- No Buffer actions will be performed in this mode.")
     print()
-    print(str(Fore.WHITE) + str(Style.BRIGHT) + "5 Query Routing Modes:" + str(Style.RESET_ALL))
+    print(str(Fore.WHITE) + str(Style.BRIGHT) + "3 Query Routing Modes:" + str(Style.RESET_ALL))
     print()
-    print(str(Fore.YELLOW) + "  1️⃣  Explicit Generative → LLM with full context" + str(Style.RESET_ALL))
-    print("    • write a LinkedIn post about...")
-    print("    • generate a script for...")
+    print(str(Fore.YELLOW) + "  1️⃣  Explicit File Request → Deterministic citation (raw facts)" + str(Style.RESET_ALL))
+    print("    • persona_graph")
+    print("    • extracted_knowledge")
+    print("    • domain_knowledge")
+    print("    • narrative_memory")
     print()
-    print(str(Fore.YELLOW) + "  2️⃣  Explicit Artifacts → Deterministic citation (raw facts)" + str(Style.RESET_ALL))
-    print("    • show me extracted knowledge")
-    print("    • list persona")
-    print("    • show domain knowledge about RAG")
-    print()
-    print(str(Fore.YELLOW) + "  3️⃣  Learned Knowledge → Latest 5 extracted facts as context" + str(Style.RESET_ALL))
+    print(str(Fore.YELLOW) + "  2️⃣  Learned Knowledge → Latest 5 extracted facts as context" + str(Style.RESET_ALL))
     print("    • from your learned knowledge, what are the AI trends?")
     print("    • based on what you learned, explain...")
     print()
-    print(str(Fore.YELLOW) + "  4️⃣  Domain/Project/Tech → Artifacts as LLM context (default)" + str(Style.RESET_ALL))
+    print(str(Fore.YELLOW) + "  3️⃣  Everything Else → LLM with artifact context (default)" + str(Style.RESET_ALL))
     print("    • What is RAG?")
     print("    • Explain vector search")
     print("    • What projects have you worked on?")
-    print()
-    print(str(Fore.YELLOW) + "  5️⃣  General Chat → LLM only" + str(Style.RESET_ALL))
+    print("    • write a LinkedIn post about...")
     print("    • How are you today?")
-    print("    • What's your opinion on...")
     print()
     print(str(Fore.WHITE) + "  Commands: /help, /reset, /reload, /exit" + str(Style.RESET_ALL))
     print()
@@ -311,24 +306,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         # Parse query to determine routing mode
         constraints = parse_query_constraints(user_input)
         
-        # Route 1: Explicit generative requests (write, generate, etc.) → LLM with full context
-        lower_input = user_input.lower()
-        if any(phrase in lower_input for phrase in GENERATIVE_REQUEST_PHRASES):
-            history.append({"role": "user", "content": user_input})
-            if len(history) > max_turns * 2:
-                history = history[-max_turns * 2 :]
-            try:
-                reply = ai.chat_as_persona(history, grounding_context=_grounding_context, max_tokens=600)
-            except Exception as e:
-                print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
-                continue
-            history.append({"role": "assistant", "content": reply})
-            print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
-            _print_truth_score(reply)
-            continue
-
-        # Route 2: Explicit artifact requests (show me extracted knowledge, etc.) → Deterministic citation
-        if constraints.requires_grounding:
+        # Route 1: Explicit file name requests → Deterministic citation (raw facts)
+        if constraints.explicit_artifact_request:
             facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
             reply = build_deterministic_grounded_reply(user_input, facts, constraints)
             history.append({"role": "user", "content": user_input})
@@ -338,7 +317,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
             continue
 
-        # Route 3: "From your learned knowledge" → Use latest 5 extracted knowledge as context
+        # Route 2: "From your learned knowledge" → Use latest 5 extracted knowledge as context
         if constraints.use_learned_knowledge:
             learned_facts = get_latest_extracted_knowledge(_profile_facts, limit=5)
             learned_context = build_learned_knowledge_context(learned_facts)
@@ -357,31 +336,18 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             _print_truth_score(reply)
             continue
 
-        # Route 4: Domain/project/tech queries → Use artifacts as LLM context (default)
-        if constraints.requires_context:
-            facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
-            facts_context = build_grounding_facts_block(facts, limit=8)
-            history.append({"role": "user", "content": user_input})
-            if len(history) > max_turns * 2:
-                history = history[-max_turns * 2 :]
-            try:
-                # Use retrieved facts as additional context
-                enhanced_context = f"{_grounding_context}\n\n{facts_context}" if _grounding_context else facts_context
-                reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
-            except Exception as e:
-                print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
-                continue
-            history.append({"role": "assistant", "content": reply})
-            print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
-            _print_truth_score(reply)
-            continue
-
-        # Route 5: Everything else → LLM only (no additional context)
+        # Route 3: Everything else → LLM with artifact context (default)
+        # This includes: domain/project/tech queries, generative requests, general chat
+        # Always retrieve relevant facts and use as context
+        facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+        facts_context = build_grounding_facts_block(facts, limit=8)
         history.append({"role": "user", "content": user_input})
         if len(history) > max_turns * 2:
             history = history[-max_turns * 2 :]
         try:
-            reply = ai.chat_as_persona(history, grounding_context=_grounding_context, max_tokens=600)
+            # Use retrieved facts as additional context
+            enhanced_context = f"{_grounding_context}\n\n{facts_context}" if _grounding_context else facts_context
+            reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
         except Exception as e:
             print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
             continue
