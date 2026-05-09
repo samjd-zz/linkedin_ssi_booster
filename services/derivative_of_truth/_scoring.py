@@ -298,8 +298,11 @@ def _score_with_pln(
     # Aggregate all evidence paths using PLN revision
     aggregated = aggregate_evidence_paths(pln_tvs)
     
-    # Base gradient is the aggregated strength weighted by confidence
-    base_gradient = aggregated.strength * aggregated.confidence
+    # Base gradient is the aggregated strength (confidence is already factored into aggregation)
+    # NOTE: In PLN, the revision formula (pln_revision) combines strength values weighted by confidence,
+    # so the final aggregated.strength already represents the confidence-weighted truth estimate.
+    # Multiplying by confidence again would double-count the confidence factor.
+    base_gradient = aggregated.strength
     
     return base_gradient, evidence_paths
 
