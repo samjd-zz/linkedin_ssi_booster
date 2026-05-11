@@ -24,7 +24,7 @@ def parse_query_constraints(
     
     New routing logic:
     - Explicit artifact phrases (e.g., "show me extracted knowledge") → deterministic citation
-    - "From your learned knowledge" → use latest 5 extracted knowledge as context
+    - "From your learned knowledge" → search extracted knowledge for relevant facts
     - Domain/project/tech queries → use artifacts as LLM context (default)
     - Everything else → LLM only
     """
@@ -36,14 +36,24 @@ def parse_query_constraints(
     # Check for "learned knowledge" requests
     use_learned_knowledge = any(phrase in q for phrase in LEARNED_KNOWLEDGE_PHRASES)
     
-    # Check for "search learned knowledge" requests
+    # Check for "search learned knowledge" requests (explicit search command)
     search_learned_knowledge = any(phrase in q for phrase in SEARCH_LEARNED_KNOWLEDGE_PHRASES)
+    
+    # If user asks about learned knowledge with a specific topic, always search
+    # Only use "latest 5" if they ask something generic like "what have you learned?"
+    if use_learned_knowledge and not search_learned_knowledge:
+        # Check if query has specific topic keywords (not just the learned knowledge phrase)
+        # If it does, treat it as a search request
+        topic_indicators = ["explain", "about", "regarding", "on", "for", "with", "using"]
+        has_specific_topic = any(indicator in q for indicator in topic_indicators)
+        if has_specific_topic:
+            search_learned_knowledge = True
     
     # Determine route mode
     if explicit_artifact_request:
         route_mode = "deterministic_citation"
     elif use_learned_knowledge:
-        route_mode = "learned_context"
+        route_mode = "learned_context_search" if search_learned_knowledge else "learned_context"
     else:
         route_mode = "llm_with_context"
     

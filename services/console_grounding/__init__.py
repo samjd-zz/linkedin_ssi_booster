@@ -37,6 +37,7 @@ from services.console_grounding._retrieval import (
     get_latest_extracted_knowledge,
     parse_query_constraints,
     retrieve_relevant_facts,
+    search_learned_knowledge,
 )
 
 # Gate helpers (private — exported for tests)
@@ -91,6 +92,7 @@ __all__ = [
     "get_latest_extracted_knowledge",
     "parse_query_constraints",
     "retrieve_relevant_facts",
+    "search_learned_knowledge",
     # gate helpers
     "_BM25_AVAILABLE",
     "_DOLLAR_RE",

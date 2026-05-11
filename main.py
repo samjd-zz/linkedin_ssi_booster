@@ -401,8 +401,10 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                     from services.avatar_intelligence import build_explain_output, format_explain_output
                     from services.console_grounding import truth_gate_result as _tgr_r2
                     _, _gate_meta_r2 = _tgr_r2(reply, user_input, _profile_facts)
-                    # Get the latest extracted facts from raw data (not ProjectFact objects)
-                    _latest_extracted = list(_raw_extracted_facts)[-5:] if _raw_extracted_facts else []
+                    # Map the learned_facts (ProjectFact) back to raw extracted facts for display
+                    # Only show the facts that were actually used as context (top 5 from search/latest)
+                    _learned_fact_ids = {f.source.split(':')[-1] for f in learned_facts if f.source.startswith("extracted_knowledge:")}
+                    _used_extracted = [f for f in _raw_extracted_facts if f.id in _learned_fact_ids]
                     _explain_r2 = build_explain_output(
                         evidence_facts=[],  # Route 2 uses extracted knowledge, not persona facts
                         article_ref=user_input,
@@ -410,7 +412,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                         ssi_component="general",
                         dot_per_sentence_scores=_gate_meta_r2.dot_per_sentence_scores,
                         spacy_sim_scores=_gate_meta_r2.spacy_sim_scores,
-                        extracted_facts=_latest_extracted,
+                        extracted_facts=_used_extracted,
                     )
                     print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
                     print(format_explain_output(_explain_r2))

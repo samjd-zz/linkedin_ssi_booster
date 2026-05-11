@@ -65,7 +65,11 @@ class TestSimplifiedQueryRouting:
         assert constraints.explicit_artifact_request is False
 
     def test_learned_knowledge_variations(self):
-        """Test various learned knowledge phrase variations."""
+        """Test various learned knowledge phrase variations.
+        
+        Note: These queries now trigger search mode because they contain
+        topic indicators like 'explain', 'about', etc.
+        """
         queries = [
             "from your learning, explain this",
             "based on what you learned, tell me about AI",
@@ -75,7 +79,9 @@ class TestSimplifiedQueryRouting:
         for query in queries:
             constraints = parse_query_constraints(query)
             assert constraints.use_learned_knowledge is True
-            assert constraints.route_mode == "learned_context"
+            # These now trigger search because they have topic indicators
+            assert constraints.route_mode == "learned_context_search"
+            assert constraints.search_learned_knowledge is True
 
     def test_domain_knowledge_query_routes_to_llm_context(self):
         """Test domain knowledge queries route to LLM with context (not deterministic)."""

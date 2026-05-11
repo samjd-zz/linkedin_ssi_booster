@@ -62,11 +62,11 @@ When you run `--console`, the startup screen explains the three query modes and 
     • domain_knowledge
     • narrative_memory
 
-  2️⃣  Learned Knowledge → Latest 5 extracted facts as context (or search)
+  2️⃣  Learned Knowledge → Search extracted knowledge for relevant facts
     • from your learned knowledge, what are the AI trends?
-    • based on what you learned, explain...
-    • search your learned knowledge for RAG techniques
-    • find in your learned knowledge about microservices
+    • based on what you learned, explain kubernetes
+    • using your learned knowledge, tell me about RAG
+    • search your learned knowledge for microservices
 
   3️⃣  Everything Else → LLM with artifact context (default)
     • What is RAG?
