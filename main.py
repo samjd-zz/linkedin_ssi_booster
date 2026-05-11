@@ -558,7 +558,8 @@ def main():
         if invalid:
             parser.error(f"invalid --channel value(s): {', '.join(invalid)}. Choose from: {', '.join(sorted(_VALID_CHANNELS))}")
         if "all" in parts:
-            return ["all"]
+            # Expand "all" to individual channels for generation loop
+            return ["linkedin", "x", "bluesky", "threads", "youtube", "facebook"]
         return parts
 
     parser.add_argument("--channel",   type=_parse_channels, default=["linkedin"],
