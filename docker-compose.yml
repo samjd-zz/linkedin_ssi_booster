@@ -49,6 +49,23 @@ services:
       "
     restart: "no"
 
+  # ── Wyoming Piper TTS server (optional voice synthesis) ───────────────────
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: ssi_booster_piper
+    restart: unless-stopped
+    ports:
+      - "10200:10200"
+    volumes:
+      - piper_data:/data
+    command: --voice en_US-libritts_r-medium
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "10200"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # ── LinkedIn SSI Booster application ──────────────────────────────────────
   app:
     build:
@@ -63,6 +80,9 @@ services:
       # Override the Ollama URL to reach the ollama service by its Docker name.
       # This replaces localhost:11434 which does not resolve inside the container.
       OLLAMA_BASE_URL: http://ollama:11434
+      # Override the Wyoming Piper URL to reach the piper service by its Docker name.
+      WYOMING_PIPER_HOST: piper
+      WYOMING_PIPER_PORT: 10200
     volumes:
       # Persist runtime data (persona graph, narrative memory, learning log,
       # domain knowledge, selection candidates, YouTube scripts) on the host.
@@ -79,4 +99,6 @@ services:
 
 volumes:
   ollama_data:
+    driver: local
+  piper_data:
     driver: local

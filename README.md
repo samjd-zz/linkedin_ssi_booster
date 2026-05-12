@@ -8,10 +8,8 @@
 
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Version alpha-v0.0.2.6](https://img.shields.io/badge/version-alpha--v0.0.2.6-orange.svg)]()
 
-
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
-
 
 **LinkedIn SSI Booster** isn't just a prompt wrapper — it's an adaptive continual learning automation system for content, curation, and persona growth. It combines spaCy-based NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX-powered knowledge graph, and local memory to generate, curate, rank, and route posts.
 
@@ -246,6 +244,8 @@ The avatar supports fully automatic, incremental continual learning from new con
 - Modular, file-based design: easy to extend, debug, and test.
 
 - **Console mode** (`--console`) includes extracted knowledge in the grounding pool alongside persona and domain facts, so the persona can answer questions using anything learned from `--learn` runs. Use `/reload` inside a running console session to re-read `extracted_knowledge.json` (and all other avatar files) without restarting — useful when running a `--learn` job concurrently in a second terminal.
+
+- **Voice synthesis (optional)** — Console mode supports text-to-speech output using [Wyoming Piper](https://github.com/rhasspy/wyoming-piper), a fast local neural voice engine running in Docker. Voice output is **in addition to** text output (not replacing it). Enable by setting `CONSOLE_USE_VOICE=true` in `.env`. The Wyoming Piper service is included in `docker-compose.yml` and automatically downloads the voice model on first start. Configure the voice model in `docker-compose.yml` (default: `en_US-libritts_r-medium`) and optionally set speaker ID with `CONSOLE_VOICE_SPEAKER` for multi-speaker models. Requires only `sounddevice` package for audio playback (included in `requirements.txt`). Voice synthesis runs locally with no cloud API calls. For local (non-Docker) usage, run Wyoming Piper separately: `docker run -p 10200:10200 rhasspy/wyoming-piper --voice en_US-libritts_r-medium`.
 
 - **Inline truth score** — when `--console --verify` flags are used together, console mode prints a minimal 1-line DoT + fact-pool sim indicator after every AI-generated reply:
 

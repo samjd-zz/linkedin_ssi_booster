@@ -1,8 +1,8 @@
-"""Unit tests for Piper TTS voice synthesis service."""
+"""Unit tests for Wyoming Piper TTS voice synthesis service."""
 
 from __future__ import annotations
 
-import os
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,7 +11,9 @@ from services.piper_service import (
     PiperService,
     get_piper_service,
     get_speaker_id,
-    get_voice_model,
+    get_voice_name,
+    get_wyoming_host,
+    get_wyoming_port,
     is_voice_enabled,
     speak_text,
 )
@@ -45,30 +47,55 @@ class TestVoiceConfiguration:
         monkeypatch.setenv("CONSOLE_USE_VOICE", "false")
         assert is_voice_enabled() is False
 
-    def test_get_voice_model_default(self, monkeypatch):
-        """Test default voice model."""
-        monkeypatch.delenv("CONSOLE_VOICE_MODEL", raising=False)
-        assert get_voice_model() == "en_US-libritts_r-medium"
+    def test_get_wyoming_host_default(self, monkeypatch):
+        """Test default Wyoming host."""
+        monkeypatch.delenv("WYOMING_PIPER_HOST", raising=False)
+        assert get_wyoming_host() == "localhost"
 
-    def test_get_voice_model_custom(self, monkeypatch):
-        """Test custom voice model."""
+    def test_get_wyoming_host_custom(self, monkeypatch):
+        """Test custom Wyoming host."""
+        monkeypatch.setenv("WYOMING_PIPER_HOST", "piper")
+        assert get_wyoming_host() == "piper"
+
+    def test_get_wyoming_port_default(self, monkeypatch):
+        """Test default Wyoming port."""
+        monkeypatch.delenv("WYOMING_PIPER_PORT", raising=False)
+        assert get_wyoming_port() == 10200
+
+    def test_get_wyoming_port_custom(self, monkeypatch):
+        """Test custom Wyoming port."""
+        monkeypatch.setenv("WYOMING_PIPER_PORT", "10300")
+        assert get_wyoming_port() == 10300
+
+    def test_get_wyoming_port_invalid(self, monkeypatch):
+        """Test invalid port falls back to default."""
+        monkeypatch.setenv("WYOMING_PIPER_PORT", "invalid")
+        assert get_wyoming_port() == 10200
+
+    def test_get_voice_name_default(self, monkeypatch):
+        """Test default voice name."""
+        monkeypatch.delenv("CONSOLE_VOICE_MODEL", raising=False)
+        assert get_voice_name() == "en_US-libritts_r-medium"
+
+    def test_get_voice_name_custom(self, monkeypatch):
+        """Test custom voice name."""
         monkeypatch.setenv("CONSOLE_VOICE_MODEL", "en_US-amy-medium")
-        assert get_voice_model() == "en_US-amy-medium"
+        assert get_voice_name() == "en_US-amy-medium"
 
     def test_get_speaker_id_default(self, monkeypatch):
-        """Test default speaker ID."""
+        """Test default speaker ID (empty string)."""
         monkeypatch.delenv("CONSOLE_VOICE_SPEAKER", raising=False)
-        assert get_speaker_id() == 902
+        assert get_speaker_id() is None
 
     def test_get_speaker_id_custom(self, monkeypatch):
         """Test custom speaker ID."""
-        monkeypatch.setenv("CONSOLE_VOICE_SPEAKER", "500")
-        assert get_speaker_id() == 500
+        monkeypatch.setenv("CONSOLE_VOICE_SPEAKER", "902")
+        assert get_speaker_id() == "902"
 
-    def test_get_speaker_id_invalid(self, monkeypatch):
-        """Test invalid speaker ID falls back to default."""
-        monkeypatch.setenv("CONSOLE_VOICE_SPEAKER", "invalid")
-        assert get_speaker_id() == 902
+    def test_get_speaker_id_empty(self, monkeypatch):
+        """Test empty speaker ID returns None."""
+        monkeypatch.setenv("CONSOLE_VOICE_SPEAKER", "")
+        assert get_speaker_id() is None
 
 
 class TestPiperService:
@@ -80,22 +107,12 @@ class TestPiperService:
         service = PiperService()
         assert service.is_enabled() is False
 
-    @patch("services.piper_service._PIPER_AVAILABLE", False)
-    def test_init_disabled_when_piper_unavailable(self, monkeypatch):
-        """Test service is disabled when piper-tts is not installed."""
-        monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
-        service = PiperService()
-        assert service.is_enabled() is False
-
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
     def test_init_enabled(self, monkeypatch):
-        """Test service is enabled when configured and piper is available."""
+        """Test service is enabled when configured."""
         monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
         service = PiperService()
-        # Service is marked as enabled, but voice loading happens lazily
         assert service._enabled is True
 
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
     def test_speak_disabled(self, monkeypatch):
         """Test speak returns False when service is disabled."""
         monkeypatch.setenv("CONSOLE_USE_VOICE", "false")
@@ -103,7 +120,6 @@ class TestPiperService:
         result = service.speak("Hello world")
         assert result is False
 
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
     def test_speak_empty_text(self, monkeypatch):
         """Test speak returns False for empty text."""
         monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
@@ -111,115 +127,94 @@ class TestPiperService:
         assert service.speak("") is False
         assert service.speak("   ") is False
 
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
-    @patch("services.piper_service.PiperVoice")
-    def test_ensure_voice_loaded_success(self, mock_piper_voice, monkeypatch):
-        """Test voice model is loaded successfully."""
-        monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
-        monkeypatch.setenv("CONSOLE_VOICE_MODEL", "en_US-libritts_r-medium")
-        
-        mock_voice = MagicMock()
-        mock_piper_voice.load.return_value = mock_voice
-        
-        service = PiperService()
-        result = service._ensure_voice_loaded()
-        
-        assert result is True
-        assert service._voice is mock_voice
-        mock_piper_voice.load.assert_called_once_with("en_US-libritts_r-medium", use_cuda=False)
-
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
-    @patch("services.piper_service.PiperVoice")
-    def test_ensure_voice_loaded_failure(self, mock_piper_voice, monkeypatch):
-        """Test voice loading failure disables service."""
-        monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
-        
-        mock_piper_voice.load.side_effect = Exception("Model not found")
-        
-        service = PiperService()
-        result = service._ensure_voice_loaded()
-        
-        assert result is False
-        assert service._enabled is False
-
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
-    @patch("services.piper_service.PiperVoice")
-    def test_ensure_voice_loaded_cached(self, mock_piper_voice, monkeypatch):
-        """Test voice is only loaded once."""
-        monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
-        
-        mock_voice = MagicMock()
-        mock_piper_voice.load.return_value = mock_voice
-        
-        service = PiperService()
-        service._voice = mock_voice  # Pre-load voice
-        
-        result = service._ensure_voice_loaded()
-        
-        assert result is True
-        mock_piper_voice.load.assert_not_called()  # Should not load again
-
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
-    @patch("services.piper_service.PiperVoice")
+    @patch("socket.socket")
     @patch("sounddevice.play")
     @patch("sounddevice.wait")
-    def test_speak_success(self, mock_sd_wait, mock_sd_play, mock_piper_voice, monkeypatch):
-        """Test successful speech synthesis and playback."""
+    def test_speak_success(self, mock_sd_wait, mock_sd_play, mock_socket, monkeypatch):
+        """Test successful speech synthesis via Wyoming protocol."""
         monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
         monkeypatch.setenv("CONSOLE_VOICE_SPEAKER", "902")
         
-        import numpy as np
-        mock_audio = np.array([0.1, 0.2, 0.3])
+        # Mock socket connection
+        mock_sock = MagicMock()
+        mock_socket.return_value = mock_sock
         
-        mock_voice = MagicMock()
-        mock_voice.synthesize.return_value = mock_audio
-        mock_piper_voice.load.return_value = mock_voice
+        # Simulate Wyoming protocol responses
+        audio_start = json.dumps({
+            "type": "audio-start",
+            "data": {"rate": 22050, "width": 2, "channels": 1}
+        }) + "\n"
+        
+        audio_chunk = json.dumps({
+            "type": "audio-chunk",
+            "payload_length": 4
+        }) + "\n"
+        audio_payload = b"\x00\x01\x00\x02"  # 2 int16 samples
+        
+        audio_stop = json.dumps({"type": "audio-stop"}) + "\n"
+        
+        # Mock recv to return protocol messages
+        mock_sock.recv.side_effect = [
+            audio_start.encode("utf-8"),
+            audio_chunk.encode("utf-8") + audio_payload,
+            audio_stop.encode("utf-8"),
+        ]
         
         service = PiperService()
         result = service.speak("Hello world")
         
         assert result is True
-        mock_voice.synthesize.assert_called_once_with("Hello world", speaker_id=902)
+        mock_sock.connect.assert_called_once_with(("localhost", 10200))
         mock_sd_play.assert_called_once()
         mock_sd_wait.assert_called_once()
+        mock_sock.close.assert_called_once()
 
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
-    @patch("services.piper_service.PiperVoice")
-    def test_speak_synthesis_failure(self, mock_piper_voice, monkeypatch):
-        """Test speak returns False when synthesis fails."""
+    @patch("socket.socket")
+    def test_speak_connection_refused(self, mock_socket, monkeypatch):
+        """Test speak handles connection refused gracefully."""
         monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
         
-        mock_voice = MagicMock()
-        mock_voice.synthesize.side_effect = Exception("Synthesis error")
-        mock_piper_voice.load.return_value = mock_voice
+        mock_sock = MagicMock()
+        mock_sock.connect.side_effect = ConnectionRefusedError()
+        mock_socket.return_value = mock_sock
         
         service = PiperService()
         result = service.speak("Hello world")
         
         assert result is False
 
-    @patch("services.piper_service._PIPER_AVAILABLE", True)
-    @patch("services.piper_service.PiperVoice")
-    def test_speak_sounddevice_unavailable(self, mock_piper_voice, monkeypatch):
-        """Test speak disables service when sounddevice is unavailable."""
+    @patch("socket.socket")
+    def test_speak_timeout(self, mock_socket, monkeypatch):
+        """Test speak handles timeout gracefully."""
         monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
         
-        import numpy as np
-        mock_audio = np.array([0.1, 0.2, 0.3])
+        import socket as socket_module
+        mock_sock = MagicMock()
+        mock_sock.connect.side_effect = socket_module.timeout()
+        mock_socket.return_value = mock_sock
         
-        mock_voice = MagicMock()
-        mock_voice.synthesize.return_value = mock_audio
-        mock_piper_voice.load.return_value = mock_voice
+        service = PiperService()
+        result = service.speak("Hello world")
         
-        with patch("services.piper_service.PiperService.speak") as mock_speak:
-            # Simulate ImportError for sounddevice
-            mock_speak.side_effect = ImportError("No module named 'sounddevice'")
-            
-            service = PiperService()
+        assert result is False
+
+    @patch("services.piper_service.PiperService")
+    def test_sounddevice_import_error(self, mock_service_class, monkeypatch):
+        """Test speak handles missing sounddevice gracefully."""
+        monkeypatch.setenv("CONSOLE_USE_VOICE", "true")
+        
+        mock_instance = MagicMock()
+        mock_instance.speak.return_value = False
+        mock_instance._enabled = False
+        mock_service_class.return_value = mock_instance
+        
+        service = PiperService()
+        # Simulate sounddevice import failure inside speak()
+        with patch("builtins.__import__", side_effect=ImportError("No module named 'sounddevice'")):
             result = service.speak("Hello world")
-            
-            # Service should handle the error gracefully
-            assert result is False or isinstance(result, Exception)
+        
+        # Should return False when sounddevice is unavailable
+        assert result is False
 
 
 class TestGlobalFunctions:

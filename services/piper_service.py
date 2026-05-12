@@ -1,25 +1,14 @@
-"""Piper TTS voice synthesis service for console output."""
+"""Piper TTS voice synthesis service for console output using Wyoming protocol."""
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import subprocess
-from pathlib import Path
+import socket
 from typing import Optional
 
 logger = logging.getLogger(__name__)
-
-# Global flag to track if piper is available
-_PIPER_AVAILABLE = False
-_piper_tts = None
-
-try:
-    from piper.voice import PiperVoice
-    from piper import SynthesisConfig
-    _PIPER_AVAILABLE = True
-except ImportError:
-    logger.debug("piper-tts not available — voice output disabled")
 
 
 def is_voice_enabled() -> bool:
@@ -27,140 +16,79 @@ def is_voice_enabled() -> bool:
     return os.getenv("CONSOLE_USE_VOICE", "false").lower() in ("true", "1", "yes")
 
 
-def get_voice_model() -> str:
-    """Get the voice model from environment variable or use default."""
+def get_wyoming_host() -> str:
+    """Get the Wyoming Piper host from environment variable or use default."""
+    return os.getenv("WYOMING_PIPER_HOST", "localhost")
+
+
+def get_wyoming_port() -> int:
+    """Get the Wyoming Piper port from environment variable or use default."""
+    try:
+        return int(os.getenv("WYOMING_PIPER_PORT", "10200"))
+    except ValueError:
+        logger.warning("Invalid WYOMING_PIPER_PORT value, using default 10200")
+        return 10200
+
+
+def get_voice_name() -> str:
+    """Get the voice name from environment variable or use default."""
     return os.getenv("CONSOLE_VOICE_MODEL", "en_US-libritts_r-medium")
 
 
-def get_speaker_id() -> int:
-    """Get the speaker ID from environment variable or use default (902)."""
-    try:
-        return int(os.getenv("CONSOLE_VOICE_SPEAKER", "902"))
-    except ValueError:
-        logger.warning("Invalid CONSOLE_VOICE_SPEAKER value, using default 902")
-        return 902
-
-
-def _get_voice_model_path(model_name: str) -> Optional[Path]:
-    """
-    Get the path to the downloaded voice model .onnx file.
-    
-    Piper downloads models to ~/.local/share/piper/voices/ by default.
-    Returns None if the model file doesn't exist.
-    """
-    # Check common locations for piper voice models
-    home = Path.home()
-    possible_paths = [
-        home / ".local" / "share" / "piper" / "voices" / f"{model_name}.onnx",
-        home / ".local" / "share" / "piper-tts" / "voices" / f"{model_name}.onnx",
-        Path("/usr/share/piper/voices") / f"{model_name}.onnx",
-        Path("/usr/local/share/piper/voices") / f"{model_name}.onnx",
-    ]
-    
-    for path in possible_paths:
-        if path.exists():
-            return path
-    
-    return None
-
-
-def _download_voice_model(model_name: str) -> bool:
-    """
-    Download a Piper voice model using piper.download_voices.
-    
-    Returns True if download was successful, False otherwise.
-    """
-    try:
-        logger.info("Downloading Piper voice model: %s", model_name)
-        result = subprocess.run(
-            ["python3", "-m", "piper.download_voices", model_name],
-            capture_output=True,
-            text=True,
-            timeout=300,  # 5 minute timeout
-        )
-        
-        if result.returncode == 0:
-            logger.info("Successfully downloaded voice model: %s", model_name)
-            return True
-        else:
-            logger.error(
-                "Failed to download voice model %s: %s",
-                model_name,
-                result.stderr,
-            )
-            return False
-    except subprocess.TimeoutExpired:
-        logger.error("Voice model download timed out after 5 minutes")
-        return False
-    except Exception as e:
-        logger.error("Failed to download voice model: %s", e)
-        return False
+def get_speaker_id() -> Optional[str]:
+    """Get the speaker ID from environment variable or return None."""
+    speaker = os.getenv("CONSOLE_VOICE_SPEAKER", "")
+    return speaker if speaker else None
 
 
 class PiperService:
-    """Service for text-to-speech using Piper."""
+    """Service for text-to-speech using Wyoming Piper protocol."""
 
     def __init__(self) -> None:
         """Initialize the Piper service."""
-        self._voice: Optional[PiperVoice] = None
         self._enabled = is_voice_enabled()
-        self._model_name = get_voice_model()
+        self._host = get_wyoming_host()
+        self._port = get_wyoming_port()
+        self._voice_name = get_voice_name()
         self._speaker_id = get_speaker_id()
 
-        if self._enabled and not _PIPER_AVAILABLE:
-            logger.warning(
-                "CONSOLE_USE_VOICE is enabled but piper-tts is not installed. "
-                "Install with: pip install piper-tts"
-            )
-            self._enabled = False
+    def _send_event(self, sock: socket.socket, event_type: str, data: Optional[dict] = None) -> None:
+        """Send a Wyoming protocol event."""
+        event: dict = {"type": event_type}
+        if data:
+            event["data"] = data
+        message = json.dumps(event) + "\n"
+        sock.sendall(message.encode("utf-8"))
 
-    def _ensure_voice_loaded(self) -> bool:
-        """Ensure the voice model is loaded. Returns True if successful."""
-        if not self._enabled:
-            return False
-
-        if self._voice is not None:
-            return True
-
-        try:
-            # Check if model is already downloaded
-            model_path = _get_voice_model_path(self._model_name)
-            
-            if model_path is None:
-                logger.info(
-                    "Voice model %s not found locally, attempting download...",
-                    self._model_name,
-                )
-                if not _download_voice_model(self._model_name):
-                    logger.error("Failed to download voice model: %s", self._model_name)
-                    self._enabled = False
-                    return False
-                
-                # Try to find the model again after download
-                model_path = _get_voice_model_path(self._model_name)
-                if model_path is None:
-                    logger.error(
-                        "Voice model %s still not found after download",
-                        self._model_name,
-                    )
-                    self._enabled = False
-                    return False
-            
-            logger.info(
-                "Loading Piper voice model from: %s (speaker: %d)",
-                model_path,
-                self._speaker_id,
-            )
-            self._voice = PiperVoice.load(str(model_path), use_cuda=False)
-            return True
-        except Exception as e:
-            logger.error("Failed to load Piper voice model: %s", e)
-            self._enabled = False
-            return False
+    def _receive_event(self, sock: socket.socket) -> Optional[dict]:
+        """Receive a Wyoming protocol event."""
+        buffer = b""
+        while b"\n" not in buffer:
+            chunk = sock.recv(4096)
+            if not chunk:
+                return None
+            buffer += chunk
+        
+        # Split on first newline
+        line, remaining = buffer.split(b"\n", 1)
+        event = json.loads(line.decode("utf-8"))
+        
+        # If there's a payload, read it
+        payload_length = event.get("payload_length", 0)
+        if payload_length > 0:
+            payload = remaining
+            while len(payload) < payload_length:
+                chunk = sock.recv(payload_length - len(payload))
+                if not chunk:
+                    break
+                payload += chunk
+            event["payload"] = payload[:payload_length]
+        
+        return event
 
     def speak(self, text: str) -> bool:
         """
-        Synthesize and play speech from text.
+        Synthesize and play speech from text using Wyoming protocol.
 
         Args:
             text: The text to speak
@@ -168,7 +96,7 @@ class PiperService:
         Returns:
             True if speech was successfully synthesized and played, False otherwise
         """
-        if not self._ensure_voice_loaded():
+        if not self._enabled:
             return False
 
         if not text or not text.strip():
@@ -186,51 +114,102 @@ class PiperService:
                 )
                 self._enabled = False
                 return False
-            
-            # Synthesize speech using streaming API
-            # voice.synthesize() returns an iterator of AudioChunk objects
-            # At this point _voice is guaranteed to be loaded by _ensure_voice_loaded
-            assert self._voice is not None, "Voice should be loaded at this point"
-            
-            audio_chunks = []
-            sample_rate = None
-            sample_width = None
-            
-            # Create synthesis config with speaker_id for multi-speaker models
-            syn_config = SynthesisConfig(speaker_id=self._speaker_id)
-            
-            for chunk in self._voice.synthesize(text, syn_config=syn_config):
-                # Extract audio data from chunk
-                if sample_rate is None:
-                    sample_rate = chunk.sample_rate
-                    sample_width = chunk.sample_width
-                
-                # Convert bytes to numpy array
-                audio_data = np.frombuffer(chunk.audio_int16_bytes, dtype=np.int16)
-                audio_chunks.append(audio_data)
-            
-            if not audio_chunks:
-                logger.warning("No audio generated from text")
-                return False
-            
-            # Concatenate all chunks
-            full_audio = np.concatenate(audio_chunks)
-            
-            # Normalize to float32 for sounddevice
-            audio_float = full_audio.astype(np.float32) / 32768.0
-            
-            # Play the audio
-            sd.play(audio_float, sample_rate)
-            sd.wait()  # Wait until audio is finished playing
-            return True
 
+            # Connect to Wyoming Piper server
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10.0)
+            
+            try:
+                sock.connect((self._host, self._port))
+                logger.debug("Connected to Wyoming Piper at %s:%d", self._host, self._port)
+                
+                # Send synthesize request
+                synthesize_data: dict = {"text": text}
+                if self._voice_name:
+                    voice_data: dict = {"name": self._voice_name}
+                    if self._speaker_id:
+                        voice_data["speaker"] = self._speaker_id
+                    synthesize_data["voice"] = voice_data
+                
+                self._send_event(sock, "synthesize", synthesize_data)
+                logger.debug("Sent synthesize request for text: %s", text[:50])
+                
+                # Receive audio chunks
+                audio_chunks = []
+                sample_rate = None
+                sample_width = None
+                
+                while True:
+                    event = self._receive_event(sock)
+                    if not event:
+                        break
+                    
+                    event_type = event.get("type")
+                    
+                    if event_type == "audio-start":
+                        data = event.get("data", {})
+                        sample_rate = data.get("rate")
+                        sample_width = data.get("width")
+                        logger.debug("Audio stream started: rate=%d, width=%d", sample_rate, sample_width)
+                    
+                    elif event_type == "audio-chunk":
+                        payload = event.get("payload", b"")
+                        if payload:
+                            audio_chunks.append(payload)
+                    
+                    elif event_type == "audio-stop":
+                        logger.debug("Audio stream stopped, received %d chunks", len(audio_chunks))
+                        break
+                
+                if not audio_chunks or not sample_rate:
+                    logger.warning("No audio generated from text")
+                    return False
+                
+                # Concatenate all audio chunks
+                full_audio_bytes = b"".join(audio_chunks)
+                
+                # Convert bytes to numpy array based on sample width
+                if sample_width == 2:  # 16-bit PCM
+                    audio_data = np.frombuffer(full_audio_bytes, dtype=np.int16)
+                elif sample_width == 4:  # 32-bit PCM
+                    audio_data = np.frombuffer(full_audio_bytes, dtype=np.int32)
+                else:
+                    logger.error("Unsupported sample width: %d", sample_width)
+                    return False
+                
+                # Normalize to float32 for sounddevice
+                if sample_width == 2:
+                    audio_float = audio_data.astype(np.float32) / 32768.0
+                else:  # 32-bit
+                    audio_float = audio_data.astype(np.float32) / 2147483648.0
+                
+                # Play the audio
+                sd.play(audio_float, sample_rate)
+                sd.wait()  # Wait until audio is finished playing
+                logger.debug("Audio playback completed")
+                return True
+                
+            finally:
+                sock.close()
+
+        except socket.timeout:
+            logger.error("Connection to Wyoming Piper timed out")
+            return False
+        except ConnectionRefusedError:
+            logger.error(
+                "Could not connect to Wyoming Piper at %s:%d. "
+                "Make sure the Wyoming Piper service is running.",
+                self._host,
+                self._port,
+            )
+            return False
         except Exception as e:
             logger.error("Failed to synthesize speech: %s", e)
             return False
 
     def is_enabled(self) -> bool:
         """Check if voice output is currently enabled and available."""
-        return self._enabled and _PIPER_AVAILABLE
+        return self._enabled
 
 
 # Global service instance
