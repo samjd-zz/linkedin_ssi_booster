@@ -96,6 +96,10 @@ services:
     # Default: print help. Override with `docker compose run app python main.py --schedule`
     command: [ "python", "main.py", "--help" ]
     restart: "no"
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - audio
 
 volumes:
   ollama_data:
