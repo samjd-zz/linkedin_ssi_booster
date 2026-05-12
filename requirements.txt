@@ -14,3 +14,5 @@ spacy>=3.7.0
 networkx>=3.2
 trafilatura>=2.0.0
 model2vec>=0.1.0
+piper-tts>=1.2.0
+sounddevice>=0.4.6

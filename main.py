@@ -123,6 +123,7 @@ from services.console_grounding import (
 )
 from services.ollama_service import OllamaService
 from services.github_service import build_github_profile_context
+from services.piper_service import speak_text
 
 def run_console(ai: OllamaService, github_context: str = "", verify: bool = False, avatar_explain: bool = False, dot_report: bool = False) -> None:
     """Run interactive persona chat mode in the terminal.
@@ -361,6 +362,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             if len(history) > max_turns * 2:
                 history = history[-max_turns * 2 :]
             print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+            speak_text(reply)
             continue
 
         # Route 2: "From your learned knowledge" → Use latest 5 extracted knowledge as context
@@ -388,6 +390,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 continue
             history.append({"role": "assistant", "content": reply})
             print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+            speak_text(reply)
             
             if verify:
                 print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
@@ -474,6 +477,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             continue
         history.append({"role": "assistant", "content": reply})
         print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+        speak_text(reply)
         
         if verify:
             print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
