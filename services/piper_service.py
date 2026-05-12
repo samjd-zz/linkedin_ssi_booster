@@ -69,11 +69,40 @@ class PiperService:
                 return None
             buffer += chunk
         
-        # Split on first newline
+        # Split on first newline to get the header
         line, remaining = buffer.split(b"\n", 1)
-        event = json.loads(line.decode("utf-8"))
         
-        # If there's a payload, read it
+        try:
+            event = json.loads(line.decode("utf-8"))
+        except json.JSONDecodeError as e:
+            logger.error("Failed to parse Wyoming event header: %s", e)
+            logger.error("Raw line: %r", line)
+            return None
+        
+        # Check for additional data (data_length)
+        data_length = event.get("data_length", 0)
+        if data_length > 0:
+            # Read additional data
+            additional_data = remaining
+            while len(additional_data) < data_length:
+                chunk = sock.recv(data_length - len(additional_data))
+                if not chunk:
+                    break
+                additional_data += chunk
+            
+            # Parse and merge additional data
+            try:
+                extra_data = json.loads(additional_data[:data_length].decode("utf-8"))
+                if "data" not in event:
+                    event["data"] = {}
+                event["data"].update(extra_data)
+                remaining = additional_data[data_length:]
+            except json.JSONDecodeError as e:
+                logger.error("Failed to parse Wyoming additional data: %s", e)
+                logger.error("Raw additional data: %r", additional_data[:data_length])
+                # Continue without additional data
+        
+        # Check for payload (payload_length)
         payload_length = event.get("payload_length", 0)
         if payload_length > 0:
             payload = remaining
