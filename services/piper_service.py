@@ -62,56 +62,60 @@ class PiperService:
 
     def _receive_event(self, sock: socket.socket) -> Optional[dict]:
         """Receive a Wyoming protocol event."""
-        buffer = b""
-        while b"\n" not in buffer:
-            chunk = sock.recv(4096)
-            if not chunk:
+        # Read the JSON header line (terminated by \n)
+        header_bytes = b""
+        while True:
+            byte = sock.recv(1)
+            if not byte:
                 return None
-            buffer += chunk
+            if byte == b"\n":
+                break
+            header_bytes += byte
         
-        # Split on first newline to get the header
-        line, remaining = buffer.split(b"\n", 1)
-        
+        # Parse the JSON header
         try:
-            event = json.loads(line.decode("utf-8"))
+            event = json.loads(header_bytes.decode("utf-8"))
         except json.JSONDecodeError as e:
             logger.error("Failed to parse Wyoming event header: %s", e)
-            logger.error("Raw line: %r", line)
+            logger.error("Raw header: %r", header_bytes)
             return None
         
         # Check for additional data (data_length)
         data_length = event.get("data_length", 0)
         if data_length > 0:
-            # Read additional data
-            additional_data = remaining
+            # Read exactly data_length bytes
+            additional_data = b""
             while len(additional_data) < data_length:
                 chunk = sock.recv(data_length - len(additional_data))
                 if not chunk:
-                    break
+                    logger.error("Connection closed while reading data_length bytes")
+                    return None
                 additional_data += chunk
             
-            # Parse and merge additional data
+            # Parse and merge additional data (this is JSON)
             try:
-                extra_data = json.loads(additional_data[:data_length].decode("utf-8"))
+                extra_data = json.loads(additional_data.decode("utf-8"))
                 if "data" not in event:
                     event["data"] = {}
                 event["data"].update(extra_data)
-                remaining = additional_data[data_length:]
             except json.JSONDecodeError as e:
                 logger.error("Failed to parse Wyoming additional data: %s", e)
-                logger.error("Raw additional data: %r", additional_data[:data_length])
+                logger.error("Raw additional data: %r", additional_data)
                 # Continue without additional data
         
-        # Check for payload (payload_length)
+        # Check for payload (payload_length) - this is BINARY data
         payload_length = event.get("payload_length", 0)
         if payload_length > 0:
-            payload = remaining
+            # Read exactly payload_length bytes (DO NOT decode as UTF-8)
+            payload = b""
             while len(payload) < payload_length:
                 chunk = sock.recv(payload_length - len(payload))
                 if not chunk:
-                    break
+                    logger.error("Connection closed while reading payload_length bytes")
+                    return None
                 payload += chunk
-            event["payload"] = payload[:payload_length]
+            # Store raw binary payload without any decoding
+            event["payload"] = payload
         
         return event
 
