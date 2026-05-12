@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import os
+import subprocess
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -14,6 +16,7 @@ _piper_tts = None
 
 try:
     from piper.voice import PiperVoice
+    from piper import SynthesisConfig
     _PIPER_AVAILABLE = True
 except ImportError:
     logger.debug("piper-tts not available — voice output disabled")
@@ -36,6 +39,62 @@ def get_speaker_id() -> int:
     except ValueError:
         logger.warning("Invalid CONSOLE_VOICE_SPEAKER value, using default 902")
         return 902
+
+
+def _get_voice_model_path(model_name: str) -> Optional[Path]:
+    """
+    Get the path to the downloaded voice model .onnx file.
+    
+    Piper downloads models to ~/.local/share/piper/voices/ by default.
+    Returns None if the model file doesn't exist.
+    """
+    # Check common locations for piper voice models
+    home = Path.home()
+    possible_paths = [
+        home / ".local" / "share" / "piper" / "voices" / f"{model_name}.onnx",
+        home / ".local" / "share" / "piper-tts" / "voices" / f"{model_name}.onnx",
+        Path("/usr/share/piper/voices") / f"{model_name}.onnx",
+        Path("/usr/local/share/piper/voices") / f"{model_name}.onnx",
+    ]
+    
+    for path in possible_paths:
+        if path.exists():
+            return path
+    
+    return None
+
+
+def _download_voice_model(model_name: str) -> bool:
+    """
+    Download a Piper voice model using piper.download_voices.
+    
+    Returns True if download was successful, False otherwise.
+    """
+    try:
+        logger.info("Downloading Piper voice model: %s", model_name)
+        result = subprocess.run(
+            ["python3", "-m", "piper.download_voices", model_name],
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            logger.info("Successfully downloaded voice model: %s", model_name)
+            return True
+        else:
+            logger.error(
+                "Failed to download voice model %s: %s",
+                model_name,
+                result.stderr,
+            )
+            return False
+    except subprocess.TimeoutExpired:
+        logger.error("Voice model download timed out after 5 minutes")
+        return False
+    except Exception as e:
+        logger.error("Failed to download voice model: %s", e)
+        return False
 
 
 class PiperService:
@@ -64,12 +123,35 @@ class PiperService:
             return True
 
         try:
+            # Check if model is already downloaded
+            model_path = _get_voice_model_path(self._model_name)
+            
+            if model_path is None:
+                logger.info(
+                    "Voice model %s not found locally, attempting download...",
+                    self._model_name,
+                )
+                if not _download_voice_model(self._model_name):
+                    logger.error("Failed to download voice model: %s", self._model_name)
+                    self._enabled = False
+                    return False
+                
+                # Try to find the model again after download
+                model_path = _get_voice_model_path(self._model_name)
+                if model_path is None:
+                    logger.error(
+                        "Voice model %s still not found after download",
+                        self._model_name,
+                    )
+                    self._enabled = False
+                    return False
+            
             logger.info(
-                "Loading Piper voice model: %s (speaker: %d)",
-                self._model_name,
+                "Loading Piper voice model from: %s (speaker: %d)",
+                model_path,
                 self._speaker_id,
             )
-            self._voice = PiperVoice.load(self._model_name, use_cuda=False)
+            self._voice = PiperVoice.load(str(model_path), use_cuda=False)
             return True
         except Exception as e:
             logger.error("Failed to load Piper voice model: %s", e)
@@ -93,28 +175,10 @@ class PiperService:
             return False
 
         try:
-            # Synthesize speech
-            audio = self._voice.synthesize(text, speaker_id=self._speaker_id)
-            
-            # Play the audio
-            # Note: piper.voice.PiperVoice.synthesize returns a numpy array
-            # We need to play it using a library like sounddevice or pyaudio
+            # Import audio playback library
             try:
                 import sounddevice as sd
                 import numpy as np
-                
-                # Piper outputs 22050 Hz audio by default
-                sample_rate = 22050
-                
-                # Ensure audio is in the right format
-                if isinstance(audio, np.ndarray):
-                    sd.play(audio, sample_rate)
-                    sd.wait()  # Wait until audio is finished playing
-                    return True
-                else:
-                    logger.warning("Unexpected audio format from Piper")
-                    return False
-                    
             except ImportError:
                 logger.warning(
                     "sounddevice not available for audio playback. "
@@ -122,6 +186,43 @@ class PiperService:
                 )
                 self._enabled = False
                 return False
+            
+            # Synthesize speech using streaming API
+            # voice.synthesize() returns an iterator of AudioChunk objects
+            # At this point _voice is guaranteed to be loaded by _ensure_voice_loaded
+            assert self._voice is not None, "Voice should be loaded at this point"
+            
+            audio_chunks = []
+            sample_rate = None
+            sample_width = None
+            
+            # Create synthesis config with speaker_id for multi-speaker models
+            syn_config = SynthesisConfig(speaker_id=self._speaker_id)
+            
+            for chunk in self._voice.synthesize(text, syn_config=syn_config):
+                # Extract audio data from chunk
+                if sample_rate is None:
+                    sample_rate = chunk.sample_rate
+                    sample_width = chunk.sample_width
+                
+                # Convert bytes to numpy array
+                audio_data = np.frombuffer(chunk.audio_int16_bytes, dtype=np.int16)
+                audio_chunks.append(audio_data)
+            
+            if not audio_chunks:
+                logger.warning("No audio generated from text")
+                return False
+            
+            # Concatenate all chunks
+            full_audio = np.concatenate(audio_chunks)
+            
+            # Normalize to float32 for sounddevice
+            audio_float = full_audio.astype(np.float32) / 32768.0
+            
+            # Play the audio
+            sd.play(audio_float, sample_rate)
+            sd.wait()  # Wait until audio is finished playing
+            return True
 
         except Exception as e:
             logger.error("Failed to synthesize speech: %s", e)
