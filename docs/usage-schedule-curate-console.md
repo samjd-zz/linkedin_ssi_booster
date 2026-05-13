@@ -68,14 +68,21 @@ When you run `--console`, the startup screen explains the three query modes and 
     • using your learned knowledge, tell me about RAG
     • search your learned knowledge for microservices
 
-  3️⃣  Everything Else → LLM with artifact context (default)
+  3️⃣  Everything Else → LLM with graph-enhanced retrieval (default)
     • What is RAG?
     • Explain vector search
     • What projects have you worked on?
     • write a LinkedIn post about...
     • How are you today?
 
-  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report
+🔗 Knowledge Graph Integration:
+  • Route 3 uses hybrid fact ranking:
+    - 70% BM25 keyword matching
+    - 20% graph proximity (facts closer to persona node rank higher)
+    - 10% claim support (facts with more supporting edges rank higher)
+  • Use /graph-stats to inspect graph structure (nodes, edges, types)
+
+  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats
 ```
 
 #### Console Commands
@@ -91,6 +98,7 @@ Console mode supports the following slash commands:
 | `/verify`          | Toggle DoT + similarity verification on/off                               |
 | `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
 | `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off |
+| `/graph-stats`     | Show knowledge graph statistics (node/edge counts, node types)            |
 
 **Status Display**: The status line shows the current state of all three diagnostic modes. When a mode is enabled, it displays in **green**; when disabled, it displays in **red**.
 
@@ -118,10 +126,14 @@ The console uses intelligent routing with 3 distinct modes:
    - Search phrases: "search your learned knowledge", "search your learning", "find in your learned knowledge", "query your learned knowledge"
    - Search scores facts by keyword overlap and tag matching, returning top 5 most relevant results
 
-3. **Everything Else** → LLM with artifact context (default)
+3. **Everything Else** → LLM with graph-enhanced retrieval (default)
    - All other queries (domain questions, project questions, tech queries, generative requests, general chat)
-   - Always retrieves relevant facts from persona/domain/extracted knowledge and uses as LLM context
+   - Uses **hybrid fact ranking** to retrieve the most relevant facts:
+     - **70% BM25**: Traditional keyword matching for query relevance
+     - **20% Graph Proximity**: Facts closer to the persona node in the knowledge graph rank higher
+     - **10% Claim Support**: Facts with more supporting edges (cross-references) rank higher
    - Provides natural AI responses grounded in your knowledge base
+   - Fallback: If knowledge graph initialization fails, routes fall back to simple BM25 retrieval
 
 **Key Design:** Most queries route to the LLM with artifacts as context, providing natural AI responses grounded in facts. Deterministic citation only happens when you explicitly request a file by name.
 
