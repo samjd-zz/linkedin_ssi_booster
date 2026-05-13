@@ -1,4 +1,19 @@
 {
+  // Controls how terminal reacts to right click.
+  //  - default: Show the context menu.
+  //  - copyPaste: Copy when there is a selection, otherwise paste.
+  //  - paste: Paste on right click.
+  //  - selectWord: Select the word under the cursor and show the context menu.
+  //  - nothing: Do nothing and pass event to terminal.
+  "terminal.integrated.rightClickBehavior": "default",
+  // Controls whether to show a warning dialog when pasting multiple lines into the terminal.
+  //  - auto: Enable the warning but do not show it when:
+  // 
+  // - Bracketed paste mode is enabled (the shell supports multi-line paste natively)
+  // - The paste is handled by the shell's readline (in the case of pwsh)
+  //  - always: Always show the warning if the text contains a new line.
+  //  - never: Never show the warning.
+  "terminal.integrated.enableMultiLinePasteWarning": "auto",
   "python.analysis.extraPaths": [
     "${workspaceFolder}",
     "${workspaceFolder}/.venv/lib/python3.12/site-packages"
@@ -13,7 +28,9 @@
     "editor.tabSize": 4,
     "editor.insertSpaces": true
   },
-  "python.analysis.include": ["${workspaceFolder}"],
+  "python.analysis.include": [
+    "${workspaceFolder}"
+  ],
   "python.analysis.exclude": [
     "**/__pycache__",
     "**/.venv",
