@@ -113,7 +113,7 @@ def build_explain_output(
     article_title: str = "",
     article_url: str = "",
 ) -> ExplainOutput:
-    """Build an ExplainOutput summary from the evidence facts used in a generation.
+    """Build an ExplainOutput summary from the top 5 evidence facts used in a generation.
 
     Args:
         evidence_facts:           Persona + domain facts retrieved for grounding.
@@ -126,9 +126,13 @@ def build_explain_output(
         article_title:            Title of the article used as external evidence.
         article_url:              URL of the article used as external evidence.
     """
-    ids = [f.evidence_id for f in evidence_facts]
+    # Restrict arrays to top 5 items maximum
+    top_evidence_facts = evidence_facts[:5]
+    top_extracted_facts = (extracted_facts or [])[:5]
+
+    ids = [f.evidence_id for f in top_evidence_facts]
     summaries = []
-    for f in evidence_facts:
+    for f in top_evidence_facts:
         if isinstance(f, EvidenceFact):
             summaries.append(
                 f"[{f.evidence_id}] {f.project} ({f.years}) — "
@@ -150,9 +154,9 @@ def build_explain_output(
                 f"[{getattr(f, 'evidence_id', '?')}] Unknown evidence type: {attrs}"
             )
 
-    # Build extracted knowledge summaries
+    # Build top 5 extracted knowledge summaries
     ext_summaries: list[str] = []
-    for xf in (extracted_facts or []):
+    for xf in top_extracted_facts:
         tag_str = f" (Tags: {', '.join(xf.tags)})" if xf.tags else ""
         source_str = f" \u2190 {xf.source_title[:60]}" if xf.source_title else ""
         ext_summaries.append(
