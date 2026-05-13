@@ -193,6 +193,12 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         build_grounding_context,
     )
     from services.console_grounding._models import ProjectFact as _ProjectFact
+    from services.knowledge_graph import KnowledgeGraphManager
+    from services.hybrid_retriever import HybridRetriever
+
+    # Initialize Knowledge Graph Manager
+    _kg: KnowledgeGraphManager | None = None
+    _hybrid_retriever: HybridRetriever | None = None
 
     def _load_knowledge_state() -> tuple[list, str, list, list, list]:
         """Load (or reload) avatar knowledge state.
@@ -240,6 +246,21 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         len(_profile_facts),
         len(_profile_facts),
     )
+
+    # Bootstrap Knowledge Graph from avatar state
+    try:
+        _kg = KnowledgeGraphManager()
+        _kg.bootstrap_from_avatar_state(_lav_console())
+        _hybrid_retriever = HybridRetriever(kg=_kg)
+        logger.info(
+            "Knowledge Graph initialized: %d nodes, %d edges",
+            _kg.node_count,
+            _kg.edge_count,
+        )
+    except Exception as kg_err:
+        logger.warning("Knowledge Graph initialization failed: %s — using fallback retrieval", kg_err)
+        _kg = None
+        _hybrid_retriever = None
 
     from services.console_grounding import truth_gate_result as _tg_result
 
@@ -313,11 +334,12 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report")
+            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
             print("  /verify — toggle DoT + similarity verification on/off")
             print("  /avatar-explain — toggle avatar-explain report on/off")
             print("  /dot-report — toggle DoT report on/off")
+            print("  /graph-stats — show knowledge graph statistics")
             continue
         if cmd == "/reset":
             history.clear()
@@ -348,6 +370,20 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             _status = str(Fore.GREEN) + "ON" + str(Style.RESET_ALL) if dot_report else str(Fore.RED) + "OFF" + str(Style.RESET_ALL)
             print(f"DoT report mode: {_status}")
             _print_status()
+            continue
+        if cmd == "/graph-stats":
+            if _kg is None:
+                print(str(Fore.RED) + "Knowledge Graph is not available." + str(Style.RESET_ALL))
+            else:
+                summary = _kg.summary()
+                print(str(Fore.CYAN) + "\n📊 Knowledge Graph Statistics:" + str(Style.RESET_ALL))
+                print(f"  Nodes: {summary['nodes']}")
+                print(f"  Edges: {summary['edges']}")
+                print(f"  Persona ID: {summary['persona_id']}")
+                print(str(Fore.YELLOW) + "  Node Types:" + str(Style.RESET_ALL))
+                for node_type, count in sorted(summary['node_types'].items(), key=lambda x: x[1], reverse=True):
+                    print(f"    {node_type}: {count}")
+                print()
             continue
 
         # Parse query to determine routing mode
@@ -460,7 +496,31 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         # Route 3: Everything else → LLM with artifact context (default)
         # This includes: domain/project/tech queries, generative requests, general chat
         # Always retrieve relevant facts and use as context
-        facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+        if _hybrid_retriever is not None:
+            # Use hybrid retriever (BM25 + graph proximity + claim support)
+            # Combine all raw facts (evidence + domain + extracted) for hybrid scoring
+            _all_candidates = list(_raw_evidence_facts) + _raw_domain_facts + _raw_extracted_facts
+            facts_ranked = _hybrid_retriever.find_facts(user_input, _all_candidates, limit=8)
+            # Convert results back to ProjectFact for compatibility with build_grounding_facts_block
+            from services.avatar_intelligence import EvidenceFact, DomainEvidenceFact, ExtractedEvidenceFact
+            facts = []
+            for f in facts_ranked:
+                if isinstance(f, EvidenceFact):
+                    # Find matching ProjectFact from _profile_facts
+                    matching = [pf for pf in _profile_facts if pf.source.startswith("persona:") and f.evidence_id in pf.source]
+                    facts.extend(matching[:1])  # Add first match
+                elif isinstance(f, DomainEvidenceFact):
+                    matching = [pf for pf in _profile_facts if pf.source.startswith("domain:") and f.evidence_id in pf.source]
+                    facts.extend(matching[:1])
+                elif isinstance(f, ExtractedEvidenceFact):
+                    matching = [pf for pf in _profile_facts if pf.source.startswith("extracted_knowledge:") and f.evidence_id in pf.source]
+                    facts.extend(matching[:1])
+            # Ensure we have at least some facts even if conversion failed
+            if not facts:
+                facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+        else:
+            # Fallback to simple retrieval when graph not available
+            facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
         facts_context = build_grounding_facts_block(facts, limit=8)
         history.append({"role": "user", "content": user_input})
         if len(history) > max_turns * 2:
