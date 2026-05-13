@@ -433,14 +433,14 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             speak_text(reply)
             continue
 
-        # Route 2: "From your learned knowledge" → Use latest 5 extracted knowledge as context
-        # If user asks to search, use keyword-based search instead of latest 5
+        # Route 2: "From your learned knowledge" → Use latest 8 extracted knowledge as context
+        # If user asks to search, use keyword-based search instead of latest 8
         if constraints.use_learned_knowledge:
             if constraints.search_learned_knowledge:
                 from services.console_grounding._retrieval import search_learned_knowledge
-                learned_facts = search_learned_knowledge(user_input, _profile_facts, limit=5)
+                learned_facts = search_learned_knowledge(user_input, _profile_facts, limit=8)
             else:
-                learned_facts = get_latest_extracted_knowledge(_profile_facts, limit=5)
+                learned_facts = get_latest_extracted_knowledge(_profile_facts, limit=8)
             # Filter the raw lists based on the 'learned_facts' we actually retrieved
             used_extracted = [f for f in _raw_extracted_facts if any(lf.source.endswith(f.evidence_id) for lf in learned_facts)]
             learned_context = build_learned_knowledge_context(learned_facts)
@@ -507,6 +507,11 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 elif isinstance(f, ExtractedEvidenceFact):
                     matching = [pf for pf in _profile_facts if pf.source.startswith("extracted_knowledge:") and f.evidence_id in pf.source]
                     facts.extend(matching[:1])
+            # Categorize only the top facts for the validation report
+            # This ensures build_explain_output only sees what was actually used
+            used_ev = [f for f in facts_ranked[:8] if isinstance(f, EvidenceFact)]
+            used_dom = [f for f in facts_ranked[:8] if isinstance(f, DomainEvidenceFact)]
+            used_ext = [f for f in facts_ranked[:8] if isinstance(f, ExtractedEvidenceFact)]
             # Ensure we have at least some facts even if conversion failed
             if not facts:
                 facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
@@ -537,12 +542,6 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
 
         from services.shared import print_validation_reports
-
-        # Helper to categorize facts for the report
-        used_ev = [f for f in _raw_evidence_facts if any(rf.source.endswith(f.evidence_id) for rf in facts)]
-        used_dom = [f for f in _raw_domain_facts if any(rf.source.endswith(f.evidence_id) for rf in facts)]
-        used_ext = [f for f in _raw_extracted_facts if any(rf.source.endswith(f.evidence_id) for rf in facts)]
-
         print_validation_reports(
             post_text=reply,
             context_text=user_input,
