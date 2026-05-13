@@ -102,6 +102,26 @@ def record_moderation_event(
 # ---------------------------------------------------------------------------
 
 
+def _format_fact_summary(f: Union[EvidenceFact, DomainEvidenceFact, ExtractedEvidenceFact]) -> str:
+    """Helper to handle the string formatting for different fact types."""
+    # Common truncation logic
+    def trunc(s: str, length: int = 80) -> str:
+        return f"{s[:length]}..." if len(s) > length else s
+
+    if isinstance(f, EvidenceFact):
+        return f"[{f.evidence_id}] {f.project} ({f.years}) — {trunc(f.details)}"
+    
+    if isinstance(f, DomainEvidenceFact):
+        tags = f" (Tags: {', '.join(f.tags)})" if f.tags else ""
+        return f"[{f.evidence_id}] {f.domain} — {trunc(f.statement)}{tags}"
+    
+    if isinstance(f, ExtractedEvidenceFact):
+        tags = f" (Tags: {', '.join(f.tags)})" if f.tags else ""
+        source = f" ← {trunc(f.source_title, 60)}" if f.source_title else ""
+        return f"[{f.evidence_id}] {trunc(f.statement)}{tags}{source}"
+
+    return f"[{getattr(f, 'evidence_id', '?')}] Unknown type: {str(f)[:100]}"
+
 def build_explain_output(
     evidence_facts: Sequence[Union[EvidenceFact, DomainEvidenceFact]],
     article_ref: str,
@@ -109,67 +129,27 @@ def build_explain_output(
     ssi_component: str,
     dot_per_sentence_scores: list[float] | None = None,
     spacy_sim_scores: dict[str, float] | None = None,
-    extracted_facts: "Sequence[ExtractedEvidenceFact] | None" = None,
+    extracted_facts: Sequence[ExtractedEvidenceFact] | None = None,
     article_title: str = "",
     article_url: str = "",
 ) -> ExplainOutput:
-    """Build an ExplainOutput summary from the top 5 evidence facts used in a generation.
-
-    Args:
-        evidence_facts:           Persona + domain facts retrieved for grounding.
-        article_ref:              Article title or URL for display.
-        channel:                  Target channel (linkedin, x, bluesky, etc.).
-        ssi_component:            SSI component the post targets.
-        dot_per_sentence_scores:  Per-sentence DoT gradient from TruthGateMeta.
-        spacy_sim_scores:         Per-sentence spaCy similarity from TruthGateMeta.
-        extracted_facts:          NLP-extracted knowledge facts used as evidence.
-        article_title:            Title of the article used as external evidence.
-        article_url:              URL of the article used as external evidence.
     """
-    # Restrict arrays to top 5 items maximum
-    top_evidence_facts = evidence_facts[:5]
-    top_extracted_facts = (extracted_facts or [])[:5]
+    Builds an ExplainOutput summary. 
+    Assumes facts have been pre-filtered by the caller (routing layer).
+    """
+    # 1. Map Persona/Domain facts to summaries
+    summaries = [_format_fact_summary(f) for f in evidence_facts]
+    ids = [f.evidence_id for f in evidence_facts]
 
-    ids = [f.evidence_id for f in top_evidence_facts]
-    summaries = []
-    for f in top_evidence_facts:
-        if isinstance(f, EvidenceFact):
-            summaries.append(
-                f"[{f.evidence_id}] {f.project} ({f.years}) — "
-                f"{f.details[:80]}{'...' if len(f.details) > 80 else ''}"
-            )
-        elif isinstance(f, DomainEvidenceFact):
-            summaries.append(
-                f"[{f.evidence_id}] {f.domain} — "
-                f"{f.statement[:80]}{'...' if len(f.statement) > 80 else ''} "
-                f"(Tags: {', '.join(f.tags)})"
-            )
-        else:
-            attrs = (
-                ", ".join(f"{k}={v}" for k, v in vars(f).items())
-                if hasattr(f, "__dict__")
-                else str(f)
-            )
-            summaries.append(
-                f"[{getattr(f, 'evidence_id', '?')}] Unknown evidence type: {attrs}"
-            )
+    # 2. Map Extracted knowledge to summaries
+    ext_summaries = [_format_fact_summary(xf) for xf in (extracted_facts or [])]
 
-    # Build top 5 extracted knowledge summaries
-    ext_summaries: list[str] = []
-    for xf in top_extracted_facts:
-        tag_str = f" (Tags: {', '.join(xf.tags)})" if xf.tags else ""
-        source_str = f" \u2190 {xf.source_title[:60]}" if xf.source_title else ""
-        ext_summaries.append(
-            f"[{xf.evidence_id}] {xf.statement[:80]}{'...' if len(xf.statement) > 80 else ''}"
-            f"{tag_str}{source_str}"
-        )
-
-    # Build article evidence one-liner
+    # 3. Build article evidence one-liner
     art_evidence = ""
     if article_title or article_url:
         _title = (article_title or article_ref)[:80]
-        _url = article_url[:100] if article_url else ""
-        art_evidence = _title + (f" | {_url}" if _url else "")
+        _url = f" | {article_url[:100]}" if article_url else ""
+        art_evidence = f"{_title}{_url}"
 
     return ExplainOutput(
         evidence_ids=ids,

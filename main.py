@@ -441,6 +441,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 learned_facts = search_learned_knowledge(user_input, _profile_facts, limit=5)
             else:
                 learned_facts = get_latest_extracted_knowledge(_profile_facts, limit=5)
+            # Filter the raw lists based on the 'learned_facts' we actually retrieved
+            used_extracted = [f for f in _raw_extracted_facts if any(lf.source.endswith(f.evidence_id) for lf in learned_facts)]
             learned_context = build_learned_knowledge_context(learned_facts)
             history.append({"role": "user", "content": user_input})
             if len(history) > max_turns * 2:
@@ -472,9 +474,9 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 post_text=reply,
                 context_text=user_input,
                 grounding_facts=_profile_facts,
-                raw_evidence=_raw_evidence_facts,
-                raw_domain=_raw_domain_facts,
-                raw_extracted=_raw_extracted_facts,
+                raw_evidence=[],
+                raw_domain=[],
+                raw_extracted=used_extracted,
                 facts_used_for_dot=facts,
                 verify=verify,
                 avatar_explain=avatar_explain,
@@ -536,13 +538,18 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
 
         from services.shared import print_validation_reports
 
+        # Helper to categorize facts for the report
+        used_ev = [f for f in _raw_evidence_facts if any(rf.source.endswith(f.evidence_id) for rf in facts)]
+        used_dom = [f for f in _raw_domain_facts if any(rf.source.endswith(f.evidence_id) for rf in facts)]
+        used_ext = [f for f in _raw_extracted_facts if any(rf.source.endswith(f.evidence_id) for rf in facts)]
+
         print_validation_reports(
             post_text=reply,
             context_text=user_input,
             grounding_facts=_profile_facts,
-            raw_evidence=_raw_evidence_facts,
-            raw_domain=_raw_domain_facts,
-            raw_extracted=_raw_extracted_facts,
+            raw_evidence=used_ev,
+            raw_domain=used_dom,
+            raw_extracted=used_ext,
             facts_used_for_dot=facts,
             verify=verify,
             avatar_explain=avatar_explain,
