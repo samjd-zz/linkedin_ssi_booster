@@ -22,6 +22,7 @@ import os
 import re
 import logging
 from typing import Optional
+from colorama import Fore, Style
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -200,3 +201,79 @@ if AVATAR_CONFIDENCE_POLICY not in _VALID_CONFIDENCE_POLICIES:
 AVATAR_LEARNING_ENABLED: bool = os.getenv("AVATAR_LEARNING_ENABLED", "true").lower() == "true"
 AVATAR_MAX_MEMORY_ITEMS: int = int(os.getenv("AVATAR_MAX_MEMORY_ITEMS", "200"))
 
+from colorama import Fore, Style
+import logging
+
+logger = logging.getLogger(__name__)
+
+def print_validation_reports(
+    post_text: str,
+    context_text: str,
+    grounding_facts: list,
+    raw_evidence: list,
+    raw_domain: list,
+    raw_extracted: list,
+    facts_used_for_dot: list,
+    verify: bool = False,
+    avatar_explain: bool = False,
+    dot_report: bool = False,
+    channel: str = "general",
+    ssi_component: str = "general"
+) -> None:
+    """Unified reporting engine for both Console and Curator."""
+    from services.console_grounding import truth_gate_result as _tgr
+    from services.avatar_intelligence import build_explain_output, format_explain_output
+    from services.derivative_of_truth import (
+        EvidencePath, EVIDENCE_TYPE_SECONDARY, REASONING_TYPE_LOGICAL,
+        score_claim_with_truth_gradient, report_truth_gradient, format_truth_gradient_report
+    )
+    from services.derivative_of_truth._reporting import format_dot_report_header
+
+    # 1. Truth Bar (if verify=True)
+    if verify:
+        # Minimalist inline verification bar logic
+        try:
+            _, _meta = _tgr(post_text, context_text, grounding_facts)
+            dot = _meta.truth_gradient
+            col = Fore.GREEN if dot >= 0.75 else (Fore.YELLOW if dot >= 0.45 else Fore.RED)
+            bar = "█" * round(dot * 20) + "░" * (20 - round(dot * 20))
+            print(f"  {Style.DIM}DoT {dot:.2f} {col}{bar}{Style.RESET_ALL}")
+        except Exception: pass
+
+    # 2. Avatar Explain
+    if avatar_explain:
+        print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
+        try:
+            _, _gate_meta = _tgr(post_text, context_text, grounding_facts)
+            _explain = build_explain_output(
+                evidence_facts=list(raw_evidence) + raw_domain,
+                article_ref=context_text[:100],
+                channel=channel,
+                ssi_component=ssi_component,
+                dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
+                spacy_sim_scores=_gate_meta.spacy_sim_scores,
+                extracted_facts=raw_extracted,
+            )
+            print("\r" + " " * 45 + "\r", end="", flush=True)
+            print(format_explain_output(_explain))
+        except Exception as e:
+            print("\r" + " " * 45 + "\r", end="", flush=True)
+            logger.debug("Avatar explain failed: %s", e)
+
+    # 3. DoT Report
+    if dot_report:
+        print(f"{Fore.CYAN}📈 Generating DoT report...{Style.RESET_ALL}", end="", flush=True)
+        try:
+            _dot_paths = [
+                EvidencePath(source=f.source, evidence_type=EVIDENCE_TYPE_SECONDARY, 
+                             reasoning_type=REASONING_TYPE_LOGICAL, credibility=0.7)
+                for f in facts_used_for_dot
+            ]
+            _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
+            _dot_report_dict = report_truth_gradient(post_text, _dot_result, verbose=True)
+            print("\r" + " " * 45 + "\r", end="", flush=True)
+            print(format_dot_report_header(f"DoT Report ({channel})"))
+            print(format_truth_gradient_report(_dot_report_dict))
+        except Exception as e:
+            print("\r" + " " * 45 + "\r", end="", flush=True)
+            logger.debug("DoT report failed: %s", e)

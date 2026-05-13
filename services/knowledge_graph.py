@@ -461,7 +461,7 @@ class KnowledgeGraphManager:
                                                {"source": "extracted_knowledge",
                                                 "confidence": xfact.confidence})
 
-        logger.info(
+        logger.debug(
             "KG bootstrap complete: %d nodes, %d edges",
             self._graph.number_of_nodes(),
             self._graph.number_of_edges(),

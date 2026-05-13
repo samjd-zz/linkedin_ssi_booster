@@ -176,11 +176,9 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     print("    • How are you today?")
     print()
     print(str(Fore.WHITE) + str(Style.BRIGHT) + "🔗 Knowledge Graph Integration:" + str(Style.RESET_ALL))
-    print("  • Route 3 uses hybrid fact ranking:")
-    print("    - 70% BM25 keyword matching")
-    print("    - 20% graph proximity (facts closer to persona node rank higher)")
-    print("    - 10% claim support (facts with more supporting edges rank higher)")
-    print("  • Use /graph-stats to inspect graph structure (nodes, edges, types)")
+    print("    • 70% BM25 keyword matching")
+    print("    • 20% graph proximity (facts closer to persona node rank higher)")
+    print("    • 10% claim support (facts with more supporting edges rank higher)")
     print()
     print(str(Fore.WHITE) + "  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats" + str(Style.RESET_ALL))
     print()
@@ -199,6 +197,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         domain_facts_to_project_facts,
         build_grounding_context,
     )
+    
     from services.console_grounding._models import ProjectFact as _ProjectFact
     from services.knowledge_graph import KnowledgeGraphManager
     from services.hybrid_retriever import HybridRetriever
@@ -248,7 +247,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         return profile_facts, grounding_ctx, list(avatar_facts), domain_facts_raw, extracted_raw
 
     _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
-    logger.info(
+    logger.debug(
         "Console mode: loaded %d grounding facts (%d total)",
         len(_profile_facts),
         len(_profile_facts),
@@ -259,7 +258,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         _kg = KnowledgeGraphManager()
         _kg.bootstrap_from_avatar_state(_lav_console())
         _hybrid_retriever = HybridRetriever(kg=_kg)
-        logger.info(
+        logger.debug(
             "Knowledge Graph initialized: %d nodes, %d edges",
             _kg.node_count,
             _kg.edge_count,
@@ -326,6 +325,38 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         except Exception:
             pass  # never interrupt the conversation for a scoring failure
 
+    def print_graph_statistics(summary):
+        """
+        Prints the graph statistics in a visually enhanced, structured, and colored format.
+        """
+        print("\n" + "="*60)
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'GRAPH STRUCTURE ANALYSIS':^60}")
+        print("="*60)
+
+        # --- 1. Core Metrics (Table Format) ---
+        print(f"\n{Fore.YELLOW}{'--- CORE METRICS ---':^60}")
+        print(f"{Fore.YELLOW}{'Metric':<20}{'Count':>10}{'Details':<30}")
+        print("-" * 60)
+
+        print(f"{'Nodes':<20}{summary['nodes']:>10} | {'Edges':<20}{summary['edges']:>10}")
+        
+        # --- 2. Component Breakdown (Grouped Stats) ---
+        print(f"\n{Fore.YELLOW}{'--- COMPONENT BREAKDOWN ---':^60}")
+        
+        # Node Type Breakdown
+        node_types = summary.get('node_types', {})
+        if node_types:
+            print(f"{Fore.BLUE}{'Node Type Distribution':<20}{'Count':>10}")
+            print("-" * 30)
+            for node_type, count in node_types.items():
+                print(f"  {Fore.BLUE}{node_type:<18}{Fore.BLUE}{count:>10}")
+        else:
+            print(f"{Fore.BLUE}{'No specific node type breakdown available.'}")
+
+        print("\n" + "="*60)
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'ANALYSIS COMPLETE':^60}")
+        print("="*60)
+
     while True:
         try:
             user_input = input("\nYou> ").strip()
@@ -383,14 +414,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 print(str(Fore.RED) + "Knowledge Graph is not available." + str(Style.RESET_ALL))
             else:
                 summary = _kg.summary()
-                print(str(Fore.CYAN) + "\n📊 Knowledge Graph Statistics:" + str(Style.RESET_ALL))
-                print(f"  Nodes: {summary['nodes']}")
-                print(f"  Edges: {summary['edges']}")
                 print(f"  Persona ID: {summary['persona_id']}")
-                print(str(Fore.YELLOW) + "  Node Types:" + str(Style.RESET_ALL))
-                for node_type, count in sorted(summary['node_types'].items(), key=lambda x: x[1], reverse=True):
-                    print(f"    {node_type}: {count}")
-                print()
+                print_graph_statistics(summary)
             continue
 
         # Parse query to determine routing mode
@@ -440,64 +465,22 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 _print_truth_score(reply)
                 print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
             
-            # Print avatar-explain report if requested
-            if avatar_explain:
-                print(str(Fore.CYAN) + "🧠 Generating avatar-explain..." + str(Style.RESET_ALL), end="", flush=True)
-                try:
-                    from services.avatar_intelligence import build_explain_output, format_explain_output
-                    from services.console_grounding import truth_gate_result as _tgr_r2
-                    _, _gate_meta_r2 = _tgr_r2(reply, user_input, _profile_facts)
-                    # Map the learned_facts (ProjectFact) back to raw extracted facts for display
-                    # Only show the facts that were actually used as context (top 5 from search/latest)
-                    _learned_fact_ids = {f.source.split(':')[-1] for f in learned_facts if f.source.startswith("extracted_knowledge:")}
-                    _used_extracted = [f for f in _raw_extracted_facts if f.id in _learned_fact_ids]
-                    _explain_r2 = build_explain_output(
-                        evidence_facts=[],  # Route 2 uses extracted knowledge, not persona facts
-                        article_ref=user_input,
-                        channel="console",
-                        ssi_component="general",
-                        dot_per_sentence_scores=_gate_meta_r2.dot_per_sentence_scores,
-                        spacy_sim_scores=_gate_meta_r2.spacy_sim_scores,
-                        extracted_facts=_used_extracted,
-                    )
-                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                    print(format_explain_output(_explain_r2))
-                except Exception as _exp_err:
-                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                    logger.debug("Avatar explain unavailable for Route 2: %s", _exp_err)
             
-            # Print DoT report if requested
-            if dot_report:
-                print(str(Fore.CYAN) + "📈 Generating DoT report..." + str(Style.RESET_ALL), end="", flush=True)
-                try:
-                    from services.derivative_of_truth import (
-                        EvidencePath,
-                        EVIDENCE_TYPE_SECONDARY,
-                        REASONING_TYPE_LOGICAL,
-                        score_claim_with_truth_gradient,
-                        report_truth_gradient,
-                        format_truth_gradient_report,
-                    )
-                    from services.derivative_of_truth._reporting import format_dot_report_header
-                    _dot_paths_r2 = [
-                        EvidencePath(
-                            source=f"extracted_knowledge:{f.source.split(':')[-1] if ':' in f.source else f.source}",
-                            evidence_type=EVIDENCE_TYPE_SECONDARY,
-                            reasoning_type=REASONING_TYPE_LOGICAL,
-                            credibility=0.7,
-                        )
-                        for f in learned_facts
-                    ]
-                    _dot_result_r2 = score_claim_with_truth_gradient(reply, _dot_paths_r2)
-                    _dot_report_dict_r2 = report_truth_gradient(reply, _dot_result_r2, verbose=True)
-                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                    print(format_dot_report_header())
-                    print(format_truth_gradient_report(_dot_report_dict_r2))
-                    print()
-                except Exception as _dot_err:
-                    print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                    logger.debug("DoT report unavailable for Route 2: %s", _dot_err)
-            
+            from services.shared import print_validation_reports
+
+            print_validation_reports(
+                post_text=reply,
+                context_text=user_input,
+                grounding_facts=_profile_facts,
+                raw_evidence=_raw_evidence_facts,
+                raw_domain=_raw_domain_facts,
+                raw_extracted=_raw_extracted_facts,
+                facts_used_for_dot=facts,
+                verify=verify,
+                avatar_explain=avatar_explain,
+                dot_report=dot_report
+            )
+
             continue
 
         # Route 3: Everything else → LLM with artifact context (default)
@@ -550,64 +533,21 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
             _print_truth_score(reply)
             print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
-        
-        # Print avatar-explain report if requested
-        if avatar_explain:
-            print(str(Fore.CYAN) + "🧠 Generating avatar-explain..." + str(Style.RESET_ALL), end="", flush=True)
-            try:
-                from services.avatar_intelligence import build_explain_output, format_explain_output
-                from services.console_grounding import truth_gate_result as _tgr_r3
-                _, _gate_meta_r3 = _tgr_r3(reply, user_input, _profile_facts)
-                # Map ProjectFact sources back to original fact objects
-                # For Route 3, we retrieve relevant facts and need to map them back
-                # Use all raw facts as evidence for the explain report
-                _explain_r3 = build_explain_output(
-                    evidence_facts=list(_raw_evidence_facts) + _raw_domain_facts,
-                    article_ref=user_input,
-                    channel="console",
-                    ssi_component="general",
-                    dot_per_sentence_scores=_gate_meta_r3.dot_per_sentence_scores,
-                    spacy_sim_scores=_gate_meta_r3.spacy_sim_scores,
-                    extracted_facts=list(_raw_extracted_facts) if _raw_extracted_facts else None,
-                )
-                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                print(format_explain_output(_explain_r3))
-            except Exception as _exp_err:
-                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                logger.debug("Avatar explain unavailable for Route 3: %s", _exp_err)
-        
-        # Print DoT report if requested
-        if dot_report:
-            print(str(Fore.CYAN) + "📈 Generating DoT report..." + str(Style.RESET_ALL), end="", flush=True)
-            try:
-                from services.derivative_of_truth import (
-                    EvidencePath,
-                    EVIDENCE_TYPE_SECONDARY,
-                    REASONING_TYPE_LOGICAL,
-                    score_claim_with_truth_gradient,
-                    report_truth_gradient,
-                    format_truth_gradient_report,
-                )
-                from services.derivative_of_truth._reporting import format_dot_report_header
-                _dot_paths_r3 = [
-                    EvidencePath(
-                        source=f.source,
-                        evidence_type=EVIDENCE_TYPE_SECONDARY,
-                        reasoning_type=REASONING_TYPE_LOGICAL,
-                        credibility=0.7,
-                    )
-                    for f in facts
-                ]
-                _dot_result_r3 = score_claim_with_truth_gradient(reply, _dot_paths_r3)
-                _dot_report_dict_r3 = report_truth_gradient(reply, _dot_result_r3, verbose=True)
-                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                print(format_dot_report_header())
-                print(format_truth_gradient_report(_dot_report_dict_r3))
-                print()
-            except Exception as _dot_err:
-                print("\r" + " " * 40 + "\r", end="", flush=True)  # Clear the status line
-                logger.debug("DoT report unavailable for Route 3: %s", _dot_err)
 
+        from services.shared import print_validation_reports
+
+        print_validation_reports(
+            post_text=reply,
+            context_text=user_input,
+            grounding_facts=_profile_facts,
+            raw_evidence=_raw_evidence_facts,
+            raw_domain=_raw_domain_facts,
+            raw_extracted=_raw_extracted_facts,
+            facts_used_for_dot=facts,
+            verify=verify,
+            avatar_explain=avatar_explain,
+            dot_report=dot_report
+        )
 
 def main():
     parser = argparse.ArgumentParser(description="LinkedIn SSI Booster via Buffer API")

@@ -18,7 +18,7 @@ from typing import Any
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
-from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT
+from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, print_validation_reports
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
 from services.console_grounding import ProjectFact, truth_gate_result
 
@@ -265,86 +265,7 @@ class ContentCurator:
             )
             return requested_mode, "confidence scoring unavailable — using requested mode"
 
-    def _print_avatar_explain(
-        self,
-        post_text: str,
-        article: dict[str, Any],
-        grounding_facts: list[ProjectFact],
-        channel: str,
-        ssi_component: str,
-        extracted_facts: list[Any] | None = None,
-    ) -> None:
-        """Print the avatar explain block (evidence IDs + DoT/spaCy scores).
-        
-        ⚠️  Avatar Explain retrieves evidence independently from console grounding,
-        so it may show facts that are filtered out by truth-gate before DoT reporting.
-        
-        This is by design: Avatar Explain displays the *candidate* facts that were considered,
-        while DoT Report shows only the facts that passed filtering (grounding_facts).
-        To align them fully, Avatar Explain would need to apply truth-gate filtering to its
-        independently retrieved facts, which would require a deeper refactor.
-        """
-        try:
-            from services.avatar_intelligence import (
-                retrieve_evidence,
-                build_explain_output,
-                format_explain_output,
-            )
-            from services.console_grounding import truth_gate_result as _tgr_exp
-
-            grounding_query = f"{article['title']}. {article['summary'][:600]}. {ssi_component}"
-            _exp_limit = int(os.getenv("EVIDENCE_PROJECT_COUNT", "3")) + int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
-            _relevant = retrieve_evidence(grounding_query, self._avatar_facts + self._domain_facts, limit=_exp_limit)
-            _, _gate_meta = _tgr_exp(post_text, article["summary"], grounding_facts)
-            _extracted = extracted_facts or []
-            _explain = build_explain_output(
-                evidence_facts=_relevant,
-                article_ref=article.get("title", ""),
-                channel=channel,
-                ssi_component=ssi_component,
-                dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
-                spacy_sim_scores=_gate_meta.spacy_sim_scores,
-                extracted_facts=_extracted,  # type: ignore[arg-type]
-                article_title=article.get("title", ""),
-                article_url=article.get("link", ""),
-            )
-            print(format_explain_output(_explain))
-        except Exception as _exp_exc:
-            logger.warning("Avatar explanation failed (continuing): %s", _exp_exc)
-
-    def _print_dot_report(
-        self,
-        post_text: str,
-        article: dict[str, Any],
-        grounding_facts: list[ProjectFact],
-        extracted_facts: list[Any],
-    ) -> None:
-        """Print the Derivative of Truth report for *post_text*."""
-        try:
-            from services.derivative_of_truth import (
-                score_claim_with_truth_gradient,
-                report_truth_gradient,
-                format_truth_gradient_report,
-            )
-            _dot_paths = (
-                [fact_to_evidence_path(f, post_text) for f in (grounding_facts or [])]
-                + [extracted_fact_to_evidence_path(f, post_text) for f in (extracted_facts or [])]
-                + [article_to_evidence_path(article, post_text)]
-            )
-            _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
-            _dot_report_dict = report_truth_gradient(
-                post_text,
-                _dot_result,
-                verbose=True,
-                primary_category=article.get("primary_category"),
-                primary_ssi_component=article.get("primary_ssi_component"),
-            )
-            _dot_colour = str(Fore.RED) if _dot_result.flagged else str(Fore.CYAN)
-            from services.derivative_of_truth._reporting import format_dot_report_header
-            print(format_dot_report_header("Derivative of Truth Report (curate)"))
-            print(format_truth_gradient_report(_dot_report_dict))
-        except Exception as _dot_err:
-            logger.debug("DoT report unavailable (curate): %s", _dot_err)
+    
 
         # Category alignment validation — only when classify is active
         if self._classify:
@@ -649,6 +570,19 @@ class ContentCurator:
             requested_mode=message_type,
         )
         li_text = append_url_and_hashtags(li_text, article["link"])
+        print_validation_reports(
+            post_text=li_text,
+            context_text=article["summary"],
+            grounding_facts=grounding_facts,
+            raw_evidence=self._avatar_facts,
+            raw_domain=self._domain_facts,
+            raw_extracted=extracted_facts,
+            facts_used_for_dot=grounding_facts + (extracted_facts or []),
+            avatar_explain=avatar_explain,
+            dot_report=dot_report,
+            channel="all",
+            ssi_component=ssi_component
+        )
 
         time.sleep(request_delay)
         x_post = self.ai.summarise_for_curation(
@@ -718,10 +652,6 @@ class ContentCurator:
             print(str(Fore.RED) + str(Style.BRIGHT) + "\n🎬 YOUTUBE SHORT SCRIPT:" + str(Style.RESET_ALL) + f"\n{yt_script}\n")
             print("GitHub: https://buff.ly/tfajNLI")
             print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
-        if avatar_explain:
-            self._print_avatar_explain(li_text, article, grounding_facts, "all", ssi_component, extracted_facts=extracted_facts)
-        if dot_report:
-            self._print_dot_report(li_text, article, grounding_facts, extracted_facts)
 
         if dry_run:
             created_ideas.append({"dry_run": True, "title": article["title"], "ssi_component": ssi_component, "channel": "all"})
@@ -830,6 +760,20 @@ class ContentCurator:
             logger.info("Skipping article with no usable content: %s", article["title"][:60])
             return created_ideas
 
+        print_validation_reports(
+            post_text=post_text,
+            context_text=article["summary"],
+            grounding_facts=grounding_facts,
+            raw_evidence=self._avatar_facts,
+            raw_domain=self._domain_facts,
+            raw_extracted=extracted_facts,
+            facts_used_for_dot=grounding_facts + (extracted_facts or []),
+            avatar_explain=avatar_explain,
+            dot_report=dot_report,
+            channel=channel,
+            ssi_component=ssi_component
+        )
+
         try:
             from services.shared import AVATAR_LEARNING_ENABLED
             from services.avatar_intelligence import (
@@ -903,11 +847,6 @@ class ContentCurator:
 
         self._print_article_header(article, channel, ssi_component, _conf_route, _conf_reason)
         print(str(Fore.GREEN) + f"\n✍️  GENERATED POST:" + str(Style.RESET_ALL) + f"\n{post_text}")
-
-        if avatar_explain:
-            self._print_avatar_explain(post_text, article, grounding_facts, channel, ssi_component, extracted_facts=extracted_facts)
-        if dot_report:
-            self._print_dot_report(post_text, article, grounding_facts, extracted_facts)
 
         if dry_run:
             created_ideas.append({
