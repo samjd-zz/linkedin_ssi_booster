@@ -18,7 +18,7 @@ from typing import Any
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
-from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, print_validation_reports
+from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
 from services.console_grounding import ProjectFact, truth_gate_result
 
@@ -650,19 +650,19 @@ class ContentCurator:
             requested_mode=message_type,
         )
         li_text = append_url_and_hashtags(li_text, article["link"])
-        print_validation_reports(
-            post_text=li_text,
-            context_text=article["summary"],
-            grounding_facts=grounding_facts,
-            raw_evidence=self._avatar_facts,
-            raw_domain=self._domain_facts,
-            raw_extracted=extracted_facts,
-            facts_used_for_dot=grounding_facts + (extracted_facts or []),
-            avatar_explain=avatar_explain,
-            dot_report=dot_report,
-            channel="all",
-            ssi_component=ssi_component
-        )
+        # print_validation_reports(
+        #     post_text=li_text,
+        #     context_text=article["summary"],
+        #     grounding_facts=grounding_facts,
+        #     raw_evidence=self._avatar_facts,
+        #     raw_domain=self._domain_facts,
+        #     raw_extracted=extracted_facts,
+        #     facts_used_for_dot=grounding_facts + (extracted_facts or []),
+        #     avatar_explain=avatar_explain,
+        #     dot_report=dot_report,
+        #     channel="all",
+        #     ssi_component=ssi_component
+        # )
 
         time.sleep(request_delay)
         x_post = self.ai.summarise_for_curation(
@@ -843,19 +843,19 @@ class ContentCurator:
             logger.info("Skipping article with no usable content: %s", article["title"][:60])
             return created_ideas
 
-        print_validation_reports(
-            post_text=post_text,
-            context_text=article["summary"],
-            grounding_facts=grounding_facts,
-            raw_evidence=self._avatar_facts,
-            raw_domain=self._domain_facts,
-            raw_extracted=extracted_facts,
-            facts_used_for_dot=grounding_facts + (extracted_facts or []),
-            avatar_explain=avatar_explain,
-            dot_report=dot_report,
-            channel=channel,
-            ssi_component=ssi_component
-        )
+        # print_validation_reports(
+        #     post_text=post_text,
+        #     context_text=article["summary"],
+        #     grounding_facts=grounding_facts,
+        #     raw_evidence=self._avatar_facts,
+        #     raw_domain=self._domain_facts,
+        #     raw_extracted=extracted_facts,
+        #     facts_used_for_dot=grounding_facts + (extracted_facts or []),
+        #     avatar_explain=avatar_explain,
+        #     dot_report=dot_report,
+        #     channel=channel,
+        #     ssi_component=ssi_component
+        # )
 
         try:
             from services.shared import AVATAR_LEARNING_ENABLED
