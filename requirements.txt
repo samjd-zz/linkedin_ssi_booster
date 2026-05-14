@@ -10,6 +10,7 @@ sentencepiece
 gguf
 python-dotenv
 Pillow
+term-img
 
 # --- SEARCH, NLP & INTELLIGENCE ---
 rank_bm25>=0.2.2

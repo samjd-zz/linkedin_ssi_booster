@@ -2,7 +2,6 @@ from typing import Any
 import torch
 import os
 from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
-from PIL import Image
 
 def generate_flux_image(
     prompt: str, 
