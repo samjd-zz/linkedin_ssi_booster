@@ -621,6 +621,8 @@ def main():
             incompatible.append("--save-ssi")
         if args.bsky_stats:
             incompatible.append("--bsky-stats")
+        if args.reconcile:
+            incompatible.append("--reconcile")
         if incompatible:
             print(
                 str(Fore.YELLOW)
@@ -654,17 +656,19 @@ def main():
         x_id = os.getenv("BUFFER_X_CHANNEL_ID")
         bsky_id = os.getenv("BUFFER_BLUESKY_CHANNEL_ID")
         threads_id = os.getenv("BUFFER_THREADS_CHANNEL_ID")
+        facebook_id = os.getenv("BUFFER_FACEBOOK_CHANNEL_ID")
         if x_id:
             channel_ids["x"] = x_id
         if bsky_id:
             channel_ids["bluesky"] = bsky_id
         if threads_id:
             channel_ids["threads"] = threads_id
+        if facebook_id:
+            channel_ids["facebook"] = facebook_id
         stats = reconcile_published(buffer, {k: v for k, v in channel_ids.items() if v is not None})
         print(str(Fore.GREEN) + "\n✅  Reconcile complete" + str(Style.RESET_ALL))
         for k, v in stats.items():
             print(f"   {k}: {v}")
-        return
 
     if args.save_ssi:
         brand, find, engage, build = args.save_ssi
