@@ -154,4 +154,3 @@ services:
 
 volumes:
   ollama_data:
-  piper_data:
