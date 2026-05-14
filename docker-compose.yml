@@ -1,15 +1,33 @@
 services:
+  # ── FLUX.1-schnell Service ────────────────────────────────────────────────
+  # This is the heavy-lifter. Only starts with --profile full
+  flux-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ssi_booster_flux
+    profiles: [ "full" ]
+    volumes:
+      - ./models/flux:/app/models/flux:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    restart: unless-stopped
+
   # ── Ollama LLM server ──────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
     container_name: ssi_booster_ollama
+    profiles: [ "core", "full" ]
     restart: unless-stopped
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    # Uncomment the section below to enable NVIDIA GPU passthrough.
-    # Requires the NVIDIA Container Toolkit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
     deploy:
       resources:
         reservations:
@@ -24,17 +42,18 @@ services:
       retries: 5
       start_period: 10s
 
-  # ── Ollama model initialiser (runs once, then exits) ──────────────────────
-  # Pulls the configured model so it is ready before the app starts.
+  # ── Ollama model initialiser ──────────────────────────────────────────────
   ollama-init:
     image: ollama/ollama:latest
     container_name: ssi_booster_ollama_init
+    profiles: [ "core", "full" ]
     depends_on:
       ollama:
         condition: service_healthy
     env_file: .env
     environment:
       OLLAMA_HOST: http://ollama:11434
+      OLLAMA_NUM_PARALLEL: 1
     entrypoint: >
       sh -c "
         MODEL=$${OLLAMA_MODEL:-llama3.2}
@@ -49,10 +68,11 @@ services:
       "
     restart: "no"
 
-  # ── Wyoming Piper TTS server (optional voice synthesis) ───────────────────
+  # ── Wyoming Piper TTS server ──────────────────────────────────────────────
   piper:
     image: rhasspy/wyoming-piper:latest
     container_name: ssi_booster_piper
+    profiles: [ "core", "full" ]
     restart: unless-stopped
     ports:
       - "10200:10200"
@@ -60,11 +80,32 @@ services:
       - piper_data:/data
     command: --voice en_US-libritts_r-medium
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "10200"]
+      test: [ "CMD", "nc", "-z", "localhost", "10200" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  # The "Init Container" for downloading models
+  setup-models:
+    image: alpine:latest
+    container_name: ssi_booster_model_setup
+    volumes:
+      # 1. Map the host storage to the container download path
+      - ./models/flux:/app/models/flux
+      # 2. Map your local scripts folder so the container can run the .sh file
+      - ./scripts:/app/scripts:ro
+      # 3. Map the .env file so the script can read your CIVITAI_API_KEY
+      - ./.env:/app/.env:ro
+    # Install curl/bash and run the script
+    command: >
+      sh -c "
+        apk add --no-cache curl bash && 
+        chmod +x /app/scripts/download-flux1-schnell-Q4_K_S.sh && 
+        /app/scripts/download-flux1-schnell-Q4_K_S.sh
+      "
+    environment:
+      - CIVITAI_API_KEY=${CIVITAI_API_KEY}
 
   # ── LinkedIn SSI Booster application ──────────────────────────────────────
   app:
@@ -72,30 +113,38 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: ssi_booster_app
+    profiles: [ "core", "full" ]
     depends_on:
+      # setup-models continues in the background, which is fine since it just 
+      # needs the models to be present before it starts generating images
+      setup-models:
+        condition: service_started
       ollama:
+        condition: service_healthy
+      piper:
         condition: service_healthy
     env_file: .env
     environment:
-      # Override the Ollama URL to reach the ollama service by its Docker name.
-      # This replaces localhost:11434 which does not resolve inside the container.
       OLLAMA_BASE_URL: http://ollama:11434
-      # Override the Wyoming Piper URL to reach the piper service by its Docker name.
       WYOMING_PIPER_HOST: piper
       WYOMING_PIPER_PORT: 10200
+      FLUX_SERVICE_URL: http://flux-app:5000
     volumes:
-      # Persist runtime data (persona graph, narrative memory, learning log,
-      # domain knowledge, selection candidates, YouTube scripts) on the host.
       - ./data:/app/data
       - ./yt-vid-data:/app/yt-vid-data
-      # Mount content_calendar.py and .env so edits on the host take effect
-      # without rebuilding the image.
       - ./content_calendar.py:/app/content_calendar.py:ro
-    stdin_open: true # keep stdin open for --console interactive mode
-    tty: true # allocate a pseudo-TTY for coloured output
-    # Default: print help. Override with `docker compose run app python main.py --schedule`
+      - ./models/flux:/app/models/flux:ro
+    stdin_open: true
+    tty: true
     command: [ "python", "main.py", "--help" ]
     restart: "no"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
     devices:
       - /dev/snd:/dev/snd
     group_add:
@@ -103,6 +152,4 @@ services:
 
 volumes:
   ollama_data:
-    driver: local
   piper_data:
-    driver: local

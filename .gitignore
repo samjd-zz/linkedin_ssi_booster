@@ -70,3 +70,5 @@ data/avatar/extracted_knowledge.json
 data/selection/generated_candidates.jsonl
 data/selection/published_posts_cache.jsonl
 data/avatar/domain_knowledge.json
+
+models/

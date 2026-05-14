@@ -1,30 +1,35 @@
-FROM python:3.11-slim
+# Use the devel image to ensure we have nvcc for llama-cpp-python
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
-# Install system dependencies needed by some Python packages
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies + Graphics libs for Flux
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+    python3.11 python3-pip python3.11-dev \
+    build-essential cmake git curl \
+    libportaudio2 portaudio19-dev \
+    libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y \
-    libportaudio2 \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/*   
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
 WORKDIR /app
 
-# Install Python dependencies first (layer caching)
+# Install compiled GPU dependencies first (Caches this heavy layer)
+ENV FORCE_CMAKE=1
+ENV CMAKE_ARGS="-DGGML_CUDA=ON"
+RUN pip install --no-cache-dir llama-cpp-python
+
+# Install the rest from your specific requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy English model (used by spacy_nlp.py)
+# External model data
 RUN python -m spacy download en_core_web_md
 
-# Copy application source
 COPY . .
-
-# Create runtime data directories in case they're not in the bind mount
 RUN mkdir -p data/avatar data/selection yt-vid-data
 
-# Default command — override via `docker compose run app python main.py --console`
 CMD ["python", "main.py", "--help"]
