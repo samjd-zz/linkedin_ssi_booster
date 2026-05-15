@@ -153,18 +153,28 @@ class TestPiperService:
         
         audio_stop = json.dumps({"type": "audio-stop"}) + "\n"
         
-        # Mock recv to return protocol messages
-        mock_sock.recv.side_effect = [
-            audio_start.encode("utf-8"),
-            audio_chunk.encode("utf-8") + audio_payload,
-            audio_stop.encode("utf-8"),
-        ]
+        # Mock recv to return protocol messages byte-by-byte for headers, full payload for audio
+        recv_buffer = []
+        for byte in audio_start.encode("utf-8"):
+            recv_buffer.append(bytes([byte]))
+        for byte in audio_chunk.encode("utf-8"):
+            recv_buffer.append(bytes([byte]))
+        recv_buffer.append(audio_payload)  # Payload is read in full (4 bytes requested)
+        for byte in audio_stop.encode("utf-8"):
+            recv_buffer.append(bytes([byte]))
+        
+        recv_buffer.append(b"")  # EOF
+        
+        mock_sock.recv.side_effect = recv_buffer
         
         service = PiperService()
         result = service.speak("Hello world")
         
         assert result is True
-        mock_sock.connect.assert_called_once_with(("localhost", 10200))
+        # Host comes from WYOMING_PIPER_HOST env var (defaults to "localhost", but may be "piper" in Docker)
+        mock_sock.connect.assert_called_once()
+        connect_args = mock_sock.connect.call_args[0][0]
+        assert connect_args[1] == 10200  # Port should always be 10200
         mock_sd_play.assert_called_once()
         mock_sd_wait.assert_called_once()
         mock_sock.close.assert_called_once()
