@@ -344,8 +344,8 @@ The stack uses **Docker Profiles** to manage hardware resources. Run the lightwe
 | `ollama` | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume |
 | `ollama-init` | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits |
 | `piper` | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start |
-| `flux-init` | *(standalone)* | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai |
-| `flux-app` | `full` | FLUX.1-schnell image generation service — compiles GPU-accelerated `llama-cpp-python` |
+| `flux-init` | `full` | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux-app` depends on it |
+| `flux-app` | `full` | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
 | `app` | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage) |
 
 ### 1. Prerequisites
@@ -377,10 +377,9 @@ cp data/avatar/domain_knowledge_java.json   data/avatar/domain_knowledge_java.js
 cp data/avatar/domain_knowledge_python.json data/avatar/domain_knowledge_python.json
 
 # 3. Edit persona_graph.json with your real career facts
-
-# 4. Download the FLUX model weights (one-time, runs flux-init)
-docker compose run --rm flux-init
 ```
+
+> **FLUX model weights:** When running `--profile full`, `flux-init` downloads the GGUF weights automatically before `flux-app` starts. No manual step required. To pre-download weights without starting the full stack: `docker compose --profile full run --rm flux-init`
 
 ### 3. Launch the stack
 
@@ -397,7 +396,7 @@ bash run.sh --profile full up -d
 docker compose --profile core up -d
 ```
 
-`ollama-init` will pull `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` on first start then exit. Leave `ollama`, `piper`, and `app` running.
+`ollama-init` will pull `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` on first start then exit. Under `--profile full`, `flux-init` runs first, then `flux-app` starts once weights are downloaded, then `app` starts. Leave `ollama`, `piper`, `flux-app`, and `app` running.
 
 ### 4. Run commands
 

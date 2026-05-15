@@ -1,13 +1,38 @@
 services:
-  # ── FLUX.1-schnell Service ────────────────────────────────────────────────
-  # This is the heavy-lifter. Only starts with --profile full
+  # ── FLUX.1-schnell model downloader ───────────────────────────────────────
+  # One-shot: downloads the GGUF weights from Civitai into ./models/flux/
+  # Run manually: docker compose run --rm flux-init
+  # Runs automatically under --profile full before flux-app starts.
+  flux-init:
+    image: alpine:latest
+    container_name: ssi_booster_flux_init
+    profiles: [ "full" ]
+    volumes:
+      - ./models/flux:/app/models/flux
+      - ./scripts:/app/scripts:ro
+      - ./.env:/app/.env:ro
+    command: >
+      sh -c "
+        apk add --no-cache curl bash &&
+        chmod +x /app/scripts/download-flux1-schnell-Q4_K_S.sh &&
+        /app/scripts/download-flux1-schnell-Q4_K_S.sh
+      "
+    environment:
+      - CIVITAI_API_KEY=${CIVITAI_API_KEY}
+    restart: "no"
+
+  # ── FLUX.1-schnell inference service ──────────────────────────────────────
+  # Compiles llama-cpp-python with CUDA. Only starts with --profile full.
   flux-app:
     build:
       context: .
       dockerfile: Dockerfile
-      target: full_build # <--- Triggers the "CPU Slam" build stage that compiles the GPU-accelerated llama-cpp-python wheel
+      target: full_build
     container_name: ssi_booster_flux
     profiles: [ "full" ]
+    depends_on:
+      flux-init:
+        condition: service_completed_successfully
     volumes:
       - ./models/flux:/app/models/flux:ro
     deploy:
@@ -89,27 +114,6 @@ services:
       # 120s gives plenty of time for that first-run voice download
       start_period: 120s
 
-  # ── Flux model initialiser ──────────────────────────────────────────────
-  flux-init:
-    image: alpine:latest
-    container_name: ssi_booster_flux_init
-    volumes:
-      # 1. Map the host storage to the container download path
-      - ./models/flux:/app/models/flux
-      # 2. Map your local scripts folder so the container can run the .sh file
-      - ./scripts:/app/scripts:ro
-      # 3. Map the .env file so the script can read your CIVITAI_API_KEY
-      - ./.env:/app/.env:ro
-    # Install curl/bash and run the script
-    command: >
-      sh -c "
-        apk add --no-cache curl bash && 
-        chmod +x /app/scripts/download-flux1-schnell-Q4_K_S.sh && 
-        /app/scripts/download-flux1-schnell-Q4_K_S.sh
-      "
-    environment:
-      - CIVITAI_API_KEY=${CIVITAI_API_KEY}
-
   # ── LinkedIn SSI Booster application ──────────────────────────────────────
   app:
     build:
@@ -119,12 +123,13 @@ services:
     container_name: ssi_booster_app
     profiles: [ "core", "full" ]
     depends_on:
-      flux-init:
-        condition: service_started
       ollama:
         condition: service_healthy
       piper:
         condition: service_started
+      flux-app:
+        condition: service_started
+        required: false # only present under --profile full; ignored under --profile core
     env_file: .env
     environment:
       - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR}/native
