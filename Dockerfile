@@ -27,20 +27,28 @@ CMD ["python", "main.py", "--console"]
 FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS full_build
 WORKDIR /app
 
-# 1. Build Tools
-RUN apt-get update && apt-get install -y cmake ninja-build build-essential && rm -rf /var/lib/apt/lists/*
+# 1. Build Tools + Python (The absolute essentials)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake ninja-build build-essential \
+    python3.11 python3-pip python3.11-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# 2. CUDA Linker Stubs
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
-ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs"
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
+# 2. Setup Linker and RUN THE HEAVY BUILD NOW
+# By doing this BEFORE copying libraries or code, this layer becomes "Frozen"
+RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
 ENV FORCE_CMAKE=1
+ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs"
+ENV LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
 
-# 3. The Heavy Lift (Cached)
-# ⚠️ "Heavy Lift" - CPU 🔥 burn for llama-cpp-python with CUDA support ⚠️
 RUN MAX_JOBS=4 pip install --no-cache-dir llama-cpp-python
 
-# 4. Bring in the rest of the app from Stage 1
+# 3. NOW bring in the libraries and code from Stage 1
+# Changes to your requirements.txt or main.py will only trigger these layers
+COPY --from=core_base /usr/local/lib/python3.11/dist-packages /usr/local/lib/python3.11/dist-packages
 COPY --from=core_base /app /app
 
-# This is what runs when you use the "full" target
 CMD ["python", "main.py", "--full-mode"]
