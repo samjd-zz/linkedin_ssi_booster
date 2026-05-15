@@ -31,29 +31,3 @@ atproto>=0.0.55
 colorama>=0.4.6
 sounddevice>=0.4.6
 pytest>=9.0.0
-
-
-# --extra-index-url https://download.pytorch.org/whl/cu124
-# torch
-# torchvision
-# torchaudio
-# diffusers
-# accelerate
-# transformers
-# sentencepiece
-# gguf
-# rank_bm25>=0.2.2
-# pytest>=9.0.0
-# colorama>=0.4.6
-# ollama>=0.4.0
-# requests>=2.31.0
-# feedparser>=6.0.10
-# pytz>=2024.1
-# APScheduler>=3.10.4
-# atproto>=0.0.55
-# python-dotenv>=1.0.0
-# spacy>=3.7.0
-# networkx>=3.2
-# trafilatura>=2.0.0
-# model2vec>=0.1.0
-# sounddevice>=0.4.6
