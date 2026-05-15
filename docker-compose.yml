@@ -89,10 +89,10 @@ services:
       # 120s gives plenty of time for that first-run voice download
       start_period: 120s
 
-  # The "Init Container" for downloading models
-  setup-models:
+  # ── Flux model initialiser ──────────────────────────────────────────────
+  flux-init:
     image: alpine:latest
-    container_name: ssi_booster_model_setup
+    container_name: ssi_booster_flux_init
     volumes:
       # 1. Map the host storage to the container download path
       - ./models/flux:/app/models/flux
@@ -119,9 +119,9 @@ services:
     container_name: ssi_booster_app
     profiles: [ "core", "full" ]
     depends_on:
-      # setup-models continues in the background, which is fine since it just 
+      # flux-init continues in the background, which is fine since it just 
       # needs the models to be present before it starts generating images
-      setup-models:
+      flux-init:
         condition: service_started
       ollama:
         condition: service_healthy
