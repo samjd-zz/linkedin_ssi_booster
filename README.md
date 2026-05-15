@@ -69,7 +69,7 @@ The system now includes a high-fidelity image generation pipeline powered by **F
 
 ------
 
-### 🏆 What is the LinkedIn SSI?
+## 🏆 What is the LinkedIn SSI?
 
 The [LinkedIn Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
 
@@ -84,7 +84,7 @@ The score breaks down into four components (25 points each):
 | **Engage with insights**              | Shares, comments, and reactions on industry content; thought leadership signals   |
 | **Build relationships**               | Connection growth, message response rate, relationship depth                      |
 
-### 🤖 Why automate it?
+## 🤖 Why automate it?
 
 SSI decays if you go quiet — LinkedIn penalises inconsistency. Manually writing 3 posts per week, curating industry articles with original commentary, and maintaining an on-brand voice across hundreds of posts is simply not sustainable alongside a full-time engineering role.
 
@@ -344,7 +344,7 @@ We now use **Docker Profiles** to manage your hardware resources. This allows yo
 - **A filled-in `.env` file:** Set your `BUFFER_API_KEY`, `CIVITAI_API_KEY`, and persona variables.
 - **NVIDIA Container Toolkit (Linux only):** If running on a native Linux host (e.g., Ubuntu), this must be installed separately to enable GPU passthrough.
 - **RTX 3060 (12GB) or better:** Strongly recommended for local **FLUX.1-schnell** generation due to VRAM requirements.
-- **Civitai API Key:** Required for the `setup.sh` script to download the GGUF model weights.
+- **Civitai API Key:** Required for the `download-flux1-schnell-Q4_K_S.sh` script to download the GGUF model weights.
 
 ### Why the distinction matters:
 
