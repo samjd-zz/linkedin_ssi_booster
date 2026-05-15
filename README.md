@@ -362,7 +362,7 @@ cp .env.example .env
 # Edit .env and add your CIVITAI_API_KEY
 
 # Run the automated setup script to pull ~15GB of Flux weights
-bash setup.sh
+scripts/download-flux1-schnell-Q4_K_S
 ```
 
 ### 3. Launching with Profiles
