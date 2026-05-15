@@ -115,12 +115,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: core_base # <--- ONLY builds the light stuff for the core profile, skipping the heavy GPU dependencies
+      target: core_base
     container_name: ssi_booster_app
     profiles: [ "core", "full" ]
     depends_on:
-      # flux-init continues in the background, which is fine since it just 
-      # needs the models to be present before it starts generating images
       flux-init:
         condition: service_started
       ollama:
@@ -129,11 +127,14 @@ services:
         condition: service_started
     env_file: .env
     environment:
-      OLLAMA_BASE_URL: http://ollama:11434
-      WYOMING_PIPER_HOST: piper
-      WYOMING_PIPER_PORT: 10200
-      FLUX_SERVICE_URL: http://flux-app:5000
+      - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR}/native
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WYOMING_PIPER_HOST=piper
+      - WYOMING_PIPER_PORT=10200
+      - FLUX_SERVICE_URL=http://flux-app:5000
     volumes:
+      - ${PULSE_RUNTIME_DIR}/native:${PULSE_RUNTIME_DIR}/native
+      - ~/.config/pulse/cookie:/root/.pulse-cookie:ro
       - ./data:/app/data
       - ./yt-vid-data:/app/yt-vid-data
       - ./content_calendar.py:/app/content_calendar.py:ro
@@ -149,8 +150,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [ gpu ]
-    devices:
-      - /dev/snd:/dev/snd
     group_add:
       - audio
 

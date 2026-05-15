@@ -345,6 +345,7 @@ We now use **Docker Profiles** to manage your hardware resources. This allows yo
 - **NVIDIA Container Toolkit (Linux only):** If running on a native Linux host (e.g., Ubuntu), this must be installed separately to enable GPU passthrough.
 - **RTX 3060 (12GB) or better:** Strongly recommended for local **FLUX.1-schnell** generation due to VRAM requirements.
 - **Civitai API Key:** Required for the `download-flux1-schnell-Q4_K_S.sh` script to download the GGUF model weights.
+- **CUDA 12.4.1+**: Ensure your NVIDIA drivers and CUDA toolkit are up to date.
 
 ### Why the distinction matters:
 
@@ -452,10 +453,10 @@ docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 
 | Topic                                  | Detail                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `OLLAMA_BASE_URL`                      | Overridden to `http://ollama:11434` in `docker-compose.yml` — do not change it in `.env` for Docker use                                                                                     |
-| Ollama model storage                   | Persisted in the `ollama_data` Docker volume — survives container restarts                                                                                                                  |
-| Runtime data (`data/`, `yt-vid-data/`) | Bind-mounted from the host — changes are visible immediately                                                                                                                                |
-| GPU (NVIDIA)                           | Uncomment the `deploy:` block in `docker-compose.yml` after installing the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) |
-| Rebuilding after code changes          | `docker compose build app`                                                                                                                                                                  |
+| Ollama model storage                   | Persisted in the named `ollama_data` Docker volume (declared at the bottom of `docker-compose.yml`) — survives `docker compose down` and container restarts |
+| Runtime data (`data/`, `yt-vid-data/`) | Bind-mounted from the host — changes are visible immediately                                                                                               |
+| GPU (NVIDIA)                           | All GPU-enabled services use `deploy.resources.reservations.devices` — requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) on Linux |
+| Rebuilding after code changes          | `docker compose build app`                                                                                                                                 |
 
 ---
 
@@ -490,24 +491,27 @@ Add these to your `.env` file:
 
 ```
 BUFFER_API_KEY=...
-OLLAMA_MODEL=gemma4:26b
-OLLAMA_MODEL_FALLBACK=qwen2.5:14b  # fallback for ALL generation calls when primary model fails
+OLLAMA_MODEL=gemma4:e4b
+OLLAMA_MODEL_FALLBACK=qwen3.5:9b   # fallback for ALL generation calls when primary model fails
 OLLAMA_BASE_URL=http://localhost:11434
 
 CIVITAI_API_KEY=your_civitai_key
-CUDA_VERSION=12.4.1
-# --- IMAGE GEN CONFIG ---
-FLUX_MODEL_PATH=/app/models/flux1-schnell-Q4_K_S.gguf
-IMAGE_OUTPUT_DIR=./yt-vid-data
 
-# --- AUDIO CONFIG ---
+# --- IMAGE GEN CONFIG ---
+FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
+IMAGE_OUTPUT_DIR=/app/yt-vid-data
+
+# --- AUDIO CONFIG (Docker) ---
 CONSOLE_USE_VOICE=true
 WYOMING_PIPER_HOST=piper
+WYOMING_PIPER_PORT=10200
+HOST_UID=1000                       # set automatically by run.sh
+PULSE_RUNTIME_DIR=/run/user/1000/pulse
 ```
 
-- `OLLAMA_MODEL` — Main Ollama model for all generations (e.g. `gemma4:26b`).
+- `OLLAMA_MODEL` — Main Ollama model for all generations (e.g. `gemma4:e4b`).
 
-- `OLLAMA_MODEL_FALLBACK` — Fallback model auto-retried once on empty output or error for all generation calls (default: `qwen2.5:14b`).
+- `OLLAMA_MODEL_FALLBACK` — Fallback model auto-retried once on empty output or error for all generation calls (default: `qwen3.5:9b`).
 
 - `OLLAMA_BASE_URL` — Ollama server URL (default: `http://localhost:11434`).
 
@@ -518,6 +522,16 @@ WYOMING_PIPER_HOST=piper
 - `TOPIC_SIGNAL_WINDOW` — Number of most-recent extracted facts used to build adaptive topic signal (default: `50`).
 
 - `TRUTH_GATE_FACT_SIM_FLOOR` — Minimum spaCy cosine similarity for sentence vs best-matching persona/domain fact (Part E, default: `0.05`). Raise to `0.10`–`0.20` for stricter enforcement.
+
+- `CONSOLE_USE_VOICE` — Enable Wyoming Piper TTS in console mode (default: `false`). Set to `true` in `.env` and use `bash run.sh` to ensure the PulseAudio socket is mounted.
+
+- `WYOMING_PIPER_HOST` / `WYOMING_PIPER_PORT` — Piper TTS server address. Use `piper`/`10200` when running in Docker, `localhost`/`10200` for local dev.
+
+- `HOST_UID` / `PULSE_RUNTIME_DIR` — Set automatically by `run.sh` (`HOST_UID=$(id -u)`). Used by `docker-compose.yml` to mount the correct PulseAudio socket path for your user.
+
+- `FLUX_MODEL_PATH` — Path to the FLUX GGUF model inside the container (default: `/app/models/flux/flux1-schnell-Q4_K_S.gguf`). Matches the `./models/flux` bind mount.
+
+- `IMAGE_OUTPUT_DIR` — Where generated images are saved inside the container (default: `/app/yt-vid-data`). Bind-mounted to `./yt-vid-data` on the host.
 
 The setup flow requires a configured `.env`, a filled-in persona graph, a narrative memory file, and a personalized content calendar before useful scheduling or curation runs begin.
 

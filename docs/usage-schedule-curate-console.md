@@ -2,6 +2,27 @@
 
 The CLI centers on three main workflows: scheduling from a private content calendar, curating from live RSS sources, and running a grounded interactive console. A `--dry-run` mode is available across flows to generate and inspect outputs without making Buffer API calls.
 
+## Running with Docker Compose
+
+The recommended way to run all commands is via Docker Compose using `run.sh`, which automatically exports your `USER_UID` for PulseAudio passthrough (voice output).
+
+```bash
+# Start the core stack (Ollama + Piper TTS + app) in the background
+bash run.sh --profile core up -d
+
+# Run any one-shot command against the running stack
+docker compose --profile core run --rm app python main.py --curate
+docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
+
+# Interactive console (TTY required for stdin)
+docker compose --profile core run --rm -it app python main.py --console
+
+# Full mode — adds FLUX image generation
+bash run.sh --profile full up -d
+```
+
+> **Voice note:** `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket so `CONSOLE_USE_VOICE=true` works inside the container. Running `docker compose` directly without `run.sh` will work but audio output will be silent unless your shell already has `USER_UID` exported.
+
 ## Main commands
 
 ```bash
