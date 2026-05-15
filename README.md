@@ -429,20 +429,22 @@ docker compose build app
 ### 4. Run any command
 
 ```bash
+docker compose --profile core run --rm app python main.py --console
+
 # Dry-run post schedule (no Buffer calls)
-docker compose run --rm app python main.py --schedule --week 1 --dry-run
+docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
 
 # Curate AI news → Buffer Ideas (live)
-docker compose run --rm app python main.py --curate
+docker compose --profile core run --rm app python main.py --curate
 
 # Interactive persona console (TTY required)
-docker compose run --rm -it app python main.py --console
+docker compose --profile core run --rm -it app python main.py --console
 
 # Console mode with DoT verification enabled
-docker compose run --rm -it app python main.py --console --verify
+docker compose --profile core run --rm -it app python main.py --console --verify
 
 # Record today's SSI scores
-docker compose run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
+docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
 ```
 
 ### Docker notes

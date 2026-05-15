@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: full_build # <--- Triggers the "CPU Slam" build stage that compiles the GPU-accelerated llama-cpp-python wheel
     container_name: ssi_booster_flux
     profiles: [ "full" ]
     volumes:
@@ -114,6 +115,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    target: core_base # <--- ONLY builds the light stuff for the core profile, skipping the heavy GPU dependencies
     container_name: ssi_booster_app
     profiles: [ "core", "full" ]
     depends_on:
