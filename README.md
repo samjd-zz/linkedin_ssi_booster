@@ -333,116 +333,86 @@ The primer covers core NLP concepts, practical communication techniques, technic
 
 ## 🐳 Docker Compose (Recommended)
 
-Run the full stack — Ollama LLM server + SSI Booster app — with a single command, no local Python environment required.
+Run the full stack — Ollama LLM server + Wyoming Piper TTS + SSI Booster app — with a single command, no local Python environment required.
 
-We now use **Docker Profiles** to manage your hardware resources. This allows you to run the core automation daily and only spin up the heavy image-generation stack when needed.
+The stack uses **Docker Profiles** to manage hardware resources. Run the lightweight `core` profile daily and only spin up the `full` profile (FLUX image gen) when you need post visuals.
+
+### Services overview
+
+| Service | Profile | Description |
+| --- | --- | --- |
+| `ollama` | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume |
+| `ollama-init` | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits |
+| `piper` | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start |
+| `flux-init` | *(standalone)* | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai |
+| `flux-app` | `full` | FLUX.1-schnell image generation service — compiles GPU-accelerated `llama-cpp-python` |
+| `app` | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage) |
 
 ### 1. Prerequisites
 
-- **Docker Desktop (Windows/Mac) or Docker Engine (Linux):**
-  - **Windows Users:** Must have **WSL 2** installed and enabled in Docker Desktop settings to access the GPU.
-- **A filled-in `.env` file:** Set your `BUFFER_API_KEY`, `CIVITAI_API_KEY`, and persona variables.
-- **NVIDIA Container Toolkit (Linux only):** If running on a native Linux host (e.g., Ubuntu), this must be installed separately to enable GPU passthrough.
-- **RTX 3060 (12GB) or better:** Strongly recommended for local **FLUX.1-schnell** generation due to VRAM requirements.
-- **Civitai API Key:** Required for the `download-flux1-schnell-Q4_K_S.sh` script to download the GGUF model weights.
-- **CUDA 12.4.1+**: Ensure your NVIDIA drivers and CUDA toolkit are up to date.
+- **Docker Engine** (Linux) or **Docker Desktop** (Windows/Mac)
+  - Windows: enable **WSL 2** in Docker Desktop settings for GPU access
+- **NVIDIA Container Toolkit** (Linux only) — required for GPU passthrough; Docker Desktop handles this automatically on Windows/WSL 2
+- **CUDA 12.4.1+** drivers on the host
+- **RTX 3060 12 GB or better** — strongly recommended for FLUX.1-schnell; 8 GB cards may struggle
+- **Civitai API key** — required by `flux-init` to download the GGUF model weights
+- **PulseAudio** running on the host — required for voice output (`CONSOLE_USE_VOICE=true`)
 
-### Why the distinction matters:
-
-1. **Windows/WSL 2:** Most of your non-Linux users will be on Windows. For them, "Installing the NVIDIA Container Toolkit" is confusing because Docker Desktop handles the bridge to the GPU automatically **if** WSL 2 is the engine.
-2. **Linux/Ubuntu:** For your specific environment (Ubuntu 22.04), the toolkit **is** a manual prerequisite that must be installed before `docker compose` can see the `nvidia` driver.
-3. **VRAM Warning:** Since you are using **CUDA 12.4.1** and **FLUX**, the 12GB on the RTX 3060 is the "sweet spot" for this stack. Users with 8GB cards may still struggle even with your optimizations.
-
-### 2. Configure & Download Models
-
-Bash
-
-```
-cp .env.example .env
-# Edit .env and add your CIVITAI_API_KEY
-
-# Run the automated setup script to pull ~15GB of Flux weights
-scripts/download-flux1-schnell-Q4_K_S
-```
-
-### 3. Launching with Profiles
-
-Choose your mode based on your current task and VRAM availability:
-
-**Standard Mode (LLM + TTS + Analytics)**
-
-*Best for daily scheduling and curation.*
-
-Bash
-
-```
-docker compose --profile core up -d
-```
-
-**Full Power Mode (LLM + FLUX Image Gen)**
-
-*Use this when you need to generate post visuals.*
-
-Bash
-
-```
-docker compose --profile full up -d
-```
-
-### 1. Configure your environment
+### 2. First-time setup
 
 ```bash
+# 1. Copy and fill in your environment file
 cp .env.example .env
-# Edit .env — set BUFFER_API_KEY, OLLAMA_MODEL, persona vars, etc.
-# Leave OLLAMA_BASE_URL as http://localhost:11434 — docker compose overrides it automatically.
-```
+# Required: BUFFER_API_KEY, CIVITAI_API_KEY, PERSONA_SYSTEM_PROMPT, SSI_* vars
+# OLLAMA_BASE_URL is overridden to http://ollama:11434 by docker-compose.yml automatically
 
-Also copy the required data files (these are bind-mounted into the container at runtime):
-
-```bash
+# 2. Copy avatar data files (bind-mounted into the container at runtime)
 cp data/avatar/persona_graph.example.json   data/avatar/persona_graph.json
 cp data/avatar/domain_knowledge.example.json data/avatar/domain_knowledge.json
 cp data/avatar/narrative_memory.example.json data/avatar/narrative_memory.json
 cp content_calendar.example.py               content_calendar.py
 
-# Optional extra packs: auto-discovered and merged when named domain_knowledge_*.json
-cp data/avatar/domain_knowledge_java.json    data/avatar/domain_knowledge_java.json
-cp data/avatar/domain_knowledge_python.json  data/avatar/domain_knowledge_python.json
+# Optional domain knowledge packs — auto-merged at load time
+cp data/avatar/domain_knowledge_java.json   data/avatar/domain_knowledge_java.json
+cp data/avatar/domain_knowledge_python.json data/avatar/domain_knowledge_python.json
+
+# 3. Edit persona_graph.json with your real career facts
+
+# 4. Download the FLUX model weights (one-time, runs flux-init)
+docker compose run --rm flux-init
 ```
 
-Edit `data/avatar/persona_graph.json` with your real career facts before running.
+### 3. Launch the stack
 
-### 2. Pull models and start Ollama
+Use `run.sh` — it auto-detects your user ID for PulseAudio passthrough:
 
 ```bash
-# Start Ollama in the background and pull the configured model (one-time)
-docker compose up ollama ollama-init
+# Standard mode — LLM + TTS + analytics (daily use)
+bash run.sh --profile core up -d
+
+# Full mode — adds FLUX image generation
+bash run.sh --profile full up -d
+
+# Or use docker compose directly (no audio passthrough)
+docker compose --profile core up -d
 ```
 
-`ollama-init` exits automatically once the model pull completes. Leave `ollama` running.
+`ollama-init` will pull `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` on first start then exit. Leave `ollama`, `piper`, and `app` running.
 
-### 3. Build the app image (first time only)
-
-```bash
-docker compose build app
-```
-
-### 4. Run any command
+### 4. Run commands
 
 ```bash
-docker compose --profile core run --rm app python main.py --console
-
-# Dry-run post schedule (no Buffer calls)
-docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
-
-# Curate AI news → Buffer Ideas (live)
-docker compose --profile core run --rm app python main.py --curate
-
-# Interactive persona console (TTY required)
+# Interactive persona console with voice (TTY required)
 docker compose --profile core run --rm -it app python main.py --console
 
-# Console mode with DoT verification enabled
+# Console with DoT verification enabled
 docker compose --profile core run --rm -it app python main.py --console --verify
+
+# Dry-run schedule (no Buffer calls)
+docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
+
+# Curate AI news → Buffer Ideas
+docker compose --profile core run --rm app python main.py --curate
 
 # Record today's SSI scores
 docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
@@ -450,13 +420,15 @@ docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 
 
 ### Docker notes
 
-| Topic                                  | Detail                                                                                                                                                                                      |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OLLAMA_BASE_URL`                      | Overridden to `http://ollama:11434` in `docker-compose.yml` — do not change it in `.env` for Docker use                                                                                     |
-| Ollama model storage                   | Persisted in the named `ollama_data` Docker volume (declared at the bottom of `docker-compose.yml`) — survives `docker compose down` and container restarts |
-| Runtime data (`data/`, `yt-vid-data/`) | Bind-mounted from the host — changes are visible immediately                                                                                               |
-| GPU (NVIDIA)                           | All GPU-enabled services use `deploy.resources.reservations.devices` — requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) on Linux |
-| Rebuilding after code changes          | `docker compose build app`                                                                                                                                 |
+| Topic | Detail |
+| --- | --- |
+| `OLLAMA_BASE_URL` | Overridden to `http://ollama:11434` by `docker-compose.yml` — do not change it in `.env` for Docker use |
+| Ollama model storage | Persisted in the named `ollama_data` Docker volume (declared at the bottom of `docker-compose.yml`) — survives `docker compose down` and container restarts |
+| Runtime data (`data/`, `yt-vid-data/`) | Bind-mounted from the host — changes are visible immediately |
+| Voice / audio | `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket; requires `CONSOLE_USE_VOICE=true` in `.env` |
+| FLUX model weights | Stored in `./models/flux/` on the host — downloaded by `flux-init`, mounted read-only into `flux-app` and `app` |
+| Rebuilding after code changes | `docker compose build app` |
+| GPU passthrough | All GPU services use `deploy.resources.reservations.devices` — requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) on Linux |
 
 ---
 
@@ -487,51 +459,80 @@ python main.py --console --verify
 
 ### ⚙️ Environment Variables
 
-Add these to your `.env` file:
+Copy `.env.example` to `.env` and fill in the values. Key variables:
 
-```
-BUFFER_API_KEY=...
-OLLAMA_MODEL=gemma4:e4b
-OLLAMA_MODEL_FALLBACK=qwen3.5:9b   # fallback for ALL generation calls when primary model fails
-OLLAMA_BASE_URL=http://localhost:11434
+```bash
+# Buffer API
+BUFFER_API_KEY=your_buffer_api_key_here
 
+# Ollama LLM
+OLLAMA_MODEL=gemma4:e4b              # primary model
+OLLAMA_MODEL_FALLBACK=qwen3.5:9b     # fallback on empty/error response
+OLLAMA_BASE_URL=http://localhost:11434  # overridden to http://ollama:11434 in Docker
+OLLAMA_NUM_CTX=32768                 # context window (tokens)
+
+# Image generation (FLUX — full profile only)
 CIVITAI_API_KEY=your_civitai_key
-
-# --- IMAGE GEN CONFIG ---
 FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
 IMAGE_OUTPUT_DIR=/app/yt-vid-data
 
-# --- AUDIO CONFIG (Docker) ---
+# Voice / TTS (Docker — use run.sh for audio passthrough)
 CONSOLE_USE_VOICE=true
-WYOMING_PIPER_HOST=piper
+WYOMING_PIPER_HOST=piper             # 'localhost' for local dev
 WYOMING_PIPER_PORT=10200
-HOST_UID=1000                       # set automatically by run.sh
+CONSOLE_VOICE_SPEAKER=896            # speaker ID for en_US-libritts_r-medium
+
+# PulseAudio passthrough — set automatically by run.sh
+HOST_UID=1000
 PULSE_RUNTIME_DIR=/run/user/1000/pulse
 ```
 
-- `OLLAMA_MODEL` — Main Ollama model for all generations (e.g. `gemma4:e4b`).
+**LLM & retrieval**
 
-- `OLLAMA_MODEL_FALLBACK` — Fallback model auto-retried once on empty output or error for all generation calls (default: `qwen3.5:9b`).
+- `OLLAMA_MODEL` — Primary model for all generation calls (e.g. `gemma4:e4b`).
+- `OLLAMA_MODEL_FALLBACK` — Auto-retried once on empty output or error (default: `qwen3.5:9b`).
+- `OLLAMA_BASE_URL` — Ollama server URL. Overridden to `http://ollama:11434` in Docker.
+- `OLLAMA_NUM_CTX` — Context window size in tokens (default: `16384`; `32768` recommended for grounded prompts).
 
-- `OLLAMA_BASE_URL` — Ollama server URL (default: `http://localhost:11434`).
+**Truth gate**
+
+- `TRUTH_GATE_BM25_THRESHOLD` — Min BM25 score for a sentence to be considered supported (default: `1.0`; `0.75` = permissive, `2.0` = strict).
+- `TRUTH_GATE_SPACY_SIM_FLOOR` — Min spaCy cosine sim between a sentence and the source article for numeric/org/year sentences (default: `0.10`). Curation mode only.
+- `TRUTH_GATE_FACT_SIM_FLOOR` — Min spaCy cosine sim between a sentence and the best-matching persona/domain fact (default: `0.05`). Runs in all modes including console.
+
+**Continual learning**
 
 - `EXTRACTED_CONTEXT_LIMIT` — Max extracted facts injected into curation prompts (default: `10`).
-
-- `EXTRACTED_EVIDENCE_COUNT` — Max extracted facts considered as evidence per article during grounding/DoT (default: `2`).
-
+- `EXTRACTED_EVIDENCE_COUNT` — Max extracted facts used as evidence per article during grounding/DoT (default: `2`).
 - `TOPIC_SIGNAL_WINDOW` — Number of most-recent extracted facts used to build adaptive topic signal (default: `50`).
 
-- `TRUTH_GATE_FACT_SIM_FLOOR` — Minimum spaCy cosine similarity for sentence vs best-matching persona/domain fact (Part E, default: `0.05`). Raise to `0.10`–`0.20` for stricter enforcement.
+**Confidence & routing**
 
-- `CONSOLE_USE_VOICE` — Enable Wyoming Piper TTS in console mode (default: `false`). Set to `true` in `.env` and use `bash run.sh` to ensure the PulseAudio socket is mounted.
+- `AVATAR_CONFIDENCE_POLICY` — Publish-safety routing: `balanced` (default), `strict`, or `draft-first`.
+- `AVATAR_LEARNING_ENABLED` — Enable narrative memory and moderation logging (default: `true`).
+- `AVATAR_MAX_MEMORY_ITEMS` — Max items retained in narrative memory before FIFO trim (default: `200`).
 
-- `WYOMING_PIPER_HOST` / `WYOMING_PIPER_PORT` — Piper TTS server address. Use `piper`/`10200` when running in Docker, `localhost`/`10200` for local dev.
+**Model2Vec classification**
 
-- `HOST_UID` / `PULSE_RUNTIME_DIR` — Set automatically by `run.sh` (`HOST_UID=$(id -u)`). Used by `docker-compose.yml` to mount the correct PulseAudio socket path for your user.
+- `MODEL2VEC_ENABLED` — Enable static embedding classification (default: `true`; requires `pip install model2vec`).
+- `CURATE_CLASSIFY` — Auto-classify articles on every `--curate` run, equivalent to always passing `--classify` (default: `false`).
 
-- `FLUX_MODEL_PATH` — Path to the FLUX GGUF model inside the container (default: `/app/models/flux/flux1-schnell-Q4_K_S.gguf`). Matches the `./models/flux` bind mount.
+**SSI focus weights** (should sum to 100)
 
-- `IMAGE_OUTPUT_DIR` — Where generated images are saved inside the container (default: `/app/yt-vid-data`). Bind-mounted to `./yt-vid-data` on the host.
+- `SSI_FOCUS_ESTABLISH_BRAND` / `SSI_FOCUS_FIND_RIGHT_PEOPLE` / `SSI_FOCUS_ENGAGE_WITH_INSIGHTS` / `SSI_FOCUS_BUILD_RELATIONSHIPS` — Pillar weights for post selection. Bump a lagging pillar up.
+
+**Voice / audio**
+
+- `CONSOLE_USE_VOICE` — Enable Wyoming Piper TTS in console mode (default: `false`). Use `bash run.sh` for Docker to get PulseAudio passthrough.
+- `WYOMING_PIPER_HOST` / `WYOMING_PIPER_PORT` — TTS server address. Use `piper`/`10200` in Docker, `localhost`/`10200` for local dev.
+- `CONSOLE_VOICE_SPEAKER` — Speaker ID for multi-speaker voices (e.g. `896` for `en_US-libritts_r-medium`).
+- `HOST_UID` / `PULSE_RUNTIME_DIR` — Set automatically by `run.sh`. Used by `docker-compose.yml` to mount the PulseAudio socket for your user.
+
+**Image generation**
+
+- `CIVITAI_API_KEY` — Required by `flux-init` to download FLUX GGUF weights.
+- `FLUX_MODEL_PATH` — Path to the GGUF model inside the container (default: `/app/models/flux/flux1-schnell-Q4_K_S.gguf`).
+- `IMAGE_OUTPUT_DIR` — Where generated images are saved inside the container (default: `/app/yt-vid-data`).
 
 The setup flow requires a configured `.env`, a filled-in persona graph, a narrative memory file, and a personalized content calendar before useful scheduling or curation runs begin.
 
