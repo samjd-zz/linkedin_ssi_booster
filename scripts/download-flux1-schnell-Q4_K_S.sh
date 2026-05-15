@@ -5,12 +5,19 @@
 # direct link (requires login): 
 # https://civitai.com/models/648580/flux1-schnell-gguf-q2k-q3ks-q4q41q4ks-q5q51-q5ks-q6k-q8?modelVersionId=746301
 
-# Load variables
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-else
-    echo "❌ Error: .env file not found. Please create one based on .env.example"
-    exit 1
+# Load variables — skip if already set in environment (e.g. passed via Docker Compose)
+if [ -z "$CIVITAI_API_KEY" ]; then
+    # Try loading from .env relative to script location, then /app/.env (Docker mount)
+    ENV_FILE=""
+    [ -f "$(dirname "$0")/../.env" ] && ENV_FILE="$(dirname "$0")/../.env"
+    [ -f "/app/.env" ] && ENV_FILE="/app/.env"
+    [ -f ".env" ] && ENV_FILE=".env"
+    if [ -n "$ENV_FILE" ]; then
+        export $(grep -v '^#' "$ENV_FILE" | xargs)
+    else
+        echo "❌ Error: .env file not found and CIVITAI_API_KEY not set."
+        exit 1
+    fi
 fi
 
 if [ -z "$CIVITAI_API_KEY" ]; then

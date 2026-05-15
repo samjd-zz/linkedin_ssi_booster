@@ -10,11 +10,9 @@ services:
     volumes:
       - ./models/flux:/app/models/flux
       - ./scripts:/app/scripts:ro
-      - ./.env:/app/.env:ro
     command: >
       sh -c "
         apk add --no-cache curl bash &&
-        chmod +x /app/scripts/download-flux1-schnell-Q4_K_S.sh &&
         /app/scripts/download-flux1-schnell-Q4_K_S.sh
       "
     environment:
@@ -132,13 +130,13 @@ services:
         required: false # only present under --profile full; ignored under --profile core
     env_file: .env
     environment:
-      - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR}/native
+      - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
       - OLLAMA_BASE_URL=http://ollama:11434
       - WYOMING_PIPER_HOST=piper
       - WYOMING_PIPER_PORT=10200
       - FLUX_SERVICE_URL=http://flux-app:5000
     volumes:
-      - ${PULSE_RUNTIME_DIR}/native:${PULSE_RUNTIME_DIR}/native
+      - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
       - ~/.config/pulse/cookie:/root/.pulse-cookie:ro
       - ./data:/app/data
       - ./yt-vid-data:/app/yt-vid-data
