@@ -15,7 +15,7 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -m spacy download en_core_web_md
+RUN python -m pip install spacy && python -m spacy download en_core_web_md
 
 COPY . .
 RUN mkdir -p data/avatar data/selection yt-vid-data
