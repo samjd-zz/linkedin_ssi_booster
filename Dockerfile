@@ -14,11 +14,11 @@ RUN ln -sf /usr/bin/python3.11 /usr/bin/python && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements-core.txt .
 
 # Use 'python -m pip' to guarantee it installs for the 3.11 engine
 RUN python -m pip install --upgrade pip && \
-    python -m pip install --no-cache-dir -r requirements.txt && \
+    python -m pip install --no-cache-dir -r requirements-core.txt && \
     python -m pip install spacy && \
     python -m spacy download en_core_web_md
 
@@ -51,8 +51,8 @@ RUN MAX_JOBS=4 pip install --no-cache-dir llama-cpp-python
 
 # 3. NOW install the core requirements in this stage
 # We copy ONLY the requirements file first to keep caching efficient
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-full.txt .
+RUN pip install --no-cache-dir -r requirements-full.txt
 
 # 4. Finally bring in the code
 COPY . .
