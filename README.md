@@ -70,6 +70,8 @@ The system now includes a high-fidelity image generation pipeline powered by **F
 
 ## 🎵 New: Strudel Live-Coding Music Agent
 
+> **Inspiration:** This Exciting new addition to the platform is inspired by [Switch Angle](https://www.youtube.com/@Switch-Angel)
+
 The system now includes an autonomous music generation agent powered by **Strudel.js** (live-coding music language) and the **Strudel MCP server**. This agent generates algorithmic music patterns using Gemma 4 and sends them to a WebSocket bridge for real-time audio playback.
 
 - **Autonomous Agent Service:** Runs as a standalone Docker service (`strudel-mcp-agent`) in the stack.
