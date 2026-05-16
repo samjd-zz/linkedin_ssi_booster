@@ -17,7 +17,7 @@ services:
 
   # ── Strudel Agent ─────────────────────────────────────────────────────────
   #  Python agent that generates Strudel code via Ollama and sends to bridge
-  strudel-agent:
+  strudel-mcp-agent:
     build:
       context: .
       dockerfile: Dockerfile

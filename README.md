@@ -72,7 +72,7 @@ The system now includes a high-fidelity image generation pipeline powered by **F
 
 The system now includes an autonomous music generation agent powered by **Strudel.js** (live-coding music language) and the **Strudel MCP server**. This agent generates algorithmic music patterns using Gemma 4 and sends them to a WebSocket bridge for real-time audio playback.
 
-- **Autonomous Agent Service:** Runs as a standalone Docker service (`strudel-agent`) in the stack.
+- **Autonomous Agent Service:** Runs as a standalone Docker service (`strudel-mcp-agent`) in the stack.
 - **Live-Coding Generation:** Uses Gemma 4's native system prompt support to generate clean, executable Strudel.js code without markdown fluff.
 - **WebSocket Bridge Integration:** Connects to the Strudel MCP server's WebSocket interface to evaluate patterns in real-time.
 - **Container-Native:** All components (Ollama, Strudel MCP server, agent) run in Docker with automatic dependency management and health checks.
@@ -367,7 +367,7 @@ The stack uses **Docker Profiles** to manage hardware resources. Run the lightwe
 | `ollama-init` | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits |
 | `piper` | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start |
 | `strudel-music-server` | `core`, `full` | Strudel MCP server — provides WebSocket API for live-coding music evaluation on port `3000` |
-| `strudel-agent` | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server |
+| `strudel-mcp-agent` | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server |
 | `buffer-mcp-agent` | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server |
 | `flux-init` | `full` | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux-app` depends on it |
 | `flux-app` | `full` | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
@@ -442,7 +442,7 @@ docker compose --profile core run --rm app python main.py --curate
 # Record today's SSI scores
 
 # Monitor Strudel agent logs
-docker compose logs -f strudel-agent
+docker compose logs -f strudel-mcp-agent
 
 # Monitor Buffer MCP agent logs
 docker compose logs -f buffer-mcp-agent
@@ -459,7 +459,7 @@ docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 
 | Topic | Detail |
 | Strudel MCP server | Clones [williamzujkowski/strudel-mcp-server](https://github.com/williamzujkowski/strudel-mcp-server) on first start and builds automatically — no manual setup required |
 | Strudel agent code | Mounted read-only from `./agents/` — edit `strudel_mcp_agent.py` and restart service to apply changes |
-| Rebuilding after code changes | `docker compose build app` (or `strudel-agent` for agent-only changes)
+| Rebuilding after code changes | `docker compose build app` (or `strudel-mcp-agent` for agent-only changes)
 | `OLLAMA_BASE_URL` | Overridden to `http://ollama:11434` by `docker-compose.yml` — do not change it in `.env` for Docker use |
 | Ollama model storage | Persisted in the named `ollama_data` Docker volume (declared at the bottom of `docker-compose.yml`) — survives `docker compose down` and container restarts |
 | Runtime data (`data/`, `yt-vid-data/`) | Bind-mounted from the host — changes are visible immediately |
