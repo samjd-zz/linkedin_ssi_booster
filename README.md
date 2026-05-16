@@ -7,7 +7,7 @@
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Agent with Domain-Knowledge-Graph</u>
 
 
-[![Version alpha-v0.0.2.7](https://img.shields.io/badge/version-alpha--v0.0.2.7-orange.svg)]()[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![Strudel](https://img.shields.io/badge/Strudel-Music%20Agent-9B59B6.svg)](https://strudel.cc/)[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)
+[![Version alpha-v0.0.2.7](https://img.shields.io/badge/version-alpha--v0.0.2.7-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![Strudel](https://img.shields.io/badge/Strudel-Music%20Agent-9B59B6.svg)](https://strudel.cc/)[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
@@ -438,8 +438,6 @@ docker compose --profile core run --rm app python main.py --schedule --week 1 --
 
 # Curate AI news → Buffer Ideas
 docker compose --profile core run --rm app python main.py --curate
-
-# Record today's SSI scores
 
 # Monitor Strudel agent logs
 docker compose logs -f strudel-mcp-agent
