@@ -1,15 +1,15 @@
 import asyncio
 import json
 import os
-from typing import Optional
-import requests
+from typing import Optional, Dict
+import httpx  # Switched to httpx for non-blocking async calls
 from ollama import AsyncClient
 
 # Environment Variables pointing to your local container endpoints
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 BUFFER_MCP_URL = os.getenv("BUFFER_MCP_URL", "https://mcp.buffer.com/mcp")
 BUFFER_API_KEY = os.getenv("BUFFER_API_KEY", "")
-MODEL_NAME = "gemma4"  # Works perfectly with e2b, e4b, 26b, or 31b variants
+MODEL_NAME = "gemma4"  # Optimized for thinking-enabled variants
 
 async def generate_buffer_request(user_prompt: str) -> dict:
     """
@@ -25,8 +25,7 @@ async def generate_buffer_request(user_prompt: str) -> dict:
         "Example output: {\"method\": \"create_post\", \"params\": {\"text\": \"Hello world\", \"channel_id\": \"123\"}}"
     )
 
-    # Note: Adding the Gemma 4 '<|think|>' token at the start of the system prompt
-    # will trigger its reasoning phase automatically if using a thinking-enabled variant.
+    # Triggering the reasoning phase for Gemma 4
     full_system_prompt = f"<|think|>\n{system_instruction}"
 
     client = AsyncClient(host=OLLAMA_HOST)
@@ -39,27 +38,27 @@ async def generate_buffer_request(user_prompt: str) -> dict:
             {"role": "user", "content": f"Create a Buffer MCP request for this action: {user_prompt}"}
         ],
         options={
-            "temperature": 1.0,  # Standard recommended configuration for Gemma 4
+            "temperature": 1.0,
             "top_p": 0.95,
             "top_k": 64
         }
     )
     
-    # Strip any accidental leading/trailing whitespace or lingering markdown
-    raw_json = response['message']['content'].strip()
-    clean_json = raw_json.replace("json", "").replace("```", "").strip()
+    raw_content = response['message']['content'].strip()
+    # Clean up any potential markdown formatting from the LLM
+    clean_json = raw_content.replace("```json", "").replace("```", "").strip()
     
     try:
         return json.loads(clean_json)
     except json.JSONDecodeError as e:
-        print(f"⚠️  Failed to parse JSON response: {e}")
-        print(f"Raw response: {raw_json}")
+        print(f"⚠️ Failed to parse JSON response: {e}")
+        print(f"Raw response: {raw_content}")
         return {}
 
 async def send_to_buffer_mcp(request: dict) -> Optional[dict]:
     """
     Sends the generated request payload to the Buffer MCP server
-    and returns the response.
+    using httpx to maintain an asynchronous workflow.
     """
     if not BUFFER_API_KEY:
         print("❌ BUFFER_API_KEY is not set. Please set it in your .env file.")
@@ -67,43 +66,37 @@ async def send_to_buffer_mcp(request: dict) -> Optional[dict]:
     
     print(f"🚀 Sending request to Buffer MCP: {json.dumps(request, indent=2)}")
     
+    # Explicitly type-hinting headers to satisfy Pylance/Type Checkers
+    headers: Dict[str, str] = {
+        "Authorization": f"Bearer {BUFFER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
     try:
-        headers = {
-            "Authorization": f"Bearer {BUFFER_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        response = requests.post(
-            BUFFER_MCP_URL,
-            headers=headers,
-            json=request,
-            timeout=30
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                BUFFER_MCP_URL,
+                headers=headers,
+                json=request,
+                timeout=30.0
+            )
         
         if response.status_code == 200:
             result = response.json()
             print("✨ Request successful!")
-            print(f"Response: {json.dumps(result, indent=2)}")
             return result
         else:
             print(f"❌ Request failed with status {response.status_code}")
             print(f"Response: {response.text}")
             return None
             
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         print(f"❌ Failed to connect to Buffer MCP at {BUFFER_MCP_URL}: {e}")
         return None
 
 async def main():
-    # Example user interactions
-    examples = [
-        "List all my connected Buffer channels",
-        "Add a post to my Buffer queue that says 'Testing the Buffer MCP agent!' for tomorrow at 2pm",
-        "Show me all my draft posts in Buffer"
-    ]
-    
-    # Use the first example
-    user_request = examples[0]
+    # Example user interaction
+    user_request = "List all my connected Buffer channels"
     
     # Step 1: Generate MCP request locally using Gemma 4
     generated_request = await generate_buffer_request(user_request)
