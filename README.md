@@ -70,7 +70,7 @@ The system now includes a high-fidelity image generation pipeline powered by **F
 
 ## 🎵 New: Strudel Live-Coding Music Agent
 
-> **Inspiration:** This exciting new addition to the platform is inspired by [Switch Angel:](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) 
+> **Inspiration:** This exciting new addition to the platform is inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) 
 
 The system now includes an autonomous music generation agent powered by **Strudel.js** (live-coding music language) and the **Strudel MCP server**. This agent generates algorithmic music patterns using Gemma 4 and sends them to a WebSocket bridge for real-time audio playback.
 
