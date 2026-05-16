@@ -31,4 +31,5 @@ atproto>=0.0.55
 colorama>=0.4.6
 sounddevice>=0.4.6
 websockets>=12.0
+requests>=2.31.0
 pytest>=9.0.0

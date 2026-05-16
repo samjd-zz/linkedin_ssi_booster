@@ -78,6 +78,17 @@ The system now includes an autonomous music generation agent powered by **Strude
 - **Container-Native:** All components (Ollama, Strudel MCP server, agent) run in Docker with automatic dependency management and health checks.
 - **Persona-Aligned Music:** Future enhancement will tie music generation to LinkedIn post themes and sentiment for multimedia content creation.
 
+## 📤 New: Buffer MCP Agent
+
+The system now includes an autonomous Buffer integration agent powered by the **Buffer Model Context Protocol (MCP)**. This agent generates Buffer API requests using Gemma 4 and sends them directly to Buffer's MCP server for seamless social media management.
+
+- **Autonomous Agent Service:** Runs as a standalone Docker service (`buffer-mcp-agent`) in the stack.
+- **Natural Language Interface:** Uses Gemma 4 to translate plain English commands into properly formatted Buffer MCP requests.
+- **Direct MCP Integration:** Connects to Buffer's official MCP server at `https://mcp.buffer.com/mcp` — no custom bridge required.
+- **Full Buffer API Access:** List channels, create posts, manage drafts, schedule content, and more via conversational commands.
+- **Container-Native:** Runs alongside Ollama in Docker with automatic authentication using your `BUFFER_API_KEY`.
+- **Future Enhancement:** Voice-controlled Buffer operations and automatic post-performance analytics reporting.
+
 ------
 
 ## 🏆 What is the LinkedIn SSI?
@@ -357,6 +368,7 @@ The stack uses **Docker Profiles** to manage hardware resources. Run the lightwe
 | `piper` | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start |
 | `strudel-music-server` | `core`, `full` | Strudel MCP server — provides WebSocket API for live-coding music evaluation on port `3000` |
 | `strudel-agent` | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server |
+| `buffer-mcp-agent` | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server |
 | `flux-init` | `full` | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux-app` depends on it |
 | `flux-app` | `full` | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
 | `app` | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage) |
@@ -432,8 +444,13 @@ docker compose --profile core run --rm app python main.py --curate
 # Monitor Strudel agent logs
 docker compose logs -f strudel-agent
 
-# Interact with Strudel agent (future: REST API endpoint)
-# Currently runs as autonomous service — see agents/strudel_mcp_agent.py for customization
+# Monitor Buffer MCP agent logs
+docker compose logs -f buffer-mcp-agent
+
+# Run Buffer MCP agent with custom prompt (one-off)
+docker compose --profile core run --rm buffer-mcp-agent python agents/buffer_mcp_agent.py
+
+# Record today's SSI scores
 docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
 ```
 
