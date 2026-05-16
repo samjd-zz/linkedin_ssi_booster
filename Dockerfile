@@ -51,8 +51,8 @@ RUN MAX_JOBS=4 pip install --no-cache-dir llama-cpp-python
 
 # 3. NOW install the core requirements in this stage
 # We copy ONLY the requirements file first to keep caching efficient
-COPY requirements-full.txt .
-RUN pip install --no-cache-dir -r requirements-full.txt
+COPY requirements-flux.txt .
+RUN pip install --no-cache-dir -r requirements-flux.txt
 
 # 4. Finally bring in the code
 COPY . .
