@@ -6,8 +6,7 @@
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Agent with Domain-Knowledge-Graph</u>
 
-
-[![Version alpha-v0.0.2.7](https://img.shields.io/badge/version-alpha--v0.0.2.7-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![Strudel](https://img.shields.io/badge/Strudel-Music%20Agent-9B59B6.svg)](https://strudel.cc/)[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version alpha-v0.0.2.7](https://img.shields.io/badge/version-alpha--v0.0.2.7-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![Strudel](https://img.shields.io/badge/Strudel-Music%20Agent-9B59B6.svg)](https://strudel.cc/)[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Tests 565 passed](https://img.shields.io/badge/tests-565%20passed-brightgreen.svg)]()
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
@@ -16,7 +15,7 @@
 
 Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
 
-------
+---
 
 ## 🧠 Intelligence Stack
 
@@ -70,7 +69,7 @@ The system now includes a high-fidelity image generation pipeline powered by **F
 
 ## 🎵 New: Strudel Live-Coding Music Agent
 
-> **Inspiration:** This exciting new addition to the platform is inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) 
+> **Inspiration:** This exciting new addition to the platform is inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM)
 
 The system now includes an autonomous music generation agent powered by **Strudel.js** (live-coding music language) and the **Strudel MCP server**. This agent generates algorithmic music patterns using Gemma 4 and sends them to a WebSocket bridge for real-time audio playback.
 
@@ -91,7 +90,7 @@ The system now includes an autonomous Buffer integration agent powered by the **
 - **Container-Native:** Runs alongside Ollama in Docker with automatic authentication using your `BUFFER_API_KEY`.
 - **Future Enhancement:** Voice-controlled Buffer operations and automatic post-performance analytics reporting.
 
-------
+---
 
 ## 🏆 What is the LinkedIn SSI?
 
@@ -351,7 +350,7 @@ The primer covers core NLP concepts, practical communication techniques, technic
 - [Usage guide](docs/usage-schedule-curate-console.md) — scheduling, curation, console mode, channels, and CLI examples.
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting.
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations.
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure. All tests pass (343/343)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure. All tests pass (565/565)
 - [Selection learning](docs/selection-learning.md) — candidate logging, reconciliation, and acceptance priors.
 - [Derivative of Truth (DoT) framework](docs/derivative-of-truth.md) — mathematical model, five-layer truth gate pipeline, DoT vs spaCy sim comparison, env var reference, and how scoring improves over time.
 
@@ -363,17 +362,17 @@ The stack uses **Docker Profiles** to manage hardware resources. Run the lightwe
 
 ### Services overview
 
-| Service | Profile | Description |
-| --- | --- | --- |
-| `ollama` | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume |
-| `ollama-init` | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits |
-| `piper` | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start |
-| `strudel-music-server` | `core`, `full` | Strudel MCP server — provides WebSocket API for live-coding music evaluation on port `3000` |
-| `strudel-mcp-agent` | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server |
-| `buffer-mcp-agent` | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server |
-| `flux-init` | `full` | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux-app` depends on it |
-| `flux-app` | `full` | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
-| `app` | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage) |
+| Service                | Profile        | Description                                                                                                       |
+| ---------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `ollama`               | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume                                     |
+| `ollama-init`          | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits                               |
+| `piper`                | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                   |
+| `strudel-music-server` | `core`, `full` | Strudel MCP server — provides WebSocket API for live-coding music evaluation on port `3000`                       |
+| `strudel-mcp-agent`    | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server             |
+| `buffer-mcp-agent`     | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server           |
+| `flux-init`            | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux-app` depends on it           |
+| `flux-app`             | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
+| `app`                  | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage)                                      |
 
 ### 1. Prerequisites
 

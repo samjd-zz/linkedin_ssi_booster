@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,15 @@ from services.avatar_intelligence._models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Database integration flag
+# ---------------------------------------------------------------------------
+
+def _is_database_enabled() -> bool:
+    """Check if database integration is enabled via environment variable."""
+    return os.getenv("DATABASE_ENABLED", "false").lower() == "true"
 
 
 # ---------------------------------------------------------------------------
@@ -76,11 +86,125 @@ def _validate_domain_knowledge(data: dict[str, Any]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Database loaders (dual-read: try DB first, fallback to file)
+# ---------------------------------------------------------------------------
+
+
+def _load_persona_graph_from_db() -> tuple[PersonaGraph | None, list[str]]:
+    """Load persona graph from database.
+    
+    Returns (None, [error]) if database is unavailable or no data exists.
+    """
+    try:
+        from services.database.session import get_session
+        from services.database.repositories import (
+            PersonaGraphRepository,
+            ProjectRepository,
+            CompanyRepository,
+            SkillRepository,
+            ClaimRepository,
+        )
+        
+        with next(get_session()) as session:
+            # Get the latest persona graph
+            persona_db = PersonaGraphRepository.get_latest(session)
+            if not persona_db:
+                return None, ["No persona graph found in database"]
+            
+            # Extract graph data from JSONB
+            graph_data = persona_db.graph_data
+            if not graph_data:
+                return None, ["Persona graph data is empty"]
+            
+            # Parse the graph data into models
+            errors = _validate_persona_graph(graph_data)
+            if errors:
+                return None, [f"persona_graph schema error: {e}" for e in errors]
+            
+            raw_person = graph_data.get("person", {})
+            person = PersonNode(
+                name=raw_person.get("name", ""),
+                title=raw_person.get("title", ""),
+                location=raw_person.get("location", ""),
+                links=raw_person.get("links", []),
+            )
+            
+            projects = [
+                ProjectNode(
+                    id=p.get("id", ""),
+                    name=p.get("name", ""),
+                    company_id=p.get("companyId", ""),
+                    years=p.get("years", ""),
+                    details=p.get("details", ""),
+                    skills=p.get("skills", []),
+                    aliases=p.get("aliases", []),
+                )
+                for p in graph_data.get("projects", [])
+            ]
+            
+            companies = [
+                CompanyNode(
+                    id=c.get("id", ""),
+                    name=c.get("name", ""),
+                    aliases=c.get("aliases", []),
+                )
+                for c in graph_data.get("companies", [])
+            ]
+            
+            skills = [
+                SkillNode(
+                    id=s.get("id", ""),
+                    name=s.get("name", ""),
+                    aliases=s.get("aliases", []),
+                    scope=s.get("scope", "domain"),
+                )
+                for s in graph_data.get("skills", [])
+            ]
+            
+            claims = [
+                ClaimNode(
+                    id=cl.get("id", ""),
+                    text=cl.get("text", ""),
+                    project_ids=cl.get("projectIds", []),
+                    confidence_hint=cl.get("confidenceHint", "medium"),
+                )
+                for cl in graph_data.get("claims", [])
+            ]
+            
+            graph = PersonaGraph(
+                schema_version=graph_data["schemaVersion"],
+                person=person,
+                projects=projects,
+                companies=companies,
+                skills=skills,
+                claims=claims,
+            )
+            return graph, []
+    except Exception as exc:
+        return None, [f"Database load error: {exc}"]
+
+
+# ---------------------------------------------------------------------------
 # File loaders
 # ---------------------------------------------------------------------------
 
 
 def _load_persona_graph(path: Path) -> tuple[PersonaGraph | None, list[str]]:
+    """Load persona graph from file or database (dual-read pattern).
+    
+    If DATABASE_ENABLED=true, tries database first, then falls back to file.
+    Otherwise, loads directly from file.
+    """
+    # Dual-read: try database first if enabled
+    if _is_database_enabled():
+        graph, db_errors = _load_persona_graph_from_db()
+        if graph is not None:
+            logger.debug("Loaded persona graph from database")
+            return graph, []
+        else:
+            logger.debug("Database load failed, falling back to file: %s", db_errors[0] if db_errors else "unknown error")
+    
+    # Fallback to file loading
     if not path.exists():
         return None, [f"persona_graph not found at {path}"]
     try:
