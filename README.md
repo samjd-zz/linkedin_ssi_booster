@@ -340,13 +340,86 @@ NLP primer in this repo:
 
 The primer covers core NLP concepts, practical communication techniques, technical writing examples, and ethical usage guidelines.
 
-## 🗺️ Docs map
+## �️ Database Integration (PostgreSQL)
+
+The system now supports **dual-write mode** with PostgreSQL for improved data integrity, query performance, and concurrent access. Database integration is **optional** — the system continues to work with file-based storage (JSON/JSONL) by default.
+
+**Why PostgreSQL?**
+
+- **ACID transactions** — No partial writes during crashes
+- **Concurrent access** — Multi-container Docker deployments without file locking issues
+- **Indexed queries** — Fast lookups by URL, timestamp, category, SSI component
+- **Full-text search** — Built-in FTS for article and fact search
+- **Time-series support** — Efficient truth trajectory tracking
+- **Scalability** — Handles millions of rows for large knowledge bases
+
+**Current Status:** Phase 4 complete (4/6 days elapsed)
+
+- ✅ **Phase 1:** PostgreSQL 16 Alpine container, 17-table schema, Alembic migrations
+- ✅ **Phase 2:** SQLAlchemy 2.0+ ORM models, repository pattern, connection pooling
+- ✅ **Phase 3:** Dual-write functions (DB + file), dual-read loaders (DB first, file fallback)
+- ✅ **Phase 4:** 16 database tests, SQLAlchemy 2.0 compatibility fixes, 565 tests passing
+- ⏳ **Phase 5:** Documentation, backup procedures, production rollout (pending)
+
+**Setup (Docker):**
+
+1. Add to `.env`:
+
+   ```bash
+   DATABASE_ENABLED=true
+   POSTGRES_USER=ssi_booster
+   POSTGRES_PASSWORD=your_secure_password_here
+   POSTGRES_DB=linkedin_ssi_booster
+   DATABASE_URL=postgresql://ssi_booster:your_password@postgres:5432/linkedin_ssi_booster
+   ```
+
+2. Start PostgreSQL container:
+
+   ```bash
+   docker compose --profile core up -d postgres
+   ```
+
+3. Verify tables created:
+   ```bash
+   docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c "\dt"
+   ```
+
+**Database Schema:**
+
+The system stores 17 tables across 5 domains:
+
+- **Avatar Intelligence:** `persona_graph`, `projects`, `companies`, `skills`, `claims`, `domains`, `domain_facts`, `domain_relationships`, `extracted_facts`, `narrative_memory`
+- **Selection Learning:** `candidate_records`, `published_records`
+- **Truth Gate Learning:** `moderation_events`, `confidence_decisions`
+- **Derivative of Truth:** `truth_trajectories`, `truth_trajectory_points`
+- **Migrations:** `schema_migrations`
+
+**Migration from JSON/JSONL:**
+
+```bash
+# Migrate all existing data from files to database
+docker compose --profile core run --rm app python -m services.database.migrate_data
+
+# Dry-run mode (preview only)
+docker compose --profile core run --rm app python -m services.database.migrate_data --dry-run
+```
+
+**Rollback Plan:**
+
+Database integration is non-breaking — set `DATABASE_ENABLED=false` in `.env` to revert to file-based storage. All JSON/JSONL files remain untouched during dual-write mode.
+
+See [docs/features/database/idea.md](docs/features/database/idea.md) for full schema design, performance benchmarks, and implementation details.
+
+---
+
+## �🗺️ Docs map
 
 - [Setup guide](docs/setup.md) — environment, dependencies, persona graph, and calendar setup.
 - [Architecture guide](docs/architecture.md) — learning pipeline, grounding flow, truth gate, and curation ranking.
 - [Persona and Avatar Intelligence](docs/persona-and-avatar.md) — persona graph, system prompt, memory, confidence, explainability, and continual learning.
 - [Continual Learning (NLP-extracted knowledge)](docs/features/continual-learning/idea.md) — how the avatar accumulates new knowledge from external content.
 - [Domain Knowledge Graph](docs/domain-knowledge.md) — domain-level expertise that isn't tied to specific projects.
+- [Database Integration](docs/features/database/idea.md) — PostgreSQL schema, migration strategy, dual-write mode, and performance benchmarks.
 - [Usage guide](docs/usage-schedule-curate-console.md) — scheduling, curation, console mode, channels, and CLI examples.
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting.
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations.
