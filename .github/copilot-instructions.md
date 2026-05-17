@@ -7,10 +7,16 @@ Python automation tool that generates and schedules LinkedIn posts via the Buffe
 ## Tech Stack
 
 - **Language**: Python 3.12+ (3.12.2 in production)
-- **LLM**: Ollama (local) via `services/ollama_service.py` — primary model `gemma4:26b`, fallback `llama3.2`
+- **LLM**: Ollama (local) via `services/ollama_service.py` — primary model `gemma4:e4b`, fallback `qwen3.5:9b`
+- **Database**: PostgreSQL 16 Alpine (optional dual-write mode) — SQLAlchemy 2.0+ ORM, 17 tables
 - **NLP**: spaCy `en_core_web_md` — NER, semantic similarity, fact extraction (`services/spacy_nlp.py`)
+- **Classification**: Model2Vec (`minishlab/potion-base-8M`) — static embedding-based text classification
+- **Logic/Inference**: PLN (Probabilistic Logic Networks) — `services/pln_inference.py`
+- **Voice/TTS**: Wyoming Piper — local neural TTS on port 10200 (Docker service)
+- **Image Gen**: FLUX.1-schnell (GGUF quantized) — local GPU image generation (full profile only)
+- **Music Gen**: Strudel MCP server — live-coding music via WebSocket (port 4321)
 - **Social Scheduling**: Buffer GraphQL API — all calls go through `services/buffer_service.py`
-- **RSS Parsing**: `feedparser` — used in `services/content_curator/_rss_fetcher.py`
+- **RSS Parsing**: `feedparser` + `trafilatura` — used in `services/content_curator/_rss_fetcher.py`
 - **Graph / Retrieval**: NetworkX (`services/knowledge_graph.py`), BM25 + hybrid retrieval (`services/hybrid_retriever.py`)
 - **Scheduling**: `APScheduler` + `pytz` (America/Toronto timezone)
 - **Config**: `python-dotenv` — secrets from `.env` only
@@ -78,7 +84,13 @@ linkedin_ssi_booster/
 │   │   ├── domain_knowledge_*.json # domain knowledge packs (auto-merged at load)
 │   │   └── narrative_memory.json  # rolling narrative memory (max 200 items)
 │   └── selection/                 # JSONL candidate + published logs
-├── tests/                         # pytest suite (337 tests, all passing)
+├── agents/
+│   ├── buffer_mcp_agent.py        # Buffer MCP agent — natural language Buffer API
+│   └── strudel_mcp_agent.py       # Strudel music generation agent
+├── scripts/
+│   ├── download-flux1-schnell-Q4_K_S.sh # FLUX model download script
+│   └── init-db.sql                # PostgreSQL schema DDL
+├── tests/                         # pytest suite (565 tests, all passing)
 └── docs/                          # architecture, features, usage docs
 ```
 
@@ -91,6 +103,7 @@ linkedin_ssi_booster/
 ## Key Architecture Concepts
 
 **Truth Gate** (`services/console_grounding/_truth_gate.py`): 4-layer filter applied to every generated sentence:
+
 1. BM25 evidence scoring vs article + persona facts (`TRUTH_GATE_BM25_THRESHOLD`, default 0.75)
 2. Per-sentence Derivative of Truth gradient (Jaccard overlap-enriched 4-term formula)
 3. spaCy semantic similarity floor for numeric/org/year sentences (`TRUTH_GATE_SPACY_SIM_FLOOR`, default 0.10)
@@ -118,6 +131,11 @@ linkedin_ssi_booster/
 
 - All secrets via `os.getenv()` after `load_dotenv()`
 - Required: `BUFFER_API_KEY`, `OLLAMA_BASE_URL`
+- Optional (database): `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_ENABLED`
+- Optional (image gen): `CIVITAI_API_KEY`, `FLUX_MODEL_PATH`
+- Optional (voice): `CONSOLE_USE_VOICE`, `WYOMING_PIPER_HOST`, `WYOMING_PIPER_PORT`
+- Optional (music): `STRUDEL_WS_URL`, `STRUDEL_MCP_URL`
+- Optional (classification): `MODEL2VEC_ENABLED`, `CURATE_CLASSIFY`
 - Never suggest hardcoding keys or committing `.env`
 
 ## SSI Components (context for prompt suggestions)
@@ -142,5 +160,51 @@ linkedin_ssi_booster/
 - Fix all syntax errors before considering a task complete
 - Example: `python -m py_compile services/content_curator/curator.py services/console_grounding/_gate_helpers.py`
 - **Write unit tests** for every new module or significant new function — place them in `tests/test_<module_name>.py` following the patterns in `tests/test_learning_report.py` and `tests/test_confidence_scoring.py`. Tests must pass before a task is considered complete.
-- **Update `docs/testing-and-dev.md`** whenever the test count changes or new behaviour is covered — keep the test table and count in sync.
+- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 565/565) or new behaviour is covered — keep the test table and count in sync.
 - **Update README.md** whenever you change how the tool is configured, how a feature works, or what env vars are required — keep the docs in sync with the code.
+- **Update relevant feature docs** in `docs/features/` when implementing new subsystems.
+
+## Version & Test Status
+
+- **Version**: alpha-v0.0.2.7
+- **Test Count**: 565/565 passing (16 database tests added in Phase 4)
+- **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
+
+## Docker & Deployment
+
+- **Profiles**: Use `--profile core` for standard operations (Ollama + Piper TTS + app), `--profile full` to include FLUX image generation (requires RTX 3060 12GB+)
+- **Run script**: Use `bash run.sh --profile core up -d` to automatically handle PulseAudio passthrough (exports `USER_UID`)
+- **Database**: PostgreSQL integration is optional — set `DATABASE_ENABLED=true` in `.env` to enable dual-write mode
+- **Voice output**: Requires PulseAudio passthrough — `run.sh` handles socket mounting automatically
+- **GPU passthrough**: All GPU services use `deploy.resources.reservations.devices` — requires NVIDIA Container Toolkit on Linux
+- **OLLAMA_BASE_URL**: Automatically overridden to `http://ollama:11434` in `docker-compose.yml` — do not change in `.env` for Docker use
+
+## Key CLI Flags & Features
+
+**Classification & Learning:**
+
+- `--classify` — Auto-classify articles via Model2Vec during curation
+- `--list-categories` — Show all available classification categories (10 default + custom)
+- `--add-category NAME DESC SSI_COMPONENT` — Add custom category
+- `--remove-category NAME [NAME...]` — Remove custom categories
+- `--learn` — Extract and persist knowledge from curated articles to `extracted_knowledge.json`
+
+**Explainability & Reports:**
+
+- `--dot-report` — Show Derivative of Truth report (truth gradient, evidence, uncertainty) for every post
+- `--avatar-explain` — Show evidence IDs and grounding summary after each generation
+- `--avatar-learn-report` — Print learning report from captured moderation events
+- `--verify` — Enable DoT + similarity verification in console mode (off by default)
+
+**Console Mode:**
+
+- `--console` — Interactive persona chat with deterministic grounding
+- `--console --verify` — Enable inline truth scoring (DoT + fact-pool similarity) after AI replies
+- `/verify`, `/avatar-explain`, `/dot-report` — Toggle diagnostic modes during console session
+- `/reload` — Re-read all avatar files (persona graph, domain knowledge, extracted knowledge) without restarting
+
+**Database:**
+
+- PostgreSQL integration (Phase 4 complete) — 17 tables, dual-write mode, SQLAlchemy 2.0+
+- `python -m services.database.migrate_data` — Migrate existing JSON/JSONL data to database
+- Set `DATABASE_ENABLED=false` in `.env` to revert to file-based storage (non-breaking rollback)

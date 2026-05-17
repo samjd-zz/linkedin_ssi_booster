@@ -4,15 +4,18 @@
 
 # Author: Shawn Jackson Dyck
 
-# Stack: Python 3.12+, Ollama LLM (local), spaCy, Buffer GraphQL API, trafilatura, NetworkX, pytest
+# Stack: Python 3.12+, Ollama LLM (local), spaCy, Buffer GraphQL API, PostgreSQL, Model2Vec, PLN, NetworkX, Piper TTS, FLUX.1-schnell, pytest
+
+# Version: alpha-v0.0.2.7 | Tests: 565/565 passing
 
 ## Project Structure
 
-- All service modules live in `services/` package: `buffer_service.py`, `ollama_service.py`, `hybrid_retriever.py`, `knowledge_graph.py`, `spacy_nlp.py`, `ssi_tracker.py`, etc.
-- Submodules: `console_grounding/`, `content_curator/`, `avatar_intelligence/`, `derivative_of_truth/`, `selection_learning/`
+- All service modules live in `services/` package: `buffer_service.py`, `ollama_service.py`, `hybrid_retriever.py`, `knowledge_graph.py`, `spacy_nlp.py`, `ssi_tracker.py`, `model2vec_service.py`, `pln_inference.py`, `piper_service.py`, etc.
+- Submodules: `console_grounding/`, `content_curator/`, `avatar_intelligence/`, `derivative_of_truth/`, `selection_learning/`, `database/`
+- Agents: `agents/buffer_mcp_agent.py`, `agents/strudel_mcp_agent.py`
 - Root-level orchestration: `main.py`, `scheduler.py`, `content_calendar.py`
 - Always use absolute imports from the project root: `from services.X import Y`
-- Scripts are run from the project root: `python main.py --curate`
+- Scripts are run from the project root: `python main.py --curate` or via Docker: `docker compose --profile core run --rm app python main.py --curate`
 
 ## Code Style
 
@@ -28,11 +31,17 @@
 - Required env vars: `BUFFER_API_KEY`, `OLLAMA_BASE_URL`
 - `.env` is gitignored — use `.env.example` as template
 
-## External APIs
+## External APIs & Services
 
 - **Buffer**: GraphQL API at `https://api.buffer.com` — all calls through `services/buffer_service.py`
-- **Ollama**: Local LLM via `services/ollama_service.py` (primary: `gemma4:26b`, fallback: `llama3.2`)
-- **spaCy**: NLP, NER, similarity via `services/spacy_nlp.py`
+- **Ollama**: Local LLM via `services/ollama_service.py` (primary: `gemma4:e4b`, fallback: `qwen3.5:9b`)
+- **PostgreSQL**: Database integration (optional dual-write mode) — 17 tables, SQLAlchemy ORM in `services/database/`
+- **spaCy**: NLP, NER, similarity via `services/spacy_nlp.py` (model: `en_core_web_md`)
+- **Model2Vec**: Static embedding classification via `services/model2vec_service.py` (model: `minishlab/potion-base-8M`)
+- **PLN**: Probabilistic Logic Networks inference engine via `services/pln_inference.py`
+- **Wyoming Piper**: TTS voice synthesis via `services/piper_service.py` (Docker service on port 10200)
+- **FLUX.1-schnell**: Local image generation (GGUF quantized, full profile only)
+- **Strudel MCP**: Live-coding music generation via WebSocket (Docker service on port 4321)
 - **RSS**: Fetched and parsed via `feedparser` and `trafilatura` in `services/content_curator/_rss_fetcher.py`
 - Always handle API errors explicitly; surface meaningful messages to the logger
 
@@ -49,14 +58,17 @@ Four target components:
 
 - Prefer `--dry-run` flag pattern for destructive operations (no API calls)
 - Unit tests go in `tests/` (create if missing); name files `test_<module>.py`
-- Mock external API calls — never hit live Buffer/Ollama in tests
+- Mock external API calls — never hit live Buffer/Ollama/PostgreSQL in tests
 - Use `pytest` for all tests; all new modules/functions require tests
+- Current test count: **565 tests passing** (16 database tests added in Phase 4)
+- Database tests use in-memory SQLite for speed and isolation
 
 ## After Every Change
 
 - Run `python -m py_compile <changed_files>` after editing any `.py` file and fix all errors before finishing
 - Update `README.md` whenever you change how the tool is configured, how a feature works, or what env vars are required — keep the docs in sync with the code
-- Update `docs/testing-and-dev.md` whenever the test count changes or new behaviour is covered
+- Update `docs/testing-and-dev.md` whenever the test count changes (current: 565/565) or new behaviour is covered
+- Update relevant feature docs in `docs/features/` when implementing new subsystems
 
 ## After Every Code Change
 
@@ -64,8 +76,78 @@ Four target components:
 - Fix all syntax errors before considering a task complete
 - Example: `python -m py_compile services/content_curator/curator.py services/console_grounding/_gate_helpers.py`
 
+## Docker & Deployment
+
+- Use `bash run.sh --profile core up -d` for standard operations (Ollama + Piper TTS + app)
+- Use `bash run.sh --profile full up -d` to include FLUX image generation (requires RTX 3060 12GB+)
+- All services defined in `docker-compose.yml` with GPU passthrough via NVIDIA Container Toolkit
+- Database integration is optional — set `DATABASE_ENABLED=true` in `.env` to enable dual-write mode
+- Voice output requires PulseAudio passthrough — `run.sh` handles `USER_UID` and socket mounting automatically
+
+## Key Features & CLI Flags
+
+**Classification & Learning:**
+
+- `--classify` — Auto-classify articles via Model2Vec during curation
+- `--list-categories` — Show all available classification categories (10 default + custom)
+- `--add-category NAME DESC SSI_COMPONENT` — Add custom category
+- `--remove-category NAME [NAME...]` — Remove custom categories
+- `--learn` — Extract and persist knowledge from curated articles to `extracted_knowledge.json`
+
+**Explainability & Reports:**
+
+- `--dot-report` — Show Derivative of Truth report (truth gradient, evidence, uncertainty) for every post
+- `--avatar-explain` — Show evidence IDs and grounding summary after each generation
+- `--avatar-learn-report` — Print learning report from captured moderation events
+- `--verify` — Enable DoT + similarity verification in console mode (off by default)
+
+**Console Mode:**
+
+- `--console` — Interactive persona chat with deterministic grounding
+- `--console --verify` — Enable inline truth scoring (DoT + fact-pool similarity) after AI replies
+- `/verify`, `/avatar-explain`, `/dot-report` — Toggle diagnostic modes during console session
+- `/reload` — Re-read all avatar files (persona graph, domain knowledge, extracted knowledge) without restarting
+
+**Database:**
+
+- PostgreSQL integration (Phase 4 complete) — 17 tables, dual-write mode, SQLAlchemy 2.0+
+- `python -m services.database.migrate_data` — Migrate existing JSON/JSONL data to database
+- Set `DATABASE_ENABLED=false` in `.env` to revert to file-based storage (non-breaking rollback)
+
+## Environment Variables (Key Additions)
+
+**Database:**
+
+- `DATABASE_ENABLED` — Enable PostgreSQL dual-write mode (default: false)
+- `DATABASE_URL` — PostgreSQL connection string
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` — Database credentials
+
+**Model2Vec:**
+
+- `MODEL2VEC_ENABLED` — Enable static embedding classification (default: true)
+- `CURATE_CLASSIFY` — Auto-classify on every `--curate` run (default: false)
+
+**Voice/TTS:**
+
+- `CONSOLE_USE_VOICE` — Enable Wyoming Piper TTS in console mode (default: false)
+- `WYOMING_PIPER_HOST`, `WYOMING_PIPER_PORT` — TTS server address (default: piper:10200 in Docker)
+- `CONSOLE_VOICE_SPEAKER` — Speaker ID for multi-speaker voices (e.g., 896 for en_US-libritts_r-medium)
+
+**Image Generation:**
+
+- `CIVITAI_API_KEY` — Required for FLUX GGUF model download
+- `FLUX_MODEL_PATH` — Path to GGUF model (default: /app/models/flux/flux1-schnell-Q4_K_S.gguf)
+- `IMAGE_OUTPUT_DIR` — Where generated images are saved (default: /app/yt-vid-data)
+
+**Music Generation:**
+
+- `STRUDEL_WS_URL` — WebSocket URL for Strudel MCP server (default: ws://strudel-music-server:4321 in Docker)
+- `STRUDEL_MCP_URL` — HTTP URL for Strudel MCP server (default: http://strudel-music-server:3000 in Docker)
+
 ## Do Not
 
 - Do not add `sys.path` hacks in source files — fix the package structure instead
 - Do not commit `.env` or any file containing API keys
 - Do not generate mock LinkedIn SSI data without a `# NOTE: mock data` comment
+- Do not modify `docker-compose.yml` `OLLAMA_BASE_URL` override — it must be `http://ollama:11434` for Docker
+- Do not bypass the dual-write safety — PostgreSQL integration is opt-in via `DATABASE_ENABLED`
