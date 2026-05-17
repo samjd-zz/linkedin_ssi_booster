@@ -396,7 +396,7 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 
 ---
 
-## �🗺️ Docs map
+## 🗺️ Docs map
 
 - [Setup guide](docs/setup.md) — environment, dependencies, persona graph, and calendar setup.
 - [Architecture guide](docs/architecture.md) — learning pipeline, grounding flow, truth gate, and curation ranking.
