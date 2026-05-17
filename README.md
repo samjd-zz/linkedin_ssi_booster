@@ -340,26 +340,10 @@ NLP primer in this repo:
 
 The primer covers core NLP concepts, practical communication techniques, technical writing examples, and ethical usage guidelines.
 
-## �️ Database Integration (PostgreSQL)
+## Database Integration (PostgreSQL)
 
 The system now supports **dual-write mode** with PostgreSQL for improved data integrity, query performance, and concurrent access. Database integration is **optional** — the system continues to work with file-based storage (JSON/JSONL) by default.
 
-**Why PostgreSQL?**
-
-- **ACID transactions** — No partial writes during crashes
-- **Concurrent access** — Multi-container Docker deployments without file locking issues
-- **Indexed queries** — Fast lookups by URL, timestamp, category, SSI component
-- **Full-text search** — Built-in FTS for article and fact search
-- **Time-series support** — Efficient truth trajectory tracking
-- **Scalability** — Handles millions of rows for large knowledge bases
-
-**Current Status:** Phase 4 complete (4/6 days elapsed)
-
-- ✅ **Phase 1:** PostgreSQL 16 Alpine container, 17-table schema, Alembic migrations
-- ✅ **Phase 2:** SQLAlchemy 2.0+ ORM models, repository pattern, connection pooling
-- ✅ **Phase 3:** Dual-write functions (DB + file), dual-read loaders (DB first, file fallback)
-- ✅ **Phase 4:** 16 database tests, SQLAlchemy 2.0 compatibility fixes, 565 tests passing
-- ⏳ **Phase 5:** Documentation, backup procedures, production rollout (pending)
 
 **Setup (Docker):**
 
