@@ -86,6 +86,222 @@ The system currently uses **file-based storage** across multiple domains:
 
 ## Database Schema Design
 
+### Entity-Relationship Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         DATABASE SCHEMA OVERVIEW                              │
+│                    17 Tables | 5 Domain Categories                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ DOMAIN 1: AVATAR INTELLIGENCE (Persona & Identity)                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  ┌─────────────────────────────────────────────────────────┐
+  │ PERSONA_GRAPH (Root Entity)                             │
+  ├─────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                      │
+  │ • schema_version — VARCHAR(10)                          │
+  │ • person — JSONB (name, title, bio, etc.)               │
+  │ • created_at, updated_at — TIMESTAMP                    │
+  └─────────────────────────────────────────────────────────┘
+             │  1:N
+             ├─────────────┬─────────────┬─────────────┐
+             ▼             ▼             ▼             ▼
+    ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐
+    │ PROJECTS   │  │ COMPANIES  │  │ SKILLS     │  │ CLAIMS     │
+    ├────────────┤  ├────────────┤  ├────────────┤  ├────────────┤
+    │ • id (PK)  │  │ • id (PK)  │  │ • id (PK)  │  │ • id (PK)  │
+    │ • name     │  │ • name     │  │ • name     │  │ • text     │
+    │ • years    │  │ • aliases  │  │ • scope    │  │ • project  │
+    │ • skills   │  │   (JSONB)  │  │ • aliases  │  │   _ids     │
+    └────────────┘  └────────────┘  └────────────┘  └────────────┘
+         │ N:1                                            (JSONB)
+         └──────> COMPANIES (company_id FK)
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ DOMAIN 2: DOMAIN KNOWLEDGE (Structured Facts & Relationships)              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  ┌──────────────────────────────────┐
+  │ DOMAINS                          │
+  ├──────────────────────────────────┤
+  │ • id (PK) — VARCHAR(255)         │
+  │ • name (e.g., "Python", "Java")  │
+  │ • description — TEXT             │
+  └──────────────────────────────────┘
+             │  1:N
+             ▼
+  ┌──────────────────────────────────┐
+  │ DOMAIN_FACTS                     │
+  ├──────────────────────────────────┤
+  │ • id (PK) — VARCHAR(255)         │
+  │ • domain_id (FK) → DOMAINS       │
+  │ • statement — TEXT               │
+  │ • tags, confidence — JSONB       │
+  │ • scope (general/specific)       │
+  └──────────────────────────────────┘
+             │  1:N (from) & 1:N (to)
+             ▼
+  ┌──────────────────────────────────┐
+  │ DOMAIN_RELATIONSHIPS             │
+  ├──────────────────────────────────┤
+  │ • id (PK) — VARCHAR(255)         │
+  │ • from_fact_id (FK) → FACTS      │
+  │ • to_fact_id (FK) → FACTS        │
+  │ • relation_type (e.g., "is_a")   │
+  │ • description — TEXT             │
+  └──────────────────────────────────┘
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ DOMAIN 3: EXTRACTED KNOWLEDGE (NLP Pipeline Output)                        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  ┌───────────────────────────────────────────────────────────┐
+  │ EXTRACTED_FACTS                                           │
+  ├───────────────────────────────────────────────────────────┤
+  │ • id (PK) — VARCHAR(255) [SHA-256 hash]                   │
+  │ • statement — TEXT                                        │
+  │ • source_url, source_title — TEXT                         │
+  │ • extracted_at — TIMESTAMP                                │
+  │ • entities (JSONB) — spaCy NER output                     │
+  │ • tags (JSONB) — extracted keywords                       │
+  │ • confidence (low/medium/high)                            │
+  │ • extraction_method (e.g., "spacy_nlp")                   │
+  │ • primary_category (Model2Vec classification)             │
+  │ • primary_ssi_component (SSI mapping)                     │
+  ├───────────────────────────────────────────────────────────┤
+  │ Indexes: source_url, extracted_at, tags (GIN), entities   │
+  └───────────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────┐
+  │ NARRATIVE_MEMORY                                          │
+  ├───────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                        │
+  │ • recent_themes (JSONB) — Last 5 posting themes           │
+  │ • recent_claims (JSONB) — Last 10 confidence events       │
+  │ • open_narrative_arcs (JSONB) — Ongoing story threads     │
+  │ • last_updated — TIMESTAMP                                │
+  └───────────────────────────────────────────────────────────┘
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ DOMAIN 4: SELECTION LEARNING (Candidate → Published Pipeline)             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  ┌────────────────────────────────────────────────────────────┐
+  │ CANDIDATE_RECORDS (Generated Posts)                        │
+  ├────────────────────────────────────────────────────────────┤
+  │ • candidate_id (PK) — VARCHAR(255)                         │
+  │ • timestamp — TIMESTAMP                                    │
+  │ • article_url, article_title, article_source               │
+  │ • ssi_component (build_brand / engage_insights / etc.)     │
+  │ • channel (linkedin/twitter)                               │
+  │ • text_hash (SHA-256) — deduplication                      │
+  │ • text_snippet — TEXT                                      │
+  │ • buffer_id (if scheduled), route (ollama/learned/etc.)    │
+  │ • selected (BOOLEAN), selected_at — TIMESTAMP              │
+  │ • themes, sentiment, user_feedback (JSONB)                 │
+  │ • primary_category, primary_ssi_component                  │
+  │ • category_confidence (0.0-1.0)                            │
+  ├────────────────────────────────────────────────────────────┤
+  │ Indexes: timestamp, article_url, ssi_component, selected   │
+  └────────────────────────────────────────────────────────────┘
+             │  1:1 (optional)
+             ▼
+  ┌────────────────────────────────────────────────────────────┐
+  │ PUBLISHED_RECORDS (Buffer API Confirmed)                   │
+  ├────────────────────────────────────────────────────────────┤
+  │ • buffer_id (PK) — VARCHAR(255)                            │
+  │ • channel — VARCHAR(50)                                    │
+  │ • text_snippet — TEXT                                      │
+  │ • published_at — TIMESTAMP (actual post time)              │
+  │ • fetched_at — TIMESTAMP (when we discovered it)           │
+  │ • candidate_id (FK) → CANDIDATE_RECORDS (nullable)         │
+  └────────────────────────────────────────────────────────────┘
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ DOMAIN 5: TRUTH GATE LEARNING (Moderation & Confidence Tracking)          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  ┌────────────────────────────────────────────────────────────┐
+  │ MODERATION_EVENTS (Sentence-Level Filtering)               │
+  ├────────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                         │
+  │ • timestamp — TIMESTAMP                                    │
+  │ • channel (linkedin/twitter)                               │
+  │ • reason_code (e.g., "claim_without_project")              │
+  │ • decision ("kept" or "removed")                           │
+  │ • sentence_hash (SHA-256) — deduplication                  │
+  │ • article_ref, project_refs (JSONB)                        │
+  │ • run_id (trace back to curation run)                      │
+  ├────────────────────────────────────────────────────────────┤
+  │ Indexes: timestamp, reason_code, decision                  │
+  └────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────────┐
+  │ CONFIDENCE_DECISIONS (Routing Policy Log)                  │
+  ├────────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                         │
+  │ • timestamp — TIMESTAMP                                    │
+  │ • channel, route (ollama_generate / learned_only / etc.)   │
+  │ • policy (e.g., "medium_conf_policy")                      │
+  │ • confidence_score (0.0-1.0), confidence_level             │
+  │ • dominant_signal (e.g., "persona_match")                  │
+  │ • reason (TEXT explanation)                                │
+  │ • article_ref, run_id                                      │
+  ├────────────────────────────────────────────────────────────┤
+  │ Indexes: timestamp, route                                  │
+  └────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────────┐
+  │ TRUTH_TRAJECTORIES (Claim Evolution Over Time)             │
+  ├────────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                         │
+  │ • claim_hash (UNIQUE) — VARCHAR(64)                        │
+  │ • claim_text — TEXT                                        │
+  └────────────────────────────────────────────────────────────┘
+             │  1:N
+             ▼
+  ┌────────────────────────────────────────────────────────────┐
+  │ TRUTH_TRAJECTORY_POINTS (Time-Series Data)                 │
+  ├────────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                         │
+  │ • trajectory_id (FK) → TRUTH_TRAJECTORIES                  │
+  │ • timestamp — TIMESTAMP                                    │
+  │ • truth_gradient (0.0-1.0) — Derivative of Truth score     │
+  │ • uncertainty (0.0-1.0) — Confidence interval              │
+  │ • evidence_count — INTEGER                                 │
+  │ • flagged (BOOLEAN) — Anomaly detection flag               │
+  ├────────────────────────────────────────────────────────────┤
+  │ Index: (trajectory_id, timestamp) — time-series queries    │
+  └────────────────────────────────────────────────────────────┘
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ METADATA                                                                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  ┌────────────────────────────────────────────────────────────┐
+  │ SCHEMA_MIGRATIONS (Alembic Version Tracking)               │
+  ├────────────────────────────────────────────────────────────┤
+  │ • id (PK) — SERIAL                                         │
+  │ • version (UNIQUE) — VARCHAR(255)                          │
+  │ • description — TEXT                                       │
+  │ • applied_at — TIMESTAMP                                   │
+  └────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         KEY RELATIONSHIPS SUMMARY                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  PERSONA_GRAPH → PROJECTS (1:N), COMPANIES (1:N), SKILLS (1:N), CLAIMS (1:N)│
+│  PROJECTS → COMPANIES (N:1 via company_id FK)                                │
+│  DOMAINS → DOMAIN_FACTS (1:N)                                                │
+│  DOMAIN_FACTS → DOMAIN_RELATIONSHIPS (1:N from, 1:N to — graph edges)        │
+│  CANDIDATE_RECORDS → PUBLISHED_RECORDS (1:1 optional via candidate_id FK)    │
+│  TRUTH_TRAJECTORIES → TRUTH_TRAJECTORY_POINTS (1:N time-series)              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
 ### Core Tables
 
 #### `persona_graph` (Avatar State)
