@@ -58,23 +58,34 @@ def write_persona_graph_to_db(
     # Extract projects, companies, skills, claims and write to normalized tables
     persona_id_int: int = persona.id  # type: ignore
     
+    # First create companies and build a mapping of JSON IDs to database IDs
+    company_id_map: Dict[str, str] = {}
+    for company_data in persona_data.get("companies", []):
+        company = CompanyRepository.create(
+            session=session,
+            persona_id=persona_id_int,
+            name=company_data.get("name", ""),
+            role=None,
+            skills=[],
+        )
+        json_company_id: str = company_data.get("id", "")
+        db_company_id_val: str = company.id  # type: ignore
+        if json_company_id and db_company_id_val:
+            company_id_map[json_company_id] = db_company_id_val
+    
+    # Now create projects with the mapped company_id
     for project_data in persona_data.get("projects", []):
+        json_company_id = project_data.get("companyId")
+        db_company_id: str | None = company_id_map.get(json_company_id) if json_company_id else None
+        
         ProjectRepository.create(
             session=session,
             persona_id=persona_id_int,
             name=project_data.get("name", ""),
+            company_id=db_company_id,
             description=project_data.get("details", ""),
             url=project_data.get("url"),
             skills=project_data.get("skills", []),
-        )
-    
-    for company_data in persona_data.get("companies", []):
-        CompanyRepository.create(
-            session=session,
-            persona_id=persona_id_int,
-            name=company_data.get("name", ""),
-            role=None,  # Not in current schema
-            skills=[],  # Could extract from projects
         )
     
     for skill_data in persona_data.get("skills", []):
@@ -243,26 +254,34 @@ def write_extracted_knowledge_to_db(
     Returns:
         Number of facts written
     """
+    from sqlalchemy.exc import IntegrityError
+    
     facts_written = 0
+    facts_skipped = 0
     
     for fact_entry in extracted_data.get("facts", []):
-        ExtractedFactRepository.create(
-            session=session,
-            fact_text=fact_entry.get("statement", ""),
-            source_url=fact_entry.get("source_url"),
-            entities=fact_entry.get("entities", []),
-            themes=fact_entry.get("tags", []),
-            sentiment={
-                "confidence": fact_entry.get("confidence", "medium"),
-                "extraction_method": fact_entry.get("extraction_method", "spacy_nlp"),
-                "primary_category": fact_entry.get("primary_category", ""),
-                "primary_ssi_component": fact_entry.get("primary_ssi_component", ""),
-            },
-        )
-        facts_written += 1
+        try:
+            ExtractedFactRepository.create(
+                session=session,
+                fact_text=fact_entry.get("statement", ""),
+                source_url=fact_entry.get("source_url"),
+                entities=fact_entry.get("entities", []),
+                themes=fact_entry.get("tags", []),
+                sentiment={
+                    "confidence": fact_entry.get("confidence", "medium"),
+                    "extraction_method": fact_entry.get("extraction_method", "spacy_nlp"),
+                    "primary_category": fact_entry.get("primary_category", ""),
+                    "primary_ssi_component": fact_entry.get("primary_ssi_component", ""),
+                },
+            )
+            facts_written += 1
+        except IntegrityError as e:
+            session.rollback()
+            logger.debug(f"Skipping duplicate fact: {fact_entry.get('statement', '')[:50]}...")
+            facts_skipped += 1
     
     session.commit()
-    logger.info(f"Wrote {facts_written} extracted facts to database")
+    logger.info(f"Wrote {facts_written} extracted facts to database ({facts_skipped} duplicates skipped)")
     return facts_written
 
 

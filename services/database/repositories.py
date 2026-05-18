@@ -99,6 +99,7 @@ class ProjectRepository:
         session: Session,
         persona_id: int,
         name: str,
+        company_id: Optional[str] = None,
         description: Optional[str] = None,
         url: Optional[str] = None,
         skills: Optional[List[str]] = None,
@@ -114,6 +115,7 @@ class ProjectRepository:
             id=project_id,
             persona_graph_id=persona_id,
             name=name,
+            company_id=company_id,
             details=description,
             skills=skills or [],
         )
