@@ -19,6 +19,7 @@ sounddevice>=0.4.6
 websockets>=12.0
 httpx>=0.27.0
 pytest>=9.0.0
+term-image>=0.0.1
 
 # --- DATABASE ---
 sqlalchemy>=2.0.0

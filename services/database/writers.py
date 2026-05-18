@@ -157,10 +157,12 @@ def write_domain_knowledge_to_db(
         )
         session.flush()  # Flush to ensure domain.id is populated
         
+        # Map the JSON domain ID (e.g., "ai-ml") to the database ID
+        json_domain_id: str = domain_entry.get("id", "")
         domain_name_str: str = domain.name  # type: ignore
         domain_id_str: str = domain.id  # type: ignore
-        domain_ids[domain_name_str] = domain_id_str
-        logger.debug(f"Created domain: {domain_name_str} (ID: {domain_id_str})")
+        domain_ids[json_domain_id] = domain_id_str
+        logger.debug(f"Created domain: {domain_name_str} (ID: {domain_id_str}, JSON ID: {json_domain_id})")
     
     # Create facts (linked to domains)
     for fact_entry in domain_data.get("facts", []):

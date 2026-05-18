@@ -8,4 +8,3 @@ transformers
 sentencepiece
 gguf
 Pillow
-term-image
