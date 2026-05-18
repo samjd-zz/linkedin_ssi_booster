@@ -22,7 +22,13 @@
       "id": "fact-knn-rag",
       "domainId": "ai-ml",
       "statement": "k-Nearest Neighbors (kNN) is commonly used in RAG (Retrieval-Augmented Generation) pipelines for semantic similarity search.",
-      "tags": ["kNN", "RAG", "retrieval", "semantic search", "vector search"],
+      "tags": [
+        "kNN",
+        "RAG",
+        "retrieval",
+        "semantic search",
+        "vector search"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -30,7 +36,13 @@
       "id": "fact-vector-search",
       "domainId": "ai-ml",
       "statement": "Vector search is essential for modern AI pipelines, enabling semantic similarity matching for embeddings.",
-      "tags": ["vector search", "embeddings", "semantic search", "AI", "similarity"],
+      "tags": [
+        "vector search",
+        "embeddings",
+        "semantic search",
+        "AI",
+        "similarity"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -38,7 +50,12 @@
       "id": "fact-llm-prompting",
       "domainId": "ai-ml",
       "statement": "Effective prompt engineering is crucial for getting consistent, high-quality outputs from Large Language Models.",
-      "tags": ["LLM", "prompting", "prompt engineering", "AI"],
+      "tags": [
+        "LLM",
+        "prompting",
+        "prompt engineering",
+        "AI"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -46,7 +63,12 @@
       "id": "fact-bm25-retrieval",
       "domainId": "ai-ml",
       "statement": "BM25 is a widely-used probabilistic retrieval function that ranks documents based on term frequency and inverse document frequency.",
-      "tags": ["BM25", "information retrieval", "ranking", "search"],
+      "tags": [
+        "BM25",
+        "information retrieval",
+        "ranking",
+        "search"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -54,7 +76,12 @@
       "id": "fact-microservices",
       "domainId": "software-engineering",
       "statement": "Microservices architecture enables independent deployment and scaling of application components.",
-      "tags": ["microservices", "architecture", "scalability", "deployment"],
+      "tags": [
+        "microservices",
+        "architecture",
+        "scalability",
+        "deployment"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -62,7 +89,12 @@
       "id": "fact-rest-api",
       "domainId": "software-engineering",
       "statement": "RESTful APIs are a standard approach for building stateless, scalable web services.",
-      "tags": ["REST", "API", "web services", "HTTP"],
+      "tags": [
+        "REST",
+        "API",
+        "web services",
+        "HTTP"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -70,7 +102,11 @@
       "id": "fact-etl",
       "domainId": "data-engineering",
       "statement": "ETL (Extract, Transform, Load) pipelines are fundamental for moving data between systems and preparing it for analysis.",
-      "tags": ["ETL", "data pipeline", "data processing"],
+      "tags": [
+        "ETL",
+        "data pipeline",
+        "data processing"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -78,7 +114,12 @@
       "id": "fact-java",
       "domainId": "software-engineering",
       "statement": "Java is a widely-used programming language for enterprise and backend systems.",
-      "tags": ["java", "java 21", "virtual thread", "java ai"],
+      "tags": [
+        "java",
+        "java 21",
+        "virtual thread",
+        "java ai"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -86,7 +127,12 @@
       "id": "fact-spring",
       "domainId": "software-engineering",
       "statement": "Spring is a popular Java framework for building scalable applications.",
-      "tags": ["spring", "spring boot", "spring ai", "spring batch"],
+      "tags": [
+        "spring",
+        "spring boot",
+        "spring ai",
+        "spring batch"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -129,7 +175,12 @@
       "id": "fact-neo4j",
       "domainId": "ai-ml",
       "statement": "Neo4j is a graph database used for knowledge graphs and graph traversal.",
-      "tags": ["neo4j", "knowledge graph", "graph database", "graph traversal"],
+      "tags": [
+        "neo4j",
+        "knowledge graph",
+        "graph database",
+        "graph traversal"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -223,7 +274,13 @@
       "id": "fact-messaging",
       "domainId": "software-engineering",
       "statement": "Messaging and event-driven systems use JMS, Solace, PubSub+, and message queues.",
-      "tags": ["JMS", "message queue", "Solace", "PubSub+", "event broker"],
+      "tags": [
+        "JMS",
+        "message queue",
+        "Solace",
+        "PubSub+",
+        "event broker"
+      ],
       "confidence": "medium",
       "scope": "general"
     },
@@ -260,7 +317,10 @@
       "id": "fact-media",
       "domainId": "ai-ml",
       "statement": "Generative media includes text to speech and generative media tools.",
-      "tags": ["text to speech", "generative media"],
+      "tags": [
+        "text to speech",
+        "generative media"
+      ],
       "confidence": "low",
       "scope": "general"
     }

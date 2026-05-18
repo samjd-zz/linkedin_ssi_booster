@@ -48,7 +48,14 @@
       "id": "java-lang-overview",
       "domainId": "java-core",
       "statement": "Java is a statically-typed, compiled, object-oriented, class-based, platform-independent programming language. Java programs are compiled to bytecode that runs on the Java Virtual Machine (JVM), enabling 'write once, run anywhere' portability across operating systems.",
-      "tags": ["java", "JVM", "bytecode", "object-oriented", "statically typed", "platform independent"],
+      "tags": [
+        "java",
+        "JVM",
+        "bytecode",
+        "object-oriented",
+        "statically typed",
+        "platform independent"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -56,7 +63,15 @@
       "id": "java-versions",
       "domainId": "java-core",
       "statement": "Java follows a six-month release cadence since Java 9. Long-Term Support (LTS) versions are Java 8 (legacy), Java 11, Java 17, and Java 21. Java 21 (LTS) introduced virtual threads (Project Loom), record patterns, and sequenced collections. Java 25 is the next planned LTS.",
-      "tags": ["java", "java 21", "java 17", "java 11", "LTS", "release cadence", "Project Loom"],
+      "tags": [
+        "java",
+        "java 21",
+        "java 17",
+        "java 11",
+        "LTS",
+        "release cadence",
+        "Project Loom"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -64,7 +79,16 @@
       "id": "java-oop",
       "domainId": "java-core",
       "statement": "Java is a class-based object-oriented language with single class inheritance and multiple interface implementation. Core OOP concepts include encapsulation, inheritance, polymorphism, and abstraction. Abstract classes and interfaces define contracts; final classes and methods prevent extension.",
-      "tags": ["java", "OOP", "class", "interface", "inheritance", "polymorphism", "encapsulation", "abstraction"],
+      "tags": [
+        "java",
+        "OOP",
+        "class",
+        "interface",
+        "inheritance",
+        "polymorphism",
+        "encapsulation",
+        "abstraction"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -72,7 +96,15 @@
       "id": "java-generics",
       "domainId": "java-core",
       "statement": "Java generics (Java 5+) provide compile-time type safety for collections and methods via type parameters (e.g., List<String>). Wildcards (? extends T, ? super T) enable bounded polymorphism. Type erasure means generic type information is removed at runtime.",
-      "tags": ["java", "generics", "type parameter", "wildcard", "type safety", "type erasure", "bounded"],
+      "tags": [
+        "java",
+        "generics",
+        "type parameter",
+        "wildcard",
+        "type safety",
+        "type erasure",
+        "bounded"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -80,7 +112,17 @@
       "id": "java-collections",
       "domainId": "java-core",
       "statement": "The Java Collections Framework provides interfaces (List, Set, Map, Queue, Deque) and implementations (ArrayList, LinkedList, HashMap, TreeMap, HashSet, LinkedHashMap, PriorityQueue, ArrayDeque). Java 21 added SequencedCollection, SequencedSet, and SequencedMap interfaces for ordered access.",
-      "tags": ["java", "collections", "List", "Map", "Set", "ArrayList", "HashMap", "Queue", "SequencedCollection"],
+      "tags": [
+        "java",
+        "collections",
+        "List",
+        "Map",
+        "Set",
+        "ArrayList",
+        "HashMap",
+        "Queue",
+        "SequencedCollection"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -88,7 +130,17 @@
       "id": "java-streams",
       "domainId": "java-core",
       "statement": "The Java Stream API (Java 8+) enables functional-style operations on sequences of elements. Streams support intermediate operations (filter, map, flatMap, sorted, distinct, limit) and terminal operations (collect, forEach, reduce, count, findFirst). Streams can be sequential or parallel.",
-      "tags": ["java", "streams", "Stream API", "lambda", "functional", "filter", "map", "collect", "reduce"],
+      "tags": [
+        "java",
+        "streams",
+        "Stream API",
+        "lambda",
+        "functional",
+        "filter",
+        "map",
+        "collect",
+        "reduce"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -96,7 +148,16 @@
       "id": "java-lambdas",
       "domainId": "java-core",
       "statement": "Java lambda expressions (Java 8+) provide a concise syntax for implementing functional interfaces (interfaces with a single abstract method). Key functional interfaces include Function<T,R>, Predicate<T>, Consumer<T>, Supplier<T>, BiFunction<T,U,R>, and UnaryOperator<T>.",
-      "tags": ["java", "lambda", "functional interface", "Function", "Predicate", "Consumer", "Supplier", "java 8"],
+      "tags": [
+        "java",
+        "lambda",
+        "functional interface",
+        "Function",
+        "Predicate",
+        "Consumer",
+        "Supplier",
+        "java 8"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -104,7 +165,14 @@
       "id": "java-optional",
       "domainId": "java-core",
       "statement": "Optional<T> (Java 8+) is a container object that may or may not contain a non-null value. It is used to represent nullable return values explicitly, replacing null returns and reducing NullPointerExceptions. Key methods include isPresent(), get(), orElse(), orElseGet(), orElseThrow(), map(), and flatMap().",
-      "tags": ["java", "Optional", "null safety", "NullPointerException", "nullable", "java 8"],
+      "tags": [
+        "java",
+        "Optional",
+        "null safety",
+        "NullPointerException",
+        "nullable",
+        "java 8"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -112,7 +180,15 @@
       "id": "java-records",
       "domainId": "java-core",
       "statement": "Java records (Java 16+, finalized) are immutable data classes defined with a compact syntax. They automatically generate canonical constructors, accessors (named after components), equals(), hashCode(), and toString(). Records are ideal for DTOs, value objects, and data transfer in APIs.",
-      "tags": ["java", "record", "immutable", "DTO", "value object", "java 16", "data class"],
+      "tags": [
+        "java",
+        "record",
+        "immutable",
+        "DTO",
+        "value object",
+        "java 16",
+        "data class"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -120,7 +196,15 @@
       "id": "java-sealed-classes",
       "domainId": "java-core",
       "statement": "Sealed classes and interfaces (Java 17+) restrict which classes can extend or implement them. They enable exhaustive pattern matching and algebraic data type modeling. The permits clause declares allowed subtypes. Sealed hierarchies work naturally with switch expressions and pattern matching.",
-      "tags": ["java", "sealed class", "sealed interface", "permits", "pattern matching", "java 17", "algebraic data type"],
+      "tags": [
+        "java",
+        "sealed class",
+        "sealed interface",
+        "permits",
+        "pattern matching",
+        "java 17",
+        "algebraic data type"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -128,7 +212,15 @@
       "id": "java-pattern-matching",
       "domainId": "java-core",
       "statement": "Java pattern matching includes instanceof patterns (Java 16+), switch expressions (Java 14+), switch statements with patterns (Java 21+), and record patterns (Java 21+). Pattern matching simplifies type-checking code and enables exhaustive switch over sealed hierarchies.",
-      "tags": ["java", "pattern matching", "instanceof", "switch expression", "record pattern", "java 21", "switch statement"],
+      "tags": [
+        "java",
+        "pattern matching",
+        "instanceof",
+        "switch expression",
+        "record pattern",
+        "java 21",
+        "switch statement"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -136,7 +228,15 @@
       "id": "java-exceptions",
       "domainId": "java-core",
       "statement": "Java has checked exceptions (must be declared in throws clause or caught) and unchecked exceptions (RuntimeException subclasses). try-with-resources (Java 7+) automatically closes AutoCloseable resources. Multi-catch (Java 7+) allows catching multiple exception types in one catch block.",
-      "tags": ["java", "exception", "checked exception", "RuntimeException", "try-with-resources", "AutoCloseable", "throws"],
+      "tags": [
+        "java",
+        "exception",
+        "checked exception",
+        "RuntimeException",
+        "try-with-resources",
+        "AutoCloseable",
+        "throws"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -144,7 +244,16 @@
       "id": "java-functional-interfaces",
       "domainId": "java-core",
       "statement": "The java.util.function package provides standard functional interfaces used throughout the Java API and Stream framework. Key interfaces: Function<T,R> (transforms T to R), Predicate<T> (tests T), Consumer<T> (accepts T), Supplier<T> (produces T), BiFunction<T,U,R>, and Comparator<T>.",
-      "tags": ["java", "functional interface", "java.util.function", "Function", "Predicate", "Consumer", "Supplier", "Comparator"],
+      "tags": [
+        "java",
+        "functional interface",
+        "java.util.function",
+        "Function",
+        "Predicate",
+        "Consumer",
+        "Supplier",
+        "Comparator"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -152,7 +261,10 @@
       "id": "java-text-blocks",
       "domainId": "java-core",
       "statement": "Text blocks (Java 15+) provide a multi-line string literal syntax using triple quotes (\"\"\"). They preserve formatting, eliminate most escape sequences for embedded strings, and are ideal for SQL queries, JSON, HTML, and prompt templates in AI applications.",
-      "tags": ["java", "text block\", \"multiline string\", \"triple quotes\", \"java 15\", \"string literal"],
+      "tags": [
+        "java",
+        "text block\", \"multiline string\", \"triple quotes\", \"java 15\", \"string literal"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -160,7 +272,13 @@
       "id": "java-var",
       "domainId": "java-core",
       "statement": "The var keyword (Java 10+) enables local variable type inference. The compiler infers the type from the right-hand side initializer. var can only be used for local variables and is a reserved type name, not a keyword, maintaining backward compatibility.",
-      "tags": ["java", "var", "type inference", "local variable", "java 10"],
+      "tags": [
+        "java",
+        "var",
+        "type inference",
+        "local variable",
+        "java 10"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -168,7 +286,16 @@
       "id": "java-spring-framework",
       "domainId": "java-spring",
       "statement": "The Spring Framework is the most widely used Java application framework. Its core is the IoC (Inversion of Control) container, which manages beans and their dependencies via Dependency Injection (DI). Spring provides infrastructure for web, data access, security, messaging, and testing.",
-      "tags": ["java", "spring", "Spring Framework", "IoC", "dependency injection", "DI", "bean", "container"],
+      "tags": [
+        "java",
+        "spring",
+        "Spring Framework",
+        "IoC",
+        "dependency injection",
+        "DI",
+        "bean",
+        "container"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -176,7 +303,17 @@
       "id": "java-spring-boot",
       "domainId": "java-spring",
       "statement": "Spring Boot is an opinionated Spring-based framework that enables rapid application development with minimal configuration. It provides auto-configuration, embedded servers (Tomcat, Jetty, Undertow), starter dependencies, Actuator for monitoring, and production-ready defaults. Spring Boot 3.x requires Java 17+ and uses Jakarta EE 10 namespaces.",
-      "tags": ["java", "spring", "spring boot", "auto-configuration", "starter", "Actuator", "embedded server", "Tomcat", "spring boot 3"],
+      "tags": [
+        "java",
+        "spring",
+        "spring boot",
+        "auto-configuration",
+        "starter",
+        "Actuator",
+        "embedded server",
+        "Tomcat",
+        "spring boot 3"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -184,7 +321,16 @@
       "id": "java-spring-mvc",
       "domainId": "java-spring",
       "statement": "Spring MVC is Spring's web framework for building RESTful APIs and web applications. Key annotations include @RestController, @RequestMapping, @GetMapping, @PostMapping, @PathVariable, @RequestParam, @RequestBody, and @ResponseBody. It integrates with Jackson for JSON serialization.",
-      "tags": ["java", "spring", "spring mvc", "REST", "RestController", "RequestMapping", "JSON", "Jackson"],
+      "tags": [
+        "java",
+        "spring",
+        "spring mvc",
+        "REST",
+        "RestController",
+        "RequestMapping",
+        "JSON",
+        "Jackson"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -192,7 +338,16 @@
       "id": "java-spring-data",
       "domainId": "java-spring",
       "statement": "Spring Data provides repository abstractions over various data stores. JpaRepository and CrudRepository automatically generate queries from method names (e.g., findByLastNameAndFirstName()). Spring Data supports JPA, MongoDB, Redis, Cassandra, Elasticsearch, and more.",
-      "tags": ["java", "spring", "spring data", "JpaRepository", "CrudRepository", "repository", "query method", "JPA"],
+      "tags": [
+        "java",
+        "spring",
+        "spring data",
+        "JpaRepository",
+        "CrudRepository",
+        "repository",
+        "query method",
+        "JPA"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -200,7 +355,17 @@
       "id": "java-spring-security",
       "domainId": "java-spring",
       "statement": "Spring Security is the standard security framework for Spring applications. It provides authentication, authorization, CSRF protection, OAuth2/OIDC integration, JWT support, method-level security (@PreAuthorize), and security filter chains. Spring Security 6+ uses a lambda-based security configuration DSL.",
-      "tags": ["java", "spring", "spring security", "authentication", "authorization", "OAuth2", "JWT", "CSRF", "PreAuthorize"],
+      "tags": [
+        "java",
+        "spring",
+        "spring security",
+        "authentication",
+        "authorization",
+        "OAuth2",
+        "JWT",
+        "CSRF",
+        "PreAuthorize"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -208,7 +373,18 @@
       "id": "java-spring-batch",
       "domainId": "java-spring",
       "statement": "Spring Batch is a comprehensive framework for batch processing in Java. Key concepts include Jobs (top-level unit), Steps (processing units within a Job), ItemReader, ItemProcessor, ItemWriter, and chunk-oriented processing. It supports restart/retry, parallel processing, partitioning, and job repositories.",
-      "tags": ["java", "spring", "spring batch", "batch processing", "Job", "Step", "ItemReader", "ItemProcessor", "ItemWriter", "chunk"],
+      "tags": [
+        "java",
+        "spring",
+        "spring batch",
+        "batch processing",
+        "Job",
+        "Step",
+        "ItemReader",
+        "ItemProcessor",
+        "ItemWriter",
+        "chunk"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -216,7 +392,19 @@
       "id": "java-spring-ai",
       "domainId": "java-ai",
       "statement": "Spring AI is a framework for building AI-powered Java applications using the Spring programming model. It provides unified abstractions for chat clients, embedding models, vector stores, prompt templates, and output parsers. It supports OpenAI, Anthropic, Ollama, Mistral, Azure OpenAI, and other AI providers.",
-      "tags": ["java", "spring", "spring ai", "AI", "LLM", "chat client", "embedding", "vector store", "Ollama", "OpenAI", "Anthropic"],
+      "tags": [
+        "java",
+        "spring",
+        "spring ai",
+        "AI",
+        "LLM",
+        "chat client",
+        "embedding",
+        "vector store",
+        "Ollama",
+        "OpenAI",
+        "Anthropic"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -224,7 +412,16 @@
       "id": "java-spring-ai-rag",
       "domainId": "java-ai",
       "statement": "Spring AI provides built-in RAG (Retrieval-Augmented Generation) support via QuestionAnswerAdvisor and ETL pipelines. It includes document readers, text splitters, embedding models, and vector store integrations (Chroma, Pinecone, Redis, PgVector) for building grounded LLM applications in Java.",
-      "tags": ["java", "spring ai", "RAG", "retrieval augmented generation", "vector store", "embedding", "PgVector", "document reader"],
+      "tags": [
+        "java",
+        "spring ai",
+        "RAG",
+        "retrieval augmented generation",
+        "vector store",
+        "embedding",
+        "PgVector",
+        "document reader"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -232,7 +429,16 @@
       "id": "java-mcp",
       "domainId": "java-ai",
       "statement": "The Model Context Protocol (MCP) enables AI assistants to securely connect to external tools and data sources. Spring AI supports building MCP servers in Java, allowing Java applications to expose tools and resources to AI clients like Claude. FastMCP provides a rapid development approach for MCP servers.",
-      "tags": ["java", "MCP", "model context protocol", "FastMCP", "spring ai", "AI tool", "agentic AI", "tool calling"],
+      "tags": [
+        "java",
+        "MCP",
+        "model context protocol",
+        "FastMCP",
+        "spring ai",
+        "AI tool",
+        "agentic AI",
+        "tool calling"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -240,7 +446,16 @@
       "id": "java-spring-cloud",
       "domainId": "java-spring",
       "statement": "Spring Cloud provides tools for building distributed systems and microservices. Key components include Spring Cloud Config (centralized configuration), Spring Cloud Netflix (service discovery, circuit breakers), Spring Cloud Gateway (API gateway), Spring Cloud Sleuth (distributed tracing), and Spring Cloud Stream (event-driven messaging).",
-      "tags": ["java", "spring", "spring cloud", "microservices", "service discovery", "circuit breaker", "API gateway", "distributed tracing"],
+      "tags": [
+        "java",
+        "spring",
+        "spring cloud",
+        "microservices",
+        "service discovery",
+        "circuit breaker",
+        "API gateway",
+        "distributed tracing"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -248,7 +463,19 @@
       "id": "java-jms",
       "domainId": "java-enterprise",
       "statement": "JMS (Java Message Service) is the standard Java API for message-oriented middleware. It supports point-to-point (queues) and publish-subscribe (topics) messaging patterns. Spring JMS provides JmsTemplate for sending and @JmsListener for receiving messages. Common brokers include ActiveMQ, IBM MQ, and Solace PubSub+.",
-      "tags": ["java", "JMS", "message queue", "messaging", "topic", "queue", "ActiveMQ", "IBM MQ", "Solace", "PubSub+", "Spring JMS"],
+      "tags": [
+        "java",
+        "JMS",
+        "message queue",
+        "messaging",
+        "topic",
+        "queue",
+        "ActiveMQ",
+        "IBM MQ",
+        "Solace",
+        "PubSub+",
+        "Spring JMS"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -256,7 +483,17 @@
       "id": "java-oracle",
       "domainId": "java-enterprise",
       "statement": "Oracle Database is the leading enterprise relational database. Java applications connect via JDBC using the Oracle JDBC driver (ojdbc). Oracle supports advanced features like stored procedures, PL/SQL, partitioning, RAC (Real Application Clusters), and Advanced Queuing (AQ), which integrates with JMS.",
-      "tags": ["java", "Oracle", "Oracle Database", "JDBC", "ojdbc", "PL/SQL", "RAC", "Advanced Queuing", "enterprise"],
+      "tags": [
+        "java",
+        "Oracle",
+        "Oracle Database",
+        "JDBC",
+        "ojdbc",
+        "PL/SQL",
+        "RAC",
+        "Advanced Queuing",
+        "enterprise"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -264,7 +501,17 @@
       "id": "java-weblogic",
       "domainId": "java-enterprise",
       "statement": "Oracle WebLogic Server is an enterprise-grade Java EE/Jakarta EE application server. It supports EJBs, JMS, JNDI, JDBC connection pooling, clustering, load balancing, and Oracle ADF integration. WebLogic is widely used in large financial, government, and telecommunications enterprises.",
-      "tags": ["java", "WebLogic", "Oracle WebLogic", "application server", "EJB", "JNDI", "Jakarta EE", "enterprise", "clustering"],
+      "tags": [
+        "java",
+        "WebLogic",
+        "Oracle WebLogic",
+        "application server",
+        "EJB",
+        "JNDI",
+        "Jakarta EE",
+        "enterprise",
+        "clustering"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -272,7 +519,16 @@
       "id": "java-jsf",
       "domainId": "java-enterprise",
       "statement": "JavaServer Faces (JSF, now Jakarta Faces) is a Java web UI framework that uses component-based rendering. JSF is part of the Jakarta EE standard and is used in enterprise applications, often paired with PrimeFaces UI component library. It uses a request/response lifecycle with managed beans.",
-      "tags": ["java", "JSF", "JavaServer Faces", "Jakarta Faces", "PrimeFaces", "component-based", "managed bean", "enterprise"],
+      "tags": [
+        "java",
+        "JSF",
+        "JavaServer Faces",
+        "Jakarta Faces",
+        "PrimeFaces",
+        "component-based",
+        "managed bean",
+        "enterprise"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -280,7 +536,17 @@
       "id": "java-adf",
       "domainId": "java-enterprise",
       "statement": "Oracle ADF (Application Development Framework) is Oracle's enterprise Java framework for building Oracle Fusion Middleware applications. It is built on top of JSF and integrates tightly with Oracle Database, WebLogic, and JDeveloper IDE. ADF BC (Business Components) provides declarative data binding patterns.",
-      "tags": ["java", "ADF", "Oracle ADF", "Oracle Fusion", "JSF", "WebLogic", "enterprise", "JDeveloper", "data binding"],
+      "tags": [
+        "java",
+        "ADF",
+        "Oracle ADF",
+        "Oracle Fusion",
+        "JSF",
+        "WebLogic",
+        "enterprise",
+        "JDeveloper",
+        "data binding"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -288,7 +554,17 @@
       "id": "java-vaadin",
       "domainId": "java-enterprise",
       "statement": "Vaadin is an open-source Java web framework for building full-stack web applications entirely in Java. The server-side rendering model means UI logic runs on the server (Vaadin Flow), while Vaadin Hilla supports React-based frontends with TypeScript. Vaadin is popular in enterprise intranet and data-heavy applications.",
-      "tags": ["java", "Vaadin", "web framework", "full-stack", "server-side rendering", "Vaadin Flow", "Hilla", "React", "enterprise UI"],
+      "tags": [
+        "java",
+        "Vaadin",
+        "web framework",
+        "full-stack",
+        "server-side rendering",
+        "Vaadin Flow",
+        "Hilla",
+        "React",
+        "enterprise UI"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -296,7 +572,19 @@
       "id": "java-hibernate",
       "domainId": "java-data",
       "statement": "Hibernate is the most widely used Java ORM (Object-Relational Mapping) framework. It implements the JPA specification and maps Java objects to relational database tables. Key concepts include entities (@Entity), mappings (@OneToMany, @ManyToOne), the Session/EntityManager API, HQL/JPQL queries, and caching (L1/L2 cache).",
-      "tags": ["java", "hibernate", "ORM", "JPA", "EntityManager", "Session", "entity", "mapping", "JPQL", "HQL", "cache"],
+      "tags": [
+        "java",
+        "hibernate",
+        "ORM",
+        "JPA",
+        "EntityManager",
+        "Session",
+        "entity",
+        "mapping",
+        "JPQL",
+        "HQL",
+        "cache"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -304,7 +592,17 @@
       "id": "java-jpa",
       "domainId": "java-data",
       "statement": "JPA (Jakarta Persistence API, formerly Java Persistence API) is the standard Java specification for ORM. Key annotations include @Entity, @Table, @Id, @GeneratedValue, @Column, @OneToMany, @ManyToOne, @ManyToMany, @JoinColumn, and @Transactional. Spring Data JPA provides repository abstractions over JPA.",
-      "tags": ["java", "JPA", "Jakarta Persistence", "ORM", "@Entity", "@Id", "@OneToMany", "@Transactional", "spring data jpa"],
+      "tags": [
+        "java",
+        "JPA",
+        "Jakarta Persistence",
+        "ORM",
+        "@Entity",
+        "@Id",
+        "@OneToMany",
+        "@Transactional",
+        "spring data jpa"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -312,7 +610,15 @@
       "id": "java-jdbc",
       "domainId": "java-data",
       "statement": "JDBC (Java Database Connectivity) is the low-level Java API for connecting to relational databases. Spring's JdbcTemplate simplifies JDBC usage by handling connection management, exception translation, and result set mapping. Spring Data JDBC provides a simpler, less abstracted alternative to JPA.",
-      "tags": ["java", "JDBC", "JdbcTemplate", "Spring Data JDBC", "database", "ResultSet", "PreparedStatement"],
+      "tags": [
+        "java",
+        "JDBC",
+        "JdbcTemplate",
+        "Spring Data JDBC",
+        "database",
+        "ResultSet",
+        "PreparedStatement"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -320,7 +626,15 @@
       "id": "java-flyway",
       "domainId": "java-data",
       "statement": "Flyway is a database schema migration tool for Java applications. It manages versioned SQL migration scripts and tracks applied migrations in a schema history table. Spring Boot auto-configures Flyway when it is on the classpath. Liquibase is an alternative that supports XML, YAML, and JSON migration formats.",
-      "tags": ["java", "Flyway", "database migration", "schema migration", "SQL migration", "version control", "Liquibase"],
+      "tags": [
+        "java",
+        "Flyway",
+        "database migration",
+        "schema migration",
+        "SQL migration",
+        "version control",
+        "Liquibase"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -328,7 +642,17 @@
       "id": "java-junit",
       "domainId": "java-testing",
       "statement": "JUnit 5 (Jupiter) is the standard Java testing framework. It uses annotations @Test, @BeforeEach, @AfterEach, @BeforeAll, @AfterAll, @ParameterizedTest, @Nested, and @ExtendWith. JUnit 5 supports lambda-based assertions (Assertions class) and has a modular architecture with the Platform, Jupiter, and Vintage engines.",
-      "tags": ["java", "JUnit", "JUnit 5", "Jupiter", "unit testing", "@Test", "@BeforeEach", "@ParameterizedTest", "@ExtendWith"],
+      "tags": [
+        "java",
+        "JUnit",
+        "JUnit 5",
+        "Jupiter",
+        "unit testing",
+        "@Test",
+        "@BeforeEach",
+        "@ParameterizedTest",
+        "@ExtendWith"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -336,7 +660,17 @@
       "id": "java-mockito",
       "domainId": "java-testing",
       "statement": "Mockito is the most popular Java mocking framework. It creates mock objects of classes and interfaces, verifies method calls, and stubs return values. Key annotations: @Mock, @InjectMocks, @Spy, @Captor. @ExtendWith(MockitoExtension.class) integrates Mockito with JUnit 5. Mockito supports BDD-style given/when/then.",
-      "tags": ["java", "Mockito", "mock", "unit testing", "@Mock", "@InjectMocks", "stub", "verify", "MockitoExtension"],
+      "tags": [
+        "java",
+        "Mockito",
+        "mock",
+        "unit testing",
+        "@Mock",
+        "@InjectMocks",
+        "stub",
+        "verify",
+        "MockitoExtension"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -344,7 +678,17 @@
       "id": "java-spring-test",
       "domainId": "java-testing",
       "statement": "Spring Test and Spring Boot Test provide comprehensive testing support. @SpringBootTest loads the full application context. @WebMvcTest tests the web layer only. @DataJpaTest tests the persistence layer. MockMvc enables request testing without a running server. @MockBean creates Spring-managed mocks.",
-      "tags": ["java", "spring", "spring test", "SpringBootTest", "WebMvcTest", "DataJpaTest", "MockMvc", "MockBean", "integration testing"],
+      "tags": [
+        "java",
+        "spring",
+        "spring test",
+        "SpringBootTest",
+        "WebMvcTest",
+        "DataJpaTest",
+        "MockMvc",
+        "MockBean",
+        "integration testing"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -352,7 +696,16 @@
       "id": "java-testcontainers",
       "domainId": "java-testing",
       "statement": "Testcontainers is a Java library that provides throwaway Docker containers for integration tests. It supports PostgreSQL, MySQL, Kafka, Redis, Elasticsearch, and many other services. Spring Boot 3.1+ has native Testcontainers integration via @ServiceConnection, making it easy to test against real infrastructure.",
-      "tags": ["java", "Testcontainers", "Docker", "integration testing", "PostgreSQL", "Kafka", "Redis", "ServiceConnection"],
+      "tags": [
+        "java",
+        "Testcontainers",
+        "Docker",
+        "integration testing",
+        "PostgreSQL",
+        "Kafka",
+        "Redis",
+        "ServiceConnection"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -360,7 +713,14 @@
       "id": "java-assertj",
       "domainId": "java-testing",
       "statement": "AssertJ is a fluent assertion library for Java that provides a rich, readable set of assertions. It is the preferred assertion library in Spring Boot projects. AssertJ supports collections, strings, exceptions, files, dates, and custom assertions. Its fluent API enables chaining like assertThat(list).hasSize(3).contains(\"item\").",
-      "tags": ["java", "AssertJ", "assertion", "fluent API", "testing", "assertThat"],
+      "tags": [
+        "java",
+        "AssertJ",
+        "assertion",
+        "fluent API",
+        "testing",
+        "assertThat"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -368,7 +728,16 @@
       "id": "java-maven",
       "domainId": "java-build",
       "statement": "Apache Maven is the most widely used Java build tool. It uses pom.xml for project configuration, follows a standard directory layout, and manages dependencies from the Maven Central repository. Key lifecycle phases: clean, validate, compile, test, package, install, deploy. Maven plugins extend functionality (Surefire, Failsafe, Shade).",
-      "tags": ["java", "Maven", "build tool", "pom.xml", "dependency management", "Maven Central", "lifecycle", "plugin"],
+      "tags": [
+        "java",
+        "Maven",
+        "build tool",
+        "pom.xml",
+        "dependency management",
+        "Maven Central",
+        "lifecycle",
+        "plugin"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -376,7 +745,16 @@
       "id": "java-gradle",
       "domainId": "java-build",
       "statement": "Gradle is a modern, flexible build automation system for Java, Kotlin, and Android. It uses Groovy or Kotlin DSL for build scripts (build.gradle or build.gradle.kts), incremental builds, build caching, and parallel task execution. Gradle is the default build tool for Android and is increasingly adopted for Spring Boot projects.",
-      "tags": ["java", "Gradle", "build tool", "Kotlin DSL", "Groovy", "incremental build", "Android", "build.gradle"],
+      "tags": [
+        "java",
+        "Gradle",
+        "build tool",
+        "Kotlin DSL",
+        "Groovy",
+        "incremental build",
+        "Android",
+        "build.gradle"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -384,7 +762,17 @@
       "id": "java-docker",
       "domainId": "java-build",
       "statement": "Java applications are containerized with Docker using JDK base images (eclipse-temurin, amazoncorretto, gcr.io/distroless/java21). Multi-stage builds reduce image size by separating the build stage (JDK) from the runtime stage (JRE). Spring Boot's Buildpacks integration creates OCI images without a Dockerfile. GraalVM native images produce very small, fast-starting containers.",
-      "tags": ["java", "Docker", "container", "Dockerfile", "multi-stage build", "Buildpacks", "GraalVM", "native image", "JRE"],
+      "tags": [
+        "java",
+        "Docker",
+        "container",
+        "Dockerfile",
+        "multi-stage build",
+        "Buildpacks",
+        "GraalVM",
+        "native image",
+        "JRE"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -392,7 +780,16 @@
       "id": "java-graalvm",
       "domainId": "java-build",
       "statement": "GraalVM Native Image compiles Java applications ahead-of-time (AOT) to native executables. Native images have near-instant startup times, lower memory footprint, and no JVM warmup overhead. Spring Boot 3+ and Spring Framework 6+ have first-class GraalVM native image support via AOT processing.",
-      "tags": ["java", "GraalVM", "native image", "AOT", "ahead-of-time compilation", "startup time", "Spring Boot 3", "native executable"],
+      "tags": [
+        "java",
+        "GraalVM",
+        "native image",
+        "AOT",
+        "ahead-of-time compilation",
+        "startup time",
+        "Spring Boot 3",
+        "native executable"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -400,7 +797,16 @@
       "id": "java-virtual-threads",
       "domainId": "java-concurrency",
       "statement": "Virtual threads (Project Loom, finalized in Java 21) are lightweight threads managed by the JVM rather than the OS. They enable high-concurrency I/O-bound applications without reactive programming complexity. A single OS thread can multiplex millions of virtual threads. Spring Boot 3.2+ supports virtual threads natively.",
-      "tags": ["java", "virtual threads", "Project Loom", "java 21", "concurrency", "I/O bound", "lightweight thread", "Spring Boot 3.2"],
+      "tags": [
+        "java",
+        "virtual threads",
+        "Project Loom",
+        "java 21",
+        "concurrency",
+        "I/O bound",
+        "lightweight thread",
+        "Spring Boot 3.2"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -408,7 +814,16 @@
       "id": "java-completablefuture",
       "domainId": "java-concurrency",
       "statement": "CompletableFuture<T> (Java 8+) enables asynchronous programming with a fluent API. Key methods: supplyAsync(), thenApply(), thenCompose(), thenCombine(), allOf(), anyOf(), exceptionally(), and join(). It replaces the older Future API with non-blocking composition.",
-      "tags": ["java", "CompletableFuture", "async", "asynchronous", "non-blocking", "future", "thenApply", "allOf"],
+      "tags": [
+        "java",
+        "CompletableFuture",
+        "async",
+        "asynchronous",
+        "non-blocking",
+        "future",
+        "thenApply",
+        "allOf"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -416,7 +831,16 @@
       "id": "java-executorservice",
       "domainId": "java-concurrency",
       "statement": "The java.util.concurrent package provides high-level concurrency utilities. ExecutorService manages thread pools (FixedThreadPool, CachedThreadPool, WorkStealingPool). ScheduledExecutorService schedules tasks. Locks (ReentrantLock, ReadWriteLock), Semaphore, CountDownLatch, CyclicBarrier, and atomic types (AtomicInteger, AtomicReference) enable coordination.",
-      "tags": ["java", "ExecutorService", "thread pool", "concurrency", "ReentrantLock", "Semaphore", "CountDownLock", "AtomicInteger"],
+      "tags": [
+        "java",
+        "ExecutorService",
+        "thread pool",
+        "concurrency",
+        "ReentrantLock",
+        "Semaphore",
+        "CountDownLock",
+        "AtomicInteger"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -424,7 +848,17 @@
       "id": "java-reactive",
       "domainId": "java-concurrency",
       "statement": "Project Reactor (used by Spring WebFlux) provides reactive programming for Java with Mono<T> (0-1 elements) and Flux<T> (0-N elements). Reactive programming uses non-blocking backpressure-aware streams. Spring WebFlux is a fully reactive web framework alternative to Spring MVC for high-concurrency use cases.",
-      "tags": ["java", "reactive", "Project Reactor", "Mono", "Flux", "Spring WebFlux", "backpressure", "non-blocking", "Reactive Streams"],
+      "tags": [
+        "java",
+        "reactive",
+        "Project Reactor",
+        "Mono",
+        "Flux",
+        "Spring WebFlux",
+        "backpressure",
+        "non-blocking",
+        "Reactive Streams"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -432,7 +866,16 @@
       "id": "java-synchronized",
       "domainId": "java-concurrency",
       "statement": "Java's synchronized keyword provides mutual exclusion for shared mutable state. It can be applied to methods (synchronized methods) or blocks (synchronized(lock) { ... }). The volatile keyword ensures memory visibility across threads. Java's memory model defines happens-before relationships for safe publication.",
-      "tags": ["java", "synchronized", "thread safety", "mutex", "volatile", "happens-before", "memory model", "monitor"],
+      "tags": [
+        "java",
+        "synchronized",
+        "thread safety",
+        "mutex",
+        "volatile",
+        "happens-before",
+        "memory model",
+        "monitor"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -440,7 +883,17 @@
       "id": "java-jakarta-ee",
       "domainId": "java-enterprise",
       "statement": "Jakarta EE (formerly Java EE) is the enterprise Java specification managed by the Eclipse Foundation. Spring Boot 3+ and newer application servers (WildFly, GlassFish, Payara) use Jakarta EE 10 namespaces (jakarta.*). Key APIs include Jakarta Servlet, Jakarta Persistence, Jakarta Messaging (JMS), Jakarta Validation, and Jakarta RESTful Web Services.",
-      "tags": ["java", "Jakarta EE", "Java EE", "enterprise", "Servlet", "JMS", "Bean Validation", "JAX-RS", "jakarta.*"],
+      "tags": [
+        "java",
+        "Jakarta EE",
+        "Java EE",
+        "enterprise",
+        "Servlet",
+        "JMS",
+        "Bean Validation",
+        "JAX-RS",
+        "jakarta.*"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -448,7 +901,17 @@
       "id": "java-bean-validation",
       "domainId": "java-core",
       "statement": "Jakarta Bean Validation (javax.validation / jakarta.validation) provides annotation-based validation for Java objects. Key annotations: @NotNull, @NotBlank, @Size, @Min, @Max, @Email, @Pattern, @Valid, @Validated. Spring MVC and Spring Boot auto-validate @RequestBody parameters annotated with @Valid.",
-      "tags": ["java", "Bean Validation", "validation", "@NotNull", "@NotBlank", "@Valid", "@Validated", "@Size", "constraint"],
+      "tags": [
+        "java",
+        "Bean Validation",
+        "validation",
+        "@NotNull",
+        "@NotBlank",
+        "@Valid",
+        "@Validated",
+        "@Size",
+        "constraint"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -456,7 +919,17 @@
       "id": "java-lombok",
       "domainId": "java-core",
       "statement": "Project Lombok reduces Java boilerplate by generating code at compile time via annotations. Key annotations: @Data (generates getters, setters, equals, hashCode, toString), @Builder (Builder pattern), @AllArgsConstructor, @NoArgsConstructor, @Slf4j (logger), @Value (immutable value class), and @RequiredArgsConstructor.",
-      "tags": ["java", "Lombok", "@Data", "@Builder", "@Slf4j", "boilerplate", "code generation", "getter", "setter"],
+      "tags": [
+        "java",
+        "Lombok",
+        "@Data",
+        "@Builder",
+        "@Slf4j",
+        "boilerplate",
+        "code generation",
+        "getter",
+        "setter"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -464,7 +937,16 @@
       "id": "java-jackson",
       "domainId": "java-core",
       "statement": "Jackson is the de-facto standard JSON library for Java. ObjectMapper serializes Java objects to JSON and deserializes JSON to Java objects. Key annotations: @JsonProperty, @JsonIgnore, @JsonAlias, @JsonInclude, @JsonTypeInfo, @JsonSubTypes. Jackson is the default JSON provider in Spring Boot.",
-      "tags": ["java", "Jackson", "JSON", "ObjectMapper", "serialization", "deserialization", "@JsonProperty", "@JsonIgnore"],
+      "tags": [
+        "java",
+        "Jackson",
+        "JSON",
+        "ObjectMapper",
+        "serialization",
+        "deserialization",
+        "@JsonProperty",
+        "@JsonIgnore"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -472,7 +954,17 @@
       "id": "java-slf4j-logback",
       "domainId": "java-core",
       "statement": "SLF4J (Simple Logging Facade for Java) provides a unified logging API. Logback is the default logging implementation in Spring Boot and the successor to Log4j. Log levels are TRACE, DEBUG, INFO, WARN, and ERROR. Logback supports rolling file appenders, async logging, and structured JSON logging.",
-      "tags": ["java", "SLF4J", "Logback", "logging", "logger", "Log4j", "log level", "appender", "structured logging"],
+      "tags": [
+        "java",
+        "SLF4J",
+        "Logback",
+        "logging",
+        "logger",
+        "Log4j",
+        "log level",
+        "appender",
+        "structured logging"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -480,7 +972,16 @@
       "id": "java-checkstyle-spotbugs",
       "domainId": "java-testing",
       "statement": "Checkstyle enforces Java coding standards (naming, formatting, complexity) via configurable rules. SpotBugs (formerly FindBugs) performs bytecode-level static analysis to detect bugs (null pointer dereferences, resource leaks, thread safety issues). Both integrate with Maven and Gradle build pipelines.",
-      "tags": ["java", "Checkstyle", "SpotBugs", "FindBugs", "static analysis", "code quality", "coding standards", "linting"],
+      "tags": [
+        "java",
+        "Checkstyle",
+        "SpotBugs",
+        "FindBugs",
+        "static analysis",
+        "code quality",
+        "coding standards",
+        "linting"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -488,7 +989,18 @@
       "id": "java-spring-aop",
       "domainId": "java-spring",
       "statement": "Spring AOP (Aspect-Oriented Programming) provides cross-cutting concerns via aspects, pointcuts, and advice. It is used for logging, transaction management (@Transactional), security (@PreAuthorize), and caching (@Cacheable). Spring AOP uses JDK dynamic proxies or CGLIB proxies.",
-      "tags": ["java", "spring", "AOP", "aspect", "pointcut", "@Transactional", "@Cacheable", "cross-cutting", "CGLIB", "proxy"],
+      "tags": [
+        "java",
+        "spring",
+        "AOP",
+        "aspect",
+        "pointcut",
+        "@Transactional",
+        "@Cacheable",
+        "cross-cutting",
+        "CGLIB",
+        "proxy"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -496,7 +1008,17 @@
       "id": "java-dependency-injection",
       "domainId": "java-spring",
       "statement": "Spring Dependency Injection supports constructor injection (preferred for mandatory dependencies), setter injection (for optional dependencies), and field injection (@Autowired, not recommended for testing). @Component, @Service, @Repository, and @Controller are stereotype annotations that mark beans for component scanning.",
-      "tags": ["java", "spring", "dependency injection", "constructor injection", "@Autowired", "@Component", "@Service", "@Repository", "@Controller"],
+      "tags": [
+        "java",
+        "spring",
+        "dependency injection",
+        "constructor injection",
+        "@Autowired",
+        "@Component",
+        "@Service",
+        "@Repository",
+        "@Controller"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -504,7 +1026,17 @@
       "id": "java-configuration",
       "domainId": "java-spring",
       "statement": "Spring Boot externalizes configuration via application.properties or application.yml. The @Value annotation injects individual properties. @ConfigurationProperties binds typed configuration classes. Profiles (@Profile, spring.profiles.active) enable environment-specific configuration (dev, test, prod). Config Server provides centralized configuration.",
-      "tags": ["java", "spring", "spring boot", "configuration", "application.properties", "application.yml", "@Value", "@ConfigurationProperties", "profile"],
+      "tags": [
+        "java",
+        "spring",
+        "spring boot",
+        "configuration",
+        "application.properties",
+        "application.yml",
+        "@Value",
+        "@ConfigurationProperties",
+        "profile"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -512,7 +1044,18 @@
       "id": "java-kafka",
       "domainId": "java-enterprise",
       "statement": "Apache Kafka is a distributed event streaming platform. Spring for Apache Kafka provides KafkaTemplate for producing messages and @KafkaListener for consuming. Kafka Connect integrates with external systems, and Kafka Streams enables stream processing. Kafka is widely used for high-throughput event-driven architectures.",
-      "tags": ["java", "Kafka", "Spring Kafka", "KafkaTemplate", "@KafkaListener", "event streaming", "producer", "consumer", "topic", "partition"],
+      "tags": [
+        "java",
+        "Kafka",
+        "Spring Kafka",
+        "KafkaTemplate",
+        "@KafkaListener",
+        "event streaming",
+        "producer",
+        "consumer",
+        "topic",
+        "partition"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -520,7 +1063,16 @@
       "id": "java-solace",
       "domainId": "java-enterprise",
       "statement": "Solace PubSub+ is an enterprise message broker supporting JMS, AMQP, MQTT, and REST protocols. It is commonly used in financial services and telecommunications. The Solace Spring Boot starter integrates PubSub+ with Spring JMS and Spring Cloud Stream, enabling event-driven Java applications.",
-      "tags": ["java", "Solace", "PubSub+", "JMS", "AMQP", "enterprise messaging", "event-driven", "financial services"],
+      "tags": [
+        "java",
+        "Solace",
+        "PubSub+",
+        "JMS",
+        "AMQP",
+        "enterprise messaging",
+        "event-driven",
+        "financial services"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -528,7 +1080,16 @@
       "id": "java-elasticsearch-client",
       "domainId": "java-enterprise",
       "statement": "The official Elasticsearch Java client (8.x+) provides type-safe, fluent API access to Elasticsearch. Spring Data Elasticsearch provides Spring Data repository abstractions. Elasticsearch is used for full-text search, log analytics, and as a vector store for semantic search and RAG pipelines in Java applications.",
-      "tags": ["java", "elasticsearch", "Spring Data Elasticsearch", "full-text search", "vector store", "semantic search", "RAG", "BM25"],
+      "tags": [
+        "java",
+        "elasticsearch",
+        "Spring Data Elasticsearch",
+        "full-text search",
+        "vector store",
+        "semantic search",
+        "RAG",
+        "BM25"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -536,7 +1097,16 @@
       "id": "java-neo4j-client",
       "domainId": "java-enterprise",
       "statement": "Spring Data Neo4j provides OGM (Object-Graph Mapping) for Neo4j graph databases. @Node, @Relationship, and @Property annotations map Java objects to graph nodes and relationships. Neo4j is used for knowledge graphs, recommendation systems, and fraud detection in Java enterprise applications.",
-      "tags": ["java", "Neo4j", "Spring Data Neo4j", "graph database", "OGM", "knowledge graph", "@Node", "@Relationship"],
+      "tags": [
+        "java",
+        "Neo4j",
+        "Spring Data Neo4j",
+        "graph database",
+        "OGM",
+        "knowledge graph",
+        "@Node",
+        "@Relationship"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -544,7 +1114,17 @@
       "id": "java-openapi",
       "domainId": "java-spring",
       "statement": "SpringDoc OpenAPI (springdoc-openapi-starter-webmvc-ui) auto-generates OpenAPI 3.0 documentation for Spring Boot REST APIs. Annotations like @Operation, @ApiResponse, @Parameter, and @Schema document endpoints and schemas. The Swagger UI is served at /swagger-ui.html for interactive API exploration.",
-      "tags": ["java", "spring", "OpenAPI", "Swagger", "SpringDoc", "REST API documentation", "@Operation", "@ApiResponse", "API docs"],
+      "tags": [
+        "java",
+        "spring",
+        "OpenAPI",
+        "Swagger",
+        "SpringDoc",
+        "REST API documentation",
+        "@Operation",
+        "@ApiResponse",
+        "API docs"
+      ],
       "confidence": "high",
       "scope": "general"
     }

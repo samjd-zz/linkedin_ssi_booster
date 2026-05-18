@@ -38,7 +38,13 @@
       "id": "py-lang-overview",
       "domainId": "python-core",
       "statement": "Python is a high-level, interpreted, dynamically-typed, general-purpose programming language emphasizing readability and simplicity. It is widely used for web development, data science, machine learning, automation, and scripting.",
-      "tags": ["python", "interpreted", "dynamic typing", "general purpose", "scripting"],
+      "tags": [
+        "python",
+        "interpreted",
+        "dynamic typing",
+        "general purpose",
+        "scripting"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -46,7 +52,14 @@
       "id": "py-versions",
       "domainId": "python-core",
       "statement": "Python 3.12 and 3.13 are the actively supported versions as of 2024-2025. Python 2 reached end-of-life in January 2020. Each minor version introduces performance improvements and new syntax features.",
-      "tags": ["python", "python 3", "python 3.12", "python 3.13", "version", "end of life"],
+      "tags": [
+        "python",
+        "python 3",
+        "python 3.12",
+        "python 3.13",
+        "version",
+        "end of life"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -54,7 +67,17 @@
       "id": "py-data-types",
       "domainId": "python-core",
       "statement": "Python's built-in data types include int, float, complex, bool, str, bytes, list, tuple, set, frozenset, dict, and NoneType. Lists are mutable sequences, tuples are immutable sequences, sets are unordered unique collections, and dicts are key-value mappings.",
-      "tags": ["python", "data types", "list", "tuple", "dict", "set", "str", "int", "float"],
+      "tags": [
+        "python",
+        "data types",
+        "list",
+        "tuple",
+        "dict",
+        "set",
+        "str",
+        "int",
+        "float"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -62,7 +85,13 @@
       "id": "py-comprehensions",
       "domainId": "python-core",
       "statement": "Python supports list comprehensions, dict comprehensions, set comprehensions, and generator expressions. These provide a concise and readable way to create collections from iterables, often replacing explicit for-loop patterns.",
-      "tags": ["python", "list comprehension", "dict comprehension", "generator expression", "comprehension"],
+      "tags": [
+        "python",
+        "list comprehension",
+        "dict comprehension",
+        "generator expression",
+        "comprehension"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -70,7 +99,13 @@
       "id": "py-decorators",
       "domainId": "python-core",
       "statement": "Python decorators are a design pattern that allows wrapping a function or class to modify or extend its behavior without changing its source code. They are implemented using the @ syntax and are widely used in frameworks for routing, authentication, caching, and validation.",
-      "tags": ["python", "decorator", "function wrapper", "metaprogramming", "@"],
+      "tags": [
+        "python",
+        "decorator",
+        "function wrapper",
+        "metaprogramming",
+        "@"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -78,7 +113,14 @@
       "id": "py-generators",
       "domainId": "python-core",
       "statement": "Python generators are functions that use the yield keyword to produce a sequence of values lazily, one at a time. They are memory-efficient for processing large data streams and are the foundation of Python's iterator protocol.",
-      "tags": ["python", "generator", "yield", "iterator", "lazy evaluation", "memory efficient"],
+      "tags": [
+        "python",
+        "generator",
+        "yield",
+        "iterator",
+        "lazy evaluation",
+        "memory efficient"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -86,7 +128,15 @@
       "id": "py-context-managers",
       "domainId": "python-core",
       "statement": "Python context managers implement the __enter__ and __exit__ protocol (or use contextlib.contextmanager) to manage resources safely. The with statement ensures resources like files, locks, and database connections are properly acquired and released.",
-      "tags": ["python", "context manager", "with statement", "__enter__", "__exit__", "contextlib", "resource management"],
+      "tags": [
+        "python",
+        "context manager",
+        "with statement",
+        "__enter__",
+        "__exit__",
+        "contextlib",
+        "resource management"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -94,7 +144,15 @@
       "id": "py-type-hints",
       "domainId": "python-core",
       "statement": "Python supports optional static type hints via the typing module (Python 3.5+). Type hints improve code readability and enable static analysis tools like mypy and pyright to catch type errors before runtime. They do not affect runtime behavior.",
-      "tags": ["python", "type hints", "typing", "mypy", "pyright", "static analysis", "annotations"],
+      "tags": [
+        "python",
+        "type hints",
+        "typing",
+        "mypy",
+        "pyright",
+        "static analysis",
+        "annotations"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -102,7 +160,14 @@
       "id": "py-dataclasses",
       "domainId": "python-core",
       "statement": "Python's dataclasses module (Python 3.7+) automatically generates __init__, __repr__, __eq__, and other special methods from annotated class fields. The @dataclass decorator reduces boilerplate for data-holding classes.",
-      "tags": ["python", "dataclass", "dataclasses", "@dataclass", "boilerplate reduction", "NamedTuple"],
+      "tags": [
+        "python",
+        "dataclass",
+        "dataclasses",
+        "@dataclass",
+        "boilerplate reduction",
+        "NamedTuple"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -110,7 +175,15 @@
       "id": "py-functools",
       "domainId": "python-core",
       "statement": "The functools standard library module provides higher-order functions and operations on callable objects. Key utilities include functools.wraps (preserves decorator metadata), functools.lru_cache (memoization), functools.partial (partial function application), and functools.reduce.",
-      "tags": ["python", "functools", "lru_cache", "memoization", "partial", "wraps", "standard library"],
+      "tags": [
+        "python",
+        "functools",
+        "lru_cache",
+        "memoization",
+        "partial",
+        "wraps",
+        "standard library"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -118,7 +191,15 @@
       "id": "py-itertools",
       "domainId": "python-core",
       "statement": "The itertools standard library module provides fast, memory-efficient tools for working with iterators and combinatorics, including chain, islice, groupby, product, permutations, combinations, and cycle.",
-      "tags": ["python", "itertools", "iterator", "combinatorics", "standard library", "chain", "groupby"],
+      "tags": [
+        "python",
+        "itertools",
+        "iterator",
+        "combinatorics",
+        "standard library",
+        "chain",
+        "groupby"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -126,7 +207,14 @@
       "id": "py-pathlib",
       "domainId": "python-core",
       "statement": "The pathlib module (Python 3.4+) provides an object-oriented API for filesystem paths. It is the preferred modern approach over os.path for path manipulation, file reading/writing, and directory operations.",
-      "tags": ["python", "pathlib", "Path", "filesystem", "os.path", "standard library"],
+      "tags": [
+        "python",
+        "pathlib",
+        "Path",
+        "filesystem",
+        "os.path",
+        "standard library"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -134,7 +222,15 @@
       "id": "py-logging",
       "domainId": "python-core",
       "statement": "Python's built-in logging module provides a flexible framework for event logging across all Python applications and libraries. It supports multiple log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL), handlers (file, stream, rotating), formatters, and hierarchical loggers.",
-      "tags": ["python", "logging", "logger", "log level", "handler", "formatter", "standard library"],
+      "tags": [
+        "python",
+        "logging",
+        "logger",
+        "log level",
+        "handler",
+        "formatter",
+        "standard library"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -142,7 +238,15 @@
       "id": "py-exceptions",
       "domainId": "python-core",
       "statement": "Python uses try/except/else/finally blocks for exception handling. Custom exceptions are created by subclassing Exception or its subclasses. Python encourages EAFP (Easier to Ask Forgiveness than Permission) style over LBYL (Look Before You Leap).",
-      "tags": ["python", "exception", "try", "except", "finally", "EAFP", "error handling"],
+      "tags": [
+        "python",
+        "exception",
+        "try",
+        "except",
+        "finally",
+        "EAFP",
+        "error handling"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -150,7 +254,16 @@
       "id": "py-oop",
       "domainId": "python-core",
       "statement": "Python supports object-oriented programming with classes, inheritance (single and multiple), encapsulation, and polymorphism. Special (dunder) methods like __init__, __str__, __repr__, __len__, __iter__, __eq__, __hash__, and __slots__ enable operator overloading and protocol integration.",
-      "tags": ["python", "OOP", "class", "inheritance", "dunder", "__init__", "polymorphism", "encapsulation"],
+      "tags": [
+        "python",
+        "OOP",
+        "class",
+        "inheritance",
+        "dunder",
+        "__init__",
+        "polymorphism",
+        "encapsulation"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -158,7 +271,14 @@
       "id": "py-protocols",
       "domainId": "python-core",
       "statement": "Python 3.8+ introduced typing.Protocol, enabling structural subtyping (duck typing with static checks). A class satisfies a Protocol if it implements the required methods/attributes, without explicitly inheriting from it.",
-      "tags": ["python", "Protocol", "structural subtyping", "duck typing", "typing", "interface"],
+      "tags": [
+        "python",
+        "Protocol",
+        "structural subtyping",
+        "duck typing",
+        "typing",
+        "interface"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -166,7 +286,14 @@
       "id": "py-pattern-matching",
       "domainId": "python-core",
       "statement": "Python 3.10 introduced structural pattern matching via the match/case statement. It allows matching against values, sequences, mappings, class instances, and guards, providing a powerful alternative to complex if-elif chains.",
-      "tags": ["python", "pattern matching", "match", "case", "structural pattern matching", "python 3.10"],
+      "tags": [
+        "python",
+        "pattern matching",
+        "match",
+        "case",
+        "structural pattern matching",
+        "python 3.10"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -174,7 +301,13 @@
       "id": "py-walrus",
       "domainId": "python-core",
       "statement": "Python 3.8 introduced the walrus operator (:=), also called the assignment expression operator, which allows assignment inside expressions. It is useful for avoiding repeated evaluation in while loops and comprehensions.",
-      "tags": ["python", "walrus operator", ":=", "assignment expression", "python 3.8"],
+      "tags": [
+        "python",
+        "walrus operator",
+        ":=",
+        "assignment expression",
+        "python 3.8"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -182,7 +315,16 @@
       "id": "py-fastapi",
       "domainId": "python-web",
       "statement": "FastAPI is a modern, high-performance Python web framework for building APIs. It is built on Starlette and Pydantic, supports async/await, auto-generates OpenAPI and JSON Schema documentation, uses Python type hints for request/response validation, and achieves performance comparable to NodeJS and Go.",
-      "tags": ["python", "FastAPI", "web framework", "API", "async", "OpenAPI", "Pydantic", "Starlette"],
+      "tags": [
+        "python",
+        "FastAPI",
+        "web framework",
+        "API",
+        "async",
+        "OpenAPI",
+        "Pydantic",
+        "Starlette"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -190,7 +332,14 @@
       "id": "py-flask",
       "domainId": "python-web",
       "statement": "Flask is a lightweight WSGI web framework for Python that is flexible and minimal by design. It is widely used for small to medium web applications and APIs, and supports extensions for SQLAlchemy, login management, and more.",
-      "tags": ["python", "Flask", "web framework", "WSGI", "Jinja2", "micro-framework"],
+      "tags": [
+        "python",
+        "Flask",
+        "web framework",
+        "WSGI",
+        "Jinja2",
+        "micro-framework"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -198,7 +347,15 @@
       "id": "py-django",
       "domainId": "python-web",
       "statement": "Django is a full-featured, batteries-included Python web framework that follows the Model-View-Template (MVT) pattern. It includes an ORM, admin interface, authentication system, form handling, and template engine out of the box.",
-      "tags": ["python", "Django", "web framework", "ORM", "MVT", "full-stack", "admin"],
+      "tags": [
+        "python",
+        "Django",
+        "web framework",
+        "ORM",
+        "MVT",
+        "full-stack",
+        "admin"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -206,7 +363,14 @@
       "id": "py-pydantic",
       "domainId": "python-web",
       "statement": "Pydantic is a data validation and settings management library using Python type annotations. Pydantic v2 is rewritten in Rust for performance and provides model serialization, deserialization, field validation, and JSON schema generation.",
-      "tags": ["python", "Pydantic", "data validation", "type annotations", "serialization", "JSON schema"],
+      "tags": [
+        "python",
+        "Pydantic",
+        "data validation",
+        "type annotations",
+        "serialization",
+        "JSON schema"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -214,7 +378,15 @@
       "id": "py-sqlalchemy",
       "domainId": "python-web",
       "statement": "SQLAlchemy is the most widely used Python SQL toolkit and ORM. It provides both a high-level ORM layer and a low-level Core layer for SQL expression building. It supports many databases (PostgreSQL, MySQL, SQLite, Oracle, MS SQL) and async via SQLAlchemy 2.0+.",
-      "tags": ["python", "SQLAlchemy", "ORM", "SQL", "database", "PostgreSQL", "async"],
+      "tags": [
+        "python",
+        "SQLAlchemy",
+        "ORM",
+        "SQL",
+        "database",
+        "PostgreSQL",
+        "async"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -222,7 +394,14 @@
       "id": "py-httpx",
       "domainId": "python-web",
       "statement": "HTTPX is a fully featured HTTP client for Python 3, with async support. It is a modern replacement for the Requests library and is the preferred HTTP client for async Python applications including FastAPI-based clients.",
-      "tags": ["python", "HTTPX", "HTTP client", "async", "requests", "HTTP"],
+      "tags": [
+        "python",
+        "HTTPX",
+        "HTTP client",
+        "async",
+        "requests",
+        "HTTP"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -230,7 +409,15 @@
       "id": "py-numpy",
       "domainId": "python-data",
       "statement": "NumPy is the fundamental package for scientific computing in Python. It provides multidimensional array objects (ndarray), mathematical functions, linear algebra, Fourier transforms, and random number generation. Most scientific Python libraries are built on NumPy arrays.",
-      "tags": ["python", "NumPy", "ndarray", "array", "scientific computing", "linear algebra", "data science"],
+      "tags": [
+        "python",
+        "NumPy",
+        "ndarray",
+        "array",
+        "scientific computing",
+        "linear algebra",
+        "data science"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -238,7 +425,15 @@
       "id": "py-pandas",
       "domainId": "python-data",
       "statement": "Pandas is the primary data manipulation and analysis library for Python. It provides DataFrame and Series data structures, supports reading/writing CSV, Excel, JSON, Parquet, and SQL, and offers powerful groupby, merge, reshape, and time-series operations.",
-      "tags": ["python", "pandas", "DataFrame", "Series", "data analysis", "CSV", "ETL"],
+      "tags": [
+        "python",
+        "pandas",
+        "DataFrame",
+        "Series",
+        "data analysis",
+        "CSV",
+        "ETL"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -246,7 +441,16 @@
       "id": "py-scikit-learn",
       "domainId": "python-data",
       "statement": "scikit-learn is the most widely-used Python library for classical machine learning. It provides implementations of classification, regression, clustering, dimensionality reduction, model selection, and preprocessing algorithms, all with a consistent fit/predict API.",
-      "tags": ["python", "scikit-learn", "sklearn", "machine learning", "classification", "regression", "clustering", "feature engineering"],
+      "tags": [
+        "python",
+        "scikit-learn",
+        "sklearn",
+        "machine learning",
+        "classification",
+        "regression",
+        "clustering",
+        "feature engineering"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -254,7 +458,15 @@
       "id": "py-pytorch",
       "domainId": "python-data",
       "statement": "PyTorch is an open-source deep learning framework developed by Meta AI. It uses dynamic computation graphs (eager execution), making it highly flexible for research. It is the dominant framework for deep learning research and is widely used in production NLP and CV applications.",
-      "tags": ["python", "PyTorch", "deep learning", "neural network", "tensor", "autograd", "GPU"],
+      "tags": [
+        "python",
+        "PyTorch",
+        "deep learning",
+        "neural network",
+        "tensor",
+        "autograd",
+        "GPU"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -262,7 +474,15 @@
       "id": "py-tensorflow",
       "domainId": "python-data",
       "statement": "TensorFlow is an open-source deep learning framework developed by Google Brain. TensorFlow 2.x uses Keras as its high-level API and eager execution by default. It is widely used in production ML pipelines and supports deployment via TensorFlow Serving and TensorFlow Lite.",
-      "tags": ["python", "TensorFlow", "Keras", "deep learning", "neural network", "Google", "ML"],
+      "tags": [
+        "python",
+        "TensorFlow",
+        "Keras",
+        "deep learning",
+        "neural network",
+        "Google",
+        "ML"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -270,7 +490,17 @@
       "id": "py-transformers",
       "domainId": "python-data",
       "statement": "The Hugging Face Transformers library provides thousands of pre-trained NLP models (BERT, GPT, T5, LLaMA, etc.) with a unified API for text classification, generation, translation, summarization, and question answering. It integrates with PyTorch, TensorFlow, and JAX.",
-      "tags": ["python", "transformers", "Hugging Face", "BERT", "GPT", "NLP", "pre-trained model", "LLM", "fine-tuning"],
+      "tags": [
+        "python",
+        "transformers",
+        "Hugging Face",
+        "BERT",
+        "GPT",
+        "NLP",
+        "pre-trained model",
+        "LLM",
+        "fine-tuning"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -278,7 +508,16 @@
       "id": "py-langchain",
       "domainId": "python-data",
       "statement": "LangChain is a Python framework for building applications powered by LLMs. It provides abstractions for chains, agents, tools, memory, document loaders, and vector store integrations, simplifying the development of RAG pipelines and conversational AI applications.",
-      "tags": ["python", "LangChain", "LLM", "RAG", "agent", "chain", "memory", "vector store"],
+      "tags": [
+        "python",
+        "LangChain",
+        "LLM",
+        "RAG",
+        "agent",
+        "chain",
+        "memory",
+        "vector store"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -286,7 +525,15 @@
       "id": "py-sentence-transformers",
       "domainId": "python-data",
       "statement": "Sentence-Transformers is a Python library for state-of-the-art sentence and text embeddings. It uses transformer models to produce dense vector representations suitable for semantic search, clustering, and similarity tasks. It integrates with vector databases like FAISS, Pinecone, and Chroma.",
-      "tags": ["python", "sentence-transformers", "embeddings", "semantic search", "vector", "NLP", "similarity"],
+      "tags": [
+        "python",
+        "sentence-transformers",
+        "embeddings",
+        "semantic search",
+        "vector",
+        "NLP",
+        "similarity"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -294,7 +541,15 @@
       "id": "py-spacy",
       "domainId": "python-data",
       "statement": "spaCy is an industrial-strength NLP library for Python. It provides tokenization, named entity recognition (NER), part-of-speech tagging, dependency parsing, lemmatization, and text classification. spaCy models are available for many languages and can be fine-tuned on custom data.",
-      "tags": ["python", "spaCy", "NLP", "NER", "tokenization", "named entity recognition", "POS tagging"],
+      "tags": [
+        "python",
+        "spaCy",
+        "NLP",
+        "NER",
+        "tokenization",
+        "named entity recognition",
+        "POS tagging"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -302,7 +557,15 @@
       "id": "py-gymnasium",
       "domainId": "python-data",
       "statement": "Gymnasium (formerly OpenAI Gym) is the standard Python toolkit for reinforcement learning environments. It provides a unified Env interface with reset() and step() methods, allowing RL algorithms to interact with simulated or real environments.",
-      "tags": ["python", "Gymnasium", "OpenAI Gym", "reinforcement learning", "RL", "environment", "simulation"],
+      "tags": [
+        "python",
+        "Gymnasium",
+        "OpenAI Gym",
+        "reinforcement learning",
+        "RL",
+        "environment",
+        "simulation"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -310,7 +573,16 @@
       "id": "py-stable-baselines",
       "domainId": "python-data",
       "statement": "Stable-Baselines3 (SB3) is a set of reliable implementations of reinforcement learning algorithms in Python, built on PyTorch. It provides PPO, A2C, SAC, TD3, DQN, and other algorithms with a consistent API compatible with Gymnasium environments.",
-      "tags": ["python", "stable-baselines3", "SB3", "reinforcement learning", "PPO", "A2C", "DQN", "PyTorch"],
+      "tags": [
+        "python",
+        "stable-baselines3",
+        "SB3",
+        "reinforcement learning",
+        "PPO",
+        "A2C",
+        "DQN",
+        "PyTorch"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -318,7 +590,14 @@
       "id": "py-matplotlib",
       "domainId": "python-data",
       "statement": "Matplotlib is the foundational Python plotting library, supporting 2D charts (line, bar, scatter, histogram, pie) and 3D plots. It is highly customizable and integrates tightly with NumPy and pandas for data visualization.",
-      "tags": ["python", "matplotlib", "plotting", "visualization", "chart", "data science"],
+      "tags": [
+        "python",
+        "matplotlib",
+        "plotting",
+        "visualization",
+        "chart",
+        "data science"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -326,7 +605,15 @@
       "id": "py-pytest",
       "domainId": "python-testing",
       "statement": "pytest is the most widely used Python testing framework. It uses simple assert statements for test assertions, supports fixtures for setup/teardown, plugins (pytest-cov, pytest-mock, pytest-asyncio), parametrize for data-driven tests, and has excellent reporting.",
-      "tags": ["python", "pytest", "testing", "fixture", "assert", "parametrize", "test coverage"],
+      "tags": [
+        "python",
+        "pytest",
+        "testing",
+        "fixture",
+        "assert",
+        "parametrize",
+        "test coverage"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -334,7 +621,13 @@
       "id": "py-unittest",
       "domainId": "python-testing",
       "statement": "unittest is Python's standard library testing framework, inspired by JUnit. It uses TestCase classes, setUp/tearDown methods, and assertion methods (assertEqual, assertRaises, etc.). It is built into Python and does not require additional installation.",
-      "tags": ["python", "unittest", "TestCase", "standard library", "testing"],
+      "tags": [
+        "python",
+        "unittest",
+        "TestCase",
+        "standard library",
+        "testing"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -342,7 +635,16 @@
       "id": "py-mock",
       "domainId": "python-testing",
       "statement": "Python's unittest.mock module (and the pytest-mock wrapper) provides tools for replacing objects in tests with mock objects. Key tools include MagicMock, patch (as decorator or context manager), and side_effect for simulating errors. Mocking is essential for isolating units and avoiding external API calls in tests.",
-      "tags": ["python", "mock", "MagicMock", "patch", "unittest.mock", "pytest-mock", "testing", "test isolation"],
+      "tags": [
+        "python",
+        "mock",
+        "MagicMock",
+        "patch",
+        "unittest.mock",
+        "pytest-mock",
+        "testing",
+        "test isolation"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -350,7 +652,14 @@
       "id": "py-coverage",
       "domainId": "python-testing",
       "statement": "coverage.py measures code coverage for Python programs. It tracks which lines and branches are executed during test runs and generates HTML, XML, or terminal reports. The pytest-cov plugin integrates coverage collection directly into pytest runs.",
-      "tags": ["python", "coverage", "code coverage", "pytest-cov", "test coverage", "branch coverage"],
+      "tags": [
+        "python",
+        "coverage",
+        "code coverage",
+        "pytest-cov",
+        "test coverage",
+        "branch coverage"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -358,7 +667,16 @@
       "id": "py-ruff",
       "domainId": "python-testing",
       "statement": "Ruff is an extremely fast Python linter and code formatter written in Rust. It replaces flake8, isort, black, pyupgrade, and many other tools with a single, zero-config tool that can lint and format an entire codebase in milliseconds.",
-      "tags": ["python", "ruff", "linter", "formatter", "code quality", "flake8", "black", "isort"],
+      "tags": [
+        "python",
+        "ruff",
+        "linter",
+        "formatter",
+        "code quality",
+        "flake8",
+        "black",
+        "isort"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -366,7 +684,14 @@
       "id": "py-mypy",
       "domainId": "python-testing",
       "statement": "mypy is the standard static type checker for Python. It analyses type hints to find type errors before runtime. It supports gradual typing, allowing type annotations to be added incrementally to existing codebases.",
-      "tags": ["python", "mypy", "static type checking", "type hints", "type safety", "code quality"],
+      "tags": [
+        "python",
+        "mypy",
+        "static type checking",
+        "type hints",
+        "type safety",
+        "code quality"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -374,7 +699,14 @@
       "id": "py-pip",
       "domainId": "python-tooling",
       "statement": "pip is the standard package installer for Python. It installs packages from PyPI (the Python Package Index) and can install from requirements files, VCS URLs, and local directories. pip is bundled with Python 3.4+ via the ensurepip module.",
-      "tags": ["python", "pip", "package manager", "PyPI", "requirements.txt", "installation"],
+      "tags": [
+        "python",
+        "pip",
+        "package manager",
+        "PyPI",
+        "requirements.txt",
+        "installation"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -382,7 +714,14 @@
       "id": "py-venv",
       "domainId": "python-tooling",
       "statement": "Python virtual environments (venv, virtualenv) isolate project dependencies from the system Python installation. The built-in venv module (Python 3.3+) creates lightweight virtual environments. uv and poetry provide faster and more feature-rich alternatives.",
-      "tags": ["python", "venv", "virtualenv", "virtual environment", "isolation", "dependency management"],
+      "tags": [
+        "python",
+        "venv",
+        "virtualenv",
+        "virtual environment",
+        "isolation",
+        "dependency management"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -390,7 +729,15 @@
       "id": "py-uv",
       "domainId": "python-tooling",
       "statement": "uv is an extremely fast Python package and project manager written in Rust by Astral. It replaces pip, pip-tools, pipx, poetry, and virtualenv, offering 10-100x faster installs. uv is rapidly becoming the standard toolchain for modern Python projects.",
-      "tags": ["python", "uv", "package manager", "fast", "Rust", "Astral", "modern tooling"],
+      "tags": [
+        "python",
+        "uv",
+        "package manager",
+        "fast",
+        "Rust",
+        "Astral",
+        "modern tooling"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -398,7 +745,14 @@
       "id": "py-poetry",
       "domainId": "python-tooling",
       "statement": "Poetry is a Python dependency management and packaging tool that uses pyproject.toml as the single configuration file. It handles virtual environments automatically, resolves dependencies with a lock file (poetry.lock), and provides commands for building and publishing packages.",
-      "tags": ["python", "poetry", "dependency management", "pyproject.toml", "lock file", "packaging"],
+      "tags": [
+        "python",
+        "poetry",
+        "dependency management",
+        "pyproject.toml",
+        "lock file",
+        "packaging"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -406,7 +760,14 @@
       "id": "py-pyproject",
       "domainId": "python-tooling",
       "statement": "pyproject.toml is the modern standard configuration file for Python projects (PEP 517/518/621). It consolidates tool configuration (ruff, mypy, pytest, etc.) and project metadata into a single file, replacing setup.py, setup.cfg, and multiple .ini files.",
-      "tags": ["python", "pyproject.toml", "PEP 517", "PEP 518", "project configuration", "build system"],
+      "tags": [
+        "python",
+        "pyproject.toml",
+        "PEP 517",
+        "PEP 518",
+        "project configuration",
+        "build system"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -414,7 +775,15 @@
       "id": "py-docker",
       "domainId": "python-tooling",
       "statement": "Python applications are commonly containerized with Docker. Best practices include using slim or alpine base images (python:3.12-slim), multi-stage builds, installing dependencies via pip with --no-cache-dir, and running as a non-root user. Docker Compose is used for multi-service Python applications.",
-      "tags": ["python", "Docker", "container", "Dockerfile", "Docker Compose", "deployment", "alpine"],
+      "tags": [
+        "python",
+        "Docker",
+        "container",
+        "Dockerfile",
+        "Docker Compose",
+        "deployment",
+        "alpine"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -422,7 +791,16 @@
       "id": "py-asyncio",
       "domainId": "python-async",
       "statement": "asyncio is Python's built-in library for asynchronous I/O and concurrency using coroutines (async/await), event loops, tasks, and futures. It enables writing non-blocking code for I/O-bound operations like HTTP requests, database queries, and file I/O.",
-      "tags": ["python", "asyncio", "async", "await", "coroutine", "event loop", "concurrency", "non-blocking"],
+      "tags": [
+        "python",
+        "asyncio",
+        "async",
+        "await",
+        "coroutine",
+        "event loop",
+        "concurrency",
+        "non-blocking"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -430,7 +808,15 @@
       "id": "py-threading",
       "domainId": "python-async",
       "statement": "Python's threading module enables concurrent execution using OS threads. Due to the Global Interpreter Lock (GIL), Python threads provide concurrency for I/O-bound tasks but not true parallelism for CPU-bound tasks. The concurrent.futures.ThreadPoolExecutor provides a higher-level interface.",
-      "tags": ["python", "threading", "thread", "GIL", "Global Interpreter Lock", "concurrent.futures", "concurrency"],
+      "tags": [
+        "python",
+        "threading",
+        "thread",
+        "GIL",
+        "Global Interpreter Lock",
+        "concurrent.futures",
+        "concurrency"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -438,7 +824,15 @@
       "id": "py-multiprocessing",
       "domainId": "python-async",
       "statement": "Python's multiprocessing module bypasses the GIL by spawning separate OS processes, each with its own Python interpreter and memory space. It enables true parallelism for CPU-bound tasks. concurrent.futures.ProcessPoolExecutor provides a cleaner interface.",
-      "tags": ["python", "multiprocessing", "process", "parallelism", "CPU-bound", "concurrent.futures", "GIL"],
+      "tags": [
+        "python",
+        "multiprocessing",
+        "process",
+        "parallelism",
+        "CPU-bound",
+        "concurrent.futures",
+        "GIL"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -446,7 +840,15 @@
       "id": "py-gil-removal",
       "domainId": "python-async",
       "statement": "Python 3.13 introduced experimental free-threaded mode (PEP 703) that makes the GIL optional. When built with --disable-gil, Python can run threads truly in parallel, significantly improving CPU-bound multi-threaded performance.",
-      "tags": ["python", "GIL", "free-threaded", "python 3.13", "PEP 703", "parallelism", "multi-threading"],
+      "tags": [
+        "python",
+        "GIL",
+        "free-threaded",
+        "python 3.13",
+        "PEP 703",
+        "parallelism",
+        "multi-threading"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -454,7 +856,16 @@
       "id": "py-celery",
       "domainId": "python-async",
       "statement": "Celery is a distributed task queue for Python. It executes background tasks asynchronously using message brokers like RabbitMQ or Redis. It is widely used for scheduling periodic tasks, sending emails, processing uploads, and offloading long-running operations from web requests.",
-      "tags": ["python", "Celery", "task queue", "background job", "RabbitMQ", "Redis", "async", "distributed"],
+      "tags": [
+        "python",
+        "Celery",
+        "task queue",
+        "background job",
+        "RabbitMQ",
+        "Redis",
+        "async",
+        "distributed"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -462,7 +873,15 @@
       "id": "py-environment-vars",
       "domainId": "python-tooling",
       "statement": "Python applications read environment variables via os.environ or python-dotenv (load_dotenv()). The dotenv pattern loads .env files for local development while relying on real environment variables in production. pydantic-settings provides typed, validated settings from environment variables.",
-      "tags": ["python", "environment variables", "dotenv", "os.environ", "pydantic-settings", "configuration", ".env"],
+      "tags": [
+        "python",
+        "environment variables",
+        "dotenv",
+        "os.environ",
+        "pydantic-settings",
+        "configuration",
+        ".env"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -470,7 +889,14 @@
       "id": "py-abc",
       "domainId": "python-core",
       "statement": "Python's abc module provides the ABC (Abstract Base Class) and abstractmethod decorator to define abstract interfaces. A class inheriting from ABC with abstractmethod decorators cannot be instantiated unless all abstract methods are implemented.",
-      "tags": ["python", "ABC", "abstract base class", "abstractmethod", "interface", "abc module"],
+      "tags": [
+        "python",
+        "ABC",
+        "abstract base class",
+        "abstractmethod",
+        "interface",
+        "abc module"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -478,7 +904,13 @@
       "id": "py-slots",
       "domainId": "python-core",
       "statement": "Python's __slots__ class attribute prevents the creation of a per-instance __dict__, reducing memory usage significantly when many instances of a class are created. It also slightly speeds up attribute access.",
-      "tags": ["python", "__slots__", "memory optimization", "performance", "class attributes"],
+      "tags": [
+        "python",
+        "__slots__",
+        "memory optimization",
+        "performance",
+        "class attributes"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -486,7 +918,15 @@
       "id": "py-pickle",
       "domainId": "python-core",
       "statement": "Python's pickle module serializes and deserializes Python objects to byte streams. It is used for caching, inter-process communication, and storing ML model state. Note: unpickling data from untrusted sources is a security risk.",
-      "tags": ["python", "pickle", "serialization", "deserialization", "caching", "ML model", "security"],
+      "tags": [
+        "python",
+        "pickle",
+        "serialization",
+        "deserialization",
+        "caching",
+        "ML model",
+        "security"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -494,7 +934,15 @@
       "id": "py-json",
       "domainId": "python-core",
       "statement": "Python's json module serializes Python dicts, lists, strings, numbers, booleans, and None to JSON strings and deserializes JSON strings back to Python objects. orjson and ujson are faster third-party alternatives used in high-throughput applications.",
-      "tags": ["python", "json", "JSON", "serialization", "orjson", "ujson", "standard library"],
+      "tags": [
+        "python",
+        "json",
+        "JSON",
+        "serialization",
+        "orjson",
+        "ujson",
+        "standard library"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -502,7 +950,15 @@
       "id": "py-enums",
       "domainId": "python-core",
       "statement": "Python's enum module (Python 3.4+) provides Enum, IntEnum, StrEnum, Flag, and IntFlag classes for creating named constants. Enums improve code readability and prevent magic strings/numbers. Python 3.11 added StrEnum for string-valued enums.",
-      "tags": ["python", "enum", "Enum", "IntEnum", "StrEnum", "constants", "python 3.11"],
+      "tags": [
+        "python",
+        "enum",
+        "Enum",
+        "IntEnum",
+        "StrEnum",
+        "constants",
+        "python 3.11"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -510,7 +966,14 @@
       "id": "py-f-strings",
       "domainId": "python-core",
       "statement": "Python f-strings (Python 3.6+) are the preferred way to format strings, supporting arbitrary expressions inside {}. Python 3.12 added multi-line f-strings and f-string reuse. f-strings are faster than str.format() and %-formatting.",
-      "tags": ["python", "f-string", "string formatting", "python 3.6", "python 3.12", "template"],
+      "tags": [
+        "python",
+        "f-string",
+        "string formatting",
+        "python 3.6",
+        "python 3.12",
+        "template"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -518,7 +981,14 @@
       "id": "py-pep8",
       "domainId": "python-testing",
       "statement": "PEP 8 is the official Python style guide. Key conventions include 4-space indentation, 79-character line limits, two blank lines between top-level definitions, single blank line between methods, lowercase_with_underscores for functions/variables, and CamelCase for classes.",
-      "tags": ["python", "PEP 8", "style guide", "code style", "naming convention", "formatting"],
+      "tags": [
+        "python",
+        "PEP 8",
+        "style guide",
+        "code style",
+        "naming convention",
+        "formatting"
+      ],
       "confidence": "high",
       "scope": "general"
     },
@@ -526,7 +996,15 @@
       "id": "py-security",
       "domainId": "python-core",
       "statement": "Python security best practices include using secrets module for cryptographic random values (not random), parameterized queries to prevent SQL injection, input validation, avoiding eval()/exec() on untrusted input, using hashlib for secure hashing, and HTTPS for all external communications.",
-      "tags": ["python", "security", "secrets", "SQL injection", "parameterized query", "hashlib", "HTTPS"],
+      "tags": [
+        "python",
+        "security",
+        "secrets",
+        "SQL injection",
+        "parameterized query",
+        "hashlib",
+        "HTTPS"
+      ],
       "confidence": "high",
       "scope": "general"
     }
