@@ -103,6 +103,7 @@ class ProjectRepository:
         description: Optional[str] = None,
         url: Optional[str] = None,
         skills: Optional[List[str]] = None,
+        years: Optional[str] = None,
     ) -> Project:
         """Create a new project."""
         import hashlib
@@ -116,8 +117,10 @@ class ProjectRepository:
             persona_graph_id=persona_id,
             name=name,
             company_id=company_id,
+            url=url,
             details=description,
             skills=skills or [],
+            years=years,
         )
         session.add(project)
         session.flush()
@@ -148,6 +151,7 @@ class CompanyRepository:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         skills: Optional[List[str]] = None,
+        aliases: Optional[List[str]] = None,
     ) -> Company:
         """Create a new company record."""
         import hashlib
@@ -160,7 +164,7 @@ class CompanyRepository:
             id=company_id,
             persona_graph_id=persona_id,
             name=name,
-            aliases=[],
+            aliases=aliases or [],
         )
         session.add(company)
         session.flush()
@@ -216,6 +220,8 @@ class ClaimRepository:
         persona_id: int,
         claim_text: str,
         tags: Optional[List[str]] = None,
+        project_ids: Optional[List[str]] = None,
+        links: Optional[List[str]] = None,
     ) -> Claim:
         """Create a new claim."""
         import hashlib
@@ -228,7 +234,8 @@ class ClaimRepository:
             id=claim_id,
             persona_graph_id=persona_id,
             text=claim_text,
-            project_ids=[],
+            project_ids=project_ids or [],
+            links=links or [],
         )
         session.add(claim)
         session.flush()

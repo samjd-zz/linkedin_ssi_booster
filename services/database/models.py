@@ -76,6 +76,7 @@ class Project(Base):
     name = Column(String(500), nullable=False)
     company_id = Column(String(255))  # Made nullable for now
     years = Column(String(50))
+    url = Column(String(1000))
     details = Column(Text)
     skills = Column(JSONType, default=list)
     aliases = Column(JSONType, default=list)
@@ -125,6 +126,7 @@ class Claim(Base):
     persona_graph_id = Column(Integer, ForeignKey("persona_graph.id", ondelete="CASCADE"))
     text = Column(Text, nullable=False)
     project_ids = Column(JSONType, default=list)
+    links = Column(JSONType, default=list)
     confidence_hint = Column(String(50), default="medium")
     created_at = Column(TIMESTAMP, default=func.now())
 

@@ -67,6 +67,7 @@ def write_persona_graph_to_db(
             name=company_data.get("name", ""),
             role=None,
             skills=[],
+            aliases=company_data.get("aliases", []),
         )
         json_company_id: str = company_data.get("id", "")
         db_company_id_val: str = company.id  # type: ignore
@@ -74,11 +75,12 @@ def write_persona_graph_to_db(
             company_id_map[json_company_id] = db_company_id_val
     
     # Now create projects with the mapped company_id
+    project_id_map: Dict[str, str] = {}
     for project_data in persona_data.get("projects", []):
         json_company_id = project_data.get("companyId")
         db_company_id: str | None = company_id_map.get(json_company_id) if json_company_id else None
         
-        ProjectRepository.create(
+        project = ProjectRepository.create(
             session=session,
             persona_id=persona_id_int,
             name=project_data.get("name", ""),
@@ -86,7 +88,12 @@ def write_persona_graph_to_db(
             description=project_data.get("details", ""),
             url=project_data.get("url"),
             skills=project_data.get("skills", []),
+            years=project_data.get("years"),
         )
+        json_project_id: str = project_data.get("id", "")
+        db_project_id_val: str = project.id  # type: ignore
+        if json_project_id and db_project_id_val:
+            project_id_map[json_project_id] = db_project_id_val
     
     for skill_data in persona_data.get("skills", []):
         SkillRepository.create(
@@ -97,11 +104,17 @@ def write_persona_graph_to_db(
         )
     
     for claim_data in persona_data.get("claims", []):
+        # Map JSON project IDs to database project IDs
+        json_project_ids = claim_data.get("projectIds", [])
+        db_project_ids = [project_id_map[pid] for pid in json_project_ids if pid in project_id_map]
+        
         ClaimRepository.create(
             session=session,
             persona_id=persona_id_int,
             claim_text=claim_data.get("text", ""),
-            tags=[],  # Could extract from projectIds
+            tags=[],
+            project_ids=db_project_ids,
+            links=claim_data.get("links", []),
         )
     
     session.commit()
@@ -176,7 +189,8 @@ def write_domain_knowledge_to_db(
         domain_ids[json_domain_id] = domain_id_str
         logger.debug(f"Created domain: {domain_name_str} (ID: {domain_id_str}, JSON ID: {json_domain_id})")
     
-    # Create facts (linked to domains)
+    # Create facts (linked to domains) and build a mapping of JSON fact IDs to database IDs
+    fact_id_map: Dict[str, str] = {}
     for fact_entry in domain_data.get("facts", []):
         domain_name = fact_entry.get("domainId", "")
         domain_id = domain_ids.get(domain_name)
@@ -185,7 +199,7 @@ def write_domain_knowledge_to_db(
             logger.warning(f"Fact references unknown domain: {domain_name}, skipping")
             continue
         
-        DomainFactRepository.create(
+        fact = DomainFactRepository.create(
             session=session,
             domain_id=domain_id,
             fact_text=fact_entry.get("statement", ""),
@@ -196,10 +210,29 @@ def write_domain_knowledge_to_db(
                 "original_id": fact_entry.get("id", ""),
             },
         )
+        json_fact_id: str = fact_entry.get("id", "")
+        db_fact_id: str = fact.id  # type: ignore
+        if json_fact_id and db_fact_id:
+            fact_id_map[json_fact_id] = db_fact_id
     
-    # Create relationships
-    # NOTE: This requires mapping fact IDs from JSON to database IDs
-    # For now, we'll skip relationships and handle them in a migration script
+    # Create relationships using the fact ID mapping
+    for rel_entry in domain_data.get("relationships", []):
+        from_fact_json_id = rel_entry.get("fromFactId", "")
+        to_fact_json_id = rel_entry.get("toFactId", "")
+        
+        from_fact_db_id = fact_id_map.get(from_fact_json_id)
+        to_fact_db_id = fact_id_map.get(to_fact_json_id)
+        
+        if from_fact_db_id and to_fact_db_id:
+            DomainRelationshipRepository.create(
+                session=session,
+                from_fact_id=from_fact_db_id,
+                to_fact_id=to_fact_db_id,
+                relation_type=rel_entry.get("relationType", ""),
+                description=rel_entry.get("description", ""),
+            )
+        else:
+            logger.warning(f"Skipping relationship: fact IDs not found (from: {from_fact_json_id}, to: {to_fact_json_id})")
     
     session.commit()
     logger.info(f"Wrote domain knowledge to database ({len(domain_ids)} domains)")
