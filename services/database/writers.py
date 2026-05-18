@@ -165,6 +165,7 @@ def write_domain_knowledge_to_db(
         domain = DomainRepository.create(
             session=session,
             name=domain_entry.get("name", ""),
+            description=domain_entry.get("description", ""),
         )
         session.flush()  # Flush to ensure domain.id is populated
         
@@ -188,8 +189,8 @@ def write_domain_knowledge_to_db(
             session=session,
             domain_id=domain_id,
             fact_text=fact_entry.get("statement", ""),
+            tags=fact_entry.get("tags", []),
             metadata={
-                "tags": fact_entry.get("tags", []),
                 "confidence": fact_entry.get("confidence", "medium"),
                 "scope": fact_entry.get("scope", "general"),
                 "original_id": fact_entry.get("id", ""),
@@ -264,14 +265,15 @@ def write_extracted_knowledge_to_db(
             ExtractedFactRepository.create(
                 session=session,
                 fact_text=fact_entry.get("statement", ""),
-                source_url=fact_entry.get("source_url"),
+                source_url=fact_entry.get("source_url", ""),
+                source_title=fact_entry.get("source_title", ""),
                 entities=fact_entry.get("entities", []),
                 themes=fact_entry.get("tags", []),
+                primary_category=fact_entry.get("primary_category", ""),
+                primary_ssi_component=fact_entry.get("primary_ssi_component", ""),
                 sentiment={
                     "confidence": fact_entry.get("confidence", "medium"),
                     "extraction_method": fact_entry.get("extraction_method", "spacy_nlp"),
-                    "primary_category": fact_entry.get("primary_category", ""),
-                    "primary_ssi_component": fact_entry.get("primary_ssi_component", ""),
                 },
             )
             facts_written += 1

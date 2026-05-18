@@ -256,7 +256,7 @@ class DomainRepository:
         return session.execute(stmt).scalar_one_or_none()
 
     @staticmethod
-    def create(session: Session, name: str) -> Domain:
+    def create(session: Session, name: str, description: str = "") -> Domain:
         """Create a new domain."""
         import hashlib
         import time
@@ -264,7 +264,7 @@ class DomainRepository:
         # Generate a unique ID for the domain
         domain_id = hashlib.sha256(f"{name}{time.time()}".encode()).hexdigest()[:12]
         
-        domain = Domain(id=domain_id, name=name)
+        domain = Domain(id=domain_id, name=name, description=description)
         session.add(domain)
         session.flush()
         return domain
@@ -284,6 +284,7 @@ class DomainFactRepository:
         session: Session,
         domain_id: str,
         fact_text: str,
+        tags: Optional[List[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> DomainFact:
         """Create a new domain fact."""
@@ -297,7 +298,7 @@ class DomainFactRepository:
             id=fact_id,
             domain_id=domain_id,
             statement=fact_text,
-            tags=[],
+            tags=tags or [],
         )
         session.add(fact)
         session.flush()
@@ -360,8 +361,11 @@ class ExtractedFactRepository:
         session: Session,
         fact_text: str,
         source_url: Optional[str] = None,
+        source_title: Optional[str] = None,
         entities: Optional[List[str]] = None,
         themes: Optional[List[str]] = None,
+        primary_category: Optional[str] = None,
+        primary_ssi_component: Optional[str] = None,
         sentiment: Optional[Dict[str, Any]] = None,
     ) -> ExtractedFact:
         """Create a new extracted fact."""
@@ -375,9 +379,12 @@ class ExtractedFactRepository:
             id=fact_id,
             statement=fact_text,
             source_url=source_url or "",
+            source_title=source_title or "",
             extracted_at=datetime.now(UTC),
             entities=entities or [],
             tags=themes or [],
+            primary_category=primary_category or "",
+            primary_ssi_component=primary_ssi_component or "",
         )
         session.add(fact)
         session.flush()
