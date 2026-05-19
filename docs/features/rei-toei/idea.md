@@ -72,7 +72,7 @@ Rei maintains her own persona graph (`data/avatar/rei_toei_persona_graph.json`) 
 Rei has read access to:
 
 - **`extracted_knowledge.json`** — All learned facts from curated articles
-- **`domain_knowledge_python.json`** and **`domain_knowledge_java.json`** — Technical foundation
+- **`domain_knowledge.json`** **`domain_knowledge_python.json`** and **`domain_knowledge_java.json`** — Technical foundation
 - **RSS feed summaries** — Recent industry trends and news
 
 ### 3. Music Generation Pipeline
