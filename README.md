@@ -4,7 +4,7 @@
 
 # LinkedIn SSI Booster - :muscle: POWERED by Buffer.com!
 
-##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Agent platform with Domain-Knowledge-Graph, not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
+##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Agent content-creation platform with Domain-Knowledge-Graph, not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
 [![Version alpha-v0.0.2.8](https://img.shields.io/badge/version-alpha--v0.0.2.8-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![Strudel](https://img.shields.io/badge/Strudel-Music%20Agent-9B59B6.svg)](https://strudel.cc/)[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Tests 565 passed](https://img.shields.io/badge/tests-565%20passed-brightgreen.svg)]()
 
@@ -22,7 +22,6 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 ##### _<ul><u>— Why This Is Smarter Than Just 'AI Writes Posts'</u></ul>_
 
 - **Advanced NLP with spaCy** — Theme/claim extraction, semantic similarity, sentiment/tone analysis, and two advanced curation/grounding features:
-  
   - **Fact Suggestion:** When the truth gate drops a sentence, spaCy suggests the closest matching fact or evidence from your persona graph, or recommends how to rephrase for grounding.
   - **Contextual Summarization:** spaCy generates concise, context-aware summaries of curated articles, improving the quality of commentary and learning signals.
 
@@ -35,7 +34,6 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - **Curation learning loop** — The system tracks every generated candidate, learns which ones you actually publish, and automatically floats the best sources/topics to the top in future runs (Beta-smoothed acceptance priors per source/SSI component).
 
 - **Truth gate** — Post-generation filter removes unsupported claims (numbers, dates, company names, project-tech mismatches) for maximum credibility. Four validation layers run in sequence on every sentence:
-  
   - **BM25 evidence scoring** — each sentence is ranked against article text and persona facts; sentences below the configurable threshold (`TRUTH_GATE_BM25_THRESHOLD`) are flagged as weakly supported.
   - **Derivative of Truth per-sentence scoring** — every sentence receives a composite truth gradient (evidence type × reasoning quality × source credibility × token overlap). Sentences that pass BM25 but score below `TRUTH_GRADIENT_FLAG_THRESHOLD` (0.35) are flagged `weak_dot_gradient` and auto-removed. The 4-term DoT formula is active — token overlap between the sentence and each evidence fact is computed (Jaccard) and included as a 25%-weight component.
   - **spaCy semantic similarity floor** — for sentences containing numeric claims, years, dollar amounts, or org names, `compute_similarity()` checks the sentence against the source article. Similarity below `TRUTH_GATE_SPACY_SIM_FLOOR` (default `0.10`, configurable) flags the sentence as `low_semantic_similarity`, catching paraphrased hallucinations BM25 misses.
@@ -43,7 +41,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
   - **False-positive hardening for tech terms** — concept/service tokens and tech-version entities (for example `S3`, `AI Q&A`, `Java 21`) are filtered before ORG enforcement so technical references are not incorrectly blocked as `unsupported_org`.
   - **Expanded domain evidence via multi-file loading** — avatar state now auto-merges sibling `domain_knowledge_*.json` files (for example Java and Python packs), which broadens allowed evidence tokens and improves support checks.
   - **Fact-pool spaCy similarity** — for every sentence that passes BM25, the best spaCy cosine similarity across all persona/domain facts (individually) is computed. Sentences below `TRUTH_GATE_FACT_SIM_FLOOR` (default `0.05`) are flagged `low_fact_similarity`. Unlike the article-sim check, this runs in **all contexts including console mode** because persona/domain facts are always present.
-  
+
   > See [docs/derivative-of-truth.md](docs/derivative-of-truth.md) for the full layer-by-layer breakdown, the DoT vs spaCy sim comparison table, all env var thresholds, and the mathematical framework.
 
 - **Confidence scoring & policy routing** — Each post is scored for grounding, novelty, and repetition; you control what gets scheduled, sent to Ideas, or blocked entirely.
@@ -129,13 +127,13 @@ This tool handles the repeatable parts:
 - `--list-categories` — List all available Model2Vec categories (10 default + any custom) with descriptions and SSI component mapping. No curation run required.
 
 - `--add-category NAME DESCRIPTION SSI_COMPONENT` — Add a custom classification category. The category is immediately available for `--classify` runs. SSI component must be one of: `establish_brand`, `find_right_people`, `engage_with_insights`, `build_relationships`.
-  
+
   ```bash
   python main.py --add-category 'Government Tech' 'Public sector AI, digital government, and civic technology' engage_with_insights
   ```
 
 - `--remove-category NAME [NAME...]` — Remove one or more custom categories. Default categories cannot be removed.
-  
+
   ```bash
   python main.py --remove-category 'Government Tech' 'Open Source'
   ```
@@ -147,11 +145,10 @@ This tool handles the repeatable parts:
 - `--avatar-learn-report` — Print learning report from captured moderation events and exit.
 
 - `--learn` — Extract and persist knowledge from curated articles into `extracted_knowledge.json`. Three modes:
-  
   - **Fast learn-only** (`--curate --learn`, no `--dry-run`) — fetches all RSS articles and runs knowledge extraction on each one, skipping generation, confidence scoring, and Buffer entirely. No sleep delays between articles. Use this to bulk-load the knowledge base as fast as possible.
   - **Preview + learn** (`--curate --learn --dry-run`) — extracts knowledge AND generates posts in dry-run mode (nothing pushed to Buffer). Shows what would be generated.
   - **Live + learn** (`--curate --learn` with an earlier run that already had `--dry-run` removed) — generates and pushes posts to Buffer while also extracting knowledge from each article.
-  
+
   When `--learn` is active, the normal 5-post cap is bypassed — every relevant article found across all feeds is processed (e.g. 60+ articles in one pass).
 
 You control whether curated content is reviewed before publishing or scheduled directly. The tool removes the blank-page problem, but you decide what goes live.
@@ -250,7 +247,7 @@ The system now includes a NetworkX-powered knowledge graph for incremental learn
 - The NetworkX knowledge graph is used as a secondary, persona-aware reranker and explainer: it links persona ↔ skills ↔ projects ↔ claims ↔ domain facts.
 
 - Final candidate scoring is a hybrid:
-  
+
   $$
   ext{final} = 0.7 \times \text{bm25} + 0.2 \times \text{graph proximity} + 0.1 \times \text{claim support}
   $$
@@ -287,12 +284,12 @@ The avatar supports fully automatic, incremental continual learning from new con
 - **Voice synthesis (optional)** — Console mode supports text-to-speech output using [Wyoming Piper](https://github.com/rhasspy/wyoming-piper), a fast local neural voice engine running in Docker. Voice output is **in addition to** text output (not replacing it). Enable by setting `CONSOLE_USE_VOICE=true` in `.env`. The Wyoming Piper service is included in `docker-compose.yml` and automatically downloads the voice model on first start. Configure the voice model in `docker-compose.yml` (default: `en_US-libritts_r-medium`) and optionally set speaker ID with `CONSOLE_VOICE_SPEAKER` for multi-speaker models. Requires only `sounddevice` package for audio playback (included in `requirements.txt`). Voice synthesis runs locally with no cloud API calls. For local (non-Docker) usage, run Wyoming Piper separately: `docker run -p 10200:10200 rhasspy/wyoming-piper --voice en_US-libritts_r-medium`.
 
 - **Inline truth score** — when `--console --verify` flags are used together, console mode prints a minimal 1-line DoT + fact-pool sim indicator after every AI-generated reply:
-  
+
   ```
   Sam> [reply text]
     ● DoT 0.82  fact sim 0.71
   ```
-  
+
   The symbol colour reflects the DoT score: `●` green (≥ 0.75 — well-grounded), `◑` yellow (≥ 0.45 — moderate), `○` red (< 0.45 — weakly supported). `fact sim` shows the best spaCy similarity across persona/domain facts for the reply sentences (omitted if no facts matched). Article-based spaCy sim is excluded as there is no article in a conversation. Only AI-generated replies receive the indicator; deterministic grounded replies do not. **By default (console mode without `--verify`), DoT scanning and similarity checks are OFF** — add `--verify` to enable them.
 
 **Noise filtering pipeline** — before a sentence is stored, a multi-layer quality filter rejects low-signal content that would pollute the knowledge base:
@@ -350,7 +347,7 @@ The system now supports **dual-write mode** with PostgreSQL for improved data in
 **Setup (Docker):**
 
 1. Add to `.env`:
-   
+
    ```bash
    DATABASE_ENABLED=true
    POSTGRES_USER=ssi_booster
@@ -360,13 +357,13 @@ The system now supports **dual-write mode** with PostgreSQL for improved data in
    ```
 
 2. Start PostgreSQL container:
-   
+
    ```bash
    docker compose --profile core up -d postgres
    ```
 
 3. Verify tables created:
-   
+
    ```bash
    docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c "\dt"
    ```
@@ -498,5 +495,3 @@ Copy `.env.example` to `.env` and fill in required values. Key variables include
 See [docs/environment-variables.md](docs/environment-variables.md) for comprehensive reference covering 40+ configuration options across Buffer, Ollama, truth gate, Model2Vec, voice/TTS, image generation, Strudel music, and database integration.
 
 [MIT License](LICENSE) — see LICENSE for details.
-
-
