@@ -855,9 +855,9 @@ def main():
             rei_persona = load_rei_persona()
             rei_domain = load_rei_domain_knowledge()
             avatar_state = _lav_rei()
-            extracted_facts = _nef_rei(avatar_state)
-            # extract_themes expects an object with a .facts attribute
-            _extracted_kg = _types.SimpleNamespace(facts=extracted_facts)
+            # Use the raw ExtractedKnowledgeGraph (contains ExtractedFact objects with id and extracted_at)
+            # extract_themes is designed for ExtractedFact (not ExtractedEvidenceFact)
+            _extracted_kg = avatar_state.extracted_knowledge
 
             if args.rei_theme:
                 theme = Theme(
@@ -972,8 +972,9 @@ def main():
             rei_domain = load_rei_domain_knowledge()
             pattern_library = load_strudel_patterns()
             avatar_state = _lav_rei()
-            extracted_facts = _nef_rei(avatar_state)
-            _extracted_kg = _types.SimpleNamespace(facts=extracted_facts)
+            # Use the raw ExtractedKnowledgeGraph (contains ExtractedFact objects with id and extracted_at)
+            # extract_themes is designed for ExtractedFact (not ExtractedEvidenceFact)
+            _extracted_kg = avatar_state.extracted_knowledge
 
             if args.rei_theme:
                 theme = Theme(

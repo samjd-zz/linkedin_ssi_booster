@@ -732,7 +732,11 @@ def extract_themes(
         avg_recency = sum(recency_scores) / len(recency_scores) if recency_scores else 0.5
         
         # Collect all evidence IDs for this concept
-        evidence_ids = [fact.id for fact in facts]
+        # Use evidence_id for ExtractedEvidenceFact (normalized) or id for ExtractedFact (raw)
+        evidence_ids = [
+            getattr(fact, "evidence_id", None) or getattr(fact, "id", str(id(fact)))
+            for fact in facts
+        ]
         
         scored_concepts.append((concept, frequency, avg_recency, evidence_ids))
     
@@ -1184,7 +1188,7 @@ def validate_lyrics_with_dot(
             alignment = overlap / total_keywords if total_keywords > 0 else 0.0
             
             evidence_path = EvidencePath(
-                source=f"extracted_fact_{fact.id}",
+                source=f"extracted_fact_{getattr(fact, 'evidence_id', None) or getattr(fact, 'id', str(id(fact)))}",
                 evidence_type="external_source",
                 reasoning_type="direct_evidence",
                 credibility=credibility,
