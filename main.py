@@ -855,9 +855,9 @@ def main():
             rei_persona = load_rei_persona()
             rei_domain = load_rei_domain_knowledge()
             avatar_state = _lav_rei()
-            # Use the raw ExtractedKnowledgeGraph (contains ExtractedFact objects with id and extracted_at)
-            # extract_themes is designed for ExtractedFact (not ExtractedEvidenceFact)
-            _extracted_kg = avatar_state.extracted_knowledge
+            # Use normalize_extracted_facts (same pattern as curator.py) to get
+            # List[ExtractedEvidenceFact] — the normalized runtime representation.
+            _extracted_facts = _nef_rei(avatar_state)
 
             if args.rei_theme:
                 theme = Theme(
@@ -870,7 +870,7 @@ def main():
                 )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
             else:
-                themes = extract_themes(_extracted_kg, limit=5)  # type: ignore[arg-type]
+                themes = extract_themes(_extracted_facts, limit=5)
                 if not themes:
                     print(
                         str(Fore.YELLOW)
@@ -909,7 +909,7 @@ def main():
                 print(f"  Narrative   : {concept.narrative_arc}")
                 if suno_prompt.evidence_ids:
                     print(f"  Evidence IDs: {', '.join(suno_prompt.evidence_ids[:5])}")
-                dot = validate_lyrics_with_dot(lyrics, _extracted_kg)  # type: ignore[arg-type]
+                dot = validate_lyrics_with_dot(lyrics, _extracted_facts)
                 _dot_col = (
                     str(Fore.GREEN) if dot.overall_truth_score >= 0.7
                     else (str(Fore.YELLOW) if dot.overall_truth_score >= 0.4 else str(Fore.RED))
@@ -972,9 +972,9 @@ def main():
             rei_domain = load_rei_domain_knowledge()
             pattern_library = load_strudel_patterns()
             avatar_state = _lav_rei()
-            # Use the raw ExtractedKnowledgeGraph (contains ExtractedFact objects with id and extracted_at)
-            # extract_themes is designed for ExtractedFact (not ExtractedEvidenceFact)
-            _extracted_kg = avatar_state.extracted_knowledge
+            # Use normalize_extracted_facts (same pattern as curator.py) to get
+            # List[ExtractedEvidenceFact] — the normalized runtime representation.
+            _extracted_facts = _nef_rei(avatar_state)
 
             if args.rei_theme:
                 theme = Theme(
@@ -987,7 +987,7 @@ def main():
                 )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
             else:
-                themes = extract_themes(_extracted_kg, limit=5)  # type: ignore[arg-type]
+                themes = extract_themes(_extracted_facts, limit=5)
                 if not themes:
                     print(
                         str(Fore.YELLOW)

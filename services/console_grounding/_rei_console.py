@@ -28,7 +28,10 @@ from services.rei_toei_service import (
     Theme,
 )
 from services.ollama_service import OllamaService
-from services.avatar_intelligence import load_avatar_state as _lav_rei_console
+from services.avatar_intelligence import (
+    load_avatar_state as _lav_rei_console,
+    normalize_extracted_facts as _normalize_extracted_rei,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,26 +106,28 @@ async def _handle_strudel_request(
         # Extract theme from user input
         # Load extracted knowledge graph
         _avatar_state = _lav_rei_console()
-        extracted_kg = _avatar_state.extracted_knowledge
+        # Use normalize_extracted_facts (same pattern as curator.py) to get
+        # List[ExtractedEvidenceFact] — the normalized runtime representation.
+        extracted_facts = _normalize_extracted_rei(_avatar_state)
 
-        if not extracted_kg:
+        if not extracted_facts:
             reply = (
                 "⚠️ Could not load extracted knowledge. "
                 "Try running `--learn` first to extract knowledge from curated articles."
             )
             return reply, history
-        themes = extract_themes(extracted_kg, limit=5)
-        
+        themes = extract_themes(extracted_facts, limit=5)
+
         if not themes:
             reply = (
                 "🎵 I don't have enough knowledge to generate a pattern right now. "
                 "Try running `--learn` to extract themes from curated articles first."
             )
             return reply, history
-        
+
         # Use the first theme for now (can add user selection later)
         theme = themes[0]
-        
+
         # Map theme to pattern template
         template = map_concept_to_pattern(theme, strudel_patterns)
         
@@ -192,23 +197,25 @@ async def _handle_suno_request(
         # Extract theme from user input
         # Load extracted knowledge graph
         _avatar_state = _lav_rei_console()
-        extracted_kg = _avatar_state.extracted_knowledge
+        # Use normalize_extracted_facts (same pattern as curator.py) to get
+        # List[ExtractedEvidenceFact] — the normalized runtime representation.
+        extracted_facts = _normalize_extracted_rei(_avatar_state)
 
-        if not extracted_kg:
+        if not extracted_facts:
             reply = (
                 "⚠️ Could not load extracted knowledge. "
                 "Try running `--learn` first to extract knowledge from curated articles."
             )
             return reply, history
-        themes = extract_themes(extracted_kg, limit=5)
-        
+        themes = extract_themes(extracted_facts, limit=5)
+
         if not themes:
             reply = (
                 "🎵 I need more knowledge to write a song. "
                 "Try running `--learn` to extract themes from curated articles first."
             )
             return reply, history
-        
+
         # Use the first theme
         theme = themes[0]
         

@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from services.avatar_intelligence._models import ExtractedKnowledgeGraph, ExtractedFact
+    from services.avatar_intelligence._models import ExtractedEvidenceFact
 
 logger = logging.getLogger(__name__)
 
@@ -659,82 +659,88 @@ async def query_status_api(
 # ============================================================================
 
 def extract_themes(
-    extracted_knowledge: "ExtractedKnowledgeGraph",
+    extracted_facts: "List[ExtractedEvidenceFact]",
     limit: int = 10
 ) -> List[Theme]:
     """
-    Analyze extracted knowledge to identify recurring themes suitable for music
-    
+    Analyze extracted knowledge facts to identify recurring themes suitable for music.
+
+    Follows the same pattern as curator.py: accepts a flat list of ExtractedEvidenceFact
+    objects (the normalized form returned by normalize_extracted_facts()), not the raw
+    ExtractedKnowledgeGraph container.
+
     Strategy:
     1. Group facts by technical concepts (extracted from tags and entities)
     2. Calculate frequency (how many facts per concept)
-    3. Calculate recency score (weighted by extracted_at timestamp)
+    3. Calculate recency score (weighted by extracted_at timestamp when available)
     4. Return top N themes ranked by composite score
-    
+
     Args:
-        extracted_knowledge: The knowledge graph containing extracted facts
+        extracted_facts: List of ExtractedEvidenceFact objects from normalize_extracted_facts()
         limit: Maximum number of themes to return (default: 10)
-        
+
     Returns:
         List[Theme]: Top themes sorted by relevance (frequency + recency)
     """
     from collections import defaultdict
     from datetime import datetime
-    
-    logger.info(f"Extracting themes from {len(extracted_knowledge.facts)} facts")
-    
+
+    logger.info(f"Extracting themes from {len(extracted_facts)} facts")
+
     # Group facts by concept (tags + normalized entities)
-    concept_groups: Dict[str, List[ExtractedFact]] = defaultdict(list)
-    
-    for fact in extracted_knowledge.facts:
-        # Collect all concepts from tags and entities
+    # Use Any here because ExtractedEvidenceFact is only available under TYPE_CHECKING
+    concept_groups: Dict[str, List[Any]] = defaultdict(list)
+
+    for fact in extracted_facts:
+        # Collect all concepts from tags and entities — use getattr for safety
         concepts = set()
-        
-        # Add tags as-is (already normalized)
-        for tag in fact.tags:
+
+        for tag in (getattr(fact, "tags", []) or []):
             concepts.add(tag.lower().strip())
-        
-        # Add entities (normalized to lowercase, remove common prefixes)
-        for entity in fact.entities:
+
+        for entity in (getattr(fact, "entities", []) or []):
             normalized = entity.lower().strip()
-            # Skip very generic entities
             if len(normalized) > 2 and normalized not in {"the", "a", "an"}:
                 concepts.add(normalized)
-        
-        # Group fact under each concept
+
         for concept in concepts:
             concept_groups[concept].append(fact)
-    
+
     logger.info(f"Identified {len(concept_groups)} unique concepts")
-    
+
     # Calculate scores for each concept
     now = datetime.now()
     scored_concepts: List[tuple[str, int, float, List[str]]] = []
-    
+
     for concept, facts in concept_groups.items():
         frequency = len(facts)
-        
-        # Calculate recency score (newer facts score higher)
-        # Weight: facts from last 30 days = 1.0, older = exponential decay
+
+        # Calculate recency score (newer facts score higher).
+        # ExtractedEvidenceFact may not carry extracted_at; fall back to neutral 0.5.
         recency_scores = []
         for fact in facts:
-            try:
-                extracted_dt = datetime.fromisoformat(fact.extracted_at.replace("Z", "+00:00"))
-                days_ago = (now - extracted_dt.replace(tzinfo=None)).days
-                # Exponential decay: score = e^(-days/30)
-                import math
-                recency = math.exp(-days_ago / 30.0)
-                recency_scores.append(recency)
-            except ValueError:
-                # Fallback for malformed timestamp strings
+            extracted_at = getattr(fact, "extracted_at", None)
+            if extracted_at:
+                try:
+                    extracted_dt = datetime.fromisoformat(extracted_at.replace("Z", "+00:00"))
+                    days_ago = (now - extracted_dt.replace(tzinfo=None)).days
+                    import math
+                    recency = math.exp(-days_ago / 30.0)
+                    recency_scores.append(recency)
+                except (ValueError, TypeError):
+                    recency_scores.append(0.5)
+            else:
                 recency_scores.append(0.5)
-        
+
         avg_recency = sum(recency_scores) / len(recency_scores) if recency_scores else 0.5
-        
-        # Collect all evidence IDs for this concept
-        # Facts are ExtractedFact objects (from ExtractedKnowledgeGraph.facts) — use fact.id directly
-        evidence_ids = [fact.id for fact in facts]
-        
+
+        # Use evidence_id (stable ID on ExtractedEvidenceFact) as the evidence reference.
+        # Fall back to source_fact_id if evidence_id is absent (defensive).
+        evidence_ids = [
+            getattr(fact, "evidence_id", None) or getattr(fact, "source_fact_id", "")
+            for fact in facts
+        ]
+
         scored_concepts.append((concept, frequency, avg_recency, evidence_ids))
     
     # Sort by composite score: frequency * recency
@@ -1073,28 +1079,29 @@ Be specific to the theme. Use technical language poetically. Think cyberpunk AI 
 
 def validate_lyrics_with_dot(
     lyrics: Lyrics,
-    extracted_knowledge: "ExtractedKnowledgeGraph"
+    extracted_facts: "List[ExtractedEvidenceFact]",
 ) -> LyricsValidationResult:
     """
-    Validate lyrics against extracted knowledge using Derivative of Truth (DoT) scoring
-    
-    This function extracts factual claims from lyrics and checks them against
-    the knowledge base to ensure truthfulness and evidence grounding.
-    
+    Validate lyrics against extracted knowledge using Derivative of Truth (DoT) scoring.
+
+    Follows the same pattern as curator.py: accepts a flat list of ExtractedEvidenceFact
+    objects (the normalized form returned by normalize_extracted_facts()), not the raw
+    ExtractedKnowledgeGraph container.
+
     Args:
         lyrics: The structured lyrics to validate
-        extracted_knowledge: Knowledge graph with extracted facts
-        
+        extracted_facts: List of ExtractedEvidenceFact objects from normalize_extracted_facts()
+
     Returns:
         LyricsValidationResult: Validation result with flagged claims and truth scores
     """
     from services.derivative_of_truth._scoring import score_claim_with_truth_gradient
     from services.derivative_of_truth._models import EvidencePath
-    
+
     logger.info("Validating lyrics with Derivative of Truth")
-    
+
     config = ReiToeiConfig()
-    
+
     # If DoT validation is disabled, return passing result
     if not config.dot_validation_enabled:
         logger.info("DoT validation disabled - skipping")
@@ -1105,7 +1112,7 @@ def validate_lyrics_with_dot(
             overall_truth_score=1.0,
             warnings=["DoT validation disabled"]
         )
-    
+
     # Combine all lyric sections into sentences
     all_text = "\n".join([
         lyrics.verse_1,
@@ -1115,11 +1122,9 @@ def validate_lyrics_with_dot(
         lyrics.breakdown or "",
         lyrics.outro or ""
     ])
-    
-    # Extract potential factual claims (sentences with technical terms)
-    # For lyrics, we focus on claims that contain technical assertions
+
     sentences = [s.strip() for s in all_text.split("\n") if s.strip()]
-    
+
     # Filter for sentences with technical vocabulary (indicators of factual claims)
     technical_keywords = [
         "algorithm", "data", "system", "process", "code", "compile",
@@ -1127,18 +1132,16 @@ def validate_lyrics_with_dot(
         "neural", "model", "train", "inference", "optimize", "kernel",
         "memory", "cpu", "gpu", "bandwidth", "latency", "throughput"
     ]
-    
+
     claims = []
     for sentence in sentences:
         sentence_lower = sentence.lower()
         if any(keyword in sentence_lower for keyword in technical_keywords):
-            # Skip poetic metaphors that don't make factual assertions
-            # (e.g., "frequencies collide" is metaphorical, not factual)
             if not any(metaphor in sentence_lower for metaphor in [
                 "collide", "fade", "whisper", "echo", "shimmer", "pulse"
             ]):
                 claims.append(sentence)
-    
+
     if not claims:
         logger.info("No technical claims found in lyrics - validation passed")
         return LyricsValidationResult(
@@ -1148,44 +1151,44 @@ def validate_lyrics_with_dot(
             overall_truth_score=1.0,
             warnings=["No technical claims detected in lyrics"]
         )
-    
+
     logger.info(f"Validating {len(claims)} technical claims from lyrics")
-    
-    # For each claim, build evidence paths from extracted knowledge
+
     flagged_claims = []
     truth_gradients: Dict[str, float] = {}
-    
+
     for claim in claims:
-        # Find relevant facts from extracted knowledge
+        # Find relevant facts from the normalized extracted facts list
         relevant_facts = []
         claim_lower = claim.lower()
-        
-        for fact in extracted_knowledge.facts:
-            # Check if fact is relevant to claim (simple keyword overlap)
-            fact_keywords = set(fact.statement.lower().split())
+
+        for fact in extracted_facts:
+            fact_statement = getattr(fact, "statement", "") or ""
+            fact_keywords = set(fact_statement.lower().split())
             claim_keywords = set(claim_lower.split())
-            
-            # Calculate overlap
+
             overlap = len(fact_keywords & claim_keywords)
-            if overlap >= 2:  # At least 2 keywords in common
+            if overlap >= 2:
                 relevant_facts.append((fact, overlap))
-        
-        # Sort by overlap (most relevant first)
+
         relevant_facts.sort(key=lambda x: x[1], reverse=True)
-        
+
         # Build evidence paths (limit to top 5 most relevant facts)
         evidence_paths = []
         for fact, overlap in relevant_facts[:5]:
-            # Map fact confidence to credibility
             credibility_map = {"high": 0.9, "medium": 0.7, "low": 0.5}
-            credibility = credibility_map.get(fact.confidence, 0.7)
-            
-            # Calculate claim-evidence alignment (normalized overlap)
-            total_keywords = len(set(claim_lower.split()) | set(fact.statement.lower().split()))
+            fact_confidence = getattr(fact, "confidence", "medium")
+            credibility = credibility_map.get(fact_confidence, 0.7)
+
+            fact_statement = getattr(fact, "statement", "") or ""
+            total_keywords = len(set(claim_lower.split()) | set(fact_statement.lower().split()))
             alignment = overlap / total_keywords if total_keywords > 0 else 0.0
-            
+
+            # Use evidence_id as the stable reference (matches curator pattern)
+            fact_ref = getattr(fact, "evidence_id", None) or getattr(fact, "source_fact_id", "unknown")
+
             evidence_path = EvidencePath(
-                source=f"extracted_fact_{fact.id}",
+                source=f"extracted_fact_{fact_ref}",
                 evidence_type="external_source",
                 reasoning_type="direct_evidence",
                 credibility=credibility,
