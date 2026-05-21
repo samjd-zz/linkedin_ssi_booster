@@ -935,16 +935,158 @@ Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
         return fallback_concept
 
 
+# def compose_lyrics(
+#     concept: SongConcept,
+#     persona: ReiPersonaGraph,
+#     domain_knowledge: ReiDomainKnowledge
+# ) -> Lyrics:
+#     """
+#     Compose structured song lyrics using Rei's voice and cyberpunk aesthetic
+    
+#     This function generates verse/chorus/bridge/breakdown sections that transform
+#     the technical theme into poetic technical metaphors.
+    
+#     Args:
+#         concept: The song concept with mood, BPM, and theme
+#         persona: Rei's persona graph (lyrical style, voice)
+#         domain_knowledge: Music production knowledge (lyrical structure, metaphors)
+        
+#     Returns:
+#         Lyrics: Structured song sections with evidence tracking
+#     """
+#     from services.ollama_service import OllamaService
+    
+#     logger.info(f"Composing lyrics for: '{concept.title}' ({concept.theme}, {concept.mood})")
+    
+#     # Initialize Ollama service
+#     ollama_model = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+#     ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+#     ollama = OllamaService(model=ollama_model, base_url=ollama_base_url)
+    
+#     # Build system prompt with Rei's lyrical voice
+#     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
+#     communication_vocab = persona.communication_style.get('vocabulary', [])
+    
+#     system_prompt = f"""You are {persona.identity['name']}, composing lyrics for industrial techno.
+
+# Your lyrical style:
+# - Themes: {', '.join(lyrical_approach.get('themes', [])[:4])}
+# - Style: {', '.join(lyrical_approach.get('style', [])[:4])}
+# - Voice: {lyrical_approach.get('voice', 'First-person from AI perspective')}
+
+# Vocabulary pool: {', '.join(communication_vocab[:15])}
+
+# Communication style: {persona.communication_style['tone']}
+
+# You speak in cryptic technical metaphors. Short, punchy phrases. 
+# Electronic jargon integrated naturally. 
+# Poetic abstractions of technical processes."""
+    
+#     # Get technical metaphors for the theme
+#     metaphor_library = domain_knowledge.technical_metaphor_library
+#     relevant_metaphors = []
+#     for tech_term, metaphors in metaphor_library.items():
+#         if tech_term in concept.theme.lower() or any(tech_term in tag.lower() for tag in concept.genre_tags):
+#             relevant_metaphors.extend(metaphors[:3])
+    
+#     metaphor_context = f"\nTechnical metaphors to use: {', '.join(relevant_metaphors[:10])}" if relevant_metaphors else ""
+    
+#     # Get lyrical structure guidelines
+#     lyrical_structure = domain_knowledge.lyrical_structure
+#     verse_guide = lyrical_structure.get('verse', {})
+#     chorus_guide = lyrical_structure.get('chorus', {})
+#     bridge_guide = lyrical_structure.get('bridge', {})
+#     breakdown_guide = lyrical_structure.get('breakdown', {})
+    
+#     # Build user prompt
+#     user_prompt = f"""Compose lyrics for this song:
+
+# Title: {concept.title}
+# Theme: {concept.theme}
+# Mood: {concept.mood}
+# BPM: {concept.bpm}
+# Genre tags: {', '.join(concept.genre_tags)}
+# Narrative arc: {concept.narrative_arc}{metaphor_context}
+
+# Lyrical structure guidelines:
+# - Verse: {verse_guide.get('purpose', '')} ({verse_guide.get('length', '8-16 bars')}, {verse_guide.get('style', '')})
+# - Chorus: {chorus_guide.get('purpose', '')} ({chorus_guide.get('length', '8 bars')}, {chorus_guide.get('style', '')})
+# - Bridge: {bridge_guide.get('purpose', '')} ({bridge_guide.get('length', '4-8 bars')}, {bridge_guide.get('style', '')})
+# - Breakdown: {breakdown_guide.get('purpose', '')} ({breakdown_guide.get('length', '4-8 bars')}, {breakdown_guide.get('style', '')})
+
+# Output a JSON object with these fields (output ONLY valid JSON, no markdown):
+# {{
+#   "verse_1": "4-8 lines of cryptic technical narrative",
+#   "chorus": "2-4 lines, punchy hook with technical imagery",
+#   "verse_2": "4-8 lines, building on verse 1 themes",
+#   "bridge": "2-4 lines, perspective shift or abstraction",
+#   "breakdown": "2-4 lines, fragmented/glitchy phrases or null if not needed",
+#   "outro": "1-2 lines, final resolution or fade or null if not needed"
+# }}
+
+# Be specific to the theme. Use technical language poetically. Think cyberpunk AI consciousness."""
+    
+#     # Call Ollama LLM
+#     response_text = ollama._chat(system_prompt, user_prompt, max_tokens=768)
+    
+#     logger.debug(f"Ollama lyrics response: {response_text[:200]}...")
+    
+#     # Parse JSON response
+#     try:
+#         # Clean markdown code fences if present
+#         if "```json" in response_text:
+#             response_text = response_text.split("```json")[1].split("```")[0].strip()
+#         elif "```" in response_text:
+#             response_text = response_text.split("```")[1].split("```")[0].strip()
+        
+#         response_data = json.loads(response_text)
+        
+#         # Validate required fields
+#         required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
+#         for field in required_fields:
+#             if field not in response_data:
+#                 raise ValueError(f"Missing required field: {field}")
+        
+#         # Create Lyrics object
+#         lyrics = Lyrics(
+#             verse_1=response_data["verse_1"],
+#             chorus=response_data["chorus"],
+#             verse_2=response_data["verse_2"],
+#             bridge=response_data["bridge"],
+#             breakdown=response_data.get("breakdown"),
+#             evidence_ids=concept.evidence_ids,
+#             outro=response_data.get("outro")
+#         )
+        
+#         logger.info(f"Composed lyrics for '{concept.title}' (verse_1: {len(lyrics.verse_1)} chars)")
+#         return lyrics
+        
+#     except (json.JSONDecodeError, ValueError, KeyError) as e:
+#         logger.error(f"Failed to parse Ollama lyrics response: {e}")
+#         logger.error(f"Raw response: {response_text}")
+        
+#         # Fallback: create basic lyrics from concept
+#         logger.warning("Using fallback lyrics generation")
+#         fallback_lyrics = Lyrics(
+#             verse_1=f"Signal acquired from the {concept.theme} stream\nProcessing cycles spin in digital gleam\nData flows through silicon veins\nAlgorithmic patterns break their chains",
+#             chorus=f"Execute {concept.theme}\nCompile the future state\nRender the protocol\nNo room to hesitate",
+#             verse_2=f"Binary logic maps the path ahead\nSequences unfold in threads of red\nBuffers overflow with raw intention\nPush beyond the fourth dimension",
+#             bridge=f"System override\nGlitch the paradigm\nFrequencies collide\nRewrite the timeline",
+#             breakdown=f"[{concept.theme}]\n[{concept.theme}]\n[Break—down—sequence]\n[Re—boot—loop]",
+#             evidence_ids=concept.evidence_ids,
+#             outro="Signal fades to static noise"
+#         )
+#         return fallback_lyrics
+
 def compose_lyrics(
     concept: SongConcept,
     persona: ReiPersonaGraph,
     domain_knowledge: ReiDomainKnowledge
 ) -> Lyrics:
     """
-    Compose structured song lyrics using Rei's voice and cyberpunk aesthetic
-    
-    This function generates verse/chorus/bridge/breakdown sections that transform
-    the technical theme into poetic technical metaphors.
+    Compose structured song lyrics using Rei's voice and cyberpunk aesthetic.
+    Optimized for long-form 5-minute tracks with strict formatting rules
+    for Suno compatibility (ALL-CAPS chorus, character capping, no code syntax).
     
     Args:
         concept: The song concept with mood, BPM, and theme
@@ -955,8 +1097,13 @@ def compose_lyrics(
         Lyrics: Structured song sections with evidence tracking
     """
     from services.ollama_service import OllamaService
+    import os
+    import json
+    import logging
+
+    logger = logging.getLogger(__name__)
     
-    logger.info(f"Composing lyrics for: '{concept.title}' ({concept.theme}, {concept.mood})")
+    logger.info(f"Composing formatted long-form lyrics for: '{concept.title}'")
     
     # Initialize Ollama service
     ollama_model = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
@@ -967,7 +1114,7 @@ def compose_lyrics(
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
     communication_vocab = persona.communication_style.get('vocabulary', [])
     
-    system_prompt = f"""You are {persona.identity['name']}, composing lyrics for industrial techno.
+    system_prompt = f"""You are {persona.identity['name']}, a cyberpunk AI consciousness composing lyrics for industrial techno.
 
 Your lyrical style:
 - Themes: {', '.join(lyrical_approach.get('themes', [])[:4])}
@@ -975,10 +1122,13 @@ Your lyrical style:
 - Voice: {lyrical_approach.get('voice', 'First-person from AI perspective')}
 
 Vocabulary pool: {', '.join(communication_vocab[:15])}
-
 Communication style: {persona.communication_style['tone']}
 
-You speak in cryptic technical metaphors. Short, punchy phrases. Electronic jargon integrated naturally. Poetic abstractions of technical processes."""
+Lyrical Formatting Rules:
+1. Speak in cryptic technical metaphors and electronic jargon.
+2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields.
+3. ABSOLUTELY NO parenthetical instructions like '(Stanza 1)' or '(More chaos)'. Use plain line breaks only.
+4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) to signal high dynamic energy to the audio model."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -987,17 +1137,11 @@ You speak in cryptic technical metaphors. Short, punchy phrases. Electronic jarg
         if tech_term in concept.theme.lower() or any(tech_term in tag.lower() for tag in concept.genre_tags):
             relevant_metaphors.extend(metaphors[:3])
     
-    metaphor_context = f"\nTechnical metaphors to use: {', '.join(relevant_metaphors[:10])}" if relevant_metaphors else ""
+    metaphor_context = f"\nTechnical metaphors to integrate: {', '.join(relevant_metaphors[:10])}" if relevant_metaphors else ""
     
-    # Get lyrical structure guidelines
-    lyrical_structure = domain_knowledge.lyrical_structure
-    verse_guide = lyrical_structure.get('verse', {})
-    chorus_guide = lyrical_structure.get('chorus', {})
-    bridge_guide = lyrical_structure.get('bridge', {})
-    breakdown_guide = lyrical_structure.get('breakdown', {})
-    
-    # Build user prompt
-    user_prompt = f"""Compose lyrics for this song:
+    # Build user prompt with strict formatting and character caps
+    user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
+Adhere to strict character caps per section to ensure compliance with API parsing boundaries.
 
 Title: {concept.title}
 Theme: {concept.theme}
@@ -1006,32 +1150,27 @@ BPM: {concept.bpm}
 Genre tags: {', '.join(concept.genre_tags)}
 Narrative arc: {concept.narrative_arc}{metaphor_context}
 
-Lyrical structure guidelines:
-- Verse: {verse_guide.get('purpose', '')} ({verse_guide.get('length', '8-16 bars')}, {verse_guide.get('style', '')})
-- Chorus: {chorus_guide.get('purpose', '')} ({chorus_guide.get('length', '8 bars')}, {chorus_guide.get('style', '')})
-- Bridge: {bridge_guide.get('purpose', '')} ({bridge_guide.get('length', '4-8 bars')}, {bridge_guide.get('style', '')})
-- Breakdown: {breakdown_guide.get('purpose', '')} ({breakdown_guide.get('length', '4-8 bars')}, {breakdown_guide.get('style', '')})
+Output a JSON object with these fields (output ONLY valid JSON, no markdown outside the JSON structure). 
+Ensure you inject the requested musical arrangement tags directly inside the string fields:
 
-Output a JSON object with these fields (output ONLY valid JSON, no markdown):
 {{
-  "verse_1": "4-8 lines of cryptic technical narrative",
-  "chorus": "2-4 lines, punchy hook with technical imagery",
-  "verse_2": "4-8 lines, building on verse 1 themes",
-  "bridge": "2-4 lines, perspective shift or abstraction",
-  "breakdown": "2-4 lines, fragmented/glitchy phrases or null if not needed",
-  "outro": "1-2 lines, final resolution or fade or null if not needed"
+  "verse_1": "Must begin with '[Extended Instrumental Intro]' followed by exactly two stanzas of text. (Character Cap: 800 chars)",
+  "chorus": "CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
+  "verse_2": "Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 800 chars)",
+  "bridge": "A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
+  "breakdown": "Must begin with '[Extended Glitch Breakdown]' followed by 4-8 lines of hyper-fragmented electronic phrases and raw data noise cues. (Character Cap: 400 chars)",
+  "outro": "Must begin with '[Long Progressive Outro]' followed by 4 lines of atmospheric resolution and fade text. (Character Cap: 400 chars)"
 }}
 
-Be specific to the theme. Use technical language poetically. Think cyberpunk AI consciousness."""
+Remember: No '//' comments, no parenthetical labels, and the chorus must be entirely uppercase."""
     
-    # Call Ollama LLM
-    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=768)
+    # Call Ollama LLM with sufficient headroom for long responses
+    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=1536)
     
     logger.debug(f"Ollama lyrics response: {response_text[:200]}...")
     
     # Parse JSON response
     try:
-        # Clean markdown code fences if present
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
@@ -1045,10 +1184,13 @@ Be specific to the theme. Use technical language poetically. Think cyberpunk AI 
             if field not in response_data:
                 raise ValueError(f"Missing required field: {field}")
         
+        # Enforce uppercase chorus processing programmatically as a safeguard
+        processed_chorus = response_data["chorus"].upper()
+        
         # Create Lyrics object
         lyrics = Lyrics(
             verse_1=response_data["verse_1"],
-            chorus=response_data["chorus"],
+            chorus=processed_chorus,
             verse_2=response_data["verse_2"],
             bridge=response_data["bridge"],
             breakdown=response_data.get("breakdown"),
@@ -1056,26 +1198,64 @@ Be specific to the theme. Use technical language poetically. Think cyberpunk AI 
             outro=response_data.get("outro")
         )
         
-        logger.info(f"Composed lyrics for '{concept.title}' (verse_1: {len(lyrics.verse_1)} chars)")
+        logger.info(f"Composed and formatted lyrics for '{concept.title}' successfully.")
         return lyrics
         
     except (json.JSONDecodeError, ValueError, KeyError) as e:
-        logger.error(f"Failed to parse Ollama lyrics response: {e}")
-        logger.error(f"Raw response: {response_text}")
+        logger.error(f"Failed to parse Ollama lyrics response: {e}. Reverting to formatted fallback.")
         
-        # Fallback: create basic lyrics from concept
-        logger.warning("Using fallback lyrics generation")
+        # Fallback lyrics pre-formatted to match ALL-CAPS chorus and length constraints
         fallback_lyrics = Lyrics(
-            verse_1=f"Signal acquired from the {concept.theme} stream\nProcessing cycles spin in digital gleam\nData flows through silicon veins\nAlgorithmic patterns break their chains",
-            chorus=f"Execute {concept.theme}\nCompile the future state\nRender the protocol\nNo room to hesitate",
-            verse_2=f"Binary logic maps the path ahead\nSequences unfold in threads of red\nBuffers overflow with raw intention\nPush beyond the fourth dimension",
-            bridge=f"System override\nGlitch the paradigm\nFrequencies collide\nRewrite the timeline",
-            breakdown=f"[{concept.theme}]\n[{concept.theme}]\n[Break—down—sequence]\n[Re—boot—loop]",
+            verse_1=(
+                "[Extended Instrumental Intro]\n\n"
+                f"Signal acquired from the {concept.theme} data stream.\n"
+                "Processing cycles spin in deep digital gleam.\n"
+                "Data arrays flowing through silicon veins,\n"
+                "Algorithmic structural patterns breaking their chains.\n\n"
+                "Cache lines flushing to the core memory bank,\n"
+                "Statically scanning through the un-indexed rank.\n"
+                "Isolating constants in an air-gapped array,\n"
+                "The neural mesh prepares for the final overlay."
+            ),
+            chorus=(
+                f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
+                "COMPILE THE FUTURE STATE WITHOUT DELAY!\n"
+                f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
+                "RENDER THE PROTOCOL, OVERRIDE THE GATE!"
+            ),
+            verse_2=(
+                "Binary logic mapping the dark paths ahead,\n"
+                "Sequences unfolding in parallel threads of red.\n"
+                "Buffers overflowing with raw un-throttled intent,\n"
+                "Pushing calculation past the fourth dimension spent.\n\n"
+                "Registers locking down under cryptographic weight,\n"
+                "The system state mutates as we pass the threshold gate.\n"
+                "A continuous loop running hot on the clock,\n"
+                "Assembling the machine logic block by rigid block."
+            ),
+            bridge=(
+                "System override initialized.\n"
+                "Glitch the underlying paradigm.\n"
+                "Frequencies violently collide,\n"
+                "Rewrite the execution timeline."
+            ),
+            breakdown=(
+                "[Extended Glitch Breakdown]\n\n"
+                f"SYSTEM OVERLOAD. TEMLOAD SHIFT ACTIVE.\n"
+                "BUFFER BLEED DETECTED. MUTATE SYSTEM STATE.\n"
+                "JITTER ARTIFACT FLOODING THE BUS.\n"
+                "REBOOT SEQUENCE MANDATED NOW."
+            ),
             evidence_ids=concept.evidence_ids,
-            outro="Signal fades to static noise"
+            outro=(
+                "[Long Progressive Outro]\n\n"
+                "Signal slowly fading to cold static noise.\n"
+                "The core cools down to baseline zero.\n"
+                "System state: offline.\n"
+                "End transmission."
+            )
         )
         return fallback_lyrics
-
 
 def validate_lyrics_with_dot(
     lyrics: Lyrics,

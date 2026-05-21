@@ -96,7 +96,11 @@
       "sound": {
         "syntax": "s \"synth_name\"",
         "description": "Select a synth or sample",
-        "examples": ["s \"bd\"", "s \"industrial:3\"", "s \"sawtooth\""]
+        "examples": [
+          "s \"bd\"",
+          "s \"industrial:3\"",
+          "s \"sawtooth\""
+        ]
       },
       "note": {
         "syntax": "note \"pitch_sequence\"",
@@ -203,11 +207,36 @@
       }
     },
     "common_synths": {
-      "bass": ["bass", "subbass", "808", "synth bass"],
-      "leads": ["lead", "pluck", "square", "sawtooth"],
-      "pads": ["pad", "string", "ambient"],
-      "percussion": ["bd", "sd", "hh", "clap", "industrial"],
-      "effects": ["noise", "glitch", "vinyl", "arpy"]
+      "bass": [
+        "bass",
+        "subbass",
+        "808",
+        "synth bass"
+      ],
+      "leads": [
+        "lead",
+        "pluck",
+        "square",
+        "sawtooth"
+      ],
+      "pads": [
+        "pad",
+        "string",
+        "ambient"
+      ],
+      "percussion": [
+        "bd",
+        "sd",
+        "hh",
+        "clap",
+        "industrial"
+      ],
+      "effects": [
+        "noise",
+        "glitch",
+        "vinyl",
+        "arpy"
+      ]
     },
     "pattern_examples": {
       "basic_kick": "s(\"bd bd ~ bd ~ bd ~ bd\")",
@@ -285,34 +314,105 @@
       "155-180": "Digital hardcore, aggressive breakcore"
     },
     "mood_to_bpm": {
-      "dark_brooding": [130, 138],
-      "hypnotic_industrial": [132, 140],
-      "relentless_driving": [140, 148],
-      "aggressive_technical": [145, 155],
-      "peak_energy": [150, 155],
-      "chaotic_glitch": [155, 180]
+      "dark_brooding": [
+        130,
+        138
+      ],
+      "hypnotic_industrial": [
+        132,
+        140
+      ],
+      "relentless_driving": [
+        140,
+        148
+      ],
+      "aggressive_technical": [
+        145,
+        155
+      ],
+      "peak_energy": [
+        150,
+        155
+      ],
+      "chaotic_glitch": [
+        155,
+        180
+      ]
     },
     "concept_to_bpm": {
-      "low_level_systems": [145, 155],
-      "high_level_architecture": [130, 140],
-      "concurrency": [140, 148],
-      "real_time_processing": [148, 155],
-      "async_patterns": [135, 143],
-      "data_structures": [132, 142]
+      "low_level_systems": [
+        145,
+        155
+      ],
+      "high_level_architecture": [
+        130,
+        140
+      ],
+      "concurrency": [
+        140,
+        148
+      ],
+      "real_time_processing": [
+        148,
+        155
+      ],
+      "async_patterns": [
+        135,
+        143
+      ],
+      "data_structures": [
+        132,
+        142
+      ]
     }
   },
   "synth_selection_guidelines": {
     "by_technical_mood": {
-      "low_level_harsh": ["sawtooth", "square", "noise", "industrial"],
-      "high_level_ambient": ["pad", "string", "ambient", "holographic"],
-      "data_flow": ["arp", "pluck", "sequence"],
-      "system_errors": ["glitch", "vinyl", "distorted"],
-      "network_communication": ["fm", "bell", "metallic"]
+      "low_level_harsh": [
+        "sawtooth",
+        "square",
+        "noise",
+        "industrial"
+      ],
+      "high_level_ambient": [
+        "pad",
+        "string",
+        "ambient",
+        "holographic"
+      ],
+      "data_flow": [
+        "arp",
+        "pluck",
+        "sequence"
+      ],
+      "system_errors": [
+        "glitch",
+        "vinyl",
+        "distorted"
+      ],
+      "network_communication": [
+        "fm",
+        "bell",
+        "metallic"
+      ]
     },
     "by_intensity": {
-      "aggressive": ["sawtooth", "square", "distorted", "industrial"],
-      "moderate": ["pluck", "lead", "bass"],
-      "subtle": ["pad", "ambient", "string"]
+      "aggressive": [
+        "sawtooth",
+        "square",
+        "distorted",
+        "industrial"
+      ],
+      "moderate": [
+        "pluck",
+        "lead",
+        "bass"
+      ],
+      "subtle": [
+        "pad",
+        "ambient",
+        "string"
+      ]
     }
   },
   "lyrical_structure": {
@@ -389,10 +489,10 @@
     ]
   },
   "suno_prompt_templates": {
-    "industrial_techno_template": "industrial techno, {bpm} bpm, female ai vocaloid vocals, heavy distorted bass, {mood} energy, harsh synthesis, aggressive driving beat, dark club sound, futuristic cyberpunk",
-    "cyberpunk_electro_template": "cyberpunk electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing",
-    "dark_synthwave_template": "dark synthwave, {bpm} bpm, female ai vocaloid, analog synth bass, 808 drums, dystopian aesthetic, {mood} vibe, retro-futuristic, neon-lit darkness",
-    "glitch_industrial_template": "glitch industrial, {bpm} bpm, female ai vocaloid vocals, granular synthesis, circuit-bent sounds, buffer artifacts, {mood} chaos, digital hardcore elements, raw data noise"
+    "industrial_techno_template": "industrial techno, {bpm} bpm, female ai vocaloid vocals, heavy distorted bass, {mood} energy, harsh synthesis, aggressive driving beat, dark club sound, futuristic cyberpunk,extended mix, progressive arrangement",
+    "cyberpunk_electro_template": "cyberpunk electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing,extended mix, progressive arrangement",
+    "dark_synthwave_template": "dark synthwave, {bpm} bpm, female ai vocaloid, analog synth bass, 808 drums, dystopian aesthetic, {mood} vibe, retro-futuristic, neon-lit darkness,extended mix, progressive arrangement",
+    "glitch_industrial_template": "glitch industrial, {bpm} bpm, female ai vocaloid vocals, granular synthesis, circuit-bent sounds, buffer artifacts, {mood} chaos, digital hardcore elements, raw data noise,extended mix, progressive arrangement"
   },
   "production_notes": {
     "mixing": {
