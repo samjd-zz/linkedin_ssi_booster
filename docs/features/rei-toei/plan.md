@@ -684,7 +684,7 @@ class StrudelPatternTemplate:
 ### Phase 1E: CLI Integration (Week 3)
 
 **Duration:** 2-3 days  
-**Status:** ⚠️ PARTIAL (2026-05-20) - CLI flags added, full implementation deferred
+**Status:** ✅ COMPLETE (2026-05-21)
 
 #### Tasks
 
@@ -751,28 +751,31 @@ class StrudelPatternTemplate:
 **Deliverables:**
 
 - ✅ 6 new CLI flags in main.py (argument group added)
-- ⚠️ CLI command handlers for Rei features (placeholder implementation)
-- ⚠️ Output formatting for Suno and Strudel (deferred)
-- ✅ Error handling and user feedback (graceful message directing to console mode)
-- ⏳ Integration tests for CLI workflows (0 tests - deferred to next iteration)
+- ✅ CLI command handlers for Rei features (full async implementation)
+- ✅ Output formatting for Suno and Strudel (coloured terminal output with emoji)
+- ✅ Error handling and user feedback (graceful degradation, clear messages)
+- ✅ Integration tests for CLI workflows (8 tests)
 
 **Success Criteria:**
 
 - ✅ All CLI flags parse correctly
-- ⏳ Generate Suno prompts and Strudel patterns from command line (deferred)
-- ⏳ Preview mode works without side effects (deferred)
-- ⏳ Execute mode successfully calls Strudel MCP agent (deferred)
+- ✅ Generate Suno prompts and Strudel patterns from command line
+- ✅ Preview mode works without side effects (--rei-preview skips save/execute)
+- ✅ Execute mode successfully calls Strudel MCP agent (--rei-execute)
 - ✅ Clear error messages for common failures
 
-**Implementation Notes (2026-05-20):**
+**Implementation Notes (2026-05-21):**
 
-- CLI argument group added to main.py with all 6 flags (--rei-generate, --rei-generate-strudel, --rei-theme, --rei-explain, --rei-preview, --rei-execute)
-- Placeholder handler displays helpful message directing users to console mode (/rei-toei or /rei)
-- Full CLI implementation deferred due to complexity of async workflow integration
-- Console mode provides full functionality - CLI is convenience wrapper
-- Decision: Prioritize console mode quality over CLI completeness for Phase 1
-- Phase 1E will be completed in next iteration with proper async handlers
-- No new tests added (test count remains 646)
+- Full async CLI handlers implemented in main.py (`_handle_rei_generate`, `_handle_rei_generate_strudel`)
+- `--rei-generate`: loads Rei persona/domain, extracts themes from extracted knowledge, generates song concept + lyrics + Suno prompt, displays output, saves JSON to `yt-vid-data/`, optionally submits to Suno API if `SUNO_API_KEY` set
+- `--rei-generate-strudel`: loads pattern library, maps theme to template, generates Strudel code (synchronous), validates syntax, saves to pattern library, optionally executes via MCP agent
+- `--rei-theme`: creates synthetic Theme from CLI string, bypasses knowledge extraction
+- `--rei-preview`: displays output without saving or executing
+- `--rei-explain`: shows DoT score, genre tags, BPM, narrative arc, template reasoning
+- `--rei-execute`: sends StrudelPattern to MCP agent via WebSocket
+- Key fixes: `validate_lyrics_with_dot` (not `validate_lyrical_claims`), `generate_strudel_code` is synchronous (returns `StrudelPattern`), `extract_themes` wraps list in `SimpleNamespace(facts=...)`, `map_concept_to_pattern` None guard with fallback to first template
+- 8 integration tests in `tests/test_rei_cli_flags.py` using `ExitStack` for multi-patch mocking
+- Test count updated: 654 tests passing (646 + 8 new CLI flag tests)
 
 ---
 
@@ -1134,7 +1137,7 @@ def mock_strudel_mcp_agent(monkeypatch):
 | **1B: Suno Pipeline**        | 3-4 days | Week 1 Fri | Week 2 Wed | ✅ Complete |
 | **1C: Strudel Pipeline**     | 3-4 days | Week 2 Thu | Week 3 Tue | ✅ Complete |
 | **1D: Console Integration**  | 2-3 days | Week 3 Wed | Week 3 Fri | ✅ Complete |
-| **1E: CLI Integration**      | 2-3 days | Week 3 Fri | Week 4 Tue | ⚠️ Partial  |
+| **1E: CLI Integration**      | 2-3 days | Week 3 Fri | Week 4 Tue | ✅ Complete |
 | **1F: Testing & Validation** | 2-3 days | Week 4 Wed | Week 4 Fri | ⏳ Pending  |
 | **1G: Documentation**        | 1-2 days | Week 4 Fri | Week 4 Sat | ⏳ Pending  |
 | **Rollout**                  | 2 weeks  | Week 4     | Week 6     | ⏳ Pending  |

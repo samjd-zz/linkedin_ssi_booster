@@ -801,16 +801,7 @@ def main():
                 print(f"    • {name} (not found or is a default category)")
         return
 
-    # Handle Rei Toei CLI commands
-    if args.rei_generate or args.rei_generate_strudel:
-        print(str(Fore.YELLOW) + "\n⚠️  Rei Toei CLI integration is in development (Phase 1E)" + str(Style.RESET_ALL))
-        print("   Use console mode instead: python main.py --console")
-        print("   Then type: /rei-toei or /rei")
-        print()
-        print("   Phase 1E CLI will be completed in the next iteration.")
-        return
-    
-    if not (args.schedule or args.curate or args.console):
+    if not (args.schedule or args.curate or args.console or args.rei_generate or args.rei_generate_strudel):
         parser.print_help()
         return
 
@@ -829,6 +820,267 @@ def main():
 
     if args.console:
         run_console(ai=ai, github_context=_github_context, verify=args.verify, avatar_explain=args.avatar_explain, dot_report=args.dot_report)
+        return
+
+    # Handle Rei Toei CLI commands — Phase 1E full implementation
+    if args.rei_generate or args.rei_generate_strudel:
+        import asyncio
+        import types as _types
+        import uuid as _uuid
+        from services.rei_toei_service import (
+            load_rei_persona,
+            load_rei_domain_knowledge,
+            load_strudel_patterns,
+            extract_themes,
+            generate_song_concept,
+            compose_lyrics,
+            assemble_suno_prompt,
+            submit_to_suno,
+            validate_lyrics_with_dot,
+            map_concept_to_pattern,
+            generate_strudel_code,
+            validate_strudel_syntax,
+            execute_strudel_pattern,
+            save_pattern_to_library,
+            Theme,
+            StrudelPattern,
+        )
+        from services.avatar_intelligence import (
+            load_avatar_state as _lav_rei,
+            normalize_extracted_facts as _nef_rei,
+        )
+
+        async def _handle_rei_generate() -> None:
+            """Suno song generation pipeline."""
+            rei_persona = load_rei_persona()
+            rei_domain = load_rei_domain_knowledge()
+            avatar_state = _lav_rei()
+            extracted_facts = _nef_rei(avatar_state)
+            # extract_themes expects an object with a .facts attribute
+            _extracted_kg = _types.SimpleNamespace(facts=extracted_facts)
+
+            if args.rei_theme:
+                theme = Theme(
+                    id=f"cli_{args.rei_theme.replace(' ', '_')}",
+                    name=args.rei_theme,
+                    technical_concepts=[args.rei_theme],
+                    evidence_ids=[],
+                    frequency=1,
+                    recency_score=1.0,
+                )
+                print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
+            else:
+                themes = extract_themes(_extracted_kg, limit=5)  # type: ignore[arg-type]
+                if not themes:
+                    print(
+                        str(Fore.YELLOW)
+                        + "\u26a0\ufe0f  No themes found in extracted knowledge. "
+                        + "Run --curate --learn first to populate knowledge."
+                        + str(Style.RESET_ALL)
+                    )
+                    return
+                theme = themes[0]
+                print(str(Fore.CYAN) + f"\U0001f3b5 Top theme: {theme.name} (frequency={theme.frequency})" + str(Style.RESET_ALL))
+
+            print(str(Fore.CYAN) + "\U0001f3bc Generating song concept..." + str(Style.RESET_ALL))
+            # generate_song_concept creates its own OllamaService internally
+            concept = generate_song_concept(theme, rei_persona, rei_domain)
+
+            print(str(Fore.CYAN) + "\u270d\ufe0f  Composing lyrics..." + str(Style.RESET_ALL))
+            # compose_lyrics creates its own OllamaService internally
+            lyrics = compose_lyrics(concept, rei_persona, rei_domain)
+
+            suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
+
+            # Display
+            print(str(Fore.MAGENTA) + str(Style.BRIGHT) + "\n\U0001f3b5 REI TOEI \u2014 SUNO SONG" + str(Style.RESET_ALL))
+            print(str(Fore.WHITE) + str(Style.BRIGHT) + f"Title: {suno_prompt.title}" + str(Style.RESET_ALL))
+            print(str(Fore.CYAN) + f"Tags:  {suno_prompt.suno_prompt}" + str(Style.RESET_ALL))
+            print()
+            print(str(Fore.WHITE) + "Lyrics:" + str(Style.RESET_ALL))
+            print(suno_prompt.lyrics)
+
+            if args.rei_explain:
+                print(str(Fore.YELLOW) + "\n\U0001f4ca Generation Reasoning:" + str(Style.RESET_ALL))
+                print(f"  Theme       : {theme.name}")
+                print(f"  Mood        : {concept.mood}")
+                print(f"  BPM         : {concept.bpm}")
+                print(f"  Genre tags  : {', '.join(concept.genre_tags)}")
+                print(f"  Narrative   : {concept.narrative_arc}")
+                if suno_prompt.evidence_ids:
+                    print(f"  Evidence IDs: {', '.join(suno_prompt.evidence_ids[:5])}")
+                dot = validate_lyrics_with_dot(lyrics, _extracted_kg)  # type: ignore[arg-type]
+                _dot_col = (
+                    str(Fore.GREEN) if dot.overall_truth_score >= 0.7
+                    else (str(Fore.YELLOW) if dot.overall_truth_score >= 0.4 else str(Fore.RED))
+                )
+                print(_dot_col + f"  DoT score   : {dot.overall_truth_score:.2f}" + str(Style.RESET_ALL))
+                if dot.flagged_claims:
+                    print(
+                        str(Fore.YELLOW)
+                        + f"  Flagged     : {'; '.join(dot.flagged_claims[:3])}"
+                        + str(Style.RESET_ALL)
+                    )
+
+            if args.rei_preview:
+                print(str(Fore.YELLOW) + "\n\U0001f441\ufe0f  Preview mode \u2014 not saved or submitted." + str(Style.RESET_ALL))
+                return
+
+            # Save to file
+            output_dir = Path("yt-vid-data")
+            output_dir.mkdir(exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_title = re.sub(r"[^\w\-]", "_", suno_prompt.title[:60]).strip("_")
+            output_path = output_dir / f"rei_{timestamp}_{safe_title}_suno.json"
+            with open(output_path, "w", encoding="utf-8") as _f:
+                json.dump(
+                    {
+                        "song_id": suno_prompt.song_id,
+                        "title": suno_prompt.title,
+                        "suno_prompt": suno_prompt.suno_prompt,
+                        "lyrics": suno_prompt.lyrics,
+                        "evidence_ids": suno_prompt.evidence_ids,
+                        "generated_at": suno_prompt.generated_at,
+                    },
+                    _f,
+                    indent=2,
+                )
+            print(str(Fore.GREEN) + f"\n\u2705  Saved to: {output_path}" + str(Style.RESET_ALL))
+
+            # Submit to Suno if API key available
+            suno_api_key = os.getenv("SUNO_API_KEY")
+            if suno_api_key:
+                print(str(Fore.CYAN) + "\U0001f680 Submitting to Suno API..." + str(Style.RESET_ALL))
+                try:
+                    task = await submit_to_suno(suno_prompt, wait_for_completion=False, api_key=suno_api_key)
+                    print(str(Fore.GREEN) + f"\u2705  Suno task submitted: {task.id}" + str(Style.RESET_ALL))
+                    print(f"   Status: {task.status}")
+                    if task.audio_url:
+                        print(f"   Audio: {task.audio_url}")
+                except Exception as _suno_err:
+                    print(str(Fore.YELLOW) + f"\u26a0\ufe0f  Suno submission failed: {_suno_err}" + str(Style.RESET_ALL))
+            else:
+                print(
+                    str(Fore.YELLOW)
+                    + "\n\U0001f4a1 Set SUNO_API_KEY in .env to submit directly to Suno API."
+                    + str(Style.RESET_ALL)
+                )
+
+        async def _handle_rei_generate_strudel() -> None:
+            """Strudel pattern generation pipeline."""
+            rei_persona = load_rei_persona()
+            rei_domain = load_rei_domain_knowledge()
+            pattern_library = load_strudel_patterns()
+            avatar_state = _lav_rei()
+            extracted_facts = _nef_rei(avatar_state)
+            _extracted_kg = _types.SimpleNamespace(facts=extracted_facts)
+
+            if args.rei_theme:
+                theme = Theme(
+                    id=f"cli_{args.rei_theme.replace(' ', '_')}",
+                    name=args.rei_theme,
+                    technical_concepts=[args.rei_theme],
+                    evidence_ids=[],
+                    frequency=1,
+                    recency_score=1.0,
+                )
+                print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
+            else:
+                themes = extract_themes(_extracted_kg, limit=5)  # type: ignore[arg-type]
+                if not themes:
+                    print(
+                        str(Fore.YELLOW)
+                        + "\u26a0\ufe0f  No themes found in extracted knowledge. "
+                        + "Run --curate --learn first to populate knowledge."
+                        + str(Style.RESET_ALL)
+                    )
+                    return
+                theme = themes[0]
+                print(str(Fore.CYAN) + f"\U0001f3b5 Top theme: {theme.name} (frequency={theme.frequency})" + str(Style.RESET_ALL))
+
+            template = map_concept_to_pattern(theme, pattern_library)
+            if template is None:
+                # Fallback: use first available template
+                if pattern_library.templates:
+                    template = pattern_library.templates[0]
+                else:
+                    print(str(Fore.YELLOW) + "\u26a0\ufe0f  No Strudel pattern templates available." + str(Style.RESET_ALL))
+                    return
+
+            print(
+                str(Fore.CYAN)
+                + f"\U0001f3bc Generating Strudel pattern (template: {template.name})..."
+                + str(Style.RESET_ALL)
+            )
+            # generate_strudel_code is synchronous and returns a StrudelPattern object
+            strudel_pattern = generate_strudel_code(theme, template, rei_persona, rei_domain)
+            strudel_code = strudel_pattern.strudel_code
+            validation = validate_strudel_syntax(strudel_code)
+
+            # Display
+            print(str(Fore.MAGENTA) + str(Style.BRIGHT) + "\n\U0001f3b5 REI TOEI \u2014 STRUDEL PATTERN" + str(Style.RESET_ALL))
+            print(str(Fore.WHITE) + str(Style.BRIGHT) + f"Theme   : {theme.name}" + str(Style.RESET_ALL))
+            print(str(Fore.CYAN) + f"Template: {template.name}" + str(Style.RESET_ALL))
+            print()
+            print(str(Fore.WHITE) + "Strudel Code:" + str(Style.RESET_ALL))
+            print(str(Fore.GREEN) + strudel_code + str(Style.RESET_ALL))
+
+            if validation.valid:
+                print(str(Fore.GREEN) + "\n\u2705  Syntax valid" + str(Style.RESET_ALL))
+            else:
+                print(
+                    str(Fore.YELLOW)
+                    + f"\n\u26a0\ufe0f  Syntax warnings: {'; '.join(validation.errors)}"
+                    + str(Style.RESET_ALL)
+                )
+
+            if args.rei_explain:
+                print(str(Fore.YELLOW) + "\n\U0001f4ca Generation Reasoning:" + str(Style.RESET_ALL))
+                print(f"  Theme        : {theme.name}")
+                print(f"  Template     : {template.name}")
+                print(f"  Description  : {template.description}")
+                print(f"  Suitable for : {', '.join(template.suitable_for_concepts[:3])}")
+                if theme.evidence_ids:
+                    print(f"  Evidence IDs : {', '.join(theme.evidence_ids[:5])}")
+
+            if args.rei_preview:
+                print(str(Fore.YELLOW) + "\n\U0001f441\ufe0f  Preview mode \u2014 not saved or executed." + str(Style.RESET_ALL))
+                return
+
+            # Save pattern to library (strudel_pattern already has all fields set)
+            save_pattern_to_library(strudel_pattern)
+            print(str(Fore.GREEN) + f"\n\u2705  Pattern saved to library (ID: {strudel_pattern.pattern_id})" + str(Style.RESET_ALL))
+
+            # Execute if requested
+            if args.rei_execute:
+                print(str(Fore.CYAN) + "\U0001f680 Executing Strudel pattern via MCP agent..." + str(Style.RESET_ALL))
+                try:
+                    # execute_strudel_pattern takes a StrudelPattern object
+                    result = await execute_strudel_pattern(strudel_pattern)
+                    if result.success:
+                        print(str(Fore.GREEN) + "\u2705  Pattern executing in Strudel!" + str(Style.RESET_ALL))
+                        if result.message:
+                            print(str(Fore.CYAN) + f"   {result.message}" + str(Style.RESET_ALL))
+                    else:
+                        print(str(Fore.YELLOW) + f"\u26a0\ufe0f  Execution failed: {result.error}" + str(Style.RESET_ALL))
+                except Exception as _exec_err:
+                    print(
+                        str(Fore.YELLOW)
+                        + f"\u26a0\ufe0f  Strudel MCP agent unavailable: {_exec_err}"
+                        + str(Style.RESET_ALL)
+                    )
+                    print("   Start the Strudel service: bash run.sh --profile full up -d")
+
+        try:
+            if args.rei_generate:
+                asyncio.run(_handle_rei_generate())
+            elif args.rei_generate_strudel:
+                asyncio.run(_handle_rei_generate_strudel())
+        except KeyboardInterrupt:
+            print("\nRei Toei generation cancelled.")
+        except Exception as _rei_err:
+            logger.error("Rei Toei CLI error: %s", _rei_err)
+            print(str(Fore.RED) + f"\n\u274c  Rei Toei error: {_rei_err}" + str(Style.RESET_ALL))
         return
 
     if args.curate:
