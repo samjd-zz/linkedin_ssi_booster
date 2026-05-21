@@ -372,12 +372,13 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats")
+            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats, /rei, /rei-toei")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
             print("  /verify — toggle DoT + similarity verification on/off")
             print("  /avatar-explain — toggle avatar-explain report on/off")
             print("  /dot-report — toggle DoT report on/off")
             print("  /graph-stats — show knowledge graph statistics")
+            print("  /rei or /rei-toei — switch to Rei Toei music avatar mode")
             continue
         if cmd == "/reset":
             history.clear()
@@ -416,6 +417,27 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 summary = _kg.summary()
                 print(f"  Persona ID: {summary['persona_id']}")
                 print_graph_statistics(summary)
+            continue
+        
+        # Rei Toei routing: /rei or /rei-toei commands
+        if cmd.startswith("/rei-toei") or cmd.startswith("/rei"):
+            from services.console_grounding._rei_console import handle_rei_console
+            import asyncio
+            
+            # Extract message after command (if any)
+            rei_input = user_input[len("/rei-toei"):].strip() if user_input.lower().startswith("/rei-toei") else user_input[len("/rei"):].strip()
+            
+            # If no input, provide welcome message
+            if not rei_input:
+                rei_input = "Hello! Tell me about yourself."
+            
+            try:
+                reply, history = asyncio.run(handle_rei_console(rei_input, ai, history, max_tokens=600))
+                print(str(Fore.MAGENTA) + f"Rei> {reply}" + str(Style.RESET_ALL))
+                speak_text(reply)
+            except Exception as rei_err:
+                logger.error(f"Rei console error: {rei_err}")
+                print(str(Fore.RED) + f"⚠️ Rei error: {rei_err}" + str(Style.RESET_ALL))
             continue
 
         # Parse query to determine routing mode

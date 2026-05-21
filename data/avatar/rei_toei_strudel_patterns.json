@@ -1,0 +1,349 @@
+{
+  "schemaVersion": "1.0",
+  "pattern_library": [
+    {
+      "template_id": "recursion_nested_01",
+      "name": "Recursive Depth",
+      "description": "Nested patterns with self-similar structures representing recursive function calls",
+      "suitable_for_concepts": [
+        "recursion",
+        "tree traversal",
+        "nested data structures",
+        "stack operations"
+      ],
+      "code_template": "stack(\n  note(\"{base_note}\").fast({outer_speed}),\n  note(\"{base_note}\").fast({outer_speed} * 2).gain(0.7),\n  note(\"{base_note}\").fast({outer_speed} * 4).gain(0.5),\n  s(\"{synth}\").lpf({cutoff})\n).every({cycle_count}, x => x.rev())",
+      "parameters": {
+        "base_note": "c3 e3 g3 c4",
+        "outer_speed": 2,
+        "synth": "sawtooth",
+        "cutoff": 800,
+        "cycle_count": 4
+      },
+      "example": "// Recursion: nested call stack\nstack(\n  note(\"c3 e3 g3 c4\").fast(2),\n  note(\"c3 e3 g3 c4\").fast(4).gain(0.7),\n  note(\"c3 e3 g3 c4\").fast(8).gain(0.5),\n  s(\"sawtooth\").lpf(800)\n).every(4, x => x.rev())"
+    },
+    {
+      "template_id": "async_await_01",
+      "name": "Interleaved Async",
+      "description": "Time-offset sequences representing async/await patterns and promise resolution",
+      "suitable_for_concepts": [
+        "async await",
+        "promises",
+        "event loop",
+        "non-blocking IO"
+      ],
+      "code_template": "stack(\n  note(\"{melody_1}\").s(\"{synth_1}\"),\n  note(\"{melody_2}\").s(\"{synth_2}\").early(0.25),\n  note(\"{melody_3}\").s(\"{synth_3}\").early(0.5)\n).gain({gain})",
+      "parameters": {
+        "melody_1": "c3 ~ e3 ~ g3 ~ c4 ~",
+        "melody_2": "~ e3 ~ g3 ~ c4 ~ e4",
+        "melody_3": "~ ~ g3 ~ ~ c4 ~ ~",
+        "synth_1": "pluck",
+        "synth_2": "pluck",
+        "synth_3": "pluck",
+        "gain": 0.7
+      },
+      "example": "// Async/await: interleaved execution\nstack(\n  note(\"c3 ~ e3 ~ g3 ~ c4 ~\").s(\"pluck\"),\n  note(\"~ e3 ~ g3 ~ c4 ~ e4\").s(\"pluck\").early(0.25),\n  note(\"~ ~ g3 ~ ~ c4 ~ ~\").s(\"pluck\").early(0.5)\n).gain(0.7)"
+    },
+    {
+      "template_id": "concurrency_01",
+      "name": "Parallel Threads",
+      "description": "Multiple simultaneous voices representing concurrent thread execution",
+      "suitable_for_concepts": [
+        "concurrency",
+        "multithreading",
+        "parallel processing",
+        "race conditions"
+      ],
+      "code_template": "stack(\n  s(\"{perc_1}*{density_1}\").gain({gain_1}),\n  s(\"{perc_2}*{density_2}\").gain({gain_2}).speed({speed_2}),\n  s(\"{perc_3}*{density_3}\").gain({gain_3}).speed({speed_3}),\n  note(\"{bass_pattern}\").s(\"bass\").lpf({lpf_freq})\n)",
+      "parameters": {
+        "perc_1": "hh",
+        "density_1": 8,
+        "gain_1": 0.6,
+        "perc_2": "industrial:3",
+        "density_2": 4,
+        "gain_2": 0.8,
+        "speed_2": 1.2,
+        "perc_3": "clap",
+        "density_3": 2,
+        "gain_3": 0.7,
+        "speed_3": 1.0,
+        "bass_pattern": "c2 ~ ~ c2 ~ g1 ~ f1",
+        "lpf_freq": 300
+      },
+      "example": "// Concurrency: multiple threads racing\nstack(\n  s(\"hh*8\").gain(0.6),\n  s(\"industrial:3*4\").gain(0.8).speed(1.2),\n  s(\"clap*2\").gain(0.7),\n  note(\"c2 ~ ~ c2 ~ g1 ~ f1\").s(\"bass\").lpf(300)\n)"
+    },
+    {
+      "template_id": "network_protocol_01",
+      "name": "Call and Response",
+      "description": "Call-and-response patterns representing network request/response cycles",
+      "suitable_for_concepts": [
+        "networking",
+        "HTTP",
+        "TCP handshake",
+        "client-server",
+        "request-response"
+      ],
+      "code_template": "stack(\n  note(\"{call_pattern}\").s(\"{call_synth}\").gain({call_gain}),\n  note(\"{response_pattern}\").s(\"{response_synth}\").late(0.25).gain({response_gain})\n).every({every_n}, x => x.fast(1.5))",
+      "parameters": {
+        "call_pattern": "c4 e4 g4",
+        "call_synth": "square",
+        "call_gain": 0.7,
+        "response_pattern": "g3 e3 c3",
+        "response_synth": "sawtooth",
+        "response_gain": 0.6,
+        "every_n": 4
+      },
+      "example": "// Network protocol: request/response\nstack(\n  note(\"c4 e4 g4\").s(\"square\").gain(0.7),\n  note(\"g3 e3 c3\").s(\"sawtooth\").late(0.25).gain(0.6)\n).every(4, x => x.fast(1.5))"
+    },
+    {
+      "template_id": "database_transaction_01",
+      "name": "Transaction Cycle",
+      "description": "Repeating motifs with variations representing database commit/rollback patterns",
+      "suitable_for_concepts": [
+        "database",
+        "transactions",
+        "ACID",
+        "commit",
+        "rollback"
+      ],
+      "code_template": "note(\"{base_sequence}\")\n  .s(\"{synth}\")\n  .every({commit_cycle}, x => x.gain(1.2))\n  .every({rollback_cycle}, x => x.rev().gain(0.5))\n  .lpf({cutoff})",
+      "parameters": {
+        "base_sequence": "c3 d3 e3 f3 g3 f3 e3 d3",
+        "synth": "pluck",
+        "commit_cycle": 8,
+        "rollback_cycle": 16,
+        "cutoff": 1000
+      },
+      "example": "// Database: transaction with commit/rollback\nnote(\"c3 d3 e3 f3 g3 f3 e3 d3\")\n  .s(\"pluck\")\n  .every(8, x => x.gain(1.2))  // commit boost\n  .every(16, x => x.rev().gain(0.5))  // rollback reversal\n  .lpf(1000)"
+    },
+    {
+      "template_id": "memory_allocation_01",
+      "name": "Dynamic Density",
+      "description": "Growing and shrinking note densities representing heap allocation and deallocation",
+      "suitable_for_concepts": [
+        "memory management",
+        "heap allocation",
+        "garbage collection",
+        "memory pressure"
+      ],
+      "code_template": "s(\"{sample}\")\n  .euclid({start_hits}, {steps})\n  .iter({iter_count})\n  .gain(\"{gain_pattern}\")\n  .speed({speed})",
+      "parameters": {
+        "sample": "industrial:7",
+        "start_hits": 3,
+        "steps": 8,
+        "iter_count": 4,
+        "gain_pattern": "0.5 0.6 0.7 0.8 0.9 0.8 0.7 0.6",
+        "speed": 1.0
+      },
+      "example": "// Memory allocation: growing/shrinking density\ns(\"industrial:7\")\n  .euclid(3, 8)\n  .iter(4)\n  .gain(\"0.5 0.6 0.7 0.8 0.9 0.8 0.7 0.6\")\n  .speed(1.0)"
+    },
+    {
+      "template_id": "event_loop_01",
+      "name": "Cyclical Events",
+      "description": "Repeating cycles representing event loop iterations",
+      "suitable_for_concepts": [
+        "event loop",
+        "event-driven",
+        "callbacks",
+        "event queue"
+      ],
+      "code_template": "stack(\n  s(\"{kick_pattern}\"),\n  s(\"{event_sample}\").euclid({event_hits}, {event_steps}),\n  note(\"{sequence}\").s(\"{synth}\").fast({speed})\n).every({cycle}, x => x.jux(rev))",
+      "parameters": {
+        "kick_pattern": "bd*4",
+        "event_sample": "clap",
+        "event_hits": 5,
+        "event_steps": 8,
+        "sequence": "c3 e3 g3 c4",
+        "synth": "square",
+        "speed": 2,
+        "cycle": 4
+      },
+      "example": "// Event loop: repeating cycles\nstack(\n  s(\"bd*4\"),\n  s(\"clap\").euclid(5, 8),\n  note(\"c3 e3 g3 c4\").s(\"square\").fast(2)\n).every(4, x => x.jux(rev))"
+    },
+    {
+      "template_id": "streaming_data_01",
+      "name": "Continuous Flow",
+      "description": "Continuous evolving sequences representing data streaming",
+      "suitable_for_concepts": [
+        "streaming",
+        "data flow",
+        "pipelines",
+        "real-time processing"
+      ],
+      "code_template": "note(sequence({min_note}, {max_note}))\n  .s(\"{synth}\")\n  .fast({stream_speed})\n  .lpf(sine.range({lpf_min}, {lpf_max}).slow({lpf_speed}))\n  .delay({delay_amt})\n  .delaytime({delay_time})",
+      "parameters": {
+        "min_note": 48,
+        "max_note": 72,
+        "synth": "sawtooth",
+        "stream_speed": 4,
+        "lpf_min": 400,
+        "lpf_max": 2000,
+        "lpf_speed": 8,
+        "delay_amt": 0.3,
+        "delay_time": 0.125
+      },
+      "example": "// Streaming: continuous data flow\nnote(sequence(48, 72))\n  .s(\"sawtooth\")\n  .fast(4)\n  .lpf(sine.range(400, 2000).slow(8))\n  .delay(0.3)\n  .delaytime(0.125)"
+    },
+    {
+      "template_id": "state_machine_01",
+      "name": "Discrete States",
+      "description": "Pattern transitions representing finite state machine state changes",
+      "suitable_for_concepts": [
+        "state machine",
+        "FSM",
+        "state transitions",
+        "mode switching"
+      ],
+      "code_template": "note(\"{pattern}\")\n  .s(\"{synth}\")\n  .chunk({chunk_size}, (x, n) => n % {mod_val} === 0 ? x.fast(2) : x.slow(1.5))\n  .gain({gain})",
+      "parameters": {
+        "pattern": "c3 d3 e3 f3 g3 a3 b3 c4",
+        "synth": "pluck",
+        "chunk_size": 4,
+        "mod_val": 2,
+        "gain": 0.7
+      },
+      "example": "// State machine: discrete state transitions\nnote(\"c3 d3 e3 f3 g3 a3 b3 c4\")\n  .s(\"pluck\")\n  .chunk(4, (x, n) => n % 2 === 0 ? x.fast(2) : x.slow(1.5))\n  .gain(0.7)"
+    },
+    {
+      "template_id": "message_queue_01",
+      "name": "Sequential Events",
+      "description": "Sequential event triggers representing message queue processing",
+      "suitable_for_concepts": [
+        "message queue",
+        "pub-sub",
+        "event bus",
+        "job queue"
+      ],
+      "code_template": "stack(\n  s(\"{message_sample}\").struct(\"{message_structure}\").gain({message_gain}),\n  s(\"{processor_sample}\").late({processing_delay}).gain({processor_gain}),\n  note(\"{bass_line}\").s(\"bass\").lpf({bass_lpf})\n)",
+      "parameters": {
+        "message_sample": "industrial:3",
+        "message_structure": "t ~ t ~ t ~ ~ t",
+        "message_gain": 0.8,
+        "processor_sample": "clap",
+        "processing_delay": 0.125,
+        "processor_gain": 0.7,
+        "bass_line": "c2 ~ ~ ~ g1 ~ ~ ~",
+        "bass_lpf": 400
+      },
+      "example": "// Message queue: sequential processing\nstack(\n  s(\"industrial:3\").struct(\"t ~ t ~ t ~ ~ t\").gain(0.8),\n  s(\"clap\").late(0.125).gain(0.7),\n  note(\"c2 ~ ~ ~ g1 ~ ~ ~\").s(\"bass\").lpf(400)\n)"
+    },
+    {
+      "template_id": "cache_hit_miss_01",
+      "name": "Cache Patterns",
+      "description": "Repeated samples (hits) and variations (misses) representing cache behavior",
+      "suitable_for_concepts": [
+        "caching",
+        "cache hit",
+        "cache miss",
+        "memoization"
+      ],
+      "code_template": "stack(\n  s(\"{hit_sample}*{hit_density}\").gain({hit_gain}),\n  s(\"{miss_sample}\").struct(\"{miss_structure}\").gain({miss_gain}).speed({miss_speed})\n).every({invalidation_cycle}, x => x.rev())",
+      "parameters": {
+        "hit_sample": "hh",
+        "hit_density": 8,
+        "hit_gain": 0.5,
+        "miss_sample": "industrial:7",
+        "miss_structure": "~ ~ t ~ ~ ~ t ~",
+        "miss_gain": 0.9,
+        "miss_speed": 0.8,
+        "invalidation_cycle": 16
+      },
+      "example": "// Cache: hits (frequent) and misses (sparse)\nstack(\n  s(\"hh*8\").gain(0.5),  // cache hits\n  s(\"industrial:7\").struct(\"~ ~ t ~ ~ ~ t ~\").gain(0.9).speed(0.8)  // cache misses\n).every(16, x => x.rev())  // cache invalidation"
+    },
+    {
+      "template_id": "api_rate_limit_01",
+      "name": "Throttled Requests",
+      "description": "Pattern with enforced gaps representing API rate limiting",
+      "suitable_for_concepts": [
+        "rate limiting",
+        "throttling",
+        "backpressure",
+        "API quotas"
+      ],
+      "code_template": "s(\"{request_sample}\")\n  .euclid({requests}, {window})\n  .every({throttle_cycle}, x => x.slow(2).gain(0.5))\n  .gain({base_gain})",
+      "parameters": {
+        "request_sample": "clap",
+        "requests": 5,
+        "window": 16,
+        "throttle_cycle": 8,
+        "base_gain": 0.8
+      },
+      "example": "// API rate limiting: throttled requests\ns(\"clap\")\n  .euclid(5, 16)  // 5 requests per 16 beats\n  .every(8, x => x.slow(2).gain(0.5))  // throttle enforcement\n  .gain(0.8)"
+    },
+    {
+      "template_id": "garbage_collection_01",
+      "name": "Cleanup Cycle",
+      "description": "Pattern with periodic cleanup sweeps representing GC pauses",
+      "suitable_for_concepts": [
+        "garbage collection",
+        "memory cleanup",
+        "GC pause",
+        "heap management"
+      ],
+      "code_template": "stack(\n  note(\"{main_pattern}\").s(\"{main_synth}\").fast({main_speed}),\n  s(\"{gc_sample}\").struct(\"{gc_structure}\").gain({gc_gain})\n).every({gc_cycle}, x => x.slow(4).gain(0.3))",
+      "parameters": {
+        "main_pattern": "c3 d3 e3 f3 g3 a3 b3 c4",
+        "main_synth": "pluck",
+        "main_speed": 2,
+        "gc_sample": "noise",
+        "gc_structure": "~ ~ ~ ~ ~ ~ ~ t",
+        "gc_gain": 0.7,
+        "gc_cycle": 8
+      },
+      "example": "// Garbage collection: periodic cleanup\nstack(\n  note(\"c3 d3 e3 f3 g3 a3 b3 c4\").s(\"pluck\").fast(2),\n  s(\"noise\").struct(\"~ ~ ~ ~ ~ ~ ~ t\").gain(0.7)  // GC sweep\n).every(8, x => x.slow(4).gain(0.3))  // GC pause"
+    },
+    {
+      "template_id": "microservices_01",
+      "name": "Distributed Services",
+      "description": "Multiple independent patterns representing microservice communication",
+      "suitable_for_concepts": [
+        "microservices",
+        "distributed systems",
+        "service mesh",
+        "inter-service communication"
+      ],
+      "code_template": "stack(\n  note(\"{service_1}\").s(\"{synth_1}\").lpf({lpf_1}),\n  note(\"{service_2}\").s(\"{synth_2}\").late({delay_2}).lpf({lpf_2}),\n  note(\"{service_3}\").s(\"{synth_3}\").late({delay_3}).lpf({lpf_3}),\n  s(\"{gateway_sample}\").gain({gateway_gain})\n)",
+      "parameters": {
+        "service_1": "c3 ~ e3 ~ g3 ~ c4 ~",
+        "synth_1": "square",
+        "lpf_1": 800,
+        "service_2": "~ e3 ~ g3 ~ b3 ~ e4",
+        "synth_2": "sawtooth",
+        "delay_2": 0.125,
+        "lpf_2": 1000,
+        "service_3": "~ ~ g3 ~ ~ c4 ~ ~",
+        "synth_3": "pluck",
+        "delay_3": 0.25,
+        "lpf_3": 1200,
+        "gateway_sample": "bd",
+        "gateway_gain": 0.6
+      },
+      "example": "// Microservices: distributed communication\nstack(\n  note(\"c3 ~ e3 ~ g3 ~ c4 ~\").s(\"square\").lpf(800),  // service A\n  note(\"~ e3 ~ g3 ~ b3 ~ e4\").s(\"sawtooth\").late(0.125).lpf(1000),  // service B\n  note(\"~ ~ g3 ~ ~ c4 ~ ~\").s(\"pluck\").late(0.25).lpf(1200),  // service C\n  s(\"bd\").gain(0.6)  // API gateway\n)"
+    },
+    {
+      "template_id": "load_balancer_01",
+      "name": "Round Robin",
+      "description": "Rotating pattern distribution representing load balancer behavior",
+      "suitable_for_concepts": [
+        "load balancing",
+        "round robin",
+        "traffic distribution",
+        "server pool"
+      ],
+      "code_template": "s(\"{sample}\")\n  .iter({server_count})\n  .gain(\"{gain_pattern}\")\n  .speed(\"{speed_pattern}\")",
+      "parameters": {
+        "sample": "industrial:3",
+        "server_count": 4,
+        "gain_pattern": "0.7 0.8 0.75 0.85",
+        "speed_pattern": "1.0 1.1 0.9 1.05"
+      },
+      "example": "// Load balancer: round robin distribution\ns(\"industrial:3\")\n  .iter(4)  // 4 servers\n  .gain(\"0.7 0.8 0.75 0.85\")  // varying server loads\n  .speed(\"1.0 1.1 0.9 1.05\")  // processing speeds"
+    }
+  ],
+  "usage_guidelines": {
+    "selection_strategy": "Match technical concept to pattern template based on suitable_for_concepts field",
+    "customization": "Adjust parameters based on BPM, mood, and desired intensity",
+    "combination": "Stack multiple templates for complex concepts (e.g., async + concurrency)",
+    "synth_selection": "Choose synths based on technical mood: harsh for low-level, ambient for high-level",
+    "evidence_tracking": "Link generated patterns back to extracted knowledge evidence IDs"
+  }
+}

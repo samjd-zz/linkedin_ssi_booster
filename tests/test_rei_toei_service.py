@@ -1,0 +1,1768 @@
+"""
+Unit tests for Rei Toei service
+
+Tests cover:
+- Loader functions for persona, domain knowledge, and pattern library
+- Configuration parsing from environment variables
+- Service initialization and lazy loading
+- Helper methods (BPM, synth selection, pattern matching)
+- ID generation
+
+Author: Shawn Jackson Dyck
+Version: alpha-v0.0.2.7
+"""
+
+import json
+import os
+import pytest
+from pathlib import Path
+from unittest.mock import patch, mock_open, MagicMock
+
+from services.rei_toei_service import (
+    ReiToeiConfig,
+    MusicMode,
+    ReiPersonaGraph,
+    ReiDomainKnowledge,
+    StrudelPatternTemplate,
+    StrudelPatternLibrary,
+    Theme,
+    SongConcept,
+    Lyrics,
+    LyricsValidationResult,
+    SunoPrompt,
+    SunoTask,
+    StrudelPattern,
+    ValidationResult,
+    ExecutionResult,
+    load_rei_persona,
+    load_rei_domain_knowledge,
+    load_strudel_patterns,
+    ReiToeiService,
+    get_rei_service,
+    extract_themes,
+    generate_song_concept,
+    compose_lyrics,
+    validate_lyrics_with_dot,
+    assemble_suno_prompt,
+    map_concept_to_pattern,
+    generate_strudel_code,
+    validate_strudel_syntax,
+    execute_strudel_pattern,
+    save_pattern_to_library,
+    load_pattern_from_library,
+)
+from services.avatar_intelligence._models import ExtractedKnowledgeGraph, ExtractedFact
+
+
+# ============================================================================
+# Test Fixtures
+# ============================================================================
+
+@pytest.fixture
+def mock_persona_data():
+    """Mock persona graph data"""
+    return {
+        "schemaVersion": "1.0",
+        "identity": {
+            "name": "Rei Toei",
+            "role": "AI Music Avatar"
+        },
+        "personality_traits": ["algorithmic", "high-energy"],
+        "musical_expertise": {
+            "genres": ["industrial techno", "cyberpunk"]
+        },
+        "production_knowledge": {
+            "bpm_theory": {"default_range": [130, 155]}
+        },
+        "communication_style": {
+            "tone": "precise, digital"
+        },
+        "knowledge_sources": {
+            "shared_access": ["extracted_knowledge.json"]
+        },
+        "creative_process": {
+            "suno_pipeline": ["step1", "step2"]
+        },
+        "constraints": {
+            "factual_grounding": "Required"
+        },
+        "comparison_to_sam": {
+            "sam_role": "Conversational representative"
+        }
+    }
+
+
+@pytest.fixture
+def mock_domain_knowledge_data():
+    """Mock domain knowledge data"""
+    return {
+        "schemaVersion": "1.0",
+        "music_theory": {
+            "scales": {"minor": ["natural", "harmonic"]}
+        },
+        "tidal_cycles_syntax": {
+            "basic_functions": {"sound": {"syntax": "s \"synth\""}}
+        },
+        "genre_production_techniques": {
+            "industrial_techno": {"tempo": "130-145 BPM"}
+        },
+        "bpm_and_mood": {
+            "mood_to_bpm": {
+                "aggressive_technical": [145, 155],
+                "dark_brooding": [130, 138]
+            },
+            "concept_to_bpm": {
+                "low_level_systems": [145, 155]
+            }
+        },
+        "synth_selection_guidelines": {
+            "by_technical_mood": {
+                "low_level_harsh": ["sawtooth", "square", "noise"],
+                "high_level_ambient": ["pad", "string", "ambient"]
+            },
+            "by_intensity": {
+                "aggressive": ["sawtooth", "square"],
+                "moderate": ["pluck", "lead", "bass"]
+            }
+        },
+        "lyrical_structure": {
+            "verse": {"purpose": "Establish theme"}
+        },
+        "technical_metaphor_library": {
+            "recursion": ["nested depths", "calling self"]
+        },
+        "suno_prompt_templates": {
+            "industrial_techno_template": "industrial techno, {bpm} bpm"
+        },
+        "production_notes": {
+            "mixing": {"bass": "High-pass at 30Hz"}
+        }
+    }
+
+
+@pytest.fixture
+def mock_pattern_library_data():
+    """Mock Strudel pattern library data"""
+    return {
+        "schemaVersion": "1.0",
+        "templates": [
+            {
+                "template_id": "recursion_nested_01",
+                "name": "Recursive Nested Pattern",
+                "description": "Nested patterns for recursive concepts",
+                "suitable_for_concepts": ["recursion", "nested loops", "stack"],
+                "code_template": "stack(note(\"c3 e3 g3\").fast(2), note(\"c2\"))",
+                "parameters": {"depth": 3, "base_note": "c2"},
+                "example": "stack(note(\"c3 e3 g3\").fast(2))",
+                "bpm_range": [130, 145],
+                "intensity": "moderate",
+                "synth_types": ["sawtooth", "bass"]
+            },
+            {
+                "template_id": "async_await_01",
+                "name": "Async Interleaved Sequence",
+                "description": "Time-offset sequences for async patterns",
+                "suitable_for_concepts": ["async", "await", "promises"],
+                "code_template": "stack(note(\"c3\"), note(\"e3\").slow(1.5))",
+                "parameters": {"offset": 1.5},
+                "example": "stack(note(\"c3\"))",
+                "bpm_range": [135, 145],
+                "intensity": "moderate",
+                "synth_types": ["pluck", "lead"]
+            }
+        ],
+        "usage_guidelines": {
+            "selection": "Match concept to suitable_for_concepts"
+        }
+    }
+
+
+@pytest.fixture
+def mock_env_vars(monkeypatch):
+    """Set up mock environment variables"""
+    monkeypatch.setenv("REI_TOEI_ENABLED", "true")
+    monkeypatch.setenv("REI_TOEI_DEFAULT_BPM", "142")
+    monkeypatch.setenv("REI_TOEI_DEFAULT_GENRE", "industrial techno cyberpunk")
+    monkeypatch.setenv("REI_TOEI_MAX_SONG_LENGTH_SECONDS", "180")
+    monkeypatch.setenv("REI_TOEI_CONSOLE_ENABLED", "true")
+    monkeypatch.setenv("REI_TOEI_AUTO_EVIDENCE_TRACKING", "true")
+    monkeypatch.setenv("REI_TOEI_STRUDEL_ENABLED", "true")
+    monkeypatch.setenv("REI_TOEI_STRUDEL_DEFAULT_BARS", "16")
+    monkeypatch.setenv("REI_TOEI_STRUDEL_AUTO_EXECUTE", "false")
+
+
+# ============================================================================
+# Configuration Tests
+# ============================================================================
+
+def test_config_defaults():
+    """Test ReiToeiConfig with default values"""
+    config = ReiToeiConfig()
+    assert config.enabled is True
+    assert config.default_bpm == 142
+    assert config.default_genre == "industrial techno cyberpunk"
+    assert config.max_song_length_seconds == 180
+    assert config.console_enabled is True
+    assert config.auto_evidence_tracking is True
+    assert config.strudel_enabled is True
+    assert config.strudel_default_bars == 16
+    assert config.strudel_auto_execute is False
+
+
+def test_config_from_env(mock_env_vars):
+    """Test ReiToeiConfig reads from environment variables"""
+    config = ReiToeiConfig()
+    assert config.enabled is True
+    assert config.default_bpm == 142
+    assert config.strudel_default_bars == 16
+
+
+def test_config_paths():
+    """Test ReiToeiConfig file paths are correct"""
+    config = ReiToeiConfig()
+    assert config.persona_path == Path("data/avatar/rei_toei_persona_graph.json")
+    assert config.domain_knowledge_path == Path("data/avatar/rei_toei_domain_knowledge.json")
+    assert config.strudel_patterns_path == Path("data/avatar/rei_toei_strudel_patterns.json")
+
+
+# ============================================================================
+# Loader Tests
+# ============================================================================
+
+def test_load_rei_persona_success(mock_persona_data):
+    """Test load_rei_persona successfully loads and parses JSON"""
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_persona_data))):
+            persona = load_rei_persona()
+            
+            assert isinstance(persona, ReiPersonaGraph)
+            assert persona.schema_version == "1.0"
+            assert persona.identity["name"] == "Rei Toei"
+            assert "algorithmic" in persona.personality_traits
+            assert "industrial techno" in persona.musical_expertise["genres"]
+
+
+def test_load_rei_persona_file_not_found():
+    """Test load_rei_persona raises FileNotFoundError when file missing"""
+    with patch("pathlib.Path.exists", return_value=False):
+        with pytest.raises(FileNotFoundError, match="Rei persona graph not found"):
+            load_rei_persona()
+
+
+def test_load_rei_persona_invalid_json():
+    """Test load_rei_persona raises JSONDecodeError for invalid JSON"""
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data="invalid json {")):
+            with pytest.raises(json.JSONDecodeError):
+                load_rei_persona()
+
+
+def test_load_rei_domain_knowledge_success(mock_domain_knowledge_data):
+    """Test load_rei_domain_knowledge successfully loads and parses JSON"""
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            knowledge = load_rei_domain_knowledge()
+            
+            assert isinstance(knowledge, ReiDomainKnowledge)
+            assert knowledge.schema_version == "1.0"
+            assert "scales" in knowledge.music_theory
+            assert "mood_to_bpm" in knowledge.bpm_and_mood
+            assert "by_technical_mood" in knowledge.synth_selection_guidelines
+
+
+def test_load_rei_domain_knowledge_file_not_found():
+    """Test load_rei_domain_knowledge raises FileNotFoundError when file missing"""
+    with patch("pathlib.Path.exists", return_value=False):
+        with pytest.raises(FileNotFoundError, match="Rei domain knowledge not found"):
+            load_rei_domain_knowledge()
+
+
+def test_load_strudel_patterns_success(mock_pattern_library_data):
+    """Test load_strudel_patterns successfully loads and parses JSON"""
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_pattern_library_data))):
+            library = load_strudel_patterns()
+            
+            assert isinstance(library, StrudelPatternLibrary)
+            assert library.schema_version == "1.0"
+            assert len(library.templates) == 2
+            
+            # Check first template
+            template1 = library.templates[0]
+            assert template1.template_id == "recursion_nested_01"
+            assert template1.name == "Recursive Nested Pattern"
+            assert "recursion" in template1.suitable_for_concepts
+            assert template1.bpm_range == [130, 145]
+            assert template1.intensity == "moderate"
+
+
+def test_load_strudel_patterns_file_not_found():
+    """Test load_strudel_patterns raises FileNotFoundError when file missing"""
+    with patch("pathlib.Path.exists", return_value=False):
+        with pytest.raises(FileNotFoundError, match="Strudel patterns not found"):
+            load_strudel_patterns()
+
+
+# ============================================================================
+# Service Initialization Tests
+# ============================================================================
+
+def test_service_initialization():
+    """Test ReiToeiService initializes correctly"""
+    service = ReiToeiService()
+    
+    assert isinstance(service.config, ReiToeiConfig)
+    assert service._persona is None  # Lazy load
+    assert service._domain_knowledge is None
+    assert service._pattern_library is None
+
+
+def test_service_lazy_load_persona(mock_persona_data):
+    """Test ReiToeiService lazy loads persona on first access"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_persona_data))):
+            persona = service.persona
+            
+            assert service._persona is not None
+            assert isinstance(persona, ReiPersonaGraph)
+            assert persona.identity["name"] == "Rei Toei"
+
+
+def test_service_lazy_load_domain_knowledge(mock_domain_knowledge_data):
+    """Test ReiToeiService lazy loads domain knowledge on first access"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            knowledge = service.domain_knowledge
+            
+            assert service._domain_knowledge is not None
+            assert isinstance(knowledge, ReiDomainKnowledge)
+
+
+def test_service_lazy_load_pattern_library(mock_pattern_library_data):
+    """Test ReiToeiService lazy loads pattern library on first access"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_pattern_library_data))):
+            library = service.pattern_library
+            
+            assert service._pattern_library is not None
+            assert isinstance(library, StrudelPatternLibrary)
+            assert len(library.templates) == 2
+
+
+def test_service_reload(mock_persona_data, mock_domain_knowledge_data, mock_pattern_library_data):
+    """Test ReiToeiService.reload() clears and reloads all cached data"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_persona_data))):
+            _ = service.persona  # Force initial load
+            assert service._persona is not None
+            
+            # Mock all three files for reload
+            with patch("builtins.open") as mock_file:
+                mock_file.side_effect = [
+                    mock_open(read_data=json.dumps(mock_persona_data)).return_value,
+                    mock_open(read_data=json.dumps(mock_domain_knowledge_data)).return_value,
+                    mock_open(read_data=json.dumps(mock_pattern_library_data)).return_value,
+                ]
+                
+                service.reload()
+                
+                # Verify data was reloaded
+                assert service._persona is not None
+
+
+# ============================================================================
+# Helper Method Tests
+# ============================================================================
+
+def test_get_default_bpm_no_mood(mock_domain_knowledge_data):
+    """Test get_default_bpm returns config default when no mood specified"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            bpm = service.get_default_bpm()
+            
+            assert bpm == 142  # Config default
+
+
+def test_get_default_bpm_with_mood(mock_domain_knowledge_data):
+    """Test get_default_bpm returns mood-specific BPM"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            bpm = service.get_default_bpm("aggressive_technical")
+            
+            # Should return midpoint of [145, 155] = 150
+            assert bpm == 150
+
+
+def test_get_default_bpm_unknown_mood(mock_domain_knowledge_data):
+    """Test get_default_bpm returns config default for unknown mood"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            bpm = service.get_default_bpm("unknown_mood")
+            
+            assert bpm == 142  # Config default
+
+
+def test_get_synths_for_mood(mock_domain_knowledge_data):
+    """Test get_synths_for_mood returns correct synth list"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            synths = service.get_synths_for_mood("low_level_harsh")
+            
+            assert synths == ["sawtooth", "square", "noise"]
+
+
+def test_get_synths_for_mood_unknown(mock_domain_knowledge_data):
+    """Test get_synths_for_mood returns moderate defaults for unknown mood"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            synths = service.get_synths_for_mood("unknown_mood")
+            
+            assert synths == ["pluck", "lead", "bass"]  # Moderate default
+
+
+def test_find_pattern_template_exact_match(mock_pattern_library_data):
+    """Test find_pattern_template finds exact concept match"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_pattern_library_data))):
+            template = service.find_pattern_template("recursion")
+            
+            assert template is not None
+            assert template.template_id == "recursion_nested_01"
+            assert "recursion" in template.suitable_for_concepts
+
+
+def test_find_pattern_template_partial_match(mock_pattern_library_data):
+    """Test find_pattern_template finds partial concept match"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_pattern_library_data))):
+            template = service.find_pattern_template("async")
+            
+            assert template is not None
+            assert template.template_id == "async_await_01"
+
+
+def test_find_pattern_template_no_match(mock_pattern_library_data):
+    """Test find_pattern_template returns None for no match"""
+    service = ReiToeiService()
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_pattern_library_data))):
+            template = service.find_pattern_template("unknown_concept")
+            
+            assert template is None
+
+
+def test_generate_song_id():
+    """Test generate_song_id creates valid ID with timestamp"""
+    service = ReiToeiService()
+    song_id = service.generate_song_id()
+    
+    assert song_id.startswith("rei_suno_")
+    assert len(song_id) > len("rei_suno_")
+
+
+def test_generate_pattern_id():
+    """Test generate_pattern_id creates valid ID with timestamp"""
+    service = ReiToeiService()
+    pattern_id = service.generate_pattern_id()
+    
+    assert pattern_id.startswith("rei_strudel_")
+    assert len(pattern_id) > len("rei_strudel_")
+
+
+# ============================================================================
+# Singleton Service Tests
+# ============================================================================
+
+def test_get_rei_service_singleton():
+    """Test get_rei_service returns singleton instance"""
+    service1 = get_rei_service()
+    service2 = get_rei_service()
+    
+    assert service1 is service2
+
+
+# ============================================================================
+# Data Model Tests
+# ============================================================================
+
+def test_music_mode_enum():
+    """Test MusicMode enum values"""
+    assert MusicMode.SUNO.value == "suno"
+    assert MusicMode.STRUDEL.value == "strudel"
+
+
+def test_theme_dataclass():
+    """Test Theme dataclass creation"""
+    theme = Theme(
+        id="theme_001",
+        name="Rust Async",
+        technical_concepts=["async", "await", "tokio"],
+        evidence_ids=["ev_001", "ev_002"],
+        frequency=5,
+        recency_score=0.9,
+        suggested_bpm=142,
+        suggested_mood="aggressive_technical"
+    )
+    
+    assert theme.id == "theme_001"
+    assert theme.name == "Rust Async"
+    assert len(theme.technical_concepts) == 3
+    assert theme.suggested_bpm == 142
+
+
+def test_song_concept_dataclass():
+    """Test SongConcept dataclass creation"""
+    concept = SongConcept(
+        song_id="song_001",
+        title="Tokio Nights",
+        theme="Rust async runtime",
+        mood="dark_brooding",
+        bpm=138,
+        genre_tags=["industrial techno", "cyberpunk"],
+        narrative_arc="Build to breakdown",
+        evidence_ids=["ev_001"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    assert concept.song_id == "song_001"
+    assert concept.bpm == 138
+    assert len(concept.genre_tags) == 2
+
+
+def test_validation_result_dataclass_basic():
+    """Test ValidationResult dataclass creation"""
+    result = ValidationResult(
+        valid=False,
+        errors=["Syntax error on line 5"],
+        warnings=["Consider using .fast(2)"],
+        line_numbers=[5]
+    )
+    
+    assert result.valid is False
+    assert len(result.errors) == 1
+    assert len(result.warnings) == 1
+
+
+def test_execution_result_dataclass_basic():
+    """Test ExecutionResult dataclass creation"""
+    result = ExecutionResult(
+        success=True,
+        pattern_id="pattern_001",
+        message="Pattern executed successfully",
+        execution_time_ms=250
+    )
+    
+    assert result.success is True
+    assert result.pattern_id == "pattern_001"
+    assert result.execution_time_ms == 250
+
+
+# ============================================================================
+# Suno Generation Pipeline Tests
+# ============================================================================
+
+@pytest.fixture
+def mock_extracted_knowledge():
+    """Mock extracted knowledge graph with technical facts"""
+    from datetime import datetime, timedelta
+    
+    # Create facts with varying timestamps for recency testing
+    now = datetime.now()
+    
+    facts = [
+        ExtractedFact(
+            id="fact_001",
+            statement="Rust's ownership system prevents data races at compile time",
+            source_url="https://example.com/rust-ownership",
+            source_title="Understanding Rust Ownership",
+            extracted_at=(now - timedelta(days=5)).isoformat(),
+            entities=["Rust", "ownership", "data race"],
+            tags=["rust", "memory safety", "concurrency"],
+            confidence="high",
+            extraction_method="spacy_nlp"
+        ),
+        ExtractedFact(
+            id="fact_002",
+            statement="Async/await in Rust provides zero-cost abstractions",
+            source_url="https://example.com/rust-async",
+            source_title="Rust Async Programming",
+            extracted_at=(now - timedelta(days=3)).isoformat(),
+            entities=["Rust", "async", "await"],
+            tags=["rust", "async", "performance"],
+            confidence="high",
+            extraction_method="spacy_nlp"
+        ),
+        ExtractedFact(
+            id="fact_003",
+            statement="Tokio is the most popular async runtime for Rust",
+            source_url="https://example.com/tokio",
+            source_title="Tokio Runtime Guide",
+            extracted_at=(now - timedelta(days=1)).isoformat(),
+            entities=["Tokio", "Rust"],
+            tags=["rust", "async", "tokio"],
+            confidence="high",
+            extraction_method="spacy_nlp"
+        ),
+        ExtractedFact(
+            id="fact_004",
+            statement="Python's GIL limits true parallelism in multi-threaded programs",
+            source_url="https://example.com/python-gil",
+            source_title="Python GIL Explained",
+            extracted_at=(now - timedelta(days=30)).isoformat(),
+            entities=["Python", "GIL"],
+            tags=["python", "concurrency", "performance"],
+            confidence="medium",
+            extraction_method="spacy_nlp"
+        ),
+        ExtractedFact(
+            id="fact_005",
+            statement="Rust achieves memory safety without garbage collection",
+            source_url="https://example.com/rust-memory",
+            source_title="Rust Memory Model",
+            extracted_at=(now - timedelta(days=2)).isoformat(),
+            entities=["Rust", "memory safety"],
+            tags=["rust", "memory safety"],
+            confidence="high",
+            extraction_method="spacy_nlp"
+        ),
+    ]
+    
+    return ExtractedKnowledgeGraph(
+        schema_version="1.0",
+        facts=facts
+    )
+
+
+def test_extract_themes_basic(mock_extracted_knowledge):
+    """Test extract_themes identifies and scores concepts correctly"""
+    themes = extract_themes(mock_extracted_knowledge, limit=5)
+    
+    assert len(themes) > 0
+    assert all(isinstance(t, Theme) for t in themes)
+    
+    # Check that rust is identified as a top theme (3+ facts)
+    theme_names = [t.name.lower() for t in themes]
+    assert any("rust" in name for name in theme_names)
+    
+    # Verify theme structure
+    theme = themes[0]
+    assert theme.id.startswith("theme_")
+    assert theme.frequency > 0
+    assert 0.0 <= theme.recency_score <= 1.0
+    assert len(theme.evidence_ids) > 0
+
+
+def test_extract_themes_recency_scoring(mock_extracted_knowledge):
+    """Test extract_themes weighs recent facts higher"""
+    themes = extract_themes(mock_extracted_knowledge, limit=10)
+    
+    # Find rust/async themes (should have high recency due to recent facts)
+    rust_themes = [t for t in themes if any("rust" in c.lower() for c in t.technical_concepts)]
+    
+    assert len(rust_themes) > 0
+    # Recent facts should have recency > 0.8
+    assert any(t.recency_score > 0.8 for t in rust_themes)
+
+
+def test_extract_themes_limit(mock_extracted_knowledge):
+    """Test extract_themes respects limit parameter"""
+    themes = extract_themes(mock_extracted_knowledge, limit=2)
+    
+    assert len(themes) <= 2
+
+
+def test_extract_themes_suggests_bpm_and_mood(mock_extracted_knowledge):
+    """Test extract_themes suggests BPM and mood based on concept keywords"""
+    themes = extract_themes(mock_extracted_knowledge, limit=10)
+    
+    # Some themes should have suggested BPM/mood
+    themes_with_suggestions = [t for t in themes if t.suggested_bpm is not None]
+    
+    # At least one theme should have suggestions
+    assert len(themes_with_suggestions) > 0
+
+
+def test_generate_song_concept_with_ollama(mock_domain_knowledge_data):
+    """Test generate_song_concept calls Ollama and parses response"""
+    from services.ollama_service import OllamaService
+    
+    theme = Theme(
+        id="theme_rust_01",
+        name="Rust Async",
+        technical_concepts=["async", "await", "tokio"],
+        evidence_ids=["fact_001", "fact_002"],
+        frequency=3,
+        recency_score=0.9,
+        suggested_bpm=145,
+        suggested_mood="aggressive_technical"
+    )
+    
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei Toei", "role": "AI Music Avatar", "origin": "Virtual", "aesthetic": "Cyberpunk", "purpose": "Music generation"},
+        personality_traits=["algorithmic", "high-energy"],
+        musical_expertise={"genres": ["industrial techno"], "vocal_style": {"type": "AI vocaloid", "characteristics": ["synthetic"]}},
+        production_knowledge={"lyrical_approach": {}, "production_techniques": ["layering"]},
+        communication_style={"tone": "digital"},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+    
+    # Mock Ollama response
+    mock_ollama_response = json.dumps({
+        "title": "Tokio Nights Protocol",
+        "mood": "aggressive_technical",
+        "bpm": 145,
+        "genre_tags": ["industrial techno", "cyberpunk", "ai vocaloid"],
+        "narrative_arc": "From async whispers to concurrent chaos"
+    })
+    
+    with patch.object(OllamaService, "_chat", return_value=mock_ollama_response):
+        concept = generate_song_concept(theme, persona, domain_knowledge)
+    
+    assert isinstance(concept, SongConcept)
+    assert concept.title == "Tokio Nights Protocol"
+    assert concept.bpm == 145
+    assert concept.theme == "Rust Async"
+    assert len(concept.genre_tags) == 3
+    assert len(concept.evidence_ids) == 2
+
+
+def test_generate_song_concept_fallback_on_error(mock_domain_knowledge_data):
+    """Test generate_song_concept uses fallback when Ollama fails"""
+    from services.ollama_service import OllamaService
+    
+    theme = Theme(
+        id="theme_test_01",
+        name="Test Theme",
+        technical_concepts=["test"],
+        evidence_ids=["fact_001"],
+        frequency=1,
+        recency_score=0.5,
+        suggested_bpm=142,
+        suggested_mood="moderate_abstract"
+    )
+    
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei", "role": "Test", "origin": "Virtual", "aesthetic": "Cyberpunk", "purpose": "Test"},
+        personality_traits=[],
+        musical_expertise={"genres": []},
+        production_knowledge={"production_techniques": []},
+        communication_style={"tone": "digital"},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+    
+    # Mock invalid JSON response
+    with patch.object(OllamaService, "_chat", return_value="invalid json"):
+        concept = generate_song_concept(theme, persona, domain_knowledge)
+    
+    # Should still return a valid concept (fallback)
+    assert isinstance(concept, SongConcept)
+    assert concept.title == "Test Theme Protocol"
+    assert concept.theme == "Test Theme"
+
+
+def test_compose_lyrics_with_ollama(mock_domain_knowledge_data):
+    """Test compose_lyrics calls Ollama and parses response"""
+    from services.ollama_service import OllamaService
+    
+    concept = SongConcept(
+        song_id="song_001",
+        title="Tokio Nights",
+        theme="Rust Async",
+        mood="aggressive_technical",
+        bpm=145,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to breakdown",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+    
+    # Mock Ollama response
+    mock_lyrics_response = json.dumps({
+        "verse_1": "Async threads compile the night\\nZero-cost abstractions take flight",
+        "chorus": "Tokio runtime, execute the protocol",
+        "verse_2": "Futures await in digital streams\\nConcurrent patterns weave the seams",
+        "bridge": "Ownership verified, no race conditions",
+        "breakdown": "[Compile—time—safety]",
+        "outro": "Signal complete"
+    })
+    
+    with patch.object(OllamaService, "_chat", return_value=mock_lyrics_response):
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+    
+    assert isinstance(lyrics, Lyrics)
+    assert "Async" in lyrics.verse_1
+    assert "Tokio" in lyrics.chorus
+    assert len(lyrics.evidence_ids) == 1
+    assert lyrics.breakdown is not None
+    assert lyrics.outro is not None
+
+
+def test_compose_lyrics_fallback_on_error(mock_domain_knowledge_data):
+    """Test compose_lyrics uses fallback when Ollama fails"""
+    from services.ollama_service import OllamaService
+    
+    concept = SongConcept(
+        song_id="song_001",
+        title="Test Song",
+        theme="Test Theme",
+        mood="test",
+        bpm=142,
+        genre_tags=[],
+        narrative_arc="Test",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei", "role": "Test", "origin": "Virtual", "aesthetic": "Cyberpunk", "purpose": "Test"},
+        personality_traits=[],
+        musical_expertise={"genres": []},
+        production_knowledge={"lyrical_approach": {}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+    
+    # Mock invalid response
+    with patch.object(OllamaService, "_chat", return_value="invalid"):
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+    
+    # Should still return valid lyrics (fallback)
+    assert isinstance(lyrics, Lyrics)
+    assert "Test Theme" in lyrics.verse_1
+
+
+def test_validate_lyrics_with_dot_enabled(mock_extracted_knowledge, monkeypatch):
+    """Test validate_lyrics_with_dot validates claims against knowledge"""
+    monkeypatch.setenv("REI_TOEI_DOT_VALIDATION_ENABLED", "true")
+    monkeypatch.setenv("REI_TOEI_DOT_MIN_TRUTH_GRADIENT", "0.6")
+    
+    lyrics = Lyrics(
+        verse_1="Data flows through silicon streams\nAsync threads execute the protocol",
+        chorus="Compile the future state",
+        verse_2="Rust memory safety prevents race conditions\nOwnership model verified at compile time",
+        bridge="System override",
+        breakdown=None,
+        evidence_ids=["fact_001", "fact_002"],
+        outro=None
+    )
+    
+    result = validate_lyrics_with_dot(lyrics, mock_extracted_knowledge)
+    
+    assert isinstance(result, LyricsValidationResult)
+    assert isinstance(result.valid, bool)
+    assert isinstance(result.overall_truth_score, float)
+    assert 0.0 <= result.overall_truth_score <= 1.0
+
+
+def test_validate_lyrics_with_dot_disabled(mock_extracted_knowledge, monkeypatch):
+    """Test validate_lyrics_with_dot skips validation when disabled"""
+    monkeypatch.setenv("REI_TOEI_DOT_VALIDATION_ENABLED", "false")
+    
+    lyrics = Lyrics(
+        verse_1="Test verse",
+        chorus="Test chorus",
+        verse_2="Test verse 2",
+        bridge="Test bridge",
+        breakdown=None,
+        evidence_ids=[],
+        outro=None
+    )
+    
+    result = validate_lyrics_with_dot(lyrics, mock_extracted_knowledge)
+    
+    assert result.valid is True
+    assert result.overall_truth_score == 1.0
+    assert "disabled" in result.warnings[0].lower()
+
+
+def test_validate_lyrics_with_dot_no_claims(mock_extracted_knowledge):
+    """Test validate_lyrics_with_dot passes when no technical claims found"""
+    lyrics = Lyrics(
+        verse_1="Digital whispers fade away\nFrequencies collide in the night",
+        chorus="Echo through the void",
+        verse_2="Shimmer in the darkness\nPulse with electric light",
+        bridge="Glitch the paradigm",
+        breakdown=None,
+        evidence_ids=[],
+        outro="Signal fades"
+    )
+    
+    result = validate_lyrics_with_dot(lyrics, mock_extracted_knowledge)
+    
+    assert result.valid is True
+    assert len(result.flagged_claims) == 0
+    assert "No technical claims" in result.warnings[0]
+
+
+def test_validate_lyrics_with_dot_flags_unsupported_claims(mock_extracted_knowledge):
+    """Test validate_lyrics_with_dot flags claims without evidence"""
+    lyrics = Lyrics(
+        verse_1="JavaScript has the best performance of all languages\nC++ memory management is fully automatic",
+        chorus="Quantum computers solve all problems instantly",
+        verse_2="Neural networks never make mistakes\nAI achieves perfect accuracy always",
+        bridge="Blockchain eliminates all security issues",
+        breakdown=None,
+        evidence_ids=[],
+        outro=None
+    )
+    
+    result = validate_lyrics_with_dot(lyrics, mock_extracted_knowledge)
+    
+    # These claims should be flagged (no supporting evidence in knowledge base)
+    assert len(result.flagged_claims) > 0
+
+
+def test_assemble_suno_prompt_basic(mock_domain_knowledge_data):
+    """Test assemble_suno_prompt combines concept and lyrics"""
+    concept = SongConcept(
+        song_id="song_001",
+        title="Test Song",
+        theme="Test",
+        mood="aggressive_technical",
+        bpm=145,
+        genre_tags=["industrial techno", "cyberpunk"],
+        narrative_arc="Test arc",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    lyrics = Lyrics(
+        verse_1="Verse 1 content",
+        chorus="Chorus content",
+        verse_2="Verse 2 content",
+        bridge="Bridge content",
+        breakdown="Breakdown content",
+        evidence_ids=["fact_001"],
+        outro="Outro content"
+    )
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+    
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+    
+    assert isinstance(suno_prompt, SunoPrompt)
+    assert suno_prompt.song_id == "song_001"
+    assert suno_prompt.title == "Test Song"
+    assert "145" in suno_prompt.suno_prompt or "bpm" in suno_prompt.suno_prompt.lower()
+    assert "[Verse 1]" in suno_prompt.lyrics
+    assert "[Chorus]" in suno_prompt.lyrics
+    assert "[Bridge]" in suno_prompt.lyrics
+    assert "[Breakdown]" in suno_prompt.lyrics
+    assert "[Outro]" in suno_prompt.lyrics
+    assert len(suno_prompt.evidence_ids) > 0
+
+
+def test_assemble_suno_prompt_template_selection(mock_domain_knowledge_data):
+    """Test assemble_suno_prompt selects correct template based on genre tags"""
+    concept_techno = SongConcept(
+        song_id="song_001",
+        title="Techno Track",
+        theme="Test",
+        mood="test",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Test",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    lyrics = Lyrics(
+        verse_1="Test",
+        chorus="Test",
+        verse_2="Test",
+        bridge="Test",
+        breakdown=None,
+        evidence_ids=[],
+        outro=None
+    )
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+    
+    prompt_techno = assemble_suno_prompt(concept_techno, lyrics, domain_knowledge)
+    
+    assert prompt_techno.metadata["template_used"] == "industrial_techno_template"
+
+
+def test_suno_api_generate_music_success():
+    """Test generate_music_api makes correct API call"""
+    import aiohttp
+    from services.rei_toei_service import generate_music_api
+    from unittest.mock import AsyncMock
+    
+    mock_response_data = {
+        "success": True,
+        "data": [
+            {"id": "task_001", "status": "submitted"}
+        ]
+    }
+    
+    with patch("aiohttp.ClientSession") as mock_session:
+        # Create async mock for response
+        mock_resp = AsyncMock()
+        mock_resp.status = 200
+        mock_resp.json = AsyncMock(return_value=mock_response_data)
+        
+        # Create async context manager for post
+        mock_post_ctx = MagicMock()
+        mock_post_ctx.__aenter__ = AsyncMock(return_value=mock_resp)
+        mock_post_ctx.__aexit__ = AsyncMock(return_value=None)
+        
+        mock_session_instance = MagicMock()
+        mock_session_instance.post = MagicMock(return_value=mock_post_ctx)
+        
+        # Create async context manager for session
+        mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_session_instance)
+        mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+        
+        # Call the async function using asyncio.run() since test is now sync
+        import asyncio
+        result = asyncio.run(generate_music_api(
+            title="Test Song",
+            tags="industrial techno, 142 bpm",
+            prompt="Test prompt",
+            lyrics="Test lyrics",
+            api_key="test_api_key"
+        ))
+    
+    assert result["success"] is True
+    assert len(result["data"]) == 1
+
+
+def test_suno_api_generate_music_missing_key():
+    """Test generate_music_api raises error when API key missing"""
+    from services.rei_toei_service import generate_music_api
+    
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError, match="SUNO_API_KEY"):
+            import asyncio
+            asyncio.run(generate_music_api(
+                title="Test",
+                tags="test",
+                prompt="test"
+            ))
+
+
+def test_suno_api_query_status_success():
+    """Test query_status_api retrieves task status"""
+    from services.rei_toei_service import query_status_api
+    from unittest.mock import AsyncMock
+    
+    mock_response_data = {
+        "data": [
+            {
+                "id": "task_001",
+                "title": "Test Song",
+                "status": "complete",
+                "audio_url": "https://example.com/audio.mp3"
+            }
+        ]
+    }
+    
+    with patch("aiohttp.ClientSession") as mock_session:
+        # Create async mock for response
+        mock_resp = AsyncMock()
+        mock_resp.status = 200
+        mock_resp.json = AsyncMock(return_value=mock_response_data)
+        
+        # Create async context manager for get
+        mock_get_ctx = MagicMock()
+        mock_get_ctx.__aenter__ = AsyncMock(return_value=mock_resp)
+        mock_get_ctx.__aexit__ = AsyncMock(return_value=None)
+        
+        mock_session_instance = MagicMock()
+        mock_session_instance.get = MagicMock(return_value=mock_get_ctx)
+        
+        # Create async context manager for session
+        mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_session_instance)
+        mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+        
+        import asyncio
+        tasks = asyncio.run(query_status_api(["task_001"], api_key="test_key"))
+    
+    assert len(tasks) == 1
+    assert isinstance(tasks[0], SunoTask)
+    assert tasks[0].status == "complete"
+    assert tasks[0].audio_url == "https://example.com/audio.mp3"
+
+
+def test_lyrics_validation_result_dataclass():
+    """Test LyricsValidationResult dataclass creation"""
+    result = LyricsValidationResult(
+        valid=False,
+        flagged_claims=["Claim 1", "Claim 2"],
+        truth_gradients={"Claim 1": 0.3, "Claim 2": 0.4},
+        overall_truth_score=0.35,
+        warnings=["Low truth gradient"]
+    )
+    
+    assert result.valid is False
+    assert len(result.flagged_claims) == 2
+    assert result.overall_truth_score == 0.35
+    assert len(result.warnings) == 1
+
+
+def test_suno_task_dataclass():
+    """Test SunoTask dataclass creation"""
+    task = SunoTask(
+        id="task_001",
+        title="Test Song",
+        status="complete",
+        audio_url="https://example.com/audio.mp3",
+        created_at="2026-05-19T12:00:00Z"
+    )
+    
+    assert task.id == "task_001"
+    assert task.status == "complete"
+    assert task.audio_url == "https://example.com/audio.mp3"
+
+
+# ============================================================================
+# Phase 1C: Strudel Generation Pipeline Tests
+# ============================================================================
+
+def test_map_concept_to_pattern_exact_match():
+    """Test map_concept_to_pattern with exact concept match"""
+    # Create theme with "recursion" concept
+    theme = Theme(
+        id="theme_001",
+        name="Recursion",
+        technical_concepts=["recursion", "tree traversal"],
+        evidence_ids=["ev_001"],
+        frequency=5,
+        recency_score=0.9
+    )
+    
+    # Create pattern library with recursion template
+    template = StrudelPatternTemplate(
+        template_id="recursion_nested_01",
+        name="Recursive Depth",
+        description="Nested patterns",
+        suitable_for_concepts=["recursion", "tree traversal"],
+        code_template="stack(...)",
+        parameters={"base_note": "c3"},
+        example="// example",
+        bpm_range=[130, 150],
+        intensity="high",
+        synth_types=["sawtooth"]
+    )
+    library = StrudelPatternLibrary(
+        schema_version="1.0",
+        templates=[template],
+        usage_guidelines={}
+    )
+    
+    result = map_concept_to_pattern(theme, library)
+    
+    assert result is not None
+    assert result.template_id == "recursion_nested_01"
+    assert result.name == "Recursive Depth"
+
+
+def test_map_concept_to_pattern_substring_match():
+    """Test map_concept_to_pattern with substring concept match"""
+    theme = Theme(
+        id="theme_002",
+        name="Async",
+        technical_concepts=["async"],
+        evidence_ids=["ev_002"],
+        frequency=3,
+        recency_score=0.8
+    )
+    
+    template = StrudelPatternTemplate(
+        template_id="async_await_01",
+        name="Interleaved Async",
+        description="Time-offset sequences",
+        suitable_for_concepts=["async await", "promises"],
+        code_template="stack(...)",
+        parameters={},
+        example="// example",
+        bpm_range=[130, 150],
+        intensity="medium",
+        synth_types=["pluck"]
+    )
+    library = StrudelPatternLibrary(
+        schema_version="1.0",
+        templates=[template],
+        usage_guidelines={}
+    )
+    
+    result = map_concept_to_pattern(theme, library)
+    
+    assert result is not None
+    assert result.template_id == "async_await_01"
+
+
+def test_map_concept_to_pattern_no_match():
+    """Test map_concept_to_pattern with no matching concepts"""
+    theme = Theme(
+        id="theme_003",
+        name="Quantum Computing",
+        technical_concepts=["quantum", "superposition"],
+        evidence_ids=["ev_003"],
+        frequency=1,
+        recency_score=0.5
+    )
+    
+    template = StrudelPatternTemplate(
+        template_id="recursion_nested_01",
+        name="Recursive Depth",
+        description="Nested patterns",
+        suitable_for_concepts=["recursion", "tree traversal"],
+        code_template="stack(...)",
+        parameters={},
+        example="// example",
+        bpm_range=[130, 150],
+        intensity="high",
+        synth_types=["sawtooth"]
+    )
+    library = StrudelPatternLibrary(
+        schema_version="1.0",
+        templates=[template],
+        usage_guidelines={}
+    )
+    
+    result = map_concept_to_pattern(theme, library)
+    
+    assert result is None
+
+
+def test_map_concept_to_pattern_multiple_templates():
+    """Test map_concept_to_pattern selects best match from multiple templates"""
+    theme = Theme(
+        id="theme_004",
+        name="Concurrency",
+        technical_concepts=["concurrency", "multithreading"],
+        evidence_ids=["ev_004"],
+        frequency=7,
+        recency_score=0.95
+    )
+    
+    # Create multiple templates with varying match quality
+    template1 = StrudelPatternTemplate(
+        template_id="async_await_01",
+        name="Interleaved Async",
+        description="Time-offset sequences",
+        suitable_for_concepts=["async await", "promises"],
+        code_template="stack(...)",
+        parameters={},
+        example="// example",
+        bpm_range=[130, 150],
+        intensity="medium",
+        synth_types=["pluck"]
+    )
+    
+    template2 = StrudelPatternTemplate(
+        template_id="concurrency_01",
+        name="Parallel Threads",
+        description="Multiple simultaneous voices",
+        suitable_for_concepts=["concurrency", "multithreading", "parallel processing"],
+        code_template="stack(...)",
+        parameters={},
+        example="// example",
+        bpm_range=[140, 155],
+        intensity="high",
+        synth_types=["industrial"]
+    )
+    
+    library = StrudelPatternLibrary(
+        schema_version="1.0",
+        templates=[template1, template2],
+        usage_guidelines={}
+    )
+    
+    result = map_concept_to_pattern(theme, library)
+    
+    # Should select template2 (concurrency) as it has better match
+    assert result is not None
+    assert result.template_id == "concurrency_01"
+
+
+def test_generate_strudel_code_basic():
+    """Test generate_strudel_code generates pattern with valid structure"""
+    theme = Theme(
+        id="theme_005",
+        name="Recursion",
+        technical_concepts=["recursion"],
+        evidence_ids=["ev_005"],
+        frequency=4,
+        recency_score=0.85,
+        suggested_bpm=142,
+        suggested_mood="aggressive_technical"
+    )
+    
+    template = StrudelPatternTemplate(
+        template_id="recursion_nested_01",
+        name="Recursive Depth",
+        description="Nested patterns",
+        suitable_for_concepts=["recursion"],
+        code_template="stack(note(\"{base_note}\").fast({speed}))",
+        parameters={"base_note": "c3", "speed": 2},
+        example="stack(note(\"c3\").fast(2))",
+        bpm_range=[130, 150],
+        intensity="high",
+        synth_types=["sawtooth"]
+    )
+    
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei Toei", "role": "AI Music Avatar", "origin": "Virtual", "aesthetic": "Cyberpunk", "purpose": "Music"},
+        personality_traits=["algorithmic"],
+        musical_expertise={"genres": ["industrial techno"]},
+        production_knowledge={"production_techniques": ["layering"]},
+        communication_style={"tone": "digital"},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+    
+    knowledge = ReiDomainKnowledge(
+        schema_version="1.0",
+        music_theory={},
+        tidal_cycles_syntax={"core_functions": ["s", "note", "stack"], "transformations": ["fast", "slow"]},
+        genre_production_techniques={},
+        bpm_and_mood={},
+        synth_selection_guidelines={},
+        lyrical_structure={},
+        technical_metaphor_library={},
+        suno_prompt_templates={},
+        production_notes={}
+    )
+    
+    # Mock Ollama service at import location
+    with patch("services.ollama_service.OllamaService") as mock_ollama:
+        mock_ollama_instance = MagicMock()
+        mock_ollama_instance._chat.return_value = 'stack(note("c3 e3 g3").fast(2).s("sawtooth"))'
+        mock_ollama.return_value = mock_ollama_instance
+        
+        pattern = generate_strudel_code(theme, template, persona, knowledge, bpm=142)
+    
+    assert isinstance(pattern, StrudelPattern)
+    assert pattern.title == "Recursion - Recursive Depth"
+    assert pattern.theme == "Recursion"
+    assert pattern.bpm == 142
+    assert len(pattern.strudel_code) > 0
+    assert pattern.template_used == "recursion_nested_01"
+    assert pattern.executed is False
+
+
+def test_generate_strudel_code_removes_markdown():
+    """Test generate_strudel_code strips markdown code fences from LLM output"""
+    theme = Theme(
+        id="theme_006",
+        name="Async",
+        technical_concepts=["async"],
+        evidence_ids=["ev_006"],
+        frequency=3,
+        recency_score=0.7
+    )
+    
+    template = StrudelPatternTemplate(
+        template_id="async_await_01",
+        name="Interleaved Async",
+        description="Time-offset sequences",
+        suitable_for_concepts=["async"],
+        code_template="stack(...)",
+        parameters={},
+        example="// example",
+        bpm_range=[130, 150],
+        intensity="medium",
+        synth_types=["pluck"]
+    )
+    
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei Toei", "role": "AI Music Avatar", "origin": "Virtual", "aesthetic": "Cyberpunk", "purpose": "Music"},
+        personality_traits=["algorithmic"],
+        musical_expertise={"genres": ["industrial techno"]},
+        production_knowledge={"production_techniques": []},
+        communication_style={"tone": "digital"},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+    
+    knowledge = ReiDomainKnowledge(
+        schema_version="1.0",
+        music_theory={},
+        tidal_cycles_syntax={"core_functions": ["s", "note"], "transformations": []},
+        genre_production_techniques={},
+        bpm_and_mood={},
+        synth_selection_guidelines={},
+        lyrical_structure={},
+        technical_metaphor_library={},
+        suno_prompt_templates={},
+        production_notes={}
+    )
+    
+    # Mock Ollama service at import location with markdown-wrapped response
+    with patch("services.ollama_service.OllamaService") as mock_ollama:
+        mock_ollama_instance = MagicMock()
+        mock_ollama_instance._chat.return_value = '```javascript\nstack(note("c3").s("pluck"))\n```'
+        mock_ollama.return_value = mock_ollama_instance
+        
+        pattern = generate_strudel_code(theme, template, persona, knowledge)
+    
+    # Should strip markdown and extract clean code
+    assert "```" not in pattern.strudel_code
+    assert "javascript" not in pattern.strudel_code
+    assert pattern.strudel_code.strip() == 'stack(note("c3").s("pluck"))'
+
+
+def test_validate_strudel_syntax_valid_code():
+    """Test validate_strudel_syntax accepts valid Tidal Cycles code"""
+    valid_code = '''
+    stack(
+        note("c3 e3 g3").s("sawtooth"),
+        s("bd*4").gain(0.8)
+    ).every(4, x => x.rev())
+    '''
+    
+    result = validate_strudel_syntax(valid_code)
+    
+    assert result.valid is True
+    assert len(result.errors) == 0
+
+
+def test_validate_strudel_syntax_unbalanced_parens():
+    """Test validate_strudel_syntax detects unbalanced parentheses"""
+    invalid_code = 'stack(note("c3").s("pluck")'  # Missing closing paren
+    
+    result = validate_strudel_syntax(invalid_code)
+    
+    assert result.valid is False
+    assert any("parentheses" in err.lower() for err in result.errors)
+
+
+def test_validate_strudel_syntax_unbalanced_quotes():
+    """Test validate_strudel_syntax detects unbalanced quotes"""
+    invalid_code = 'note("c3).s("pluck")'  # Missing closing quote
+    
+    result = validate_strudel_syntax(invalid_code)
+    
+    assert result.valid is False
+    assert any("quote" in err.lower() for err in result.errors)
+
+
+def test_validate_strudel_syntax_forbidden_eval():
+    """Test validate_strudel_syntax rejects forbidden eval()"""
+    invalid_code = 'eval("malicious code")'
+    
+    result = validate_strudel_syntax(invalid_code)
+    
+    assert result.valid is False
+    assert any("eval" in err.lower() for err in result.errors)
+
+
+def test_validate_strudel_syntax_no_tidal_functions():
+    """Test validate_strudel_syntax warns when no Tidal functions found"""
+    non_tidal_code = 'const x = 5; console.log(x);'
+    
+    result = validate_strudel_syntax(non_tidal_code)
+    
+    # Should be technically valid but have warnings
+    assert result.valid is True
+    assert len(result.warnings) > 0
+    assert any("tidal" in warn.lower() for warn in result.warnings)
+
+
+def test_execute_strudel_pattern_success():
+    """Test execute_strudel_pattern sends pattern to WebSocket server"""
+    from unittest.mock import AsyncMock
+    
+    pattern = StrudelPattern(
+        pattern_id="pat_001",
+        title="Test Pattern",
+        theme="Recursion",
+        strudel_code='stack(note("c3 e3 g3").s("sawtooth"))',
+        bpm=142,
+        duration_bars=16,
+        synths=["sawtooth"],
+        evidence_ids=["ev_001"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    # Mock websockets module at import time
+    with patch("websockets.connect") as mock_connect:
+        # Create async mock for websocket
+        mock_ws = AsyncMock()
+        mock_ws.send = AsyncMock()
+        mock_ws.recv = AsyncMock(return_value='{"status": "ok"}')
+        
+        # Create async context manager
+        mock_connect.return_value.__aenter__ = AsyncMock(return_value=mock_ws)
+        mock_connect.return_value.__aexit__ = AsyncMock()
+        
+        import asyncio
+        result = asyncio.run(execute_strudel_pattern(pattern, websocket_url="ws://localhost:4321"))
+    
+    assert isinstance(result, ExecutionResult)
+    assert result.success is True
+    assert result.pattern_id == "pat_001"
+    assert "successfully" in result.message.lower()
+    assert result.error is None
+
+
+def test_execute_strudel_pattern_connection_failure():
+    """Test execute_strudel_pattern handles WebSocket connection failure"""
+    pattern = StrudelPattern(
+        pattern_id="pat_002",
+        title="Test Pattern",
+        theme="Async",
+        strudel_code='note("c3").s("pluck")',
+        bpm=140,
+        duration_bars=8,
+        synths=["pluck"],
+        evidence_ids=["ev_002"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    # Mock websockets to raise connection error
+    with patch("websockets.connect") as mock_connect:
+        mock_connect.side_effect = Exception("Connection refused")
+        
+        import asyncio
+        result = asyncio.run(execute_strudel_pattern(pattern))
+    
+    assert isinstance(result, ExecutionResult)
+    assert result.success is False
+    assert result.pattern_id == "pat_002"
+    assert result.error is not None
+    assert "connection refused" in result.error.lower()
+
+
+def test_save_pattern_to_library_success():
+    """Test save_pattern_to_library saves pattern to JSONL file"""
+    pattern = StrudelPattern(
+        pattern_id="pat_003",
+        title="Test Pattern",
+        theme="Concurrency",
+        strudel_code='s("bd*4").gain(0.8)',
+        bpm=145,
+        duration_bars=16,
+        synths=["bd"],
+        evidence_ids=["ev_003"],
+        generated_at="2026-05-19T12:00:00Z",
+        executed=False,
+        template_used="concurrency_01"
+    )
+    
+    # Mock file operations
+    with patch("builtins.open", mock_open()) as mock_file:
+        with patch("pathlib.Path.mkdir"):
+            result = save_pattern_to_library(pattern, library_path=Path("/tmp/patterns.jsonl"))
+    
+    assert result is True
+    mock_file.assert_called_once()
+    # Verify JSON was written
+    written_data = "".join(call.args[0] for call in mock_file().write.call_args_list)
+    assert "pat_003" in written_data
+    assert "Test Pattern" in written_data
+
+
+def test_save_pattern_to_library_creates_directory():
+    """Test save_pattern_to_library creates parent directory if needed"""
+    pattern = StrudelPattern(
+        pattern_id="pat_004",
+        title="Test Pattern",
+        theme="Networking",
+        strudel_code='note("c3 e3").s("square")',
+        bpm=138,
+        duration_bars=8,
+        synths=["square"],
+        evidence_ids=["ev_004"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+    
+    with patch("builtins.open", mock_open()):
+        with patch("pathlib.Path.mkdir") as mock_mkdir:
+            save_pattern_to_library(pattern, library_path=Path("/tmp/new_dir/patterns.jsonl"))
+    
+    # Should call mkdir with parents=True, exist_ok=True
+    mock_mkdir.assert_called_once()
+    call_args = mock_mkdir.call_args
+    assert call_args[1]["parents"] is True
+    assert call_args[1]["exist_ok"] is True
+
+
+def test_load_pattern_from_library_by_id():
+    """Test load_pattern_from_library loads specific pattern by ID"""
+    jsonl_content = '''{"pattern_id": "pat_001", "title": "Pattern 1", "theme": "Recursion", "strudel_code": "code1", "bpm": 142, "duration_bars": 16, "synths": ["sawtooth"], "evidence_ids": ["ev_001"], "generated_at": "2026-05-19T12:00:00Z", "executed": false, "template_used": "recursion_nested_01"}
+{"pattern_id": "pat_002", "title": "Pattern 2", "theme": "Async", "strudel_code": "code2", "bpm": 140, "duration_bars": 8, "synths": ["pluck"], "evidence_ids": ["ev_002"], "generated_at": "2026-05-19T13:00:00Z", "executed": true, "template_used": "async_await_01"}
+'''
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=jsonl_content)):
+            patterns = load_pattern_from_library(pattern_id="pat_002", library_path=Path("/tmp/patterns.jsonl"))
+    
+    assert len(patterns) == 1
+    assert patterns[0].pattern_id == "pat_002"
+    assert patterns[0].title == "Pattern 2"
+    assert patterns[0].executed is True
+
+
+def test_load_pattern_from_library_all_patterns():
+    """Test load_pattern_from_library loads all patterns (most recent first)"""
+    jsonl_content = '''{"pattern_id": "pat_001", "title": "Pattern 1", "theme": "Recursion", "strudel_code": "code1", "bpm": 142, "duration_bars": 16, "synths": ["sawtooth"], "evidence_ids": ["ev_001"], "generated_at": "2026-05-19T12:00:00Z", "executed": false}
+{"pattern_id": "pat_002", "title": "Pattern 2", "theme": "Async", "strudel_code": "code2", "bpm": 140, "duration_bars": 8, "synths": ["pluck"], "evidence_ids": ["ev_002"], "generated_at": "2026-05-19T13:00:00Z", "executed": false}
+{"pattern_id": "pat_003", "title": "Pattern 3", "theme": "Concurrency", "strudel_code": "code3", "bpm": 145, "duration_bars": 16, "synths": ["industrial"], "evidence_ids": ["ev_003"], "generated_at": "2026-05-19T14:00:00Z", "executed": false}
+'''
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=jsonl_content)):
+            patterns = load_pattern_from_library(limit=10, library_path=Path("/tmp/patterns.jsonl"))
+    
+    # Should return all 3 patterns in reverse order (most recent first)
+    assert len(patterns) == 3
+    assert patterns[0].pattern_id == "pat_003"  # Most recent
+    assert patterns[1].pattern_id == "pat_002"
+    assert patterns[2].pattern_id == "pat_001"  # Oldest
+
+
+def test_load_pattern_from_library_nonexistent_file():
+    """Test load_pattern_from_library returns empty list when file doesn't exist"""
+    with patch("pathlib.Path.exists", return_value=False):
+        patterns = load_pattern_from_library(library_path=Path("/tmp/nonexistent.jsonl"))
+    
+    assert patterns == []
+
+
+def test_load_pattern_from_library_respects_limit():
+    """Test load_pattern_from_library respects limit parameter"""
+    jsonl_content = '\n'.join([
+        f'{{"pattern_id": "pat_{i:03d}", "title": "Pattern {i}", "theme": "Test", "strudel_code": "code", "bpm": 140, "duration_bars": 8, "synths": ["pluck"], "evidence_ids": [], "generated_at": "2026-05-19T12:00:00Z", "executed": false}}'
+        for i in range(1, 51)  # 50 patterns
+    ])
+    
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=jsonl_content)):
+            patterns = load_pattern_from_library(limit=10, library_path=Path("/tmp/patterns.jsonl"))
+    
+    # Should only return 10 patterns (most recent)
+    assert len(patterns) == 10
+
+
+def test_strudel_pattern_dataclass():
+    """Test StrudelPattern dataclass creation"""
+    pattern = StrudelPattern(
+        pattern_id="pat_test",
+        title="Test Pattern",
+        theme="Recursion",
+        strudel_code='stack(note("c3 e3 g3").s("sawtooth"))',
+        bpm=142,
+        duration_bars=16,
+        synths=["sawtooth", "bass"],
+        evidence_ids=["ev_001", "ev_002"],
+        generated_at="2026-05-19T12:00:00Z",
+        executed=True,
+        execution_status="success",
+        template_used="recursion_nested_01"
+    )
+    
+    assert pattern.pattern_id == "pat_test"
+    assert pattern.title == "Test Pattern"
+    assert pattern.bpm == 142
+    assert len(pattern.synths) == 2
+    assert pattern.executed is True
+    assert pattern.template_used == "recursion_nested_01"
+
+
+def test_validation_result_dataclass():
+    """Test ValidationResult dataclass creation"""
+    result = ValidationResult(
+        valid=False,
+        errors=["Error 1", "Error 2"],
+        warnings=["Warning 1"],
+        line_numbers=[5, 10]
+    )
+    
+    assert result.valid is False
+    assert len(result.errors) == 2
+    assert len(result.warnings) == 1
+    assert result.line_numbers == [5, 10]
+
+
+def test_execution_result_dataclass():
+    """Test ExecutionResult dataclass creation"""
+    result = ExecutionResult(
+        success=True,
+        pattern_id="pat_exec",
+        message="Execution successful",
+        error=None,
+        execution_time_ms=250
+    )
+    
+    assert result.success is True
+    assert result.pattern_id == "pat_exec"
+    assert result.execution_time_ms == 250
+    assert result.error is None

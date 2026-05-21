@@ -23,9 +23,11 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total tests | Passed | Failed |
 | ----------- | ------ | ------ |
-| 565         | 565    | 0      |
+| 646         | 646    | 0      |
 
-**Latest run:** May 17, 2026 (Python 3.12.3, pytest 9.0.3)
+**Latest run:** May 20, 2026 (Python 3.12.3, pytest 9.0.3)
+
+**Test breakdown:** 565 original + 72 Rei Toei (Phases 1A-1C) + 9 Rei Toei console routing (Phase 1D)
 
 All tests pass. The suite covers:
 

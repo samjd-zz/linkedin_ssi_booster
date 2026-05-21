@@ -382,6 +382,18 @@ IMAGE_OUTPUT_DIR=/app/yt-vid-data
 
 ---
 
+## Rei Toei Music Generation
+
+### `SUNO_API_KEY` (required for Suno integration)
+
+Suno AI music generation API key. Get your API key from https://api.sunoapi.org/ or similar Suno API provider.
+
+**Note:** Suno API integration enables full music generation with vocal synthesis. Without this key, Rei Toei will only generate prompts (no actual audio).
+
+```bash
+SUNO_API_KEY=your_suno_api_key_here
+```
+
 ## Strudel Music Generation
 
 ### `OLLAMA_HOST`
