@@ -120,72 +120,160 @@ All tests pass. The suite covers:
 
 ## Repository structure
 
-yt-vid-data/ # YouTube video text and media
-
 Project file tree (top-level):
 
 ```
-├── main.py
-├── scheduler.py
-├── content_calendar.py
-├── requirements.txt
+linkedin_ssi_booster/
+├── main.py                        # CLI entrypoint — all flags, console loop, Rei Toei CLI handlers
+├── scheduler.py                   # PostScheduler — Buffer queue slot assignment
+├── content_calendar.py            # Weekly topic calendar (gitignored; see content_calendar.example.py)
+├── requirements.txt               # Full dependency list
+├── requirements-core.txt          # Minimal install (no GPU/image deps)
+├── requirements-flux.txt          # FLUX image generation extras
+├── run.sh                         # Docker helper (sets USER_UID, PulseAudio socket)
+├── docker-compose.yml             # Service definitions (ollama, piper, strudel, flux, postgres, app)
+├── Dockerfile
 ├── README.md
+├── QUICKSTART.md
+│
+├── agents/
+│   ├── buffer_mcp_agent.py        # Buffer MCP agent (GraphQL wrapper)
+│   └── strudel_mcp_agent.py       # Strudel live-coding MCP agent (WebSocket, port 4321)
+│
 ├── services/
-│   ├── content_curator/          # refactored package (was content_curator.py)
-│   │   ├── __init__.py           # public API re-exports
-│   │   ├── curator.py            # ContentCurator class
-│   │   ├── _config.py            # RSS feeds, keywords, SSI weights
-│   │   ├── _rss_fetcher.py       # article fetching
-│   │   ├── _text_utils.py        # string helpers
-│   │   ├── _evidence_paths.py    # EvidencePath builders
-│   │   ├── _ssi_picker.py        # topic signal + SSI component selection
-│   │   └── _grounding.py        # grounding keyword/tag loaders
-│   ├── avatar_intelligence/      # refactored package (was avatar_intelligence.py)
-│   │   ├── __init__.py           # public API re-exports + load_avatar_state wrapper
-│   │   ├── _paths.py             # path constants (PERSONA_GRAPH_PATH, etc.)
-│   │   ├── _models.py            # all dataclasses (AvatarState, EvidenceFact, etc.)
-│   │   ├── _loaders.py           # schema validators + file loaders
-│   │   ├── _normalizers.py       # evidence/domain/extracted fact normalization
-│   │   ├── _retrieval.py         # BM25 + fallback evidence retrieval
-│   │   ├── _grounding.py         # grounding context builders
-│   │   ├── _learning.py          # moderation event capture + learning report
-│   │   ├── _confidence.py        # confidence scoring + publish-mode routing
-│   │   ├── _narrative.py         # narrative memory update + continuity context
-│   │   └── _extraction.py        # spaCy fact extraction + save helpers
-│   ├── console_grounding/        # refactored package (was console_grounding.py)
-│   │   ├── __init__.py           # public API re-exports
-│   │   ├── _config.py            # env/config knobs and keyword defaults
-│   │   ├── _models.py            # ProjectFact, QueryConstraints, TruthGateMeta
-│   │   ├── _profile_parser.py    # PROFILE_CONTEXT bullet parsing
-│   │   ├── _retrieval.py         # deterministic retrieval + grounded replies
-│   │   ├── _gate_helpers.py      # regex/BM25 helpers and evidence checks
-│   │   └── _truth_gate.py        # truth gate orchestration + moderation hooks
-│   ├── selection_learning/       # refactored package (was selection_learning.py)
-│   │   ├── __init__.py           # backward-compatible public API re-exports
-│   │   ├── _constants.py         # paths and scoring thresholds
-│   │   ├── _models.py            # CandidateRecord / PublishedRecord / FeaturePrior
-│   │   ├── _storage.py           # JSONL read/append/rewrite helpers
-│   │   ├── _text.py              # hashing, tokenization, Jaccard, matching
-│   │   ├── _logging.py           # candidate logging + NLP enrichment
-│   │   ├── _published.py         # published-cache upsert helpers
-│   │   ├── _reconcile.py         # Buffer SENT reconciliation and labeling
-│   │   ├── _priors.py            # Beta-smoothed acceptance priors + boosts
-│   │   ├── _ranking.py           # article ranking formula and freshness decay
-│   │   └── _feedback.py          # explicit user feedback capture/application
-│   ├── buffer_service.py
-│   ├── ...
+│   ├── __init__.py
+│   ├── buffer_service.py          # Buffer GraphQL API client
+│   ├── ollama_service.py          # Ollama LLM client (chat_as_persona, generate_*)
+│   ├── github_service.py          # GitHub profile context builder
+│   ├── hybrid_retriever.py        # BM25 + graph proximity + claim-support retriever
+│   ├── knowledge_graph.py         # KnowledgeGraphManager (NetworkX, bootstrap_from_avatar_state)
+│   ├── model2vec_service.py       # Static embedding classifier (minishlab/potion-base-8M)
+│   ├── piper_service.py           # Wyoming Piper TTS client (speak_text)
+│   ├── pln_inference.py           # Probabilistic Logic Networks inference engine
+│   ├── rei_toei_service.py        # Rei Toei music avatar — Suno + Strudel generation (2000+ lines)
+│   ├── shared.py                  # Shared helpers (print_validation_reports, AVATAR_CONFIDENCE_POLICY)
+│   ├── spacy_nlp.py               # spaCy NLP wrapper (NER, similarity, en_core_web_md)
+│   ├── ssi_tracker.py             # SSI score persistence + Bluesky stats
+│   ├── image_generation.py        # FLUX.1-schnell image generation (full profile only)
+│   │
+│   ├── content_curator/           # Refactored package (was content_curator.py)
+│   │   ├── __init__.py            # Public API re-exports
+│   │   ├── curator.py             # ContentCurator class — orchestrates fetch → generate → push
+│   │   ├── _config.py             # RSS feeds, keywords, SSI weights/hints, env constants
+│   │   ├── _rss_fetcher.py        # fetch_relevant_articles(), fetch_article_text()
+│   │   ├── _text_utils.py         # truncate_at_sentence(), extract_hashtags(), append_url_and_hashtags()
+│   │   ├── _evidence_paths.py     # EvidencePath builders for DoT scoring
+│   │   ├── _ssi_picker.py         # build_topic_signal(), pick_ssi_component()
+│   │   └── _grounding.py          # Grounding keyword/tag loaders
+│   │
+│   ├── avatar_intelligence/       # Refactored package (was avatar_intelligence.py)
+│   │   ├── __init__.py            # Public API re-exports + load_avatar_state wrapper
+│   │   ├── _paths.py              # Path constants (PERSONA_GRAPH_PATH, etc.)
+│   │   ├── _models.py             # Dataclasses (AvatarState, EvidenceFact, DomainEvidenceFact, etc.)
+│   │   ├── _loaders.py            # Schema validators + file loaders (merges domain_knowledge_*.json)
+│   │   ├── _normalizers.py        # Evidence/domain/extracted fact normalization
+│   │   ├── _retrieval.py          # BM25 + fallback evidence retrieval
+│   │   ├── _grounding.py          # Grounding context builders
+│   │   ├── _learning.py           # Moderation event capture + learning report
+│   │   ├── _confidence.py         # Confidence scoring + publish-mode routing
+│   │   ├── _narrative.py          # Narrative memory update + continuity context
+│   │   └── _extraction.py         # spaCy fact extraction + noise filters + save helpers
+│   │
+│   ├── console_grounding/         # Refactored package (was console_grounding.py)
+│   │   ├── __init__.py            # Public API re-exports
+│   │   ├── _config.py             # Env/config knobs and keyword defaults
+│   │   ├── _models.py             # ProjectFact, QueryConstraints, TruthGateMeta
+│   │   ├── _profile_parser.py     # PROFILE_CONTEXT bullet parsing
+│   │   ├── _retrieval.py          # Deterministic retrieval + grounded replies
+│   │   ├── _gate_helpers.py       # Regex/BM25 helpers and evidence checks
+│   │   ├── _truth_gate.py         # Truth gate orchestration + moderation hooks
+│   │   └── _rei_console.py        # Rei Toei console handler (handle_rei_console, 350+ lines)
+│   │
+│   ├── selection_learning/        # Refactored package (was selection_learning.py)
+│   │   ├── __init__.py            # Backward-compatible public API re-exports
+│   │   ├── _constants.py          # Paths and scoring thresholds
+│   │   ├── _models.py             # CandidateRecord / PublishedRecord / FeaturePrior
+│   │   ├── _storage.py            # JSONL read/append/rewrite helpers
+│   │   ├── _text.py               # Hashing, tokenization, Jaccard, matching
+│   │   ├── _logging.py            # Candidate logging + NLP enrichment
+│   │   ├── _published.py          # Published-cache upsert helpers
+│   │   ├── _reconcile.py          # Buffer SENT reconciliation and labeling
+│   │   ├── _priors.py             # Beta-smoothed acceptance priors + boosts
+│   │   ├── _ranking.py            # Article ranking formula and freshness decay
+│   │   ├── _feedback.py           # Explicit user feedback capture/application
+│   │   └── _category_analytics.py # Category performance analytics for --avatar-learn-report
+│   │
+│   ├── derivative_of_truth/       # Derivative of Truth framework
+│   │   ├── _constants.py          # Evidence/reasoning type constants
+│   │   ├── _models.py             # EvidencePath, TruthGradientResult, DoTScore
+│   │   ├── _scoring.py            # score_claim_with_truth_gradient(), report_truth_gradient()
+│   │   └── _reporting.py          # format_truth_gradient_report(), format_dot_report_header()
+│   │
+│   └── database/                  # PostgreSQL integration (optional, DATABASE_ENABLED=true)
+│       ├── __init__.py            # Public API re-exports
+│       ├── models.py              # SQLAlchemy ORM models (17 tables)
+│       ├── repositories.py        # Repository classes (read/query)
+│       ├── writers.py             # Write helpers (upsert, bulk insert)
+│       ├── session.py             # Engine + session factory
+│       └── migrate_data.py        # JSON/JSONL → PostgreSQL migration script
+│
 ├── data/
-│   ├── avatar/
-│   └── selection/
+│   ├── avatar/                    # User-private runtime state (gitignored)
+│   │   ├── persona_graph.json                  # Sam's persona graph
+│   │   ├── domain_knowledge.json               # Primary domain knowledge
+│   │   ├── domain_knowledge_java.json          # Java domain pack (auto-merged)
+│   │   ├── domain_knowledge_python.json        # Python domain pack (auto-merged)
+│   │   ├── narrative_memory.json               # Narrative continuity state
+│   │   ├── extracted_knowledge.json            # NLP-extracted facts (--learn)
+│   │   ├── rei_toei_persona_graph.json         # Rei Toei's persona graph
+│   │   ├── rei_toei_domain_knowledge.json      # Rei Toei's music domain knowledge
+│   │   └── rei_toei_strudel_patterns.json      # Strudel pattern template library
+│   └── selection/                 # Selection learning state (gitignored)
+│       ├── candidates.jsonl       # Generated post candidates
+│       ├── published.jsonl        # Reconciled published posts
+│       └── moderation.jsonl       # Moderation event log
+│
 ├── docs/
-│   ├── features/
-│   └── ...
+│   ├── features/                  # Feature design docs (idea.md + plan.md per feature)
+│   │   ├── rei-toei/              # Rei Toei music avatar (Phases 1A-1E complete)
+│   │   ├── database/              # PostgreSQL integration
+│   │   ├── derivative-of-truth/   # DoT framework
+│   │   └── ...
+│   └── *.md                       # Architecture, CLI reference, environment variables, etc.
+│
 ├── tests/
-│   ├── test_*.py
-│   └── fixtures/
-├── media/
-├── yt-vid-data/
-└── ...
+│   ├── conftest.py
+│   ├── fixtures/
+│   ├── test_avatar_state_loader.py
+│   ├── test_buffer_service.py
+│   ├── test_confidence_scoring.py
+│   ├── test_content_curator.py
+│   ├── test_continual_learning.py
+│   ├── test_database_repos.py
+│   ├── test_derivative_of_truth.py
+│   ├── test_enhanced_console_routing.py
+│   ├── test_evidence_mapping.py
+│   ├── test_integration_flags.py
+│   ├── test_knowledge_graph.py
+│   ├── test_learned_knowledge_search.py
+│   ├── test_learning_report.py
+│   ├── test_model2vec_service.py
+│   ├── test_ollama_extracted_grounding.py
+│   ├── test_persona_graph_retrieval.py
+│   ├── test_piper_service.py
+│   ├── test_rei_cli_flags.py       # Rei Toei CLI flags (Phase 1E, 8 tests)
+│   ├── test_rei_console_routing.py # Rei Toei console routing (Phase 1D, 9 tests)
+│   ├── test_rei_toei_service.py    # Rei Toei service (Phases 1A-1C, 72 tests)
+│   ├── test_selection_learning.py
+│   ├── test_spacy_nlp.py
+│   └── test_truth_gate_dot.py
+│
+├── media/                         # Documentation images and favicons
+├── scripts/
+│   ├── init-db.sql                # PostgreSQL schema initialisation
+│   ├── add_url_links_columns.sql  # Migration: url_links columns
+│   └── download-flux1-schnell-Q4_K_S.sh
+└── yt-vid-data/                   # Generated YouTube scripts + Rei Toei Suno JSON outputs
 ```
 
 User-private runtime state is under `data/avatar/` and `data/selection/` (local, gitignored).
