@@ -625,6 +625,22 @@ def main():
                         help="List all available Model2Vec categories with descriptions and SSI component mapping")
     parser.add_argument("--remove-category", nargs="+", metavar="NAME",
                         help="Remove custom categories by name: --remove-category 'AI Research' 'Government Tech'")
+    
+    # Rei Toei Music Generation
+    rei_group = parser.add_argument_group("Rei Toei Music Generation")
+    rei_group.add_argument("--rei-generate", action="store_true",
+                           help="Generate Suno song from recent knowledge")
+    rei_group.add_argument("--rei-generate-strudel", action="store_true",
+                           help="Generate Strudel pattern instead of Suno")
+    rei_group.add_argument("--rei-theme", type=str,
+                           help="Generate music for specific theme")
+    rei_group.add_argument("--rei-explain", action="store_true",
+                           help="Show reasoning for generation choices")
+    rei_group.add_argument("--rei-preview", action="store_true",
+                           help="Preview without saving/executing")
+    rei_group.add_argument("--rei-execute", action="store_true",
+                           help="Execute Strudel pattern (requires --rei-generate-strudel)")
+    
     args = parser.parse_args()
 
     if args.debug:
@@ -785,6 +801,15 @@ def main():
                 print(f"    • {name} (not found or is a default category)")
         return
 
+    # Handle Rei Toei CLI commands
+    if args.rei_generate or args.rei_generate_strudel:
+        print(str(Fore.YELLOW) + "\n⚠️  Rei Toei CLI integration is in development (Phase 1E)" + str(Style.RESET_ALL))
+        print("   Use console mode instead: python main.py --console")
+        print("   Then type: /rei-toei or /rei")
+        print()
+        print("   Phase 1E CLI will be completed in the next iteration.")
+        return
+    
     if not (args.schedule or args.curate or args.console):
         parser.print_help()
         return

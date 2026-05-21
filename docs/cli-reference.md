@@ -641,9 +641,112 @@ docker compose --profile core run --rm -it app python main.py --console
 
 ---
 
+## Rei Toei Music Generation
+
+**Status:** Phase 1E Partial — CLI flags added, full implementation in progress
+
+Rei Toei is the AI music avatar that transforms curated technical knowledge into original music compositions via Suno (vocal songs) and Strudel (algorithmic patterns).
+
+### `--rei-generate`
+
+Generate a Suno song prompt from recent extracted knowledge.
+
+**Status:** ⚠️ In development — currently shows placeholder message
+
+**Example:**
+
+```bash
+python main.py --rei-generate
+python main.py --rei-generate --rei-theme "microservices architecture"
+python main.py --rei-generate --rei-explain
+```
+
+**Current behavior:** Displays message directing users to console mode (`/rei-toei` or `/rei` commands)
+
+### `--rei-generate-strudel`
+
+Generate a Strudel/Tidal Cycles algorithmic pattern instead of a Suno song.
+
+**Status:** ⚠️ In development — currently shows placeholder message
+
+**Example:**
+
+```bash
+python main.py --rei-generate-strudel
+python main.py --rei-generate-strudel --rei-theme "async programming"
+python main.py --rei-generate-strudel --rei-execute
+```
+
+**Current behavior:** Displays message directing users to console mode (`/rei-toei` or `/rei` commands)
+
+### `--rei-theme <theme>`
+
+Specify a custom theme for music generation (works with both `--rei-generate` and `--rei-generate-strudel`).
+
+**Example:**
+
+```bash
+python main.py --rei-generate --rei-theme "vector databases"
+python main.py --rei-generate-strudel --rei-theme "distributed systems"
+```
+
+### `--rei-explain`
+
+Show reasoning for generation choices including evidence IDs and grounding facts.
+
+**Example:**
+
+```bash
+python main.py --rei-generate --rei-explain
+python main.py --rei-generate-strudel --rei-theme "kubernetes" --rei-explain
+```
+
+### `--rei-preview`
+
+Preview generated music without saving to library or executing patterns.
+
+**Example:**
+
+```bash
+python main.py --rei-generate --rei-preview
+python main.py --rei-generate-strudel --rei-preview
+```
+
+### `--rei-execute`
+
+Execute generated Strudel pattern via MCP agent (requires `--rei-generate-strudel`).
+
+**Example:**
+
+```bash
+python main.py --rei-generate-strudel --rei-execute
+python main.py --rei-generate-strudel --rei-theme "neural networks" --rei-execute
+```
+
+**Note:** Requires Strudel MCP agent running on port 4321 (Docker service: `strudel-music-server`)
+
+### Console Mode Alternative
+
+For full Rei Toei functionality, use console mode:
+
+```bash
+python main.py --console
+# Then type: /rei-toei or /rei
+```
+
+**Console commands:**
+
+- `/rei-toei` or `/rei` — Switch to Rei Toei music avatar mode
+- General conversation with Rei about music, technical concepts, or knowledge
+- Request Strudel pattern generation: "generate a strudel pattern about microservices"
+- Request Suno song generation: "write a song about async programming"
+
+---
+
 ## See Also
 
 - [Usage Guide](usage-schedule-curate-console.md) — Detailed workflow documentation
 - [Environment Variables Reference](environment-variables.md) — All configuration options
 - [Docker & Deployment Guide](docker-deployment.md) — Docker-specific commands
 - [Persona and Avatar Intelligence](persona-and-avatar.md) — Grounding and learning concepts
+- [Rei Toei Feature Plan](features/rei-toei/plan.md) — Complete implementation roadmap
