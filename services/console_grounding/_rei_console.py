@@ -28,7 +28,7 @@ from services.rei_toei_service import (
     Theme,
 )
 from services.ollama_service import OllamaService
-from services.avatar_intelligence._loaders import _load_extracted_knowledge
+from services.avatar_intelligence import load_avatar_state as _lav_rei_console
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +102,9 @@ async def _handle_strudel_request(
     try:
         # Extract theme from user input
         # Load extracted knowledge graph
-        extracted_kg_path = Path("data/avatar/extracted_knowledge.json")
-        extracted_kg, _errors = _load_extracted_knowledge(extracted_kg_path)
-        
+        _avatar_state = _lav_rei_console()
+        extracted_kg = _avatar_state.extracted_knowledge
+
         if not extracted_kg:
             reply = (
                 "⚠️ Could not load extracted knowledge. "
@@ -191,9 +191,9 @@ async def _handle_suno_request(
     try:
         # Extract theme from user input
         # Load extracted knowledge graph
-        extracted_kg_path = Path("data/avatar/extracted_knowledge.json")
-        extracted_kg, _errors = _load_extracted_knowledge(extracted_kg_path)
-        
+        _avatar_state = _lav_rei_console()
+        extracted_kg = _avatar_state.extracted_knowledge
+
         if not extracted_kg:
             reply = (
                 "⚠️ Could not load extracted knowledge. "
