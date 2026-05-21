@@ -394,6 +394,26 @@ Suno AI music generation API key. Get your API key from https://api.sunoapi.org/
 SUNO_API_KEY=your_suno_api_key_here
 ```
 
+### `REI_TOEI_USE_SAM_PERSONA`
+
+Enable Rei Toei to access Sam's persona graph for project knowledge inspiration.
+
+**Default:** `true`
+
+When enabled, Rei can organically reference Sam's GitHub projects, skills, and company experience in song concepts and lyrics. This is **additive** to Rei's own persona graph, domain knowledge, and pattern library — she always uses her own knowledge files.
+
+**When true:** The LLM receives Sam's project context as optional inspiration during song concept and lyric generation. Rei may naturally weave project references into metaphors if thematically relevant.
+
+**When false:** Rei only uses her own knowledge sources (rei_toei_persona_graph.json, rei_toei_domain_knowledge.json, rei_toei_strudel_patterns.json).
+
+```bash
+# Enable Sam's persona graph for richer context
+REI_TOEI_USE_SAM_PERSONA=true
+
+# Disable to use only Rei's baseline knowledge
+REI_TOEI_USE_SAM_PERSONA=false
+```
+
 ## Strudel Music Generation
 
 ### `OLLAMA_HOST`

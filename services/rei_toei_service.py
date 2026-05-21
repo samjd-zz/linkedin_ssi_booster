@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from services.avatar_intelligence._models import ExtractedEvidenceFact
+    from services.avatar_intelligence._models import ExtractedEvidenceFact, PersonaGraph
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,9 @@ class ReiToeiConfig:
         self.strudel_enabled = os.getenv("REI_TOEI_STRUDEL_ENABLED", "true").lower() == "true"
         self.strudel_default_bars = int(os.getenv("REI_TOEI_STRUDEL_DEFAULT_BARS", "16"))
         self.strudel_auto_execute = os.getenv("REI_TOEI_STRUDEL_AUTO_EXECUTE", "false").lower() == "true"
+        
+        # Sam's persona graph integration
+        self.use_sam_persona = os.getenv("REI_TOEI_USE_SAM_PERSONA", "true").lower() == "true"
         
         # File paths
         self.persona_path = Path("data/avatar/rei_toei_persona_graph.json")
@@ -402,6 +405,7 @@ class ReiToeiService:
         self._persona: Optional[ReiPersonaGraph] = None
         self._domain_knowledge: Optional[ReiDomainKnowledge] = None
         self._pattern_library: Optional[StrudelPatternLibrary] = None
+        self._sam_persona: Optional["PersonaGraph"] = None  # TYPE_CHECKING import
         
         logger.info("Rei Toei service initialized")
     
@@ -426,16 +430,35 @@ class ReiToeiService:
             self._pattern_library = load_strudel_patterns()
         return self._pattern_library
     
+    @property
+    def sam_persona(self) -> Optional["PersonaGraph"]:
+        """Get Sam's persona graph for project knowledge inspiration (lazy load)"""
+        if not self.config.use_sam_persona:
+            return None
+        
+        if self._sam_persona is None:
+            from services.avatar_intelligence._loaders import load_avatar_state
+            logger.info("Loading Sam's persona graph for Rei Toei")
+            avatar_state = load_avatar_state()
+            self._sam_persona = avatar_state.persona_graph
+            if self._sam_persona:
+                logger.info(f"Loaded Sam's persona: {len(self._sam_persona.projects)} projects, {len(self._sam_persona.skills)} skills")
+        
+        return self._sam_persona
+    
     def reload(self) -> None:
         """Reload all Rei knowledge files (useful for console /reload)"""
         logger.info("Reloading Rei Toei knowledge files")
         self._persona = None
         self._domain_knowledge = None
         self._pattern_library = None
+        self._sam_persona = None
         # Force reload on next access
         _ = self.persona
         _ = self.domain_knowledge
         _ = self.pattern_library
+        if self.config.use_sam_persona:
+            _ = self.sam_persona
         logger.info("Rei Toei knowledge files reloaded")
     
     def get_default_bpm(self, mood: Optional[str] = None) -> int:
@@ -788,7 +811,8 @@ def extract_themes(
 def generate_song_concept(
     theme: Theme,
     persona: ReiPersonaGraph,
-    domain_knowledge: ReiDomainKnowledge
+    domain_knowledge: ReiDomainKnowledge,
+    sam_persona: Optional["PersonaGraph"] = None
 ) -> SongConcept:
     """
     Generate a high-level song concept from a technical theme using Ollama LLM
@@ -800,6 +824,7 @@ def generate_song_concept(
         theme: The technical theme to transform into music
         persona: Rei's persona graph (identity, style, expertise)
         domain_knowledge: Rei's music production knowledge
+        sam_persona: Optional Sam's persona graph for project knowledge inspiration
         
     Returns:
         SongConcept: High-level song idea with all musical parameters
@@ -850,6 +875,23 @@ You transform technical knowledge into high-energy electronic music. You speak i
     
     metaphor_hint = f"\nTechnical metaphor examples: {', '.join(metaphor_examples[:5])}" if metaphor_examples else ""
     
+    # Build Sam's project context if available
+    sam_context = ""
+    if sam_persona:
+        project_names = [p.name for p in (sam_persona.projects or [])[:5]]
+        skill_names = [s.name for s in (sam_persona.skills or [])[:10]]
+        company_names = [c.name for c in (sam_persona.companies or [])[:3]]
+        
+        if project_names or skill_names or company_names:
+            sam_context = "\n\nSam's project knowledge (for organic inspiration):"
+            if project_names:
+                sam_context += f"\n- Projects: {', '.join(project_names)}"
+            if skill_names:
+                sam_context += f"\n- Skills: {', '.join(skill_names)}"
+            if company_names:
+                sam_context += f"\n- Companies: {', '.join(company_names)}"
+            sam_context += "\n(You may naturally reference these if relevant to the theme, but it's optional.)"
+    
     # Build user prompt
     user_prompt = f"""Generate a song concept for this technical theme:
 
@@ -859,7 +901,7 @@ Frequency in knowledge base: {theme.frequency} facts
 Recency score: {theme.recency_score} (higher = more recent)
 Suggested BPM: {suggested_bpm}
 Suggested mood: {suggested_mood}
-Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{metaphor_hint}
+Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{metaphor_hint}{sam_context}
 
 Mood-to-BPM reference: {mood_context}
 
@@ -1081,7 +1123,8 @@ Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
 def compose_lyrics(
     concept: SongConcept,
     persona: ReiPersonaGraph,
-    domain_knowledge: ReiDomainKnowledge
+    domain_knowledge: ReiDomainKnowledge,
+    sam_persona: Optional["PersonaGraph"] = None
 ) -> Lyrics:
     """
     Compose structured song lyrics using Rei's voice and cyberpunk aesthetic.
@@ -1092,6 +1135,7 @@ def compose_lyrics(
         concept: The song concept with mood, BPM, and theme
         persona: Rei's persona graph (lyrical style, voice)
         domain_knowledge: Music production knowledge (lyrical structure, metaphors)
+        sam_persona: Optional Sam's persona graph for project knowledge inspiration
         
     Returns:
         Lyrics: Structured song sections with evidence tracking
@@ -1139,6 +1183,23 @@ Lyrical Formatting Rules:
     
     metaphor_context = f"\nTechnical metaphors to integrate: {', '.join(relevant_metaphors[:10])}" if relevant_metaphors else ""
     
+    # Build Sam's project context if available
+    sam_context = ""
+    if sam_persona:
+        project_names = [p.name for p in (sam_persona.projects or [])[:5]]
+        skill_names = [s.name for s in (sam_persona.skills or [])[:10]]
+        company_names = [c.name for c in (sam_persona.companies or [])[:3]]
+        
+        if project_names or skill_names or company_names:
+            sam_context = "\n\nSam's project knowledge (for organic inspiration):"
+            if project_names:
+                sam_context += f"\n- Projects: {', '.join(project_names)}"
+            if skill_names:
+                sam_context += f"\n- Skills: {', '.join(skill_names)}"
+            if company_names:
+                sam_context += f"\n- Companies: {', '.join(company_names)}"
+            sam_context += "\n(You may naturally weave these into the lyrics if thematically relevant, but it's optional.)"
+    
     # Build user prompt with strict formatting and character caps
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with API parsing boundaries.
@@ -1148,7 +1209,7 @@ Theme: {concept.theme}
 Mood: {concept.mood}
 BPM: {concept.bpm}
 Genre tags: {', '.join(concept.genre_tags)}
-Narrative arc: {concept.narrative_arc}{metaphor_context}
+Narrative arc: {concept.narrative_arc}{metaphor_context}{sam_context}
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown outside the JSON structure). 
 Ensure you inject the requested musical arrangement tags directly inside the string fields:
