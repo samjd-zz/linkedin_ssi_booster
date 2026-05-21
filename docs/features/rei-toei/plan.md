@@ -578,26 +578,45 @@ class StrudelPatternTemplate:
 
 ### Phase 1D: Console Integration (Week 2-3)
 
-**Duration:** 2-3 days
+**Duration:** 2-3 days  
+**Status:** ✅ COMPLETE (2026-05-20)
 
 #### Tasks
 
-1. **Console Routing** (modify `services/console_grounding/__init__.py`)
+1. **Console Routing** ✅ COMPLETE
 
    ```python
-   def route_console_message(user_input: str, ...) -> str:
-       """Add Rei routing logic"""
-       if user_input.startswith("/rei-toei") or user_input.startswith("/rei"):
-           return handle_rei_console(user_input, ...)
-       # ... existing Sam routing ...
+   # main.py lines 350-380
+   # Rei Toei routing: /rei or /rei-toei commands
+   if cmd.startswith("/rei-toei") or cmd.startswith("/rei"):
+       from services.console_grounding._rei_console import handle_rei_console
+       import asyncio
+
+       # Extract message after command (if any)
+       rei_input = user_input[len("/rei-toei"):].strip() if user_input.lower().startswith("/rei-toei") else user_input[len("/rei"):].strip()
+
+       # If no input, provide welcome message
+       if not rei_input:
+           rei_input = "Hello! Tell me about yourself."
+
+       try:
+           reply, history = asyncio.run(handle_rei_console(rei_input, ai, history, max_tokens=600))
+           print(str(Fore.MAGENTA) + f"Rei> {reply}" + str(Style.RESET_ALL))
+           speak_text(reply)
+       except Exception as rei_err:
+           logger.error(f"Rei console error: {rei_err}")
+           print(str(Fore.RED) + f"⚠️ Rei error: {rei_err}" + str(Style.RESET_ALL))
+       continue
    ```
 
-2. **Rei Console Handler**
+2. **Rei Console Handler** ✅ COMPLETE
 
    ```python
+   # services/console_grounding/_rei_console.py
    async def handle_rei_console(user_input: str,
-                                 rei_service: ReiToeiService,
-                                 extracted_knowledge: ExtractedKnowledgeGraph) -> str:
+                                 ai: OllamaService,
+                                 history: list[dict[str, str]],
+                                 max_tokens: int = 600) -> tuple[str, list[dict[str, str]]]:
        """
        Handle Rei-specific console interactions
        - Parse user intent (general chat, song generation, pattern request)
@@ -607,12 +626,11 @@ class StrudelPatternTemplate:
        """
    ```
 
-3. **Rei-Specific Grounding**
+3. **Rei-Specific Grounding** ✅ COMPLETE
 
    ```python
-   def ground_rei_response(prompt: str,
-                           rei_persona: ReiPersonaGraph,
-                           relevant_knowledge: List[str]) -> str:
+   # services/console_grounding/_rei_console.py
+   def _build_rei_grounding_context(rei_persona, rei_domain, extracted_facts) -> str:
        """
        Ground Rei's responses in:
        - Her persona graph (identity, expertise)
@@ -622,33 +640,44 @@ class StrudelPatternTemplate:
        """
    ```
 
-4. **Real-Time Strudel Execution**
+4. **Real-Time Strudel Execution** ✅ COMPLETE
    ```python
-   async def execute_pattern_from_console(user_request: str,
-                                          rei_service: ReiToeiService) -> str:
+   # services/console_grounding/_rei_console.py
+   async def _handle_strudel_request(user_input, rei_persona, rei_domain, extracted_facts, ai, history, max_tokens) -> tuple[str, list]:
        """
        Generate and execute Strudel pattern in console
        - Extract theme from user request
-       - Generate pattern
-       - Execute via MCP agent
+       - Generate pattern via generate_strudel_code()
+       - Execute via MCP agent (optional)
        - Return status and pattern code
        """
    ```
 
 **Deliverables:**
 
-- ✅ `/rei-toei` and `/rei` routing in console
-- ✅ Rei-specific conversation handler
-- ✅ Grounding with Rei's knowledge
-- ✅ Real-time Strudel execution support
-- ✅ Integration tests for console routing (8-10 tests)
+- ✅ `/rei-toei` and `/rei` routing in console (main.py lines 350-380)
+- ✅ Rei-specific conversation handler (services/console_grounding/\_rei_console.py, 350+ lines)
+- ✅ Grounding with Rei's knowledge (\_build_rei_grounding_context)
+- ✅ Real-time Strudel execution support (\_handle_strudel_request)
+- ✅ Integration tests for console routing (9 tests in tests/test_rei_console_routing.py)
 
 **Success Criteria:**
 
-- `/rei-toei` command switches to Rei personality
-- Rei responds with distinct voice (algorithmic, high-energy, technical music focus)
-- Can generate and execute Strudel patterns from console
-- Maintains conversation context
+- ✅ `/rei-toei` command switches to Rei personality
+- ✅ Rei responds with distinct voice (algorithmic, high-energy, technical music focus)
+- ✅ Can generate and execute Strudel patterns from console
+- ✅ Maintains conversation context
+
+**Implementation Notes (2026-05-20):**
+
+- Console routing integrated directly in main.py run_console() function
+- Three routing modes: Strudel generation, Suno generation, general conversation
+- Async handler uses asyncio.run() for compatibility with synchronous console loop
+- Error handling with graceful fallback messages
+- Help text updated to include /rei and /rei-toei commands
+- 9 integration tests covering command parsing, routing logic, whitespace handling
+- pytest-asyncio>=0.23.0 added to requirements-core.txt
+- Test count updated: 646 tests passing (637 + 9 new console routing tests)
 
 ---
 
