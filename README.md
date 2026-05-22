@@ -59,7 +59,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 ---
 
 ## 🎨 New: Local Image Generation (FLUX.1-schnell)
-> - **Alex Grey Avatar** 👨‍🍳
+> - **Alex Grey Avatar coming soon...** 👨‍🍳
 The system now includes a high-fidelity image generation pipeline powered by **FLUX.1-schnell** running locally on your GPU. This allows you to generate professional, persona-aligned visuals for your LinkedIn posts without cloud costs or privacy concerns.
 
 - **VRAM Optimized:** Built specifically for consumer hardware (tested on **RTX 3060 12GB**).
