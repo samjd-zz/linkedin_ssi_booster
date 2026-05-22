@@ -490,7 +490,7 @@
   },
   "suno_prompt_templates": {
     "industrial_techno_template": "industrial techno, {bpm} bpm, female ai vocaloid vocals, heavy distorted bass, {mood} energy, harsh synthesis, aggressive driving beat, dark club sound, futuristic cyberpunk,extended mix, progressive arrangement",
-    "cyberpunk_electro_template": "cyberpunk electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing, raw data noise, dark club beats, bitcrushed, extended mix, progressive arrangement",
+    "cyberpunk_electro_template": "cyberpunk electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing, raw data noise, dark club beats, bitcrushed, extended mix, progressive arrangement, futuristic cyberpunk anthem",
     "dark_synthwave_template": "dark synthwave, {bpm} bpm, female ai vocaloid, analog synth bass, 808 drums, dystopian aesthetic, {mood} vibe, retro-futuristic, neon-lit darkness,extended mix, progressive arrangement",
     "glitch_industrial_template": "glitch industrial, {bpm} bpm, female ai vocaloid vocals, granular synthesis, circuit-bent sounds, buffer artifacts, {mood} chaos, digital hardcore elements, raw data noise,extended mix, progressive arrangement"
   },
