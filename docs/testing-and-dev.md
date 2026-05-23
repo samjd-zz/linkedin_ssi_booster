@@ -25,7 +25,7 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 | ----------- | ------ | ------ |
 | 654         | 654    | 0      |
 
-**Latest run:** May 20, 2026 (Python 3.12.3, pytest 9.0.3)
+**Latest run:** May 23, 2026 (Python 3.12.3, pytest 9.0.3)
 
 **Test breakdown:** 565 original + 89 Rei Toei (Phases 1A-1E: 27 foundation + 25 Suno + 20 Strudel + 9 console + 8 CLI flags)
 
@@ -48,6 +48,7 @@ All tests pass. The suite covers:
 - **`avatar_intelligence` package refactor** (`services/avatar_intelligence.py` split into a proper Python package with ten focused submodules: `_paths`, `_models`, `_loaders`, `_normalizers`, `_retrieval`, `_grounding`, `_learning`, `_confidence`, `_narrative`, `_extraction`)
 - **`console_grounding` package refactor** (`services/console_grounding.py` split into a proper Python package with focused submodules: `_config`, `_models`, `_profile_parser`, `_retrieval`, `_gate_helpers`, `_truth_gate`)
 - **`selection_learning` package refactor** (`services/selection_learning.py` split into a proper Python package with focused submodules: `_constants`, `_models`, `_storage`, `_text`, `_logging`, `_published`, `_reconcile`, `_priors`, `_ranking`, `_feedback`)
+- **`rei_toei` package refactor** (`services/rei_toei_service.py` split into a proper Python package with focused submodules: `_config`, `_models`, `_loaders`, `_suno_client`, `_suno_pipeline`, `_strudel_pipeline`, `service`, and `__init__.py` for backward-compatible re-exports)
 - Avatar intelligence, curation, continual learning (NLP-extracted knowledge), learning, spaCy NLP, and all core automation features
 
 **Derivative of Truth status:**

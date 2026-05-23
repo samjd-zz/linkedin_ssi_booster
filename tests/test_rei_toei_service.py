@@ -844,7 +844,8 @@ def test_compose_lyrics_with_ollama(mock_domain_knowledge_data):
     
     assert isinstance(lyrics, Lyrics)
     assert "Async" in lyrics.verse_1
-    assert "Tokio" in lyrics.chorus
+    # Chorus is now uppercase by design (Suno optimization)
+    assert "TOKIO" in lyrics.chorus or "Tokio" in lyrics.chorus
     assert len(lyrics.evidence_ids) == 1
     assert lyrics.breakdown is not None
     assert lyrics.outro is not None
