@@ -2,7 +2,8 @@
   <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
-# LinkedIn SSI Booster - :muscle: POWERED by Buffer.com!
+# SSI Booster - :muscle: POWERED by Buffer.com!
+>small rebrand
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
@@ -11,7 +12,7 @@
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
 
-**LinkedIn SSI Booster** isn't just a prompt wrapper — it's an adaptive continual learning automation system for content, curation, and persona growth. It combines spaCy-based NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX-powered knowledge graph, and local memory to generate, curate, rank, and route posts.
+**SSI Booster** isn't just a prompt wrapper — it's an adaptive continual learning automation system for content, curation, and persona growth. It combines spaCy-based NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX-powered knowledge graph, and local memory to generate, curate, rank, and route posts.
 
 Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
 
@@ -71,7 +72,7 @@ The system now includes a high-fidelity image generation pipeline powered by **F
 
 > **Inspiration:** Rei Toei is the platform's AI music avatar, inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) and the cyberpunk aesthetics of William Gibson's _Idoru_.
 
-**Rei Toei** transforms the LinkedIn SSI Booster from a knowledge extraction system into a **creative knowledge expression platform**. She's a virtual AI idol who converts curated technical knowledge into original music — both vocal songs (via Suno AI) and algorithmic live-coding patterns (via Strudel/Tidal Cycles).
+**Rei Toei** transforms the SSI Booster from a knowledge extraction system into a **creative knowledge expression platform**. She's a virtual AI idol who converts curated technical knowledge into original music — both vocal songs (via Suno AI) and algorithmic live-coding patterns (via Strudel/Tidal Cycles).
 
 ### Dual Music Generation
 
@@ -158,9 +159,9 @@ The system now includes an autonomous Buffer integration agent powered by the **
 
 ---
 
-## 🏆 What is the LinkedIn SSI?
+## 🏆 What is the Social Selling Index (SSI)?
 
-The [LinkedIn Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
+The [LinkedIn specifically uses the  Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
 
 A higher SSI directly correlates with more profile views, post reach, and inbound connection requests. LinkedIn's own data shows that professionals with an SSI above 70 get 45% more opportunities than those below 30.
 
@@ -229,7 +230,7 @@ Want to automate your LinkedIn growth with the best scheduling tool? [Sign up fo
 
 - Effortlessly schedule posts at optimal times for maximum reach
 - Manage multiple channels and queues from one dashboard
-- Integrates seamlessly with LinkedIn SSI Booster for hands-off publishing
+- Integrates seamlessly with SSI Booster for hands-off publishing
 
 **Support the project:** Using our [Buffer partner link](https://join.buffer.com/samjd42) helps fund ongoing development and keeps this tool open-source. Try Buffer today and see why top creators and engineers trust it for their content workflow!
 
