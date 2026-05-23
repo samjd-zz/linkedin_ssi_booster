@@ -25,6 +25,25 @@
 - No bare `except:` — always catch specific exception types
 - Constants in UPPER_SNAKE_CASE at module top
 
+## File Size & Modularization (CRITICAL)
+
+**Maximum file size: 300-500 lines per `.py` file**
+
+- Any service module exceeding 500 lines MUST be refactored into a package structure
+- Use package-based architecture with private modules (underscore prefix) + public API via `__init__.py`
+- **Pattern to follow**: `avatar_intelligence/`, `console_grounding/`, `content_curator/`, `selection_learning/`, `derivative_of_truth/`, `rei_toei/`
+- **Standard package layout**:
+  - `_config.py` — configuration, constants, enums
+  - `_models.py` — dataclasses, type definitions
+  - `_loaders.py` — file I/O, data loading functions
+  - `_<domain>.py` — domain-specific logic (e.g., `_retrieval.py`, `_scoring.py`, `_pipeline.py`)
+  - `service.py` or main orchestration module — high-level API
+  - `__init__.py` — re-export public API for backward compatibility
+- Each module should have a single, focused responsibility
+- If a module approaches 500 lines, break it down further by extracting helpers, utilities, or sub-pipelines
+- **No monolithic files** — maintainability and testability are top priorities
+- When refactoring, maintain backward compatibility via re-exports in `__init__.py`
+
 ## Environment & Secrets
 
 - All secrets loaded via `python-dotenv` from `.env` (never hardcode keys)

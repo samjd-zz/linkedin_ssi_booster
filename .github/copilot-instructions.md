@@ -127,6 +127,25 @@ linkedin_ssi_booster/
 - All LLM calls go through `services/ollama_service.py` — do not scatter model calls across the codebase
 - All Buffer API calls go through `services/buffer_service.py`
 
+## File Size & Modularization (CRITICAL)
+
+**Maximum file size: 300-500 lines per `.py` file**
+
+- Any service module exceeding 500 lines MUST be refactored into a package structure
+- Use package-based architecture with private modules (underscore prefix) + public API via `__init__.py`
+- **Pattern to follow**: `avatar_intelligence/`, `console_grounding/`, `content_curator/`, `selection_learning/`, `derivative_of_truth/`, `rei_toei/`
+- **Standard package layout**:
+  - `_config.py` — configuration, constants, enums
+  - `_models.py` — dataclasses, type definitions
+  - `_loaders.py` — file I/O, data loading functions
+  - `_<domain>.py` — domain-specific logic (e.g., `_retrieval.py`, `_scoring.py`, `_pipeline.py`)
+  - `service.py` or main orchestration module — high-level API
+  - `__init__.py` — re-export public API for backward compatibility
+- Each module should have a single, focused responsibility
+- If a module approaches 500 lines, break it down further by extracting helpers, utilities, or sub-pipelines
+- **No monolithic files** — maintainability and testability are top priorities
+- When refactoring, maintain backward compatibility via re-exports in `__init__.py`
+
 ## Secret Management
 
 - All secrets via `os.getenv()` after `load_dotenv()`
