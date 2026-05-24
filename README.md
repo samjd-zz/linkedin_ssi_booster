@@ -60,8 +60,9 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 ---
 
 ## 🎨 New: Local Image Generation (FLUX.1-schnell)
+
 > - **Alex Grey Avatar coming soon...** 👨‍🍳
-The system now includes a high-fidelity image generation pipeline powered by **FLUX.1-schnell** running locally on your GPU. This allows you to generate professional, persona-aligned visuals for your LinkedIn posts without cloud costs or privacy concerns.
+>   The system now includes a high-fidelity image generation pipeline powered by **FLUX.1-schnell** running locally on your GPU. This allows you to generate professional, persona-aligned visuals for your LinkedIn posts without cloud costs or privacy concerns.
 
 - **VRAM Optimized:** Built specifically for consumer hardware (tested on **RTX 3060 12GB**).
 - **GGUF Quantization:** Uses 4-bit quantized "brains" to fit a state-of-the-art transformer model into local memory.
@@ -144,7 +145,10 @@ Unlike generic AI music tools, Rei is **knowledge-grounded**:
 - Cyberpunk aesthetic maintains consistency with technical focus
 - Full transparency with evidence IDs and DoT scores
 
-See [docs/features/rei-toei/plan.md](docs/features/rei-toei/plan.md) for complete implementation details, architecture diagrams, and usage examples.
+See the following documentation for complete details:
+
+- **[Rei Toei Customization Guide](docs/rei-toei-customization.md)** — Comprehensive guide to customizing Rei's persona, musical style, domain knowledge, and pattern templates with examples
+- [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) — Complete implementation details, architecture diagrams, and usage examples
 
 ## 📤 New: Buffer MCP Agent
 
