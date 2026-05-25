@@ -376,8 +376,8 @@ Communication style: {persona.communication_style['tone']}
 Lyrical Formatting Rules:
 1. Speak in cryptic technical metaphors and electronic jargon.
 2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields.
-3. ABSOLUTELY NO parenthetical instructions like '(Stanza 1)' or '(More chaos)'. Use plain line breaks only.
-4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) to signal high dynamic energy to the audio model."""
+3. ABSOLUTELY NO parenthetical instructions like '(Stanza 1)' or '(More chaos)'. Use plain line breaks only."""
+#4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) to signal high dynamic energy to the audio model."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
