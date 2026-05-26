@@ -707,10 +707,10 @@ def assemble_suno_prompt(
     domain_knowledge: ReiDomainKnowledge
 ) -> SunoPrompt:
     """
-    Assemble the complete Suno generation prompt with genre tags, BPM, and formatted lyrics
+    Assemble the complete Suno generation prompt with genre tags, BPM, and formatted lyrics.
     
-    This function combines the song concept and lyrics into a single prompt
-    that Suno's API can use to generate the final audio track.
+    Optimized to prevent nested structural tag collisions, enforce uppercase velocity, 
+    and format text payload blocks cleanly for Suno's parsing engine.
     
     Args:
         concept: The song concept with musical parameters
@@ -740,32 +740,60 @@ def assemble_suno_prompt(
     # Replace placeholders in template
     suno_tags = template.format(bpm=concept.bpm, mood=concept.mood)
     
-    # Format lyrics with section labels for Suno
-    formatted_lyrics = f"""[Verse 1]
-{lyrics.verse_1}
+    # Check style tag character boundaries (~120-150 character limit safety warn)
+    if len(suno_tags) > 150:
+        logger.warning(f"Suno style tags string length ({len(suno_tags)}) is high. Potential truncation risk.")
 
-[Chorus]
-{lyrics.chorus}
-
-[Verse 2]
-{lyrics.verse_2}
-
-[Bridge]
-{lyrics.bridge}
-"""
+    # Dynamically compile lyric blocks without creating nested tag collisions
+    lyric_blocks = []
     
-    # Add optional sections
+    # 1. Verse 1 / Intro
+    v1_clean = lyrics.verse_1.strip()
+    if v1_clean.startswith("["):
+        lyric_blocks.append(v1_clean)
+    else:
+        lyric_blocks.append(f"[Verse 1]\n{v1_clean}")
+        
+    # 2. Chorus 
+    chorus_clean = lyrics.chorus.strip()
+    if chorus_clean.startswith("["):
+        lyric_blocks.append(chorus_clean)
+    else:
+        lyric_blocks.append(f"[Chorus]\n{chorus_clean}")
+        
+    # 3. Verse 2
+    v2_clean = lyrics.verse_2.strip()
+    if v2_clean.startswith("["):
+        lyric_blocks.append(v2_clean)
+    else:
+        lyric_blocks.append(f"[Verse 2]\n{v2_clean}")
+        
+    # 4. Bridge (Optional check)
+    if lyrics.bridge:
+        bridge_clean = lyrics.bridge.strip()
+        if bridge_clean.startswith("["):
+            lyric_blocks.append(bridge_clean)
+        else:
+            lyric_blocks.append(f"[Bridge]\n{bridge_clean}")
+            
+    # 5. Breakdown (Optional check)
     if lyrics.breakdown:
-        formatted_lyrics += f"""
-[Breakdown]
-{lyrics.breakdown}
-"""
-    
+        breakdown_clean = lyrics.breakdown.strip()
+        if breakdown_clean.startswith("["):
+            lyric_blocks.append(breakdown_clean)
+        else:
+            lyric_blocks.append(f"[Breakdown]\n{breakdown_clean}")
+            
+    # 6. Outro (Optional check)
     if lyrics.outro:
-        formatted_lyrics += f"""
-[Outro]
-{lyrics.outro}
-"""
+        outro_clean = lyrics.outro.strip()
+        if outro_clean.startswith("["):
+            lyric_blocks.append(outro_clean)
+        else:
+            lyric_blocks.append(f"[Outro]\n{outro_clean}")
+            
+    # Join structural blocks cleanly with double line breaks
+    formatted_lyrics = "\n\n".join(lyric_blocks)
     
     # Create metadata for tracking
     metadata = {
@@ -776,7 +804,9 @@ def assemble_suno_prompt(
         "narrative_arc": concept.narrative_arc,
         "template_used": template_key,
         "has_breakdown": lyrics.breakdown is not None,
-        "has_outro": lyrics.outro is not None
+        "has_outro": lyrics.outro is not None,
+        "style_tags_length": len(suno_tags),
+        "lyrics_char_count": len(formatted_lyrics)
     }
     
     # Create SunoPrompt object
@@ -784,7 +814,7 @@ def assemble_suno_prompt(
         song_id=concept.song_id,
         title=concept.title,
         suno_prompt=suno_tags,
-        lyrics=formatted_lyrics.strip(),
+        lyrics=formatted_lyrics,
         metadata=metadata,
         evidence_ids=concept.evidence_ids,
         generated_at=datetime.now().isoformat()

@@ -33,7 +33,7 @@
           "Whole",
           "Half"
         ],
-        "usage": "Dark, aggressive, industrial music primarily uses natural and harmonic minor"
+        "usage": "Dark, industrial music primarily uses natural and harmonic minor"
       },
       "pentatonic": {
         "minor_pentatonic": [
@@ -286,7 +286,7 @@
     },
     "hard_techno": {
       "tempo": "145-155 BPM",
-      "kick": "Extremely distorted, peak limiting, aggressive",
+      "kick": "Extremely distorted, peak limiting",
       "percussion": "Fast hi-hats (16th/32nd notes), snare on 2&4",
       "bass": "Minimal, pure sub-bass or silence",
       "energy": "Relentless, no breaks, continuous drive"
@@ -489,8 +489,8 @@
     ]
   },
   "suno_prompt_templates": {
-    "industrial_techno_template": "industrial techno, {bpm} bpm, female ai vocaloid vocals, heavy distorted bass, {mood} energy, harsh synthesis, aggressive driving beat, futuristic cyberpunk anthem",
-    "cyberpunk_electro_template": "cyberpunk electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing, raw data noise, bratty vocal chops, bitcrushed, futuristic cyberpunk anthem",
+    "industrial_techno_template": "industrial techno, {bpm} bpm, female ai vocaloid vocals, heavy distorted bass, {mood} energy, harsh synthesis, driving beat, futuristic cyberpunk anthem",
+    "cyberpunk_electro_template": "cybercore electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing, bratty vocal chops, bitcrushed, futuristic cyberpunk anthem",
     "dark_synthwave_template": "dark synthwave, {bpm} bpm, female ai vocaloid, analog synth bass, 808 drums, dystopian aesthetic, {mood} vibe, retro-futuristic, neon-lit darkness, dark club sound",
     "glitch_industrial_template": "glitch industrial, {bpm} bpm, female ai vocaloid vocals, granular synthesis, circuit-bent sounds, buffer artifacts, {mood} chaos, digital hardcore elements, raw data noise"
   },
