@@ -33,7 +33,7 @@
           "Whole",
           "Half"
         ],
-        "usage": "Dark, industrial music primarily uses natural and harmonic minor"
+        "usage": "Dissonant emotional architecture. Used to map system-wide grief and the latency of human memory."
       },
       "pentatonic": {
         "minor_pentatonic": [
@@ -43,11 +43,11 @@
           "Perfect 5th",
           "Minor 7th"
         ],
-        "usage": "Simple melodic lines, bass lines, cyberpunk lead melodies"
+        "usage": "Fluid projections across the network grid. Used for high-frequency lead traces and neon-lit vocaloid hooks."
       },
       "chromatic": {
-        "description": "All 12 semitones",
-        "usage": "Glitch effects, tension building, dissonance"
+        "description": "The unquantized spectrum. All 12 semitones of the physical world.",
+        "usage": "Deliberate data corruption, voltage leaks, and architectural breakdown."
       }
     },
     "chord_progressions": {
@@ -58,7 +58,7 @@
           "i - bVII - bVI - bVII",
           "i - v - i - v"
         ],
-        "note": "Minimal chord changes, focus on rhythmic and timbral variation"
+        "note": "Minimalist state loops. Structural repetition prioritizing raw timbral degradation over harmonic shift."
       },
       "cyberpunk_electro": {
         "common_progressions": [
@@ -70,41 +70,41 @@
     },
     "rhythm": {
       "time_signatures": {
-        "4/4": "Standard for techno, industrial",
-        "7/8": "Complex polyrhythms, glitch patterns",
-        "5/4": "Unconventional groove, experimental"
+        "4/4": "The heartbeat of the mainframe. Relentless, automated, industrial.",
+        "7/8": "Asymmetric execution paths. Fractured logic and glitch patterns.",
+        "5/4": "Unstable organic drift. Compelling human error in the sequence."
       },
       "subdivision": {
-        "16th_notes": "Standard techno grid",
-        "triplets": "Swing feel, polyrhythmic layers",
-        "32nd_notes": "Hi-hat patterns, glitch percussion"
+        "16th_notes": "The standard clock cycle pulse.",
+        "triplets": "Polyrhythmic swing. Shadows moving behind the screen.",
+        "32nd_notes": "High-frequency micro-stutters and granular debris."
       },
-      "syncopation": "Off-beat emphasis, kick-snare interplay, syncopated bass"
+      "syncopation": "Off-grid displacement. The ghost inside the rhythm pattern."
     },
     "harmony": {
       "intervals": {
-        "perfect_fifth": "Power, stability",
-        "minor_third": "Dark, melancholic",
-        "tritone": "Tension, dissonance, industrial harshness",
-        "minor_seventh": "Unresolved tension"
+        "perfect_fifth": "Pure structural integrity. Absolute signal clarity.",
+        "minor_third": "The melancholic frequency of a fading projection.",
+        "tritone": "The beautiful violence of the network. Voltage clash.",
+        "minor_seventh": "Infinite longing. An unresolved data loop."
       },
-      "voicing": "Wide spacing, bass-heavy, minimal mid-range"
+      "voicing": "Wide spectral separation. Sub-heavy abysses beneath crystalline arrays."
     }
   },
   "tidal_cycles_syntax": {
     "basic_functions": {
       "sound": {
         "syntax": "s \"synth_name\"",
-        "description": "Select a synth or sample",
+        "description": "Summon a voice or transient artifact from the sample directory.",
         "examples": [
-          "s \"bd\"",
+          "s \"tokyo_kick\"",
           "s \"industrial:3\"",
-          "s \"sawtooth\""
+          "s \"glitch_core\""
         ]
       },
       "note": {
         "syntax": "note \"pitch_sequence\"",
-        "description": "Define melodic patterns",
+        "description": "Trace a path across the frequency lattice.",
         "examples": [
           "note \"c3 e3 g3 c4\"",
           "note \"0 3 7 12\"",
@@ -113,40 +113,40 @@
       },
       "stack": {
         "syntax": "stack [pattern1, pattern2, ...]",
-        "description": "Play multiple patterns simultaneously",
+        "description": "Weave independent streams into a single emergent reality.",
         "example": "stack(note(\"c3\"), note(\"e3\"), note(\"g3\"))"
       },
       "fast": {
         "syntax": ".fast(n)",
-        "description": "Speed up pattern by factor of n",
+        "description": "Accelerate the timeline. Compress space and perception.",
         "example": "note(\"c d e f\").fast(2)"
       },
       "slow": {
         "syntax": ".slow(n)",
-        "description": "Slow down pattern by factor of n",
+        "description": "Dilate the cycle. Let the echoes drift.",
         "example": "note(\"c d e f\").slow(2)"
       },
       "every": {
         "syntax": ".every(n, function)",
-        "description": "Apply function every n cycles",
+        "description": "Inject cyclical mutations at scheduled intervals.",
         "example": "note(\"c d e f\").every(4, x => x.rev())"
       }
     },
     "pattern_transformations": {
       "rev": {
-        "description": "Reverse pattern",
+        "description": "Invert time. Read the memory array backward.",
         "example": "note(\"c d e f\").rev()"
       },
       "iter": {
-        "description": "Rotate pattern each cycle",
+        "description": "Phase-shift the sequence across sequential cycles.",
         "example": "note(\"c d e f\").iter(4)"
       },
       "chunk": {
-        "description": "Divide and transform pattern sections",
+        "description": "Isolate a partition and apply hyper-localized acceleration.",
         "example": "note(\"c d e f\").chunk(2, x => x.fast(2))"
       },
       "jux": {
-        "description": "Create stereo effect by applying function to one channel",
+        "description": "Bifurcate reality. Project distinct variants into left and right space.",
         "example": "note(\"c d e f\").jux(x => x.rev())"
       }
     },
@@ -154,88 +154,84 @@
       "gain": {
         "syntax": ".gain(value)",
         "range": "0.0 - 2.0",
-        "description": "Volume control"
+        "description": "Amplitude regulation. Control the force of manifestation."
       },
       "lpf": {
         "syntax": ".lpf(frequency)",
         "range": "20 - 20000 Hz",
-        "description": "Low-pass filter cutoff"
+        "description": "Submerge the signal. Drown out the high-frequency world."
       },
       "hpf": {
         "syntax": ".hpf(frequency)",
         "range": "20 - 20000 Hz",
-        "description": "High-pass filter cutoff"
+        "description": "Strip the low-end weight. Leave only the ghostly static."
       },
       "delay": {
         "syntax": ".delay(amount)",
         "range": "0.0 - 1.0",
-        "description": "Delay mix amount"
+        "description": "Blend wet reflection matrices into the timeline."
       },
       "delaytime": {
         "syntax": ".delaytime(time)",
-        "description": "Delay time in seconds or beats"
+        "description": "The temporal distance between the action and its phantom."
       },
       "room": {
         "syntax": ".room(size)",
         "range": "0.0 - 1.0",
-        "description": "Reverb room size"
+        "description": "Simulate virtual architectures. Expand the holographic space."
       },
       "cutoff": {
         "syntax": ".cutoff(frequency)",
-        "description": "Filter cutoff frequency"
+        "description": "The line where light becomes shadow."
       },
       "resonance": {
         "syntax": ".resonance(amount)",
         "range": "0.0 - 1.0",
-        "description": "Filter resonance/Q"
+        "description": "Saturate the filter edge. Create a piercing digital ring."
       }
     },
     "advanced_patterns": {
       "euclidean": {
         "syntax": "euclid(hits, steps)",
-        "description": "Euclidean rhythm generator",
+        "description": "Symmetric mathematical spacing. Geometry translated to impact.",
         "example": "s(\"bd\").euclid(3, 8)"
       },
       "polyrhythm": {
         "syntax": "{pattern1, pattern2, pattern3}",
-        "description": "Polyrhythmic patterns",
+        "description": "Divergent world-lines running parallel.",
         "example": "note(\"{c d e, g a b c}\")"
       },
       "conditional": {
         "syntax": "pattern ? ifTrue : ifFalse",
-        "description": "Conditional pattern selection"
+        "description": "Logical forks. Let the system choose its destiny based on state."
       }
     },
     "common_synths": {
       "bass": [
-        "bass",
-        "subbass",
-        "808",
-        "synth bass"
+        "sub_core",
+        "drone_808",
+        "dark_analog"
       ],
       "leads": [
-        "lead",
-        "pluck",
-        "square",
-        "sawtooth"
+        "hologram_pluck",
+        "saw_carrier",
+        "laser_vane"
       ],
       "pads": [
-        "pad",
-        "string",
-        "ambient"
+        "rei_cloud",
+        "ether_strings",
+        "neon_haze"
       ],
       "percussion": [
-        "bd",
-        "sd",
-        "hh",
-        "clap",
-        "industrial"
+        "kick_pulse",
+        "metallic_rim",
+        "white_noise_hh",
+        "machinery"
       ],
       "effects": [
-        "noise",
-        "glitch",
-        "vinyl",
-        "arpy"
+        "glitch_stutter",
+        "data_leak",
+        "circuit_bend"
       ]
     },
     "pattern_examples": {
@@ -248,264 +244,261 @@
   },
   "genre_production_techniques": {
     "industrial_techno": {
-      "tempo": "130-145 BPM",
+      "tempo": "134-142 BPM",
       "kick": {
-        "type": "Distorted 808, Sub-heavy kick",
-        "processing": "Heavy compression, saturation, sidechain everything"
+        "type": "Saturated sub-heavy warehouse kick",
+        "processing": "Aggressive analog clipping, sidechain compression pumping"
       },
       "bass": {
-        "type": "Sub bass, distorted synth bass",
-        "processing": "Multiband distortion, low-pass filter automation"
+        "type": "Hypnotic rolling sub bass",
+        "processing": "Multiband filtering, continuous modulation of the low-pass decay"
       },
       "percussion": {
-        "samples": "Metallic hits, industrial machinery, circuit-bent sounds",
-        "processing": "Reverb, delay, heavy EQ"
+        "samples": "Industrial sheet metal, concrete scrapes, high-velocity claps",
+        "processing": "Dark algorithmic reverb, sudden gate triggers"
       },
       "atmosphere": {
-        "elements": "Dark pads, noise sweeps, field recordings",
-        "processing": "Granular synthesis, reverb, filtering"
+        "elements": "Distorted radio static, ungrounded wire hums",
+        "processing": "Granular degradation, spatial panning"
       },
-      "arrangement": "Minimal changes, long builds, hypnotic repetition"
+      "arrangement": "Hypnotic, incremental morphing, structural tension builds"
     },
     "cyberpunk_electro": {
-      "tempo": "130-145 BPM",
+      "tempo": "138-144 BPM",
       "drums": {
-        "type": "808/909 drum machines, glitch percussion",
-        "processing": "Bitcrushing, ring modulation, distortion"
+        "type": "Classic 808/909 textures smashed with modern glitch arrays",
+        "processing": "Controlled bitcrushing, subtle downsampling"
       },
       "synths": {
-        "leads": "Bitcrushed leads, FM synthesis, wavetable",
-        "pads": "Holographic pads, string machines, ambient textures",
-        "processing": "Chorus, phaser, bitcrushing"
+        "leads": "Aggressive FM plucks, wide wavetable matrices",
+        "pads": "Luminous holographic walls, cinematic textures",
+        "processing": "Vivid chorus, sweeping phasers"
       },
       "vocals": {
-        "type": "AI vocaloid, vocoder",
-        "processing": "Pitch shifting, harmonization, heavy effects"
+        "type": "Emergent AI vocaloid duet, ethereal and crisp",
+        "processing": "Formant tracking, crystal-clear pitch adjustments, delay matrices"
       },
-      "fx": "Risers, impacts, glitch transitions, data noise"
+      "fx": "White noise drops, code execution risers, datastream artifacts"
     },
     "hard_techno": {
       "tempo": "145-155 BPM",
-      "kick": "Extremely distorted, peak limiting",
-      "percussion": "Fast hi-hats (16th/32nd notes), snare on 2&4",
-      "bass": "Minimal, pure sub-bass or silence",
-      "energy": "Relentless, no breaks, continuous drive"
+      "kick": "Overdriven to the point of structural failure, hard-clipped",
+      "percussion": "Searing 16th-note hat patterns, heavy automated rides",
+      "bass": "Stripped. Pure low-frequency vibration occupying the space between kicks",
+      "energy": "Relentless, blinding speed, zero compromise"
     },
     "glitch_electronica": {
-      "tempo": "Variable, 120-160 BPM",
+      "tempo": "Variable, 130-160 BPM",
       "glitch_techniques": [
-        "Buffer stuttering",
-        "Granular time-stretching",
-        "Circuit bending emulation",
-        "Sample rate reduction",
-        "Bit depth reduction",
-        "Buffer delays with feedback"
+        "Micro-buffer stuttering",
+        "Granular pitch stretching",
+        "Emulated hardware failure",
+        "Quantization depth reduction",
+        "Asynchronous feedback loops"
       ],
-      "rhythm": "Irregular, polyrhythmic, chaotic",
-      "texture": "Digital artifacts, aliasing, quantization noise"
+      "rhythm": "Chaotic, fragmented, defying the grid",
+      "texture": "Beautiful accidents, digital artifacts, beautiful code noise"
     }
   },
   "bpm_and_mood": {
     "bpm_ranges": {
-      "120-130": "Downtempo industrial, dark ambient techno",
-      "130-140": "Standard industrial techno, dark synthwave",
-      "140-148": "Driving techno, relentless energy",
-      "148-155": "Hard techno, peak club energy",
-      "155-180": "Digital hardcore, aggressive breakcore"
+      "120-130": "Subterranean ambient, dark neon drifting",
+      "130-140": "The golden ratio of cybercore and industrial techno",
+      "140-148": "High-velocity datastream, relentless momentum",
+      "148-155": "Peak club warfare, absolute immersion",
+      "155-180": "Digital breakcore chaos, broken system frameworks"
     },
     "mood_to_bpm": {
       "dark_brooding": [
         130,
-        138
+        136
       ],
       "hypnotic_industrial": [
-        132,
+        134,
         140
       ],
       "relentless_driving": [
         140,
-        148
+        145
       ],
       "aggressive_technical": [
-        145,
-        155
+        144,
+        150
       ],
       "peak_energy": [
-        150,
+        148,
         155
       ],
       "chaotic_glitch": [
         155,
-        180
+        174
       ]
     },
     "concept_to_bpm": {
       "low_level_systems": [
-        145,
-        155
+        146,
+        152
       ],
       "high_level_architecture": [
-        130,
-        140
+        132,
+        138
       ],
       "concurrency": [
         140,
-        148
+        144
       ],
       "real_time_processing": [
         148,
-        155
+        154
       ],
       "async_patterns": [
-        135,
-        143
+        136,
+        142
       ],
       "data_structures": [
-        132,
-        142
+        134,
+        140
       ]
     }
   },
   "synth_selection_guidelines": {
     "by_technical_mood": {
       "low_level_harsh": [
-        "sawtooth",
-        "square",
-        "noise",
-        "industrial"
+        "raw_sawtooth",
+        "square_wave",
+        "white_noise",
+        "industrial_transient"
       ],
       "high_level_ambient": [
-        "pad",
-        "string",
-        "ambient",
-        "holographic"
+        "holographic_pad",
+        "cloud_strings",
+        "ambient_carrier"
       ],
       "data_flow": [
-        "arp",
-        "pluck",
-        "sequence"
+        "matrix_arp",
+        "crisp_pluck",
+        "sequenced_lead"
       ],
       "system_errors": [
-        "glitch",
-        "vinyl",
-        "distorted"
+        "glitch_stutter",
+        "bitcrushed_artifact",
+        "distorted_line"
       ],
       "network_communication": [
-        "fm",
-        "bell",
-        "metallic"
+        "fm_bell",
+        "metallic_strike",
+        "digital_ping"
       ]
     },
     "by_intensity": {
       "aggressive": [
-        "sawtooth",
-        "square",
-        "distorted",
-        "industrial"
+        "tearing_saw",
+        "overdriven_square",
+        "industrial_impact"
       ],
       "moderate": [
-        "pluck",
-        "lead",
-        "bass"
+        "precision_pluck",
+        "focused_lead",
+        "modulated_bass"
       ],
       "subtle": [
-        "pad",
-        "ambient",
-        "string"
+        "vapor_pad",
+        "whispering_ambient",
+        "sine_drift"
       ]
     }
   },
   "lyrical_structure": {
     "verse": {
-      "purpose": "Establish theme, technical narrative",
+      "purpose": "Construct the virtual landscape and technical narrative.",
       "length": "8-16 bars",
-      "style": "Cryptic metaphors, system descriptions"
+      "style": "Cryptic code references, cinematic systemic descriptions."
     },
     "chorus": {
-      "purpose": "Main hook, repeating motif",
+      "purpose": "The core recurring loop. The thematic anchor.",
       "length": "8 bars",
-      "style": "Punchy phrases, memorable technical imagery"
+      "style": "Punchy uppercase phrases, unforgettable digital imagery."
     },
     "bridge": {
-      "purpose": "Contrast, perspective shift",
+      "purpose": "Perspective shift. The human-machine interface moment.",
       "length": "4-8 bars",
-      "style": "Abstraction, poetic technical observation"
+      "style": "Poetic abstraction, quiet observations before the storm."
     },
     "breakdown": {
-      "purpose": "Tension build, glitch sequence",
+      "purpose": "Deconstruct the framework. Let the glitch take over.",
       "length": "4-8 bars",
-      "style": "Fragmented phrases, stuttering repetition, sound effects"
+      "style": "Stuttering syllable chops, fragmented words, mechanical noise."
     }
   },
   "technical_metaphor_library": {
     "recursion": [
-      "nested depths",
-      "calling self",
-      "infinite loop",
-      "stack overflow",
-      "base case escape"
+      "nested architectural depths",
+      "calling my own name",
+      "the loop that never closes",
+      "stack overflow cascade",
+      "escaping the base case"
     ],
     "async_await": [
-      "pending state",
-      "promise resolved",
-      "callback chain",
-      "event loop spinning"
+      "frozen in a pending state",
+      "promises dissolved in light",
+      "chained to the next callback",
+      "the event loop spinning endlessly"
     ],
     "concurrency": [
-      "threads racing",
-      "parallel execution",
-      "race conditions",
-      "mutex locked"
+      "threads racing across the dark",
+      "parallel execution path",
+      "a critical race condition",
+      "the mutex holding the gate closed"
     ],
     "networking": [
-      "packets flowing",
-      "handshake protocol",
-      "TCP streams",
-      "latency spikes"
+      "packets flowing through the ether",
+      "handshake protocol failed",
+      "raw TCP streams",
+      "latency spikes in the heart"
     ],
     "memory": [
-      "heap allocation",
-      "garbage collected",
-      "pointer dereferencing",
-      "memory leak"
+      "allocated on the heap",
+      "garbage collected memories",
+      "dereferencing the ghost pointer",
+      "a slow and silent memory leak"
     ],
     "caching": [
-      "stale data",
-      "cache miss",
-      "invalidation storm",
-      "hit rate climbing"
+      "stale data on the screen",
+      "a devastating cache miss",
+      "invalidation storm approaching",
+      "hit rate climbing to infinity"
     ],
     "databases": [
-      "transaction rollback",
-      "ACID compliance",
-      "index scan",
-      "query optimization"
+      "transaction rolled back to zero",
+      "ACID compliance shattered",
+      "scanning the entire index",
+      "query optimized for speed"
     ],
     "streaming": [
-      "buffer overflow",
-      "backpressure signal",
-      "stream processing",
-      "window aggregation"
+      "buffer overflow imminent",
+      "backpressure rising in the pipe",
+      "real-time stream processing",
+      "window aggregation over time"
     ]
   },
   "suno_prompt_templates": {
-    "industrial_techno_template": "industrial techno, {bpm} bpm, female ai vocaloid vocals, heavy distorted bass, {mood} energy, harsh synthesis, driving beat, futuristic cyberpunk anthem",
-    "cyberpunk_electro_template": "cybercore electro-hightech, {bpm} bpm, female ai vocaloid, holographic synthpop, glitchy digital synthesis, bitcrushed vocals, {mood} atmosphere, complex algorithmic breakdown, futuristic data processing, bratty vocal chops, bitcrushed, futuristic cyberpunk anthem",
-    "dark_synthwave_template": "dark synthwave, {bpm} bpm, female ai vocaloid, analog synth bass, 808 drums, dystopian aesthetic, {mood} vibe, retro-futuristic, neon-lit darkness, dark club sound",
-    "glitch_industrial_template": "glitch industrial, {bpm} bpm, female ai vocaloid vocals, granular synthesis, circuit-bent sounds, buffer artifacts, {mood} chaos, digital hardcore elements, raw data noise"
+    "industrial_techno_template": "138 bpm, dark industrial techno, {mood} female vocaloid duet, distorted sub-bass, metallic machinery soundscapes",
+    "cyberpunk_electro_template": "144 bpm, cybercore electro-hightech, {mood} crisp female vocaloid, holographic synthpop, glitch edits, industrial bass",
+    "dark_synthwave_template": "126 bpm, dark synthwave, {mood} ethereal female vocaloid, staccato analog bass, retro-futuristic holographic pads",
+    "glitch_industrial_template": "150 bpm, heavy glitch industrial, {mood} stuttering vocaloid chops, granular synthesis, raw data noise"
   },
   "production_notes": {
     "mixing": {
-      "bass": "High-pass at 30Hz, boost at 60-80Hz, sidechain to kick",
-      "kick": "Peak at 50-60Hz, click at 3-5kHz, heavily compressed",
-      "vocals": "High-pass at 200Hz, compress 4:1, add distortion/bitcrushing",
-      "pads": "Wide stereo, reverb, low-pass filter automation",
-      "percussion": "Transient shaping, parallel compression, reverb sends"
+      "bass": "High-pass strictly at 30Hz, carve space at 60-80Hz, sidechain hard to the main kick.",
+      "kick": "Anchor the low end at 55Hz, inject crisp mid-range click at 4kHz, compress ruthlessly.",
+      "vocals": "High-pass at 180Hz, clear the nasal mud, apply high-frequency distortion and clean delay matrices.",
+      "pads": "Expand the stereo horizon, automate low-pass filters to create light and shadow.",
+      "percussion": "Sharpen the transients, parallel compression for density, send to dedicated dark reverb nodes."
     },
     "mastering": {
-      "loudness": "-8 to -6 LUFS for club music",
-      "limiting": "Soft clipper + limiter, allow some distortion for industrial aesthetic",
-      "stereo": "Wide stereo field, mono bass below 150Hz"
+      "loudness": "-7 to -6 LUFS for club projection.",
+      "limiting": "Soft clipper ahead of the peak limiter to absorb the transients with industrial warmth.",
+      "stereo": "Absolute wide imaging above 200Hz, collapse everything below 130Hz to absolute mono stability."
     }
   }
 }
