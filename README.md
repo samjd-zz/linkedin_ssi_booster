@@ -5,7 +5,7 @@
 
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
-critical bug GPU in mcp agent layer - disabled until fix
+critical GPU bug in mcp agent layer - disabled until fix
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
