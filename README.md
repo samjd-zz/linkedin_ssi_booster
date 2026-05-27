@@ -4,6 +4,8 @@
 
 PAUSE ALL DOWNLOADS - CRITICAL ERROR BEING FIXED
 
+- GPU RELATED
+
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
 > small rebrand
