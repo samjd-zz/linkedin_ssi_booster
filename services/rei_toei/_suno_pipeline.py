@@ -68,14 +68,19 @@ def extract_themes(
     for fact in extracted_facts:
         # Collect all concepts from tags and entities — use getattr for safety
         concepts = set()
+        
+        # Define stop words once for both tags and entities
+        stop_words = {"the", "a", "an", "which", "that", "this", "these", "those", "it", "its", "they", "their"}
 
         for tag in (getattr(fact, "tags", []) or []):
-            concepts.add(tag.lower().strip())
+            normalized = tag.lower().strip()
+            # Filter out common stop words from tags too
+            if len(normalized) > 2 and normalized not in stop_words:
+                concepts.add(normalized)
 
         for entity in (getattr(fact, "entities", []) or []):
             normalized = entity.lower().strip()
             # Filter out common stop words and non-technical entities
-            stop_words = {"the", "a", "an", "which", "that", "this", "these", "those", "it", "its", "they", "their"}
             if len(normalized) > 2 and normalized not in stop_words:
                 concepts.add(normalized)
 
