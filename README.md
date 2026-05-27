@@ -2,8 +2,11 @@
   <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
-#                     SSI Booster - :muscle: POWERED by Buffer.com!
->small rebrand
+PAUSE ALL DOWNLOADS - CRITICAL ERROR BEING FIXED
+
+# SSI Booster - :muscle: POWERED by Buffer.com!
+
+> small rebrand
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
@@ -165,7 +168,7 @@ The system now includes an autonomous Buffer integration agent powered by the **
 
 ## 🏆 What is the Social Selling Index (SSI)?
 
-The [LinkedIn specifically uses the  Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
+The [LinkedIn specifically uses the Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
 
 A higher SSI directly correlates with more profile views, post reach, and inbound connection requests. LinkedIn's own data shows that professionals with an SSI above 70 get 45% more opportunities than those below 30.
 
