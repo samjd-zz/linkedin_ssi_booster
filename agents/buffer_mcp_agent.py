@@ -69,7 +69,8 @@ async def send_to_buffer_mcp(request: dict) -> Optional[dict]:
     # Explicitly type-hinting headers to satisfy Pylance/Type Checkers
     headers: Dict[str, str] = {
         "Authorization": f"Bearer {BUFFER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream"
     }
     
     try:

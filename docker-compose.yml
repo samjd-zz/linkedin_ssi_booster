@@ -15,8 +15,6 @@ services:
   #     - "3000:3000"
   #   restart: unless-stopped
 
-  # ── Strudel Agent ─────────────────────────────────────────────────────────
-  #  Python agent that generates Strudel code via Ollama and sends to bridge
   # strudel-mcp-agent:
   #   build:
   #     context: .
@@ -36,7 +34,7 @@ services:
   #   volumes:
   #     - ./agents:/app/agents:ro
   #   command: [ "python", "agents/strudel_mcp_agent.py" ]
-  #   restart: unless-stopped
+  #   restart: "no"
 
   # ── Buffer MCP Agent ──────────────────────────────────────────────────────
   #  Python agent that generates Buffer API requests via Ollama and sends to Buffer MCP
@@ -58,7 +56,7 @@ services:
   #   volumes:
   #     - ./agents:/app/agents:ro
   #   command: [ "python", "agents/buffer_mcp_agent.py" ]
-  #   restart: unless-stopped
+  #   restart: "no"
 
   # ── FLUX.1-schnell model downloader ───────────────────────────────────────
   # One-shot: downloads the GGUF weights from Civitai into ./models/flux/
