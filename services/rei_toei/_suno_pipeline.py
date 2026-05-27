@@ -45,42 +45,23 @@ def extract_themes(
     Follows the same pattern as curator.py: accepts a flat list of ExtractedEvidenceFact
     objects (the normalized form returned by normalize_extracted_facts()), not the raw
     ExtractedKnowledgeGraph container.
-
-    Strategy:
-    1. Group facts by technical concepts (extracted from tags and entities)
-    2. Calculate frequency (how many facts per concept)
-    3. Calculate recency score (weighted by extracted_at timestamp when available)
-    4. Return top N themes ranked by composite score
-
-    Args:
-        extracted_facts: List of ExtractedEvidenceFact objects from normalize_extracted_facts()
-        limit: Maximum number of themes to return (default: 10)
-
-    Returns:
-        List[Theme]: Top themes sorted by relevance (frequency + recency)
     """
     logger.info(f"Extracting themes from {len(extracted_facts)} facts")
 
-    # Group facts by concept (tags + normalized entities)
-    # Use Any here because ExtractedEvidenceFact is only available under TYPE_CHECKING
+    # Hoisted out of the loop to optimize memory allocation overhead
+    stop_words = {"the", "a", "an", "which", "that", "this", "these", "those", "it", "its", "they", "their"}
     concept_groups: Dict[str, List[Any]] = defaultdict(list)
 
     for fact in extracted_facts:
-        # Collect all concepts from tags and entities — use getattr for safety
         concepts = set()
         
-        # Define stop words once for both tags and entities
-        stop_words = {"the", "a", "an", "which", "that", "this", "these", "those", "it", "its", "they", "their"}
-
         for tag in (getattr(fact, "tags", []) or []):
             normalized = tag.lower().strip()
-            # Filter out common stop words from tags too
             if len(normalized) > 2 and normalized not in stop_words:
                 concepts.add(normalized)
 
         for entity in (getattr(fact, "entities", []) or []):
             normalized = entity.lower().strip()
-            # Filter out common stop words and non-technical entities
             if len(normalized) > 2 and normalized not in stop_words:
                 concepts.add(normalized)
 
@@ -88,24 +69,22 @@ def extract_themes(
             concept_groups[concept].append(fact)
 
     logger.info(f"Identified {len(concept_groups)} unique concepts")
+    import math
 
-    # Calculate scores for each concept
     now = datetime.now()
     scored_concepts: List[tuple[str, int, float, List[str]]] = []
 
     for concept, facts in concept_groups.items():
         frequency = len(facts)
-
-        # Calculate recency score (newer facts score higher).
-        # ExtractedEvidenceFact may not carry extracted_at; fall back to neutral 0.5.
         recency_scores = []
+        
         for fact in facts:
             extracted_at = getattr(fact, "extracted_at", None)
             if extracted_at:
                 try:
                     extracted_dt = datetime.fromisoformat(extracted_at.replace("Z", "+00:00"))
                     days_ago = (now - extracted_dt.replace(tzinfo=None)).days
-                    import math
+                    # Exponential decay over a 30-day window
                     recency = math.exp(-days_ago / 30.0)
                     recency_scores.append(recency)
                 except (ValueError, TypeError):
@@ -114,9 +93,6 @@ def extract_themes(
                 recency_scores.append(0.5)
 
         avg_recency = sum(recency_scores) / len(recency_scores) if recency_scores else 0.5
-
-        # Use evidence_id (stable ID on ExtractedEvidenceFact) as the evidence reference.
-        # Fall back to source_fact_id if evidence_id is absent (defensive).
         evidence_ids = [
             getattr(fact, "evidence_id", None) or getattr(fact, "source_fact_id", "")
             for fact in facts
@@ -124,24 +100,17 @@ def extract_themes(
 
         scored_concepts.append((concept, frequency, avg_recency, evidence_ids))
     
-    # Sort by composite score: frequency * recency
     scored_concepts.sort(key=lambda x: x[1] * x[2], reverse=True)
     
-    # Convert top N to Theme objects
     themes = []
-    # Import here to avoid circular dependency
     from .service import get_rei_service
     rei_service = get_rei_service()
     
     for i, (concept, frequency, recency, evidence_ids) in enumerate(scored_concepts[:limit]):
-        # Generate theme ID
         theme_id = f"theme_{concept.replace(' ', '_').replace('-', '_')[:20]}_{i+1:02d}"
-        
-        # Suggest BPM and mood based on concept keywords
         suggested_bpm = None
         suggested_mood = None
         
-        # Check for aggressive/technical concepts
         if any(kw in concept for kw in ["performance", "optimization", "low-level", "system", "kernel"]):
             suggested_mood = "aggressive_technical"
             suggested_bpm = rei_service.get_default_bpm(suggested_mood)
@@ -156,7 +125,7 @@ def extract_themes(
             id=theme_id,
             name=concept.title(),
             technical_concepts=[concept],
-            evidence_ids=evidence_ids[:50],  # Cap at 50 evidence IDs
+            evidence_ids=evidence_ids[:50],
             frequency=frequency,
             recency_score=round(recency, 3),
             suggested_bpm=suggested_bpm,
@@ -438,7 +407,7 @@ Ensure you inject the requested musical arrangement tags directly inside the str
 Remember: No '//' comments, no parenthetical labels, and the chorus must be entirely uppercase."""
     
     # Call Ollama LLM with sufficient headroom for long responses
-    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=1536)
+    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=1536, format="json")
     
     logger.debug(f"Ollama lyrics response: {response_text[:200]}...")
     

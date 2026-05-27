@@ -117,7 +117,13 @@ class OllamaService:
             self.think,
         )
 
-    def _chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
+    def _chat(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 1024,
+        format: Literal["", "json"] | dict[str, Any] | None = None
+    ) -> str:
         """Send a chat request to Ollama and return the response text.
 
         On empty output or model error, automatically retries once with
@@ -131,6 +137,7 @@ class OllamaService:
                 model=model,
                 think=self.think,
                 options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
+                format=format,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user",   "content": user_prompt},
