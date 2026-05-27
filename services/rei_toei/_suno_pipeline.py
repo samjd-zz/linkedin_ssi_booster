@@ -74,7 +74,9 @@ def extract_themes(
 
         for entity in (getattr(fact, "entities", []) or []):
             normalized = entity.lower().strip()
-            if len(normalized) > 2 and normalized not in {"the", "a", "an"}:
+            # Filter out common stop words and non-technical entities
+            stop_words = {"the", "a", "an", "which", "that", "this", "these", "those", "it", "its", "they", "their"}
+            if len(normalized) > 2 and normalized not in stop_words:
                 concepts.add(normalized)
 
         for concept in concepts:
