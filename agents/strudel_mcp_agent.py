@@ -7,7 +7,7 @@ from ollama import AsyncClient
 # Environment Variables pointing to your local container endpoints
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 STRUDEL_WS_URL = os.getenv("STRUDEL_WS_URL", "ws://localhost:4321")
-MODEL_NAME = "gemma4"  # Works perfectly with e2b, e4b, 26b, or 31b variants
+MODEL_NAME = "gemma4:e4b"  # Works perfectly with e2b, e4b, 26b, or 31b variants
 
 async def generate_strudel_code(user_prompt: str) -> str:
     """

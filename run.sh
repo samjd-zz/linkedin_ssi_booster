@@ -11,4 +11,4 @@ fi
 
 # 3. Launch Docker Compose with the profile you want
 # You can pass arguments to this script, like './run.sh --profile full'
-docker compose up "$@"
+docker compose "$@"

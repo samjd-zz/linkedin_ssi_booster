@@ -9,7 +9,7 @@ from ollama import AsyncClient
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 BUFFER_MCP_URL = os.getenv("BUFFER_MCP_URL", "https://mcp.buffer.com/mcp")
 BUFFER_API_KEY = os.getenv("BUFFER_API_KEY", "")
-MODEL_NAME = "gemma4"  # Optimized for thinking-enabled variants
+MODEL_NAME = "gemma4:e4b"  # Optimized for thinking-enabled variants
 
 async def generate_buffer_request(user_prompt: str) -> dict:
     """

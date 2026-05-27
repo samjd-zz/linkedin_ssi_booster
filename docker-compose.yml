@@ -114,7 +114,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ssi_booster}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-linkedin_ssi_booster}
+      POSTGRES_DB: ${POSTGRES_DB:-ssi_booster}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
@@ -223,7 +223,7 @@ services:
       - WYOMING_PIPER_PORT=10200
       - FLUX_SERVICE_URL=http://flux-app:5000
       - STRUDEL_MCP_URL=http://strudel-music-server:3000
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-ssi_booster}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-linkedin_ssi_booster}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ssi_booster}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ssi_booster}
     volumes:
       - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
       - ~/.config/pulse/cookie:/root/.pulse-cookie:ro
