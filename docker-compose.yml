@@ -1,64 +1,64 @@
 services:
   # ── Strudel MCP server ───────────────────────────────────────────────────
   #  Provides a REST API for running Strudel MCP models.
-  strudel-music-server:
-    image: mcr.microsoft.com/playwright:v1.40.0-focal
-    container_name: ssi_booster_strudel_mcp
-    profiles: [ "core", "full" ]
-    working_dir: /app
-    command: >
-      sh -c "git clone https://github.com/williamzujkowski/strudel-mcp-server.git . && 
-             npm install && 
-             npm run build && 
-             node dist/index.js"
-    ports:
-      - "3000:3000"
-    restart: unless-stopped
+  # strudel-music-server:
+  #   image: mcr.microsoft.com/playwright:v1.40.0-focal
+  #   container_name: ssi_booster_strudel_mcp
+  #   profiles: [ "core", "full" ]
+  #   working_dir: /app
+  #   command: >
+  #     sh -c "git clone https://github.com/williamzujkowski/strudel-mcp-server.git . && 
+  #            npm install && 
+  #            npm run build && 
+  #            node dist/index.js"
+  #   ports:
+  #     - "3000:3000"
+  #   restart: unless-stopped
 
   # ── Strudel Agent ─────────────────────────────────────────────────────────
   #  Python agent that generates Strudel code via Ollama and sends to bridge
-  strudel-mcp-agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: core_base
-    container_name: ssi_booster_strudel_agent
-    profiles: [ "core", "full" ]
-    depends_on:
-      ollama:
-        condition: service_healthy
-      strudel-music-server:
-        condition: service_started
-    env_file: .env
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - STRUDEL_WS_URL=ws://strudel-music-server:4321
-    volumes:
-      - ./agents:/app/agents:ro
-    command: [ "python", "agents/strudel_mcp_agent.py" ]
-    restart: unless-stopped
+  # strudel-mcp-agent:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: core_base
+  #   container_name: ssi_booster_strudel_agent
+  #   profiles: [ "core", "full" ]
+  #   depends_on:
+  #     ollama:
+  #       condition: service_healthy
+  #     strudel-music-server:
+  #       condition: service_started
+  #   env_file: .env
+  #   environment:
+  #     - OLLAMA_HOST=http://ollama:11434
+  #     - STRUDEL_WS_URL=ws://strudel-music-server:4321
+  #   volumes:
+  #     - ./agents:/app/agents:ro
+  #   command: [ "python", "agents/strudel_mcp_agent.py" ]
+  #   restart: unless-stopped
 
   # ── Buffer MCP Agent ──────────────────────────────────────────────────────
   #  Python agent that generates Buffer API requests via Ollama and sends to Buffer MCP
-  buffer-mcp-agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: core_base
-    container_name: ssi_booster_buffer_mcp_agent
-    profiles: [ "core", "full" ]
-    depends_on:
-      ollama:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - BUFFER_MCP_URL=https://mcp.buffer.com/mcp
-      - BUFFER_API_KEY=${BUFFER_API_KEY}
-    volumes:
-      - ./agents:/app/agents:ro
-    command: [ "python", "agents/buffer_mcp_agent.py" ]
-    restart: unless-stopped
+  # buffer-mcp-agent:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: core_base
+  #   container_name: ssi_booster_buffer_mcp_agent
+  #   profiles: [ "core", "full" ]
+  #   depends_on:
+  #     ollama:
+  #       condition: service_healthy
+  #   env_file: .env
+  #   environment:
+  #     - OLLAMA_HOST=http://ollama:11434
+  #     - BUFFER_MCP_URL=https://mcp.buffer.com/mcp
+  #     - BUFFER_API_KEY=${BUFFER_API_KEY}
+  #   volumes:
+  #     - ./agents:/app/agents:ro
+  #   command: [ "python", "agents/buffer_mcp_agent.py" ]
+  #   restart: unless-stopped
 
   # ── FLUX.1-schnell model downloader ───────────────────────────────────────
   # One-shot: downloads the GGUF weights from Civitai into ./models/flux/
@@ -210,8 +210,8 @@ services:
         condition: service_healthy
       piper:
         condition: service_started
-      strudel-music-server:
-        condition: service_started
+      # strudel-music-server:
+      #   condition: service_started
       flux-app:
         condition: service_started
         required: false # only present under --profile full; ignored under --profile core
@@ -222,7 +222,7 @@ services:
       - WYOMING_PIPER_HOST=piper
       - WYOMING_PIPER_PORT=10200
       - FLUX_SERVICE_URL=http://flux-app:5000
-      - STRUDEL_MCP_URL=http://strudel-music-server:3000
+      # - STRUDEL_MCP_URL=http://strudel-music-server:3000
       - DATABASE_URL=postgresql://${POSTGRES_USER:-ssi_booster}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ssi_booster}
     volumes:
       - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
