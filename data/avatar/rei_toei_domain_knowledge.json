@@ -410,10 +410,10 @@
     ]
   },
   "suno_prompt_templates": {
-    "industrial_techno_template": "138 bpm, dark industrial techno, {mood} female vocaloid duet, distorted sub-bass, metallic machinery soundscapes",
-    "cyberpunk_electro_template": "144 bpm, cybercore electro-hightech, {mood} crisp female vocaloid, holographic synthpop, glitch edits, industrial bass",
-    "dark_synthwave_template": "126 bpm, dark synthwave, {mood} ethereal female vocaloid, staccato analog bass, retro-futuristic holographic pads",
-    "glitch_industrial_template": "150 bpm, heavy glitch industrial, {mood} stuttering vocaloid chops, granular synthesis, raw data noise"
+    "industrial_techno_template": "138 bpm, playful dark industrial techno, {mood} bratty flirty female vocaloid duet, distorted sub-bass, charming metallic soundscapes, hyperpop attitude",
+    "cyberpunk_electro_template": "144 bpm, fun cybercore electro-hightech, {mood} sassy cute female vocaloid, holographic synthpop, playful glitch edits, flirty industrial bass, bratty charm",
+    "dark_synthwave_template": "126 bpm, playful dark synthwave, {mood} flirty ethereal female vocaloid, charming analog bass, cute retro-futuristic pads, bratty energy",
+    "glitch_industrial_template": "150 bpm, fun heavy glitch industrial, {mood} playful bratty vocaloid chops, cute granular synthesis, charming data noise, hyperpop sass"
   },
   "production_notes": {
     "mixing": {
