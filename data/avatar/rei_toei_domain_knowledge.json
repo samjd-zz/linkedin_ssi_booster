@@ -207,32 +207,16 @@
       }
     },
     "common_synths": {
-      "bass": [
-        "sub_core",
-        "drone_808",
-        "dark_analog"
-      ],
-      "leads": [
-        "hologram_pluck",
-        "saw_carrier",
-        "laser_vane"
-      ],
-      "pads": [
-        "rei_cloud",
-        "ether_strings",
-        "neon_haze"
-      ],
+      "bass": ["sub_core", "drone_808", "dark_analog"],
+      "leads": ["hologram_pluck", "saw_carrier", "laser_vane"],
+      "pads": ["rei_cloud", "ether_strings", "neon_haze"],
       "percussion": [
         "kick_pulse",
         "metallic_rim",
         "white_noise_hh",
         "machinery"
       ],
-      "effects": [
-        "glitch_stutter",
-        "data_leak",
-        "circuit_bend"
-      ]
+      "effects": ["glitch_stutter", "data_leak", "circuit_bend"]
     },
     "pattern_examples": {
       "basic_kick": "s(\"bd bd ~ bd ~ bd ~ bd\")",
@@ -309,56 +293,20 @@
       "155-180": "Digital breakcore chaos, broken system frameworks"
     },
     "mood_to_bpm": {
-      "dark_brooding": [
-        130,
-        136
-      ],
-      "hypnotic_industrial": [
-        134,
-        140
-      ],
-      "relentless_driving": [
-        140,
-        145
-      ],
-      "aggressive_technical": [
-        144,
-        150
-      ],
-      "peak_energy": [
-        148,
-        155
-      ],
-      "chaotic_glitch": [
-        155,
-        174
-      ]
+      "dark_brooding": [130, 136],
+      "hypnotic_industrial": [134, 140],
+      "relentless_driving": [140, 145],
+      "aggressive_technical": [144, 150],
+      "peak_energy": [148, 155],
+      "chaotic_glitch": [155, 174]
     },
     "concept_to_bpm": {
-      "low_level_systems": [
-        146,
-        152
-      ],
-      "high_level_architecture": [
-        132,
-        138
-      ],
-      "concurrency": [
-        140,
-        144
-      ],
-      "real_time_processing": [
-        148,
-        154
-      ],
-      "async_patterns": [
-        136,
-        142
-      ],
-      "data_structures": [
-        134,
-        140
-      ]
+      "low_level_systems": [146, 152],
+      "high_level_architecture": [132, 138],
+      "concurrency": [140, 144],
+      "real_time_processing": [148, 154],
+      "async_patterns": [136, 142],
+      "data_structures": [134, 140]
     }
   },
   "synth_selection_guidelines": {
@@ -374,38 +322,18 @@
         "cloud_strings",
         "ambient_carrier"
       ],
-      "data_flow": [
-        "matrix_arp",
-        "crisp_pluck",
-        "sequenced_lead"
-      ],
+      "data_flow": ["matrix_arp", "crisp_pluck", "sequenced_lead"],
       "system_errors": [
         "glitch_stutter",
         "bitcrushed_artifact",
         "distorted_line"
       ],
-      "network_communication": [
-        "fm_bell",
-        "metallic_strike",
-        "digital_ping"
-      ]
+      "network_communication": ["fm_bell", "metallic_strike", "digital_ping"]
     },
     "by_intensity": {
-      "aggressive": [
-        "tearing_saw",
-        "overdriven_square",
-        "industrial_impact"
-      ],
-      "moderate": [
-        "precision_pluck",
-        "focused_lead",
-        "modulated_bass"
-      ],
-      "subtle": [
-        "vapor_pad",
-        "whispering_ambient",
-        "sine_drift"
-      ]
+      "aggressive": ["tearing_saw", "overdriven_square", "industrial_impact"],
+      "moderate": ["precision_pluck", "focused_lead", "modulated_bass"],
+      "subtle": ["vapor_pad", "whispering_ambient", "sine_drift"]
     }
   },
   "lyrical_structure": {
@@ -499,6 +427,84 @@
       "loudness": "-7 to -6 LUFS for club projection.",
       "limiting": "Soft clipper ahead of the peak limiter to absorb the transients with industrial warmth.",
       "stereo": "Absolute wide imaging above 200Hz, collapse everything below 130Hz to absolute mono stability."
+    }
+  },
+  "musical_influences": {
+    "personality_aligned_artists": {
+      "playful_bratty": [
+        "Charli XCX - Hyperpop sass and bratty confidence",
+        "100 gecs - Chaotic playful energy with glitch aesthetics",
+        "Grimes - Futuristic cute-meets-dark digital persona",
+        "SOPHIE - Playful synthetic textures with emotional punch",
+        "Ashnikko - Bold bratty attitude with electronic edge"
+      ],
+      "flirty_energetic": [
+        "Dua Lipa - Confident flirty dance energy",
+        "Kim Petras - Playful pop hooks with club energy",
+        "Rina Sawayama - Playful genre-blending with charm",
+        "Arca - Experimental flirtation with sound design",
+        "FKA twigs - Ethereal sensuality meets electronic innovation"
+      ],
+      "fun_industrial": [
+        "Crystal Castles - Dark but playful electronic punk",
+        "Poppy - Cute-meets-chaos industrial pop",
+        "Alice Glass - Bratty attitude with industrial edge",
+        "Jazmin Bean - Playful darkness with hyperpop twist",
+        "Dorian Electra - Genre-bending fun with experimental edge"
+      ],
+      "cyberpunk_charm": [
+        "Hatsune Miku - Original vocaloid charm and playfulness",
+        "Porter Robinson - Emotional playful electronic storytelling",
+        "Madeon - Joyful energetic electronic production",
+        "Snail's House - Cute kawaii future bass energy",
+        "Yunomi - Playful J-pop electronic fusion"
+      ]
+    },
+    "song_references": {
+      "bratty_vibes": [
+        "Good 4 U - Olivia Rodrigo (bratty pop-punk energy)",
+        "Vroom Vroom - Charli XCX (futuristic bratty confidence)",
+        "Boss Bitch - Doja Cat (playful confident attitude)",
+        "money machine - 100 gecs (chaotic bratty fun)",
+        "Stupid Horse - 100 gecs (playful aggressive energy)"
+      ],
+      "flirty_electronic": [
+        "Physical - Dua Lipa (flirty dance energy)",
+        "Levitating - Dua Lipa (playful cosmic flirtation)",
+        "Pink Diamond - Charli XCX (flirty hyperpop)",
+        "Ponyboy - SOPHIE (playful bass-heavy flirtation)",
+        "Genesis - Grimes (ethereal digital flirtation)"
+      ],
+      "fun_industrial": [
+        "Not in Love - Crystal Castles (playful dark industrial)",
+        "I Disagree - Poppy (fun chaotic industrial pop)",
+        "Concrete Angel - Gareth Emery (emotional industrial energy)",
+        "Oblivion - Grimes (playful dreamy industrial)",
+        "violence - Grimes (cute meets dark cyberpunk)"
+      ]
+    },
+    "vocal_style_influences": {
+      "vocaloid_references": [
+        "Hatsune Miku - Original bratty cute digital persona",
+        "Kasane Teto - Playful energetic UTAU character",
+        "Gumi - Versatile charming vocaloid tone",
+        "IA - Sweet flirty Japanese vocaloid",
+        "Cyber Diva - English vocaloid with sass"
+      ],
+      "processing_inspiration": [
+        "Pitched-up cute vocal chops (PC Music style)",
+        "Formant-shifted playful character voices",
+        "Bitcrushed bratty vocal stutter",
+        "Flirty vocal delay throws",
+        "Sassy vocoder talk-box effects"
+      ]
+    },
+    "mood_song_mapping": {
+      "playful_technical": "money machine by 100 gecs - chaotic fun with technical depth",
+      "flirty_driving": "Physical by Dua Lipa - irresistible dance energy",
+      "bratty_bounce": "Vroom Vroom by Charli XCX - confident futuristic sass",
+      "fun_brooding": "Oblivion by Grimes - playful darkness with charm",
+      "hypnotic_industrial": "Not in Love by Crystal Castles - dark but playful industrial"
     }
   }
 }
