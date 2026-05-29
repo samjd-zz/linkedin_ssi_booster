@@ -112,13 +112,13 @@ def extract_themes(
         suggested_mood = None
         
         if any(kw in concept for kw in ["performance", "optimization", "low-level", "system", "kernel"]):
-            suggested_mood = "aggressive_technical"
+            suggested_mood = "playful_technical"
             suggested_bpm = rei_service.get_default_bpm(suggested_mood)
         elif any(kw in concept for kw in ["ai", "machine learning", "neural", "model"]):
-            suggested_mood = "futuristic_complex"
+            suggested_mood = "fun_brooding"
             suggested_bpm = rei_service.get_default_bpm(suggested_mood)
         elif any(kw in concept for kw in ["async", "concurrent", "parallel", "distributed"]):
-            suggested_mood = "moderate_abstract"
+            suggested_mood = "bratty_bounce"
             suggested_bpm = rei_service.get_default_bpm(suggested_mood)
         
         theme = Theme(
