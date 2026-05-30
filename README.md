@@ -2,10 +2,12 @@
   <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
-
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
-critical GPU bug in mcp agent layer - disabled until fix
+Notes:
+
+- critical GPU bug in mcp agent layer - disabled until fix
+- I update rei toei, so if you have yours custom then save a cpy before update
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 

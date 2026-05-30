@@ -879,8 +879,11 @@ def main():
                         + str(Style.RESET_ALL)
                     )
                     return
-                theme = themes[0]
-                print(str(Fore.CYAN) + f"\U0001f3b5 Top theme: {theme.name} (frequency={theme.frequency})" + str(Style.RESET_ALL))
+                # Weighted random selection: top themes have higher probability
+                import random
+                weights = [t.frequency * t.recency_score for t in themes]
+                theme = random.choices(themes, weights=weights, k=1)[0]
+                print(str(Fore.CYAN) + f"\U0001f3b5 Selected theme: {theme.name} (frequency={theme.frequency}, recency={theme.recency_score:.2f})" + str(Style.RESET_ALL))
 
             print(str(Fore.CYAN) + "\U0001f3bc Generating song concept..." + str(Style.RESET_ALL))
             # generate_song_concept creates its own OllamaService internally
@@ -996,8 +999,11 @@ def main():
                         + str(Style.RESET_ALL)
                     )
                     return
-                theme = themes[0]
-                print(str(Fore.CYAN) + f"\U0001f3b5 Top theme: {theme.name} (frequency={theme.frequency})" + str(Style.RESET_ALL))
+                # Weighted random selection: top themes have higher probability
+                import random
+                weights = [t.frequency * t.recency_score for t in themes]
+                theme = random.choices(themes, weights=weights, k=1)[0]
+                print(str(Fore.CYAN) + f"\U0001f3b5 Selected theme: {theme.name} (frequency={theme.frequency}, recency={theme.recency_score:.2f})" + str(Style.RESET_ALL))
 
             template = map_concept_to_pattern(theme, pattern_library)
             if template is None:
