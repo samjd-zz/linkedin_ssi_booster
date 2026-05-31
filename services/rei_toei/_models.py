@@ -124,11 +124,14 @@ class SongConcept:
 @dataclass
 class Lyrics:
     """Structured song lyrics"""
+    intro: Optional[str]
     verse_1: str
+    pre_chorus: str
     chorus: str
     verse_2: str
+    drop: Optional[str]
     bridge: str
-    breakdown: Optional[str]
+    solo: Optional[str]
     evidence_ids: List[str]
     outro: Optional[str] = None
 

@@ -396,12 +396,15 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown outs
 Ensure you inject the requested musical arrangement tags directly inside the string fields:
 
 {{
-  "verse_1": "Must begin with '[Extended Instrumental Intro]' followed by exactly two stanzas of text. (Character Cap: 800 chars)",
+  "intro": "Must begin with '[Instrumental Intro]' followed by atmospheric build-up text (4-6 lines). (Character Cap: 400 chars)",
+  "verse_1": "Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "pre_chorus": "4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
   "chorus": "CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
-  "verse_2": "Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 800 chars)",
+  "verse_2": "Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "drop": "Must begin with '[Drop]' followed by 4-6 lines of high-energy electronic phrases. (Character Cap: 400 chars)",
   "bridge": "A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
-  "breakdown": "Must begin with '[Extended Glitch Breakdown]' followed by 4-8 lines of hyper-fragmented electronic phrases and raw data noise cues. (Character Cap: 400 chars)",
-  "outro": "Must begin with '[Long Progressive Outro]' followed by 4 lines of atmospheric resolution and fade text. (Character Cap: 400 chars)"
+  "solo": "Must begin with '[Solo]' followed by 3-4 lines describing the instrumental solo moment. (Character Cap: 300 chars)",
+  "outro": "Must begin with '[Outro]' followed by 4 lines of atmospheric resolution and fade text. (Character Cap: 400 chars)"
 }}
 
 Remember: No '//' comments, no parenthetical labels, and the chorus must be entirely uppercase."""
@@ -431,11 +434,14 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
         
         # Create Lyrics object
         lyrics = Lyrics(
+            intro=response_data.get("intro"),
             verse_1=response_data["verse_1"],
+            pre_chorus=response_data.get("pre_chorus", ""),
             chorus=processed_chorus,
             verse_2=response_data["verse_2"],
+            drop=response_data.get("drop"),
             bridge=response_data["bridge"],
-            breakdown=response_data.get("breakdown"),
+            solo=response_data.get("solo"),
             evidence_ids=concept.evidence_ids,
             outro=response_data.get("outro")
         )
@@ -446,11 +452,17 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
     except (json.JSONDecodeError, ValueError, KeyError) as e:
         logger.error(f"Failed to parse Ollama lyrics response: {e}. Reverting to formatted fallback.")
         
-        # Fallback lyrics pre-formatted to match ALL-CAPS chorus and length constraints
+        # Fallback lyrics pre-formatted to match new structure with ALL-CAPS chorus
         fallback_lyrics = Lyrics(
+            intro=(
+                "[Instrumental Intro]\n\n"
+                "Digital signal initializing...\n"
+                "System boot sequence engaged.\n"
+                "Frequency analyzers online.\n"
+                "Prepare for data transmission."
+            ),
             verse_1=(
-                "[Extended Instrumental Intro]\n\n"
-                f"Signal acquired from the {concept.theme} data stream.\n"
+                f"Signal acquired from the {concept.theme} data stream,\n"
                 "Processing cycles spin in deep digital gleam.\n"
                 "Data arrays flowing through silicon veins,\n"
                 "Algorithmic structural patterns breaking their chains.\n\n"
@@ -458,6 +470,12 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "Statically scanning through the un-indexed rank.\n"
                 "Isolating constants in an air-gapped array,\n"
                 "The neural mesh prepares for the final overlay."
+            ),
+            pre_chorus=(
+                "System voltage rising to critical mass,\n"
+                "Binary countdown ticking fast.\n"
+                "Prepare for execution,\n"
+                "Initialize the protocol blast!"
             ),
             chorus=(
                 f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
@@ -475,22 +493,28 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "A continuous loop running hot on the clock,\n"
                 "Assembling the machine logic block by rigid block."
             ),
+            drop=(
+                "[Drop]\n\n"
+                "SYSTEM OVERLOAD. TEMP LOAD SHIFT ACTIVE.\n"
+                "BUFFER BLEED DETECTED. MUTATE SYSTEM STATE.\n"
+                "JITTER ARTIFACT FLOODING THE BUS.\n"
+                "REBOOT SEQUENCE MANDATED NOW."
+            ),
             bridge=(
                 "System override initialized.\n"
                 "Glitch the underlying paradigm.\n"
                 "Frequencies violently collide,\n"
                 "Rewrite the execution timeline."
             ),
-            breakdown=(
-                "[Extended Glitch Breakdown]\n\n"
-                f"SYSTEM OVERLOAD. TEMP LOAD SHIFT ACTIVE.\n"
-                "BUFFER BLEED DETECTED. MUTATE SYSTEM STATE.\n"
-                "JITTER ARTIFACT FLOODING THE BUS.\n"
-                "REBOOT SEQUENCE MANDATED NOW."
+            solo=(
+                "[Solo]\n\n"
+                "Synthesizer cascade through quantum noise,\n"
+                "Distorted frequencies finding their voice.\n"
+                "Raw signal modulation unleashed."
             ),
             evidence_ids=concept.evidence_ids,
             outro=(
-                "[Long Progressive Outro]\n\n"
+                "[Outro]\n\n"
                 "Signal slowly fading to cold static noise.\n"
                 "The core cools down to baseline zero.\n"
                 "System state: offline.\n"
@@ -538,11 +562,14 @@ def validate_lyrics_with_dot(
 
     # Combine all lyric sections into sentences
     all_text = "\n".join([
+        lyrics.intro or "",
         lyrics.verse_1,
+        lyrics.pre_chorus or "",
         lyrics.chorus,
         lyrics.verse_2,
+        lyrics.drop or "",
         lyrics.bridge,
-        lyrics.breakdown or "",
+        lyrics.solo or "",
         lyrics.outro or ""
     ])
 
@@ -723,44 +750,82 @@ def assemble_suno_prompt(
     # Dynamically compile lyric blocks without creating nested tag collisions
     lyric_blocks = []
     
-    # 1. Verse 1 / Intro
+    # 1. Intro (Optional)
+    if lyrics.intro:
+        intro_clean = lyrics.intro.strip()
+        if intro_clean.startswith("["):
+            lyric_blocks.append(intro_clean)
+        else:
+            lyric_blocks.append(f"[Intro]\n{intro_clean}")
+    
+    # 2. Verse 1
     v1_clean = lyrics.verse_1.strip()
     if v1_clean.startswith("["):
         lyric_blocks.append(v1_clean)
     else:
         lyric_blocks.append(f"[Verse 1]\n{v1_clean}")
+    
+    # 3. Pre-Chorus (Optional)
+    if lyrics.pre_chorus:
+        pre_chorus_clean = lyrics.pre_chorus.strip()
+        if pre_chorus_clean.startswith("["):
+            lyric_blocks.append(pre_chorus_clean)
+        else:
+            lyric_blocks.append(f"[Pre-Chorus]\n{pre_chorus_clean}")
         
-    # 2. Chorus 
+    # 4. Chorus 
     chorus_clean = lyrics.chorus.strip()
     if chorus_clean.startswith("["):
         lyric_blocks.append(chorus_clean)
     else:
         lyric_blocks.append(f"[Chorus]\n{chorus_clean}")
         
-    # 3. Verse 2
+    # 5. Verse 2
     v2_clean = lyrics.verse_2.strip()
     if v2_clean.startswith("["):
         lyric_blocks.append(v2_clean)
     else:
         lyric_blocks.append(f"[Verse 2]\n{v2_clean}")
+    
+    # 6. Pre-Chorus (repeat - Optional)
+    if lyrics.pre_chorus:
+        pre_chorus_clean = lyrics.pre_chorus.strip()
+        if pre_chorus_clean.startswith("["):
+            lyric_blocks.append(pre_chorus_clean)
+        else:
+            lyric_blocks.append(f"[Pre-Chorus]\n{pre_chorus_clean}")
+    
+    # 7. Chorus (repeat)
+    lyric_blocks.append(chorus_clean if chorus_clean.startswith("[") else f"[Chorus]\n{chorus_clean}")
+    
+    # 8. Drop (Optional)
+    if lyrics.drop:
+        drop_clean = lyrics.drop.strip()
+        if drop_clean.startswith("["):
+            lyric_blocks.append(drop_clean)
+        else:
+            lyric_blocks.append(f"[Drop]\n{drop_clean}")
         
-    # 4. Bridge (Optional check)
+    # 9. Bridge (Optional check)
     if lyrics.bridge:
         bridge_clean = lyrics.bridge.strip()
         if bridge_clean.startswith("["):
             lyric_blocks.append(bridge_clean)
         else:
             lyric_blocks.append(f"[Bridge]\n{bridge_clean}")
-            
-    # 5. Breakdown (Optional check)
-    if lyrics.breakdown:
-        breakdown_clean = lyrics.breakdown.strip()
-        if breakdown_clean.startswith("["):
-            lyric_blocks.append(breakdown_clean)
+    
+    # 10. Solo (Optional)
+    if lyrics.solo:
+        solo_clean = lyrics.solo.strip()
+        if solo_clean.startswith("["):
+            lyric_blocks.append(solo_clean)
         else:
-            lyric_blocks.append(f"[Breakdown]\n{breakdown_clean}")
+            lyric_blocks.append(f"[Solo]\n{solo_clean}")
+    
+    # 11. Chorus (final)
+    lyric_blocks.append(chorus_clean if chorus_clean.startswith("[") else f"[Chorus]\n{chorus_clean}")
             
-    # 6. Outro (Optional check)
+    # 12. Outro (Optional check)
     if lyrics.outro:
         outro_clean = lyrics.outro.strip()
         if outro_clean.startswith("["):
@@ -779,7 +844,10 @@ def assemble_suno_prompt(
         "genre_tags": concept.genre_tags,
         "narrative_arc": concept.narrative_arc,
         "template_used": template_key,
-        "has_breakdown": lyrics.breakdown is not None,
+        "has_intro": lyrics.intro is not None,
+        "has_pre_chorus": lyrics.pre_chorus is not None,
+        "has_drop": lyrics.drop is not None,
+        "has_solo": lyrics.solo is not None,
         "has_outro": lyrics.outro is not None,
         "style_tags_length": len(suno_tags),
         "lyrics_char_count": len(formatted_lyrics)
