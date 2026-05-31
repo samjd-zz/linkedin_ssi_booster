@@ -396,15 +396,15 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown outs
 Ensure you inject the requested musical arrangement tags directly inside the string fields:
 
 {{
-  "intro": "Must begin with '[Instrumental Intro]' followed by atmospheric build-up text (4-6 lines). (Character Cap: 400 chars)",
+  "intro": "[Instrumental Intro] followed by atmospheric build-up text (4-6 lines total). (Character Cap: 400 chars)",
   "verse_1": "Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "pre_chorus": "4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
   "chorus": "CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
   "verse_2": "Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
-  "drop": "Must begin with '[Drop]' followed by 4-6 lines of high-energy electronic phrases. (Character Cap: 400 chars)",
+  "drop": "[Drop] followed by 4-6 lines of high-energy electronic phrases (total). (Character Cap: 400 chars)",
   "bridge": "A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
-  "solo": "Must begin with '[Solo]' followed by 3-4 lines describing the instrumental solo moment. (Character Cap: 300 chars)",
-  "outro": "Must begin with '[Outro]' followed by 4 lines of atmospheric resolution and fade text. (Character Cap: 400 chars)"
+  "solo": "[Solo] followed by 3-4 lines describing the instrumental solo moment (total). (Character Cap: 300 chars)",
+  "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
 
 Remember: No '//' comments, no parenthetical labels, and the chorus must be entirely uppercase."""
