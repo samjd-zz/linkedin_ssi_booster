@@ -58,30 +58,29 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
-## 🔮 Coming Soon: Katzilla.dev Integration
+## 🔮 Exploring: Katzilla.dev Integration
 
-**Next-generation knowledge grounding powered by real-world software engineering data.**
+We're investigating [Katzilla.dev](https://katzilla.dev/) as a potential source of truth data for avatar knowledge grounding.
 
-We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of truth for avatar knowledge and domain expertise. Katzilla provides curated, structured data from real open-source projects, bug trackers, and engineering discussions — transforming the avatar's grounding from hand-crafted persona graphs to **empirically-validated engineering knowledge**.
+**Why this matters:**
 
-**What this means:**
+Currently, the avatar's domain knowledge (`domain_knowledge.json`) is manually curated. While this ensures quality, it limits scale and requires ongoing maintenance. An integration with a structured engineering data source could:
 
-- **Real-world evidence base** — Ground technical claims in actual commits, PRs, issues, and production code patterns from thousands of OSS projects
-- **Automatically updated domain knowledge** — No more manual `domain_knowledge.json` curation — the avatar learns from live engineering data
-- **Enhanced truth validation** — Truth gate layers can verify claims against real project histories, release notes, and community discussions
-- **Multi-domain expertise** — Instant access to Python, Java, Rust, TypeScript ecosystems without building separate knowledge packs
-- **Continuous learning at scale** — The avatar stays current with latest frameworks, patterns, and best practices as Katzilla's index grows
+- **Expand evidence base** — Supplement hand-crafted persona facts with real-world technical data
+- **Reduce manual curation** — Automatically ingest validated technical knowledge from external sources
+- **Improve truth validation** — Cross-reference generated claims against a broader knowledge corpus
+- **Stay current** — Domain knowledge evolves as the upstream data source updates
 
-**Technical approach:**
+**What we need to validate:**
 
-- Katzilla API integration via new `services/katzilla_service.py` module
-- Hybrid knowledge graph — persona facts (your projects/outcomes) + Katzilla domain facts (ecosystem-wide patterns)
-- Category-aware retrieval — leverage Katzilla's semantic search to boost relevance for Model2Vec-classified articles
-- Evidence provenance — every Katzilla-sourced claim includes repo link, commit SHA, or issue number for full transparency
+- What data does Katzilla.dev actually expose? (API access, data format, coverage)
+- Can it be integrated into the existing BM25+graph hybrid retrieval pipeline?
+- Does it provide structured, citation-ready data suitable for the truth gate?
+- How would it complement (not replace) persona-specific project outcomes?
 
-This integration will make the SSI Booster's knowledge grounding **empirically robust** while maintaining the persona-driven voice and truth-gated generation that defines the platform.
+**Status:** Research phase — investigating feasibility and data quality
 
-**Status:** Research & design phase — follow development in `docs/features/katzilla-integration/`
+> **Note:** This is a proposed integration under evaluation. No claims are made about Katzilla.dev's specific features or capabilities until we've verified them directly with the platform.
 
 ---
 
