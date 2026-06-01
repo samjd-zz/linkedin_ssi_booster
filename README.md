@@ -58,6 +58,33 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
+## 🔮 Coming Soon: Katzilla.dev Integration
+
+**Next-generation knowledge grounding powered by real-world software engineering data.**
+
+We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of truth for avatar knowledge and domain expertise. Katzilla provides curated, structured data from real open-source projects, bug trackers, and engineering discussions — transforming the avatar's grounding from hand-crafted persona graphs to **empirically-validated engineering knowledge**.
+
+**What this means:**
+
+- **Real-world evidence base** — Ground technical claims in actual commits, PRs, issues, and production code patterns from thousands of OSS projects
+- **Automatically updated domain knowledge** — No more manual `domain_knowledge.json` curation — the avatar learns from live engineering data
+- **Enhanced truth validation** — Truth gate layers can verify claims against real project histories, release notes, and community discussions
+- **Multi-domain expertise** — Instant access to Python, Java, Rust, TypeScript ecosystems without building separate knowledge packs
+- **Continuous learning at scale** — The avatar stays current with latest frameworks, patterns, and best practices as Katzilla's index grows
+
+**Technical approach:**
+
+- Katzilla API integration via new `services/katzilla_service.py` module
+- Hybrid knowledge graph — persona facts (your projects/outcomes) + Katzilla domain facts (ecosystem-wide patterns)
+- Category-aware retrieval — leverage Katzilla's semantic search to boost relevance for Model2Vec-classified articles
+- Evidence provenance — every Katzilla-sourced claim includes repo link, commit SHA, or issue number for full transparency
+
+This integration will make the SSI Booster's knowledge grounding **empirically robust** while maintaining the persona-driven voice and truth-gated generation that defines the platform.
+
+**Status:** Research & design phase — follow development in `docs/features/katzilla-integration/`
+
+---
+
 ## 🎨 New: Local Image Generation (FLUX.1-schnell)
 
 > - **Alex Grey Avatar coming soon...** 👨‍🍳
