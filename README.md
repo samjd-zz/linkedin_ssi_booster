@@ -58,29 +58,37 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
-## 🔮 Exploring: Katzilla.dev Integration
+## 🔮 Coming Soon: Katzilla.dev Integration
 
-We're investigating [Katzilla.dev](https://katzilla.dev/) as a potential source of truth data for avatar knowledge grounding.
+**One API. Every US government dataset. Citations baked into every response.**
 
-**Why this matters:**
+We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of truth for avatar knowledge grounding. Katzilla provides **287+ tool-use actions across 32 agent-ready categories**, wrapping every major US government dataset behind a single REST API with built-in citation tracking.
 
-Currently, the avatar's domain knowledge (`domain_knowledge.json`) is manually curated. While this ensures quality, it limits scale and requires ongoing maintenance. An integration with a structured engineering data source could:
+**What Katzilla provides:**
 
-- **Expand evidence base** — Supplement hand-crafted persona facts with real-world technical data
-- **Reduce manual curation** — Automatically ingest validated technical knowledge from external sources
-- **Improve truth validation** — Cross-reference generated claims against a broader knowledge corpus
-- **Stay current** — Domain knowledge evolves as the upstream data source updates
+- **283,051+ validated datasets** — SEC filings, FDA recalls, Federal Register, Congressional records, clinical trials, USGS earthquakes, labor statistics, and more
+- **Citation contract** — Every response includes `source_name`, `source_url`, `retrieved_at`, `data_hash` (SHA256 verification), `license`, and `update_frequency`
+- **Quality metadata** — Freshness (seconds since last update), source uptime (7-day rolling), confidence scores, and certainty ratings
+- **Token optimization** — Field filtering, compact mode, pagination, unit conversion, and summary aggregation to reduce LLM costs
+- **Multiple SDKs** — TypeScript, Python, LangChain, Anthropic Claude, MCP, and Agent2Agent protocol support
 
-**What we need to validate:**
+**How it fits SSI Booster:**
 
-- What data does Katzilla.dev actually expose? (API access, data format, coverage)
-- Can it be integrated into the existing BM25+graph hybrid retrieval pipeline?
-- Does it provide structured, citation-ready data suitable for the truth gate?
-- How would it complement (not replace) persona-specific project outcomes?
+- **Expand evidence base** — Supplement persona facts with real-world government data (e.g., verify company claims against SEC filings, check labor statistics for hiring trends)
+- **Enhanced truth validation** — Truth gate layers can verify claims against primary sources with cryptographic verification (`data_hash`)
+- **Automatic citation** — Every Katzilla-sourced fact includes full provenance (source URL, retrieval timestamp, license)
+- **Continual learning boost** — Knowledge extraction pipeline gains access to 283K+ datasets without manual curation
 
-**Status:** Research phase — investigating feasibility and data quality
+**Technical approach:**
 
-> **Note:** This is a proposed integration under evaluation. No claims are made about Katzilla.dev's specific features or capabilities until we've verified them directly with the platform.
+- Katzilla API integration via new `services/katzilla_service.py` module
+- Hybrid knowledge graph — persona facts (your projects/outcomes) + Katzilla domain facts (government data)
+- Citation-aware retrieval — leverage Katzilla's built-in citation metadata for DoT validation
+- Evidence provenance — every Katzilla-sourced claim includes `data_hash` for byte-level verification
+
+**Status:** Research & design phase — evaluating API integration patterns and citation workflow
+
+> **Learn more:** [Katzilla Documentation](https://katzilla.dev/docs) — REST API with 287+ actions, TypeScript/Python SDKs, and Agent2Agent protocol support
 
 ---
 
