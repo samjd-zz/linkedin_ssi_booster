@@ -92,7 +92,7 @@ We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of
 
 ---
 
-## 🤖 Coming Soon: RIA Canadian Law Knowledge Integration
+## 🏛️ Coming Soon: RIA Canadian Law Knowledge Integration
 
 **Regulatory Intelligence Assistant (RIA) — 400K+ structured Canadian regulations as avatar grounding.**
 
@@ -122,6 +122,8 @@ We're planning to integrate knowledge from the [Regulatory Intelligence Assistan
 - Bilingual knowledge base — French regulatory terms auto-translate to English for BM25 retrieval compatibility
 
 **Status:** Research phase — evaluating API integration, knowledge graph merge strategy, and cross-border regulatory scope
+
+> **RIA Upgrade:** The Regulatory Intelligence Assistant is being upgraded and will be deployed as a Docker image to support the SSI Booster avatar, providing seamless integration with the existing Docker Compose stack for local-first regulatory knowledge grounding. The official Docker image will be published to [Docker Hub](https://hub.docker.com/) for easy public access and deployment.
 
 > **Learn more:** [RIA GitHub Repository](https://github.com/samjd-zz/regulatory-intelligence-assistant) — FastAPI backend, React frontend, PostgreSQL + Neo4j + Elasticsearch stack, 397 tests passing
 
