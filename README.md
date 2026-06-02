@@ -92,7 +92,7 @@ We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of
 
 ---
 
-## �️ Coming Soon: RIA Canadian Law Knowledge Integration
+## 🤖 Coming Soon: RIA Canadian Law Knowledge Integration
 
 **Regulatory Intelligence Assistant (RIA) — 400K+ structured Canadian regulations as avatar grounding.**
 
