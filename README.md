@@ -92,7 +92,42 @@ We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of
 
 ---
 
-## 🎨 New: Local Image Generation (FLUX.1-schnell)
+## �️ Coming Soon: RIA Canadian Law Knowledge Integration
+
+**Regulatory Intelligence Assistant (RIA) — 400K+ structured Canadian regulations as avatar grounding.**
+
+We're planning to integrate knowledge from the [Regulatory Intelligence Assistant](https://github.com/samjd-zz/regulatory-intelligence-assistant) project to give the avatar access to **structured Canadian legal and regulatory knowledge** for enhanced domain grounding.
+
+**What RIA provides:**
+
+- **399,705 searchable documents** — 4,240 Canadian regulations + 395,465 regulatory sections (PostgreSQL + Elasticsearch + Neo4j)
+- **Neo4j Knowledge Graph** — 278,858 nodes + 470,353 relationships linking legislation → sections → regulations → policies → programs
+- **Multi-tier search** — 5-tier fallback architecture (Elasticsearch → Neo4j Graph → PostgreSQL FTS → Metadata) with <50ms-500ms response times
+- **AI-powered Q&A** — RAG pipeline with chain-of-thought reasoning, citation support, and confidence scoring (Gemini API)
+- **Compliance validation** — Real-time requirement extraction and field-level validation (<50ms)
+- **Bilingual support** — Full English/French coverage of Canadian federal regulations
+
+**How it fits SSI Booster:**
+
+- **Legal grounding for regulatory claims** — Ground claims about Canadian employment insurance, data protection, corporate law, or government programs against actual legislation
+- **Neo4j graph integration** — Extend the NetworkX knowledge graph with Canadian legal relationships (e.g., "This regulation implements Section X of Act Y")
+- **Citation-backed assertions** — Every regulatory claim includes section numbers, act names, and official references
+- **Domain expansion** — Add GovTech, regulatory compliance, and public sector AI as first-class SSI categories
+
+**Technical approach:**
+
+- RIA API integration via new `services/ria_service.py` module (REST API at localhost:8000)
+- Hybrid knowledge graph — persona facts + domain facts + **RIA legal facts** (legislation sections, regulations, programs)
+- Cross-system citation tracking — RIA's PostgreSQL/Neo4j/Elasticsearch responses feed the truth gate with structured legal references
+- Bilingual knowledge base — French regulatory terms auto-translate to English for BM25 retrieval compatibility
+
+**Status:** Research phase — evaluating API integration, knowledge graph merge strategy, and cross-border regulatory scope
+
+> **Learn more:** [RIA GitHub Repository](https://github.com/samjd-zz/regulatory-intelligence-assistant) — FastAPI backend, React frontend, PostgreSQL + Neo4j + Elasticsearch stack, 397 tests passing
+
+---
+
+## �🎨 New: Local Image Generation (FLUX.1-schnell)
 
 > - **Alex Grey Avatar coming soon...** 👨‍🍳
 >   The system now includes a high-fidelity image generation pipeline powered by **FLUX.1-schnell** running locally on your GPU. This allows you to generate professional, persona-aligned visuals for your LinkedIn posts without cloud costs or privacy concerns.
