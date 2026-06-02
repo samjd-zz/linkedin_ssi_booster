@@ -125,7 +125,7 @@ We're planning to integrate knowledge from the [Regulatory Intelligence Assistan
 
 > **RIA Upgrade:** The Regulatory Intelligence Assistant is being upgraded and will be deployed as a Docker image to support the SSI Booster avatar, providing seamless integration with the existing Docker Compose stack for local-first regulatory knowledge grounding. The official Docker image will be published to [Docker Hub](https://hub.docker.com/) for easy public access and deployment.
 
-> **Future Vision:** We're exploring the possibility of merging SSI Booster and RIA into one complete grounded avatar platform. RIA already has a production-ready React frontend with full UI plumbing (FastAPI backend, real-time chat, document management), which could serve as the unified interface for truth-gated, regulatory-aware, persona-driven content automation — combining SSI Booster's learning pipeline with RIA's legal knowledge infrastructure.
+> **Future Vision:** We're exploring the possibility of merging SSI Booster and RIA into one complete grounded avatar platform. RIA already has a production-ready React frontend with full UI plumbing (FastAPI backend, real-time chat), which could serve as the unified interface for truth-gated, regulatory-aware, persona-driven content automation — combining SSI Booster's learning pipeline with RIA's legal knowledge infrastructure.
 
 > **Learn more:** [RIA GitHub Repository](https://github.com/samjd-zz/regulatory-intelligence-assistant) — FastAPI backend, React frontend, PostgreSQL + Neo4j + Elasticsearch stack, 397 tests passing
 
