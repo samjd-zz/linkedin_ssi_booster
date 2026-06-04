@@ -98,7 +98,7 @@ We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of
 
 **Regulatory Intelligence Assistant (RIA) — 400K+ structured Canadian regulations as avatar grounding.**
 
-We're reviewing how to bring avatar intelligence to the [Regulatory Intelligence Assistant](https://github.com/samjd-zz/regulatory-intelligence-assistant) project as well as give the avatar access to **structured Canadian legal and regulatory knowledge** for enhanced domain grounding.
+We're reviewing how to bring avatar intelligence to the [Regulatory Intelligence Assistant](https://github.com/samjd-zz/regulatory-intelligence-assistant) project as well as give the ssi avatars access to **structured Canadian legal and regulatory knowledge** for enhanced domain grounding.
 
 **What RIA provides:**
 
