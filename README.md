@@ -4,6 +4,8 @@
 
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
+>currently on dev break, set to simmer... 
+
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
 [![Version alpha-v0.0.2.9](https://img.shields.io/badge/version-alpha--v0.0.2.9-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![Strudel](https://img.shields.io/badge/Strudel-Music%20Agent-9B59B6.svg)](https://strudel.cc/)[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Tests 654 passed](https://img.shields.io/badge/tests-654%20passed-brightgreen.svg)]()
@@ -58,7 +60,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
-## 🔮 Coming Soon: Katzilla.dev Integration
+## 🔮 Coming Soon - High profile feature: Katzilla.dev Integration
 
 **One API. Every US government dataset. Citations baked into every response.**
 
@@ -92,11 +94,11 @@ We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of
 
 ---
 
-## 🏛️ Coming Soon: RIA Canadian Law Knowledge Integration
+## 🏛️ Brainstorm Idea: RIA Canadian Law Knowledge Integration
 
 **Regulatory Intelligence Assistant (RIA) — 400K+ structured Canadian regulations as avatar grounding.**
 
-We're planning to integrate knowledge from the [Regulatory Intelligence Assistant](https://github.com/samjd-zz/regulatory-intelligence-assistant) project to give the avatar access to **structured Canadian legal and regulatory knowledge** for enhanced domain grounding.
+We're reviewing how to bring avatar intelligence to the [Regulatory Intelligence Assistant](https://github.com/samjd-zz/regulatory-intelligence-assistant) project as well as give the avatar access to **structured Canadian legal and regulatory knowledge** for enhanced domain grounding.
 
 **What RIA provides:**
 
