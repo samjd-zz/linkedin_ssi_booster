@@ -1,0 +1,881 @@
+{
+  "schemaVersion": "1.0",
+  "description": "A comprehensive knowledge graph for GitHub Copilot best practices, covering core features, effective prompting strategies, code completion techniques, chat capabilities, security considerations, customization patterns, workspace context management, and AI pair programming workflows. This source maps the interconnections between Copilot's inline suggestions, chat interface, agents, custom instructions, and integration with development workflows.",
+  "domains": [
+    {
+      "id": "copilot-core",
+      "name": "GitHub Copilot Core Features",
+      "description": "Core GitHub Copilot capabilities including inline code completion, suggestions, and autocomplete functionality."
+    },
+    {
+      "id": "copilot-chat",
+      "name": "GitHub Copilot Chat",
+      "description": "Conversational AI interface for code assistance, explanations, debugging, and interactive problem-solving."
+    },
+    {
+      "id": "copilot-prompting",
+      "name": "Prompt Engineering for Copilot",
+      "description": "Techniques and best practices for crafting effective prompts to get optimal code suggestions and responses."
+    },
+    {
+      "id": "copilot-customization",
+      "name": "Copilot Customization & Configuration",
+      "description": "Custom instructions, workspace context files, prompt files, and team-specific configuration patterns."
+    },
+    {
+      "id": "copilot-security",
+      "name": "Security & Code Review",
+      "description": "Security analysis, vulnerability detection, code review automation, and secure coding practices with Copilot."
+    },
+    {
+      "id": "copilot-testing",
+      "name": "Testing & Quality Assurance",
+      "description": "Test generation, code quality analysis, documentation generation, and quality-focused workflows."
+    },
+    {
+      "id": "copilot-workspace",
+      "name": "Workspace Context & Codebase Understanding",
+      "description": "How Copilot uses workspace context, version detection, pattern analysis, and codebase-specific suggestions."
+    },
+    {
+      "id": "copilot-agents",
+      "name": "Copilot Agents & SDK",
+      "description": "Agent-based autonomous coding tasks, Copilot SDK integration, and programmatic tool usage."
+    }
+  ],
+  "facts": [
+    {
+      "id": "copilot-overview",
+      "domainId": "copilot-core",
+      "statement": "GitHub Copilot is an AI-powered pair programming tool that provides real-time code suggestions, inline completions, and chat-based assistance. It uses large language models to analyze code context and generate contextually relevant suggestions as developers type. Copilot integrates directly into IDEs like VS Code, Visual Studio, JetBrains IDEs, and Neovim.",
+      "tags": [
+        "github copilot",
+        "AI pair programming",
+        "code completion",
+        "IDE integration",
+        "VS Code",
+        "real-time suggestions"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-inline-suggestions",
+      "domainId": "copilot-core",
+      "statement": "GitHub Copilot provides inline code suggestions as you type. These suggestions appear as ghost text that can be accepted with Tab, partially accepted with Ctrl+Right Arrow, or dismissed with Esc. Copilot analyzes the current file context, nearby files, and comments to generate relevant completions. Multiple suggestions can be cycled through using Alt+] and Alt+[.",
+      "tags": [
+        "inline suggestions",
+        "ghost text",
+        "code completion",
+        "Tab accept",
+        "context-aware",
+        "multiple suggestions"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-context-window",
+      "domainId": "copilot-core",
+      "statement": "Copilot's context window includes the current file content, nearby open files, file path, cursor position, and recent edits. It prioritizes local context (current function/class) over distant code. Comments immediately before the cursor position have strong influence on suggestions. The context window is limited, so proximity to the cursor matters significantly for suggestion quality.",
+      "tags": [
+        "context window",
+        "file context",
+        "cursor position",
+        "comments",
+        "proximity",
+        "suggestion quality"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-chat-overview",
+      "domainId": "copilot-chat",
+      "statement": "GitHub Copilot Chat is the AI-powered conversational interface for Copilot. It enables natural language interactions for code explanations, debugging, test generation, refactoring suggestions, and problem-solving. Chat can reference specific code selections, files, symbols, and workspace context. Responses can include code blocks with copy/insert buttons and file references.",
+      "tags": [
+        "copilot chat",
+        "conversational AI",
+        "code explanation",
+        "debugging",
+        "natural language",
+        "interactive assistance"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-slash-commands",
+      "domainId": "copilot-chat",
+      "statement": "Copilot Chat supports slash commands for specific tasks: /explain (explain code), /fix (suggest bug fixes), /tests (generate tests), /doc (add documentation), /refactor (improve code structure), /new (scaffold new code), /help (show available commands). Slash commands provide focused, task-specific responses optimized for common development workflows.",
+      "tags": [
+        "slash commands",
+        "/explain",
+        "/fix",
+        "/tests",
+        "/doc",
+        "/refactor",
+        "task-specific",
+        "workflow optimization"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-agents",
+      "domainId": "copilot-agents",
+      "statement": "Copilot Agents are autonomous AI assistants that can perform multi-step coding tasks independently. They can read files, execute code, use tools, interact with APIs, and make decisions to accomplish complex objectives. Agents use a permission system where users approve or deny tool usage. The Copilot SDK enables programmatic agent creation and integration.",
+      "tags": [
+        "copilot agents",
+        "autonomous AI",
+        "multi-step tasks",
+        "tool usage",
+        "permission system",
+        "Copilot SDK",
+        "agentic coding"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-workspace-context",
+      "domainId": "copilot-workspace",
+      "statement": "Copilot analyzes workspace context including project structure, dependency files (package.json, pom.xml, requirements.txt), configuration files, and established code patterns. It detects language versions, framework versions, and library versions to generate version-compatible code. Workspace context ensures suggestions align with project conventions and technology stack.",
+      "tags": [
+        "workspace context",
+        "project structure",
+        "dependency detection",
+        "version compatibility",
+        "code patterns",
+        "technology stack"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-custom-instructions",
+      "domainId": "copilot-customization",
+      "statement": "Custom instructions are markdown files in the .github/copilot directory that guide Copilot's behavior for a repository. Key files include architecture.md (system design), tech-stack.md (versions and frameworks), coding-standards.md (style guidelines), folder-structure.md (organization), and exemplars.md (reference patterns). Custom instructions ensure team-wide consistency and project-specific best practices.",
+      "tags": [
+        "custom instructions",
+        ".github/copilot",
+        "architecture.md",
+        "coding-standards.md",
+        "team consistency",
+        "repository configuration"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-prompt-engineering",
+      "domainId": "copilot-prompting",
+      "statement": "Effective Copilot prompts are specific, provide context, and state intent clearly. Use descriptive comments before code, specify types and interfaces, include example inputs/outputs, and break complex tasks into steps. Natural language prompts work best when they describe the 'what' and 'why', letting Copilot determine the 'how'. Avoid vague or ambiguous language.",
+      "tags": [
+        "prompt engineering",
+        "effective prompts",
+        "descriptive comments",
+        "context provision",
+        "specific intent",
+        "natural language"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-comment-driven",
+      "domainId": "copilot-prompting",
+      "statement": "Comment-driven development with Copilot involves writing detailed comments describing desired functionality before implementation. Write function signatures with parameter types, add inline comments explaining logic flow, use TODO comments for planned features, and describe edge cases. Comments immediately above the cursor position have the strongest influence on generated code.",
+      "tags": [
+        "comment-driven development",
+        "descriptive comments",
+        "function signatures",
+        "TODO comments",
+        "edge cases",
+        "inline documentation"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-security-review",
+      "domainId": "copilot-security",
+      "statement": "Copilot can analyze code for security vulnerabilities including hardcoded secrets, SQL injection, XSS vulnerabilities, improper input validation, authentication/authorization issues, and insecure dependencies. Use prompts like 'analyze for security vulnerabilities' or 'does this follow secure coding best practices' to trigger security-focused analysis. Custom security review instructions can be defined in .github/copilot files.",
+      "tags": [
+        "security review",
+        "vulnerability detection",
+        "SQL injection",
+        "XSS",
+        "input validation",
+        "secure coding",
+        "code analysis"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-code-review-standards",
+      "domainId": "copilot-security",
+      "statement": "Copilot code review focuses on security critical issues (secrets, injection vulnerabilities), performance red flags (N+1 queries, inefficient loops), code quality (function size, naming, error handling), and testing standards. Review feedback should be specific, actionable, and educational. Always prioritize security vulnerabilities and performance issues that impact users.",
+      "tags": [
+        "code review",
+        "security critical",
+        "performance",
+        "code quality",
+        "testing",
+        "actionable feedback",
+        "prioritization"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-test-generation",
+      "domainId": "copilot-testing",
+      "statement": "Copilot generates unit tests, integration tests, and test cases for edge conditions. Use /tests slash command or prompts like 'generate tests for this function' or 'write test cases covering edge cases'. Copilot detects existing test frameworks (Jest, JUnit, pytest) and generates tests matching project patterns. Specify test coverage requirements and edge cases in prompts for comprehensive test generation.",
+      "tags": [
+        "test generation",
+        "unit tests",
+        "integration tests",
+        "/tests command",
+        "edge cases",
+        "test frameworks",
+        "test coverage"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-version-detection",
+      "domainId": "copilot-workspace",
+      "statement": "Copilot automatically detects language and framework versions from project files (package.json, .csproj, pom.xml, requirements.txt, go.mod). It scans for version constraints and generates code compatible with detected versions. Never suggests features unavailable in the detected version. Version detection prevents compatibility issues and ensures generated code integrates seamlessly with existing dependencies.",
+      "tags": [
+        "version detection",
+        "compatibility",
+        "dependency files",
+        "framework versions",
+        "language versions",
+        "automatic detection"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-pattern-learning",
+      "domainId": "copilot-workspace",
+      "statement": "When custom instructions don't provide specific guidance, Copilot scans the codebase for established patterns in naming conventions, code organization, error handling, logging, documentation style, and testing. It follows the most consistent patterns found, prioritizing patterns in newer files or files with higher test coverage when conflicts exist. Never introduces patterns not found in the existing codebase.",
+      "tags": [
+        "pattern learning",
+        "codebase scanning",
+        "naming conventions",
+        "consistency",
+        "established patterns",
+        "code organization"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-prompt-files",
+      "domainId": "copilot-customization",
+      "statement": "Prompt files (.prompt.md) define reusable prompt templates with role definitions, instructions, and output formats. They support variables (${input:variable_name:description}) for dynamic prompts. Prompt files enable consistent, repeatable workflows for code review, refactoring, documentation generation, and analysis tasks. Store prompt files in .github/copilot or project-specific directories.",
+      "tags": [
+        "prompt files",
+        ".prompt.md",
+        "reusable templates",
+        "variables",
+        "workflow automation",
+        "consistent prompts"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-migration-instructions",
+      "domainId": "copilot-customization",
+      "statement": "Migration instructions guide Copilot to apply transformation patterns during code modernization (framework upgrades, architecture refactoring, technology migration). Define before/after patterns, API correspondences, mandatory transformations, obsolete patterns to avoid, and validation requirements. Migration instructions enable automated code evolution aligned with migration objectives.",
+      "tags": [
+        "migration instructions",
+        "code modernization",
+        "transformation patterns",
+        "API migration",
+        "framework upgrade",
+        "automated refactoring"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-context-references",
+      "domainId": "copilot-chat",
+      "statement": "Copilot Chat supports context references using # (files), @ (symbols), and workspace scope. #file:path.js references specific files, @functionName references symbols, and @workspace searches the entire workspace. References ensure Chat responses are grounded in specific code context. Multiple references can be combined in a single prompt for comprehensive analysis.",
+      "tags": [
+        "context references",
+        "#file",
+        "@symbol",
+        "@workspace",
+        "grounded responses",
+        "specific context"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-output-format",
+      "domainId": "copilot-chat",
+      "statement": "Specify desired output formats in Chat prompts for structured responses. Request code blocks with specific languages, markdown tables, bullet lists, JSON objects, or step-by-step instructions. Use format instructions like 'respond with a JSON object', 'provide a markdown table', or 'explain step-by-step with code examples'. Clear format requirements improve response usability.",
+      "tags": [
+        "output format",
+        "structured responses",
+        "code blocks",
+        "markdown tables",
+        "JSON output",
+        "format specification"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-iterative-refinement",
+      "domainId": "copilot-prompting",
+      "statement": "Use iterative refinement to improve Copilot suggestions. Start with broad prompts, then add constraints, specify edge cases, request alternative approaches, and provide feedback on partial solutions. Conversational refinement in Chat enables progressive improvement. Accept partially correct suggestions and modify rather than regenerating from scratch when appropriate.",
+      "tags": [
+        "iterative refinement",
+        "progressive improvement",
+        "constraints",
+        "edge cases",
+        "feedback loop",
+        "partial acceptance"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-architectural-guidance",
+      "domainId": "copilot-customization",
+      "statement": "Architecture.md in .github/copilot defines system architecture, design patterns, layer boundaries, dependency rules, and architectural constraints. Specify architectural style (microservices, monolith, hexagonal, clean architecture), module boundaries, data flow patterns, and integration points. Architectural guidance ensures Copilot suggestions maintain system coherence and design integrity.",
+      "tags": [
+        "architecture guidance",
+        "architecture.md",
+        "design patterns",
+        "layer boundaries",
+        "architectural constraints",
+        "system coherence"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-tech-stack-spec",
+      "domainId": "copilot-customization",
+      "statement": "Tech-stack.md documents exact versions of languages, frameworks, libraries, and tools used in the project. Include language version constraints, major framework versions, critical dependencies, build tools, and runtime environments. Detailed tech stack specifications ensure Copilot generates version-compatible code and avoids suggesting unavailable features or APIs.",
+      "tags": [
+        "tech stack",
+        "tech-stack.md",
+        "version constraints",
+        "framework versions",
+        "dependencies",
+        "compatibility"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-coding-standards",
+      "domainId": "copilot-customization",
+      "statement": "Coding-standards.md defines style guidelines, naming conventions, code formatting rules, documentation requirements, and best practices. Include language-specific standards (PEP 8, Google Java Style), preferred patterns, code organization rules, and quality thresholds. Coding standards ensure consistent code style across team members and automated suggestions.",
+      "tags": [
+        "coding standards",
+        "style guidelines",
+        "naming conventions",
+        "code formatting",
+        "best practices",
+        "team consistency"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-exemplar-patterns",
+      "domainId": "copilot-customization",
+      "statement": "Exemplars.md provides reference code examples demonstrating preferred patterns, ideal implementations, and best-practice code. Include exemplary error handling, logging patterns, API designs, test structures, and documentation examples. Exemplars serve as concrete templates for Copilot to emulate when generating similar code in the project.",
+      "tags": [
+        "exemplars",
+        "reference code",
+        "preferred patterns",
+        "best practices",
+        "code templates",
+        "exemplars.md"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-security-prompts",
+      "domainId": "copilot-security",
+      "statement": "Security-focused prompts for Copilot include: 'analyze for security vulnerabilities', 'check for hardcoded secrets', 'verify input validation', 'review authentication logic', 'identify SQL injection risks', 'check for XSS vulnerabilities', and 'ensure proper error handling without information leakage'. Combine security analysis with specific contexts (payment processing, user authentication, data handling).",
+      "tags": [
+        "security prompts",
+        "vulnerability analysis",
+        "secrets detection",
+        "input validation",
+        "SQL injection",
+        "XSS",
+        "secure coding"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-performance-review",
+      "domainId": "copilot-security",
+      "statement": "Performance-focused Copilot prompts identify N+1 query problems, inefficient algorithms, memory leaks, unnecessary computations, and scalability issues. Request analysis with prompts like 'identify performance bottlenecks', 'analyze algorithm complexity', 'check for memory leaks', or 'suggest optimization opportunities'. Performance review should consider both time and space complexity.",
+      "tags": [
+        "performance review",
+        "N+1 queries",
+        "algorithm complexity",
+        "memory leaks",
+        "optimization",
+        "scalability"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-documentation-gen",
+      "domainId": "copilot-testing",
+      "statement": "Copilot generates code documentation including function docstrings, API documentation, README files, and inline comments. Use /doc slash command or prompts like 'add documentation to this function', 'generate API docs', or 'create README for this module'. Specify documentation format (JSDoc, Javadoc, Sphinx, Markdown) and level of detail required.",
+      "tags": [
+        "documentation generation",
+        "/doc command",
+        "docstrings",
+        "API docs",
+        "README",
+        "inline comments",
+        "documentation formats"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-refactoring",
+      "domainId": "copilot-chat",
+      "statement": "Copilot assists with code refactoring to improve structure, readability, and maintainability. Use /refactor command or prompts like 'extract this into a separate function', 'simplify this logic', 'improve error handling', or 'apply design pattern X'. Refactoring suggestions maintain behavior while improving code quality. Always validate refactored code with existing tests.",
+      "tags": [
+        "refactoring",
+        "/refactor command",
+        "code improvement",
+        "extract function",
+        "simplify logic",
+        "design patterns",
+        "behavior preservation"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-debugging-assistance",
+      "domainId": "copilot-chat",
+      "statement": "Copilot helps debug code by analyzing error messages, suggesting fixes, explaining unexpected behavior, and proposing debugging strategies. Use /fix command or prompts like 'why is this failing', 'explain this error', 'suggest fixes for this bug', or 'help debug this issue'. Provide error messages, stack traces, and reproduction steps for effective debugging assistance.",
+      "tags": [
+        "debugging",
+        "/fix command",
+        "error analysis",
+        "bug fixes",
+        "error messages",
+        "stack traces",
+        "troubleshooting"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-code-explanation",
+      "domainId": "copilot-chat",
+      "statement": "Copilot explains code functionality, algorithms, design patterns, and complex logic using natural language. Use /explain command or prompts like 'explain how this works', 'what does this function do', 'describe this algorithm', or 'explain the design pattern used here'. Explanations help understand unfamiliar code, review pull requests, and onboard new team members.",
+      "tags": [
+        "code explanation",
+        "/explain command",
+        "algorithm description",
+        "design patterns",
+        "natural language",
+        "code understanding",
+        "onboarding"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-new-code-scaffold",
+      "domainId": "copilot-chat",
+      "statement": "Copilot scaffolds new code including classes, modules, APIs, and project structures. Use /new command or prompts like 'create a new REST API', 'scaffold a React component', 'generate a database schema', or 'create a test suite structure'. New code generation follows project conventions, detected frameworks, and established patterns in the codebase.",
+      "tags": [
+        "code scaffolding",
+        "/new command",
+        "new code",
+        "project structure",
+        "API generation",
+        "component creation",
+        "framework integration"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-multi-file-editing",
+      "domainId": "copilot-agents",
+      "statement": "Copilot Agents can perform multi-file edits across the codebase for refactoring, migrations, and large-scale changes. Agents analyze dependencies, update multiple files consistently, and maintain cross-file coherence. Multi-file operations require user approval for each file modification. Use agents for tasks like 'rename this class across the project' or 'migrate all files to new API'.",
+      "tags": [
+        "multi-file editing",
+        "cross-file refactoring",
+        "large-scale changes",
+        "dependency analysis",
+        "consistent updates",
+        "approval workflow"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-github-integration",
+      "domainId": "copilot-agents",
+      "statement": "Copilot integrates with GitHub workflows including pull request reviews, issue management, repository configuration, and CI/CD pipelines. Agents can fetch PR data, analyze code changes, generate review comments, create issues, and interact with GitHub APIs. GitHub integration enables automated code review, PR analysis, and repository management workflows.",
+      "tags": [
+        "GitHub integration",
+        "pull requests",
+        "code review",
+        "issue management",
+        "GitHub APIs",
+        "CI/CD",
+        "automated workflows"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-permission-model",
+      "domainId": "copilot-agents",
+      "statement": "Copilot Agents use a permission system where users approve or deny tool usage, file access, code execution, and external API calls. Permission handlers can be set to ApproveAll (automatic approval), PromptUser (interactive approval), or DenyAll (no permissions). Permission model ensures user control over agent actions and prevents unauthorized operations.",
+      "tags": [
+        "permission model",
+        "user approval",
+        "permission handlers",
+        "ApproveAll",
+        "PromptUser",
+        "access control",
+        "security"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-sdk-integration",
+      "domainId": "copilot-agents",
+      "statement": "The Copilot SDK (available for Go, Java, JavaScript/TypeScript, Python) enables programmatic agent creation and integration. SDK provides APIs for creating sessions, sending prompts, handling events, executing tools, and managing permissions. SDK integration allows custom Copilot-powered applications, CI/CD automation, and embedded AI assistance in development tools.",
+      "tags": [
+        "Copilot SDK",
+        "programmatic integration",
+        "session management",
+        "event handling",
+        "tool execution",
+        "custom applications"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-cli",
+      "domainId": "copilot-core",
+      "statement": "GitHub Copilot CLI brings AI assistance to the command line for shell commands, git operations, and system tasks. Use gh copilot suggest for command suggestions, gh copilot explain for command explanations, and natural language queries like 'how do I find large files' or 'git undo last commit'. CLI integration streamlines terminal workflows with AI guidance.",
+      "tags": [
+        "Copilot CLI",
+        "command line",
+        "shell commands",
+        "gh copilot",
+        "terminal assistance",
+        "git operations",
+        "natural language queries"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-context-prioritization",
+      "domainId": "copilot-workspace",
+      "statement": "Copilot prioritizes context sources in order: custom instructions (.github/copilot), nearby open files, current file content, established codebase patterns, and general programming knowledge. Explicitly referenced files (#file) have higher priority than workspace context. Understanding prioritization helps craft effective prompts and structure workspaces for optimal suggestions.",
+      "tags": [
+        "context prioritization",
+        "custom instructions",
+        "file references",
+        "workspace context",
+        "codebase patterns",
+        "suggestion quality"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-accept-strategies",
+      "domainId": "copilot-core",
+      "statement": "Strategies for accepting Copilot suggestions: full acceptance (Tab) for complete suggestions, partial acceptance (Ctrl/Cmd+Right Arrow) for word-by-word review, rejection (Esc) when inappropriate, and modification of accepted code to fit specific needs. Review suggestions critically, especially for security-sensitive code, complex algorithms, and business logic.",
+      "tags": [
+        "acceptance strategies",
+        "Tab accept",
+        "partial acceptance",
+        "suggestion review",
+        "critical review",
+        "code modification"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "copilot-limitations",
+      "domainId": "copilot-core",
+      "statement": "Copilot limitations include: may suggest outdated APIs, cannot access external services or real-time data, limited understanding of very large codebases, potential for hallucinated code, no guarantee of correctness, and possible security/privacy implications. Always review generated code, validate with tests, verify security implications, and ensure alignment with requirements. Copilot augments but does not replace developer judgment.",
+      "tags": [
+        "limitations",
+        "code review required",
+        "validation needed",
+        "security review",
+        "developer judgment",
+        "augmentation not replacement"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "copilot-rel-1",
+      "fromFactId": "copilot-chat-overview",
+      "toFactId": "copilot-overview",
+      "relationType": "extends",
+      "description": "Copilot Chat extends the core inline suggestions with conversational AI capabilities"
+    },
+    {
+      "id": "copilot-rel-2",
+      "fromFactId": "copilot-slash-commands",
+      "toFactId": "copilot-chat-overview",
+      "relationType": "feature-of",
+      "description": "Slash commands are built-in features of Copilot Chat for specific workflows"
+    },
+    {
+      "id": "copilot-rel-3",
+      "fromFactId": "copilot-agents",
+      "toFactId": "copilot-chat-overview",
+      "relationType": "builds-on",
+      "description": "Copilot Agents build on Chat capabilities to perform autonomous multi-step tasks"
+    },
+    {
+      "id": "copilot-rel-4",
+      "fromFactId": "copilot-custom-instructions",
+      "toFactId": "copilot-workspace-context",
+      "relationType": "configures",
+      "description": "Custom instructions configure how Copilot uses workspace context"
+    },
+    {
+      "id": "copilot-rel-5",
+      "fromFactId": "copilot-version-detection",
+      "toFactId": "copilot-workspace-context",
+      "relationType": "component-of",
+      "description": "Version detection is a component of workspace context analysis"
+    },
+    {
+      "id": "copilot-rel-6",
+      "fromFactId": "copilot-pattern-learning",
+      "toFactId": "copilot-workspace-context",
+      "relationType": "component-of",
+      "description": "Pattern learning analyzes workspace context to identify established conventions"
+    },
+    {
+      "id": "copilot-rel-7",
+      "fromFactId": "copilot-prompt-engineering",
+      "toFactId": "copilot-inline-suggestions",
+      "relationType": "improves",
+      "description": "Effective prompt engineering improves the quality of inline suggestions"
+    },
+    {
+      "id": "copilot-rel-8",
+      "fromFactId": "copilot-comment-driven",
+      "toFactId": "copilot-prompt-engineering",
+      "relationType": "technique-of",
+      "description": "Comment-driven development is a specific technique of prompt engineering"
+    },
+    {
+      "id": "copilot-rel-9",
+      "fromFactId": "copilot-context-references",
+      "toFactId": "copilot-chat-overview",
+      "relationType": "enhances",
+      "description": "Context references enhance Chat responses with specific code grounding"
+    },
+    {
+      "id": "copilot-rel-10",
+      "fromFactId": "copilot-security-review",
+      "toFactId": "copilot-code-review-standards",
+      "relationType": "component-of",
+      "description": "Security review is a critical component of comprehensive code review standards"
+    },
+    {
+      "id": "copilot-rel-11",
+      "fromFactId": "copilot-test-generation",
+      "toFactId": "copilot-slash-commands",
+      "relationType": "uses",
+      "description": "Test generation uses the /tests slash command for focused test creation"
+    },
+    {
+      "id": "copilot-rel-12",
+      "fromFactId": "copilot-prompt-files",
+      "toFactId": "copilot-custom-instructions",
+      "relationType": "extends",
+      "description": "Prompt files extend custom instructions with reusable templates"
+    },
+    {
+      "id": "copilot-rel-13",
+      "fromFactId": "copilot-migration-instructions",
+      "toFactId": "copilot-custom-instructions",
+      "relationType": "specialized-form-of",
+      "description": "Migration instructions are a specialized form of custom instructions for code evolution"
+    },
+    {
+      "id": "copilot-rel-14",
+      "fromFactId": "copilot-architectural-guidance",
+      "toFactId": "copilot-custom-instructions",
+      "relationType": "component-of",
+      "description": "Architectural guidance (architecture.md) is a key component of custom instructions"
+    },
+    {
+      "id": "copilot-rel-15",
+      "fromFactId": "copilot-tech-stack-spec",
+      "toFactId": "copilot-custom-instructions",
+      "relationType": "component-of",
+      "description": "Tech stack specification is a component of custom instructions for version compatibility"
+    },
+    {
+      "id": "copilot-rel-16",
+      "fromFactId": "copilot-coding-standards",
+      "toFactId": "copilot-custom-instructions",
+      "relationType": "component-of",
+      "description": "Coding standards are a component of custom instructions for style consistency"
+    },
+    {
+      "id": "copilot-rel-17",
+      "fromFactId": "copilot-exemplar-patterns",
+      "toFactId": "copilot-custom-instructions",
+      "relationType": "component-of",
+      "description": "Exemplar patterns provide concrete examples within custom instructions"
+    },
+    {
+      "id": "copilot-rel-18",
+      "fromFactId": "copilot-iterative-refinement",
+      "toFactId": "copilot-prompt-engineering",
+      "relationType": "technique-of",
+      "description": "Iterative refinement is a technique for progressive improvement in prompt engineering"
+    },
+    {
+      "id": "copilot-rel-19",
+      "fromFactId": "copilot-refactoring",
+      "toFactId": "copilot-slash-commands",
+      "relationType": "uses",
+      "description": "Refactoring uses the /refactor slash command for code improvement"
+    },
+    {
+      "id": "copilot-rel-20",
+      "fromFactId": "copilot-debugging-assistance",
+      "toFactId": "copilot-slash-commands",
+      "relationType": "uses",
+      "description": "Debugging assistance uses the /fix slash command for bug analysis"
+    },
+    {
+      "id": "copilot-rel-21",
+      "fromFactId": "copilot-code-explanation",
+      "toFactId": "copilot-slash-commands",
+      "relationType": "uses",
+      "description": "Code explanation uses the /explain slash command for understanding"
+    },
+    {
+      "id": "copilot-rel-22",
+      "fromFactId": "copilot-documentation-gen",
+      "toFactId": "copilot-slash-commands",
+      "relationType": "uses",
+      "description": "Documentation generation uses the /doc slash command"
+    },
+    {
+      "id": "copilot-rel-23",
+      "fromFactId": "copilot-new-code-scaffold",
+      "toFactId": "copilot-slash-commands",
+      "relationType": "uses",
+      "description": "New code scaffolding uses the /new slash command"
+    },
+    {
+      "id": "copilot-rel-24",
+      "fromFactId": "copilot-multi-file-editing",
+      "toFactId": "copilot-agents",
+      "relationType": "capability-of",
+      "description": "Multi-file editing is a key capability of Copilot Agents"
+    },
+    {
+      "id": "copilot-rel-25",
+      "fromFactId": "copilot-github-integration",
+      "toFactId": "copilot-agents",
+      "relationType": "capability-of",
+      "description": "GitHub integration is a capability enabled by Copilot Agents"
+    },
+    {
+      "id": "copilot-rel-26",
+      "fromFactId": "copilot-permission-model",
+      "toFactId": "copilot-agents",
+      "relationType": "governs",
+      "description": "Permission model governs all Copilot Agent actions"
+    },
+    {
+      "id": "copilot-rel-27",
+      "fromFactId": "copilot-sdk-integration",
+      "toFactId": "copilot-agents",
+      "relationType": "enables",
+      "description": "SDK integration enables programmatic creation and control of Copilot Agents"
+    },
+    {
+      "id": "copilot-rel-28",
+      "fromFactId": "copilot-context-window",
+      "toFactId": "copilot-inline-suggestions",
+      "relationType": "determines-quality-of",
+      "description": "Context window content determines the quality of inline suggestions"
+    },
+    {
+      "id": "copilot-rel-29",
+      "fromFactId": "copilot-context-prioritization",
+      "toFactId": "copilot-workspace-context",
+      "relationType": "organizes",
+      "description": "Context prioritization organizes how workspace context is used"
+    },
+    {
+      "id": "copilot-rel-30",
+      "fromFactId": "copilot-security-prompts",
+      "toFactId": "copilot-security-review",
+      "relationType": "triggers",
+      "description": "Security-focused prompts trigger security review and vulnerability analysis"
+    },
+    {
+      "id": "copilot-rel-31",
+      "fromFactId": "copilot-performance-review",
+      "toFactId": "copilot-code-review-standards",
+      "relationType": "component-of",
+      "description": "Performance review is a component of comprehensive code review standards"
+    },
+    {
+      "id": "copilot-rel-32",
+      "fromFactId": "copilot-accept-strategies",
+      "toFactId": "copilot-inline-suggestions",
+      "relationType": "applies-to",
+      "description": "Acceptance strategies determine how developers interact with inline suggestions"
+    },
+    {
+      "id": "copilot-rel-33",
+      "fromFactId": "copilot-limitations",
+      "toFactId": "copilot-overview",
+      "relationType": "constraints-of",
+      "description": "Limitations are important constraints developers must understand when using Copilot"
+    }
+  ]
+}
