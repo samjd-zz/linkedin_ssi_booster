@@ -209,9 +209,22 @@ def fetch_relevant_articles(
     ``primary_ssi_component`` metadata keys.
     """
     import os
+    import json
+    from pathlib import Path
     _classify = classify or os.getenv("CURATE_CLASSIFY", "false").lower() == "true"
 
+    # Load published titles cache early to filter out already-published articles
+    IDEAS_CACHE_PATH = Path(os.getenv("IDEAS_CACHE_PATH", "published_ideas_cache.json"))
+    published_titles = set()
+    if IDEAS_CACHE_PATH.exists():
+        try:
+            published_titles = set(json.loads(IDEAS_CACHE_PATH.read_text()))
+            logger.debug("📚 Loaded %d published titles from cache for filtering", len(published_titles))
+        except Exception as exc:
+            logger.warning("Failed to load published titles cache (continuing): %s", exc)
+
     articles = []
+    skipped_count = 0
     for feed_info in RSS_FEEDS:
         try:
             feed = feedparser.parse(feed_info["url"])
@@ -220,6 +233,12 @@ def fetch_relevant_articles(
                 summary = str(entry.get("summary") or "")
                 link    = str(entry.get("link") or "")
                 content = f"{title} {summary}".lower()
+
+                # Skip if already published
+                if title in published_titles:
+                    skipped_count += 1
+                    logger.debug("  ⏭️  Skipping already-published: [%s] %s", feed_info["name"], title[:60])
+                    continue
 
                 if any(kw.lower() in content for kw in KEYWORDS):
                     if len(summary.strip()) < 100 and link:
@@ -237,7 +256,7 @@ def fetch_relevant_articles(
                     logger.info("  🧲 Matched: [%s] %s", feed_info["name"], title[:60])
         except Exception as exc:
             logger.warning("Failed to fetch %s: %s", feed_info["name"], exc)
-    logger.info("🗞️  Found %d relevant articles across %d feeds", len(articles), len(RSS_FEEDS))
+    logger.info("🗞️  Found %d relevant articles (%d skipped as already published) across %d feeds", len(articles), skipped_count, len(RSS_FEEDS))
 
     if _classify and articles:
         logger.info("🏷️  Classifying %d articles via Model2Vec…", len(articles))
