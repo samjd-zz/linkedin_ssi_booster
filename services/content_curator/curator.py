@@ -877,9 +877,9 @@ class ContentCurator:
             logger.warning("Narrative memory update failed (continuing): %s", _mem_exc)
 
         if channel == "linkedin":
-            post_text = append_url_and_hashtags(post_text, article["link"])
+            post_text = append_url_and_hashtags(post_text, article["title"] + " " + article["link"])
         elif channel == "facebook":
-            post_text = append_url_and_hashtags(post_text, article["link"])
+            post_text = append_url_and_hashtags(post_text, article["title"] + " " + article["link"])
         elif channel == "youtube":
             post_text = truncate_at_sentence(post_text, 500)
         elif channel == "x":
