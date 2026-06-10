@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -114,6 +115,41 @@ class ReconcileService:
 
         if changed:
             JsonlStore.rewrite(c_path, candidates)
+
+        # Sync IDEAS_CACHE_PATH with actual Buffer published posts
+        try:
+            from services.content_curator._config import IDEAS_CACHE_PATH
+            
+            # Extract article titles from published_records that have a candidate match
+            published_titles: set[str] = set()
+            for rec in published_records:
+                cid = rec.get("candidate_id")
+                if cid:
+                    # Find matching candidate to get article title
+                    for cand in candidates:
+                        if cand.get("candidate_id") == cid:
+                            article_title = cand.get("article_title", "")
+                            if article_title:
+                                published_titles.add(article_title)
+                            break
+            
+            # Update IDEAS_CACHE_PATH with only articles that are actually published
+            if IDEAS_CACHE_PATH.exists():
+                existing_titles = set(json.loads(IDEAS_CACHE_PATH.read_text()))
+            else:
+                existing_titles = set()
+            
+            # Merge with new published titles
+            all_published = existing_titles | published_titles
+            IDEAS_CACHE_PATH.write_text(json.dumps(sorted(all_published), indent=2))
+            
+            stats["ideas_cache_synced"] = len(all_published)
+            logger.info(
+                "selection_learning reconcile: synced IDEAS_CACHE_PATH with %d article titles",
+                len(all_published),
+            )
+        except Exception as exc:
+            logger.warning("Failed to sync IDEAS_CACHE_PATH (continuing): %s", exc)
 
         logger.info(
             "selection_learning reconcile: fetched=%d matched=%d selected=%d rejected=%d",

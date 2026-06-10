@@ -409,7 +409,7 @@ class ContentCurator:
     def curate_and_create_ideas(
         self,
         dry_run: bool = False,
-        max_ideas: int = 5,
+        max_ideas: int = 9,
         request_delay: float = 5.0,
         channel: str | list[str] = "linkedin",
         message_type: str = "idea",
