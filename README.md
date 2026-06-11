@@ -397,6 +397,8 @@ The primer covers core NLP concepts, practical communication techniques, technic
 
 ## Database Integration (PostgreSQL)
 
+> **⚠️ Status:** The core infrastructure is functional, but some features are still being refined. We're aware of outstanding issues and actively working on improvements. File-based storage (JSON/JSONL) remains the recommended default until the database integration is fully stabilized.
+
 The system now supports **dual-write mode** with PostgreSQL for improved data integrity, query performance, and concurrent access. Database integration is **optional** — the system continues to work with file-based storage (JSON/JSONL) by default.
 
 **Setup (Docker):**
