@@ -60,7 +60,11 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
-## 🎵 New: Rei Toei - AI Music Avatar
+> **📋 Future Development:** See [ROADMAP.md](ROADMAP.md) for planned features including Katzilla.dev government data integration, RIA Canadian law knowledge, and more. Have ideas? [Open an issue on GitHub](https://github.com/samjd-zz/linkedin_ssi_booster/issues) with the `enhancement` label.
+
+---
+
+## 🎵 Rei Toei - AI Music Avatar
 
 > **Inspiration:** Rei Toei is the platform's AI music avatar, inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) and the cyberpunk aesthetics of William Gibson's _Idoru_.
 
