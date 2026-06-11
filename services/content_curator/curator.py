@@ -13,7 +13,7 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from colorama import Fore, Style
 
@@ -178,6 +178,7 @@ class ContentCurator:
         return set()
 
     def _save_published_title(self, title: str) -> None:
+        """Save title to cache and update in-memory published set."""
         titles = self._load_published_titles()
         titles.add(title)
         IDEAS_CACHE_PATH.write_text(json.dumps(sorted(titles), indent=2))
@@ -440,6 +441,12 @@ class ContentCurator:
 
         published = set() if dry_run else self._load_published_titles()
         created_ideas: list | None = []
+        
+        def update_published_cache(title: str) -> None:
+            """Update both disk cache and in-memory set."""
+            if not dry_run:
+                self._save_published_title(title)
+                published.add(title)
 
         learn_only = learn
         if learn_only:
@@ -561,6 +568,7 @@ class ContentCurator:
                     dot_report=dot_report,
                     candidate_id=_candidate_id,
                     created_ideas=created_ideas,
+                    update_published_cache=update_published_cache,
                 )
                 if created_ideas is None:  # buffer full — stop
                     break
@@ -579,6 +587,7 @@ class ContentCurator:
                         dot_report=dot_report,
                         candidate_id=_candidate_id,
                         created_ideas=created_ideas,
+                        update_published_cache=update_published_cache,
                     )
                     if result is None:  # buffer full — stop
                         created_ideas = None
@@ -597,6 +606,7 @@ class ContentCurator:
                     dot_report=dot_report,
                     candidate_id=_candidate_id,
                     created_ideas=created_ideas,
+                    update_published_cache=update_published_cache,
                 )
                 if result is None:  # buffer full — stop
                     created_ideas = None
@@ -621,6 +631,7 @@ class ContentCurator:
         dot_report: bool,
         candidate_id: str,
         created_ideas: list,
+        update_published_cache: Callable[[str], None],
     ) -> list | None:
         """Generate LinkedIn + X + Bluesky + Threads + YouTube posts for one article."""
         _conf_route = "n/a"
@@ -792,7 +803,7 @@ class ContentCurator:
                 if yt_script_path:
                     print(str(Fore.GREEN) + f"💾 Saved to: {yt_script_path}" + str(Style.RESET_ALL))
                 print(str(Fore.YELLOW) + "⚠️  YouTube requires a video upload — script not pushed to Buffer." + str(Style.RESET_ALL))
-            self._save_published_title(article["title"])
+            update_published_cache(article["title"])
             created_ideas.append({"title": article["title"], "channel": "all", "ssi_component": ssi_component})
         except BufferQueueFullError as exc:
             logger.warning(str(Fore.YELLOW) + f"⚠️  Buffer queue full — stopping early. ({exc})" + str(Style.RESET_ALL))
@@ -814,6 +825,7 @@ class ContentCurator:
         dot_report: bool,
         candidate_id: str,
         created_ideas: list,
+        update_published_cache: Callable[[str], None],
     ) -> list | None:
         """Generate and route a post for a single channel / idea mode."""
 
@@ -974,7 +986,7 @@ class ContentCurator:
                 print("GitHub: https://buff.ly/tfajNLI")
                 print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
                 print(str(Fore.YELLOW) + "⚠️  Buffer YouTube requires a video — script not pushed." + str(Style.RESET_ALL))
-                self._save_published_title(article["title"])
+                update_published_cache(article["title"])
                 created_ideas.append({
                     "title": article["title"], "text": post_text,
                     "ssi_component": ssi_component, "channel": "youtube",
@@ -983,7 +995,6 @@ class ContentCurator:
                 return created_ideas
             elif channel == "x":
                 channel_id = self.buffer.get_x_channel_id()
-
             elif channel == "threads":
                 channel_id = self.buffer.get_threads_channel_id()
             elif channel == "bluesky":
@@ -994,7 +1005,7 @@ class ContentCurator:
                 channel_id = self.buffer.get_linkedin_channel_id()
             try:
                 post = self.buffer.create_scheduled_post(channel_id, post_text, channel=channel)
-                self._save_published_title(article["title"])
+                update_published_cache(article["title"])
                 try:
                     from services.selection_learning import update_candidate_buffer_id as _upd
                     _upd(candidate_id, post.get("id", ""))
@@ -1011,7 +1022,7 @@ class ContentCurator:
                 text=post_text,
                 title=f"[{channel}|{ssi_component}] {article['title'][:70]}",
             )
-            self._save_published_title(article["title"])
+            update_published_cache(article["title"])
             try:
                 from services.selection_learning import update_candidate_buffer_id as _upd
                 _upd(candidate_id, idea.get("id", ""))
