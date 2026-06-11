@@ -4,7 +4,7 @@
 
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
->currently on dev break, set to simmer... 
+> **⚙️ Project Status:** Active development with periodic maintenance cycles. Core features are stable and production-ready. New capabilities (image generation, music avatar, database integration) are being refined. See [ROADMAP.md](ROADMAP.md) for upcoming features and research directions.
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
@@ -60,89 +60,6 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
-## 🔮 Coming Soon - High profile feature: Katzilla.dev Integration
-
-**One API. Every US government dataset. Citations baked into every response.**
-
-We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of truth for avatar knowledge grounding. Katzilla provides **287+ tool-use actions across 32 agent-ready categories**, wrapping every major US government dataset behind a single REST API with built-in citation tracking.
-
-**What Katzilla provides:**
-
-- **283,051+ validated datasets** — SEC filings, FDA recalls, Federal Register, Congressional records, clinical trials, USGS earthquakes, labor statistics, and more
-- **Citation contract** — Every response includes `source_name`, `source_url`, `retrieved_at`, `data_hash` (SHA256 verification), `license`, and `update_frequency`
-- **Quality metadata** — Freshness (seconds since last update), source uptime (7-day rolling), confidence scores, and certainty ratings
-- **Token optimization** — Field filtering, compact mode, pagination, unit conversion, and summary aggregation to reduce LLM costs
-- **Multiple SDKs** — TypeScript, Python, LangChain, Anthropic Claude, MCP, and Agent2Agent protocol support
-
-**How it fits SSI Booster:**
-
-- **Expand evidence base** — Supplement persona facts with real-world government data (e.g., verify company claims against SEC filings, check labor statistics for hiring trends)
-- **Enhanced truth validation** — Truth gate layers can verify claims against primary sources with cryptographic verification (`data_hash`)
-- **Automatic citation** — Every Katzilla-sourced fact includes full provenance (source URL, retrieval timestamp, license)
-- **Continual learning boost** — Knowledge extraction pipeline gains access to 283K+ datasets without manual curation
-
-**Technical approach:**
-
-- Katzilla API integration via new `services/katzilla_service.py` module
-- Hybrid knowledge graph — persona facts (your projects/outcomes) + Katzilla domain facts (government data)
-- Citation-aware retrieval — leverage Katzilla's built-in citation metadata for DoT validation
-- Evidence provenance — every Katzilla-sourced claim includes `data_hash` for byte-level verification
-
-**Status:** Research & design phase — evaluating API integration patterns and citation workflow
-
-> **Learn more:** [Katzilla Documentation](https://katzilla.dev/docs) — REST API with 287+ actions, TypeScript/Python SDKs, and Agent2Agent protocol support
-
----
-
-## 🏛️ Brainstorm Idea: RIA Canadian Law Knowledge Integration
-
-**Regulatory Intelligence Assistant (RIA) — 400K+ structured Canadian regulations as avatar grounding.**
-
-We're reviewing how to bring avatar intelligence to the [Regulatory Intelligence Assistant](https://github.com/samjd-zz/regulatory-intelligence-assistant) project as well as give the ssi avatars access to **structured Canadian legal and regulatory knowledge** for enhanced domain grounding.
-
-**What RIA provides:**
-
-- **399,705 searchable documents** — 4,240 Canadian regulations + 395,465 regulatory sections (PostgreSQL + Elasticsearch + Neo4j)
-- **Neo4j Knowledge Graph** — 278,858 nodes + 470,353 relationships linking legislation → sections → regulations → policies → programs
-- **Multi-tier search** — 5-tier fallback architecture (Elasticsearch → Neo4j Graph → PostgreSQL FTS → Metadata) with <50ms-500ms response times
-- **AI-powered Q&A** — RAG pipeline with chain-of-thought reasoning, citation support, and confidence scoring (Gemini API)
-- **Compliance validation** — Real-time requirement extraction and field-level validation (<50ms)
-- **Bilingual support** — Full English/French coverage of Canadian federal regulations
-
-**How it fits SSI Booster:**
-
-- **Legal grounding for regulatory claims** — Ground claims about Canadian employment insurance, data protection, corporate law, or government programs against actual legislation
-- **Neo4j graph integration** — Extend the NetworkX knowledge graph with Canadian legal relationships (e.g., "This regulation implements Section X of Act Y")
-- **Citation-backed assertions** — Every regulatory claim includes section numbers, act names, and official references
-- **Domain expansion** — Add GovTech, regulatory compliance, and public sector AI as first-class SSI categories
-
-**Technical approach:**
-
-- RIA API integration via new `services/ria_service.py` module (REST API at localhost:8000)
-- Hybrid knowledge graph — persona facts + domain facts + **RIA legal facts** (legislation sections, regulations, programs)
-- Cross-system citation tracking — RIA's PostgreSQL/Neo4j/Elasticsearch responses feed the truth gate with structured legal references
-- Bilingual knowledge base — French regulatory terms auto-translate to English for BM25 retrieval compatibility
-
-**Status:** Research phase — evaluating API integration, knowledge graph merge strategy, and cross-border regulatory scope
-
-> **RIA Upgrade:** The Regulatory Intelligence Assistant is being upgraded and will be deployed as a Docker image to support the SSI Booster avatar, providing seamless integration with the existing Docker Compose stack for local-first regulatory knowledge grounding. The official Docker image will be published to [Docker Hub](https://hub.docker.com/) for easy public access and deployment.
-
-> **Future Vision:** We're exploring the possibility of merging SSI Booster and RIA into one complete grounded avatar platform. RIA already has a production-ready React frontend with full UI plumbing (FastAPI backend, real-time chat), which could serve as the unified interface for truth-gated, regulatory-aware, persona-driven content automation — combining SSI Booster's learning pipeline with RIA's legal knowledge infrastructure.
-
-> **Learn more:** [RIA GitHub Repository](https://github.com/samjd-zz/regulatory-intelligence-assistant) — FastAPI backend, React frontend, PostgreSQL + Neo4j + Elasticsearch stack, 397 tests passing
-
----
-
-## �🎨 New: Local Image Generation (FLUX.1-schnell)
-
-> - **Alex Grey Avatar coming soon...** 👨‍🍳
->   The system now includes a high-fidelity image generation pipeline powered by **FLUX.1-schnell** running locally on your GPU. This allows you to generate professional, persona-aligned visuals for your LinkedIn posts without cloud costs or privacy concerns.
-
-- **VRAM Optimized:** Built specifically for consumer hardware (tested on **RTX 3060 12GB**).
-- **GGUF Quantization:** Uses 4-bit quantized "brains" to fit a state-of-the-art transformer model into local memory.
-- **Sequential Execution:** Intelligent VRAM management automatically unloads LLM models before firing up the image generator to prevent OOM (Out of Memory) crashes.
-- **Aesthetic Grounding:** Prompts are generated by the agent to match the technical tone and theme of your specific post.
-
 ## 🎵 New: Rei Toei - AI Music Avatar
 
 > **Inspiration:** Rei Toei is the platform's AI music avatar, inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) and the cyberpunk aesthetics of William Gibson's _Idoru_.
@@ -153,7 +70,7 @@ We're reviewing how to bring avatar intelligence to the [Regulatory Intelligence
 
 - **Suno Vocal Songs:** Generate complete song concepts with cyberpunk industrial techno aesthetic, including title, genre tags, BPM, narrative arc, structured lyrics (verse/chorus/bridge/breakdown), and full Suno API integration for automated song creation.
 
-- **Strudel Live-Coding Patterns:** Generate executable Tidal Cycles code that translates technical concepts into algorithmic music. Recursion becomes nested patterns, concurrency becomes interleaved sequences, data flow becomes modulated synthesis.
+- **Strudel Live-Coding Patterns:** Generate executable Tidal Cycles code that translates technical concepts into algorithmic music. Recursion becomes nested patterns, concurrency becomes interleaved sequences, data flow becomes modulated synthesis. - UNDER DEVEVELOPMENT
 
 ### Knowledge-to-Music Pipeline
 
@@ -223,17 +140,6 @@ See the following documentation for complete details:
 
 - **[Rei Toei Customization Guide](docs/rei-toei-customization.md)** — Comprehensive guide to customizing Rei's persona, musical style, domain knowledge, and pattern templates with examples
 - [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) — Complete implementation details, architecture diagrams, and usage examples
-
-## 📤 New: Buffer MCP Agent
-
-The system now includes an autonomous Buffer integration agent powered by the **Buffer Model Context Protocol (MCP)**. This agent generates Buffer API requests using Gemma 4 and sends them directly to Buffer's MCP server for seamless social media management.
-
-- **Autonomous Agent Service:** Runs as a standalone Docker service (`buffer-mcp-agent`) in the stack.
-- **Natural Language Interface:** Uses Gemma 4 to translate plain English commands into properly formatted Buffer MCP requests.
-- **Direct MCP Integration:** Connects to Buffer's official MCP server at `https://mcp.buffer.com/mcp` — no custom bridge required.
-- **Full Buffer API Access:** List channels, create posts, manage drafts, schedule content, and more via conversational commands.
-- **Container-Native:** Runs alongside Ollama in Docker with automatic authentication using your `BUFFER_API_KEY`.
-- **Future Enhancement:** Voice-controlled Buffer operations and automatic post-performance analytics reporting.
 
 ---
 
