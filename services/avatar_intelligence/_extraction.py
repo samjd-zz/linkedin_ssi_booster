@@ -81,14 +81,16 @@ def extract_and_append_knowledge(
     confidence: str = "medium",
     path: Path | None = None,
     dry_run: bool = False,
+    spacy_nlp: Any | None = None,
 ) -> list[ExtractedFact]:
     """Extract facts from *article_text* using SpacyNLP and append them to extracted_knowledge.json.
 
     Pipeline:
-    1. Split article_text into sentences (regex-based).
-    2. For each sentence of sufficient length, attempt spaCy theme extraction.
-    3. Deduplicate against existing facts using SHA-256 content hash.
-    4. Append new facts to the on-disk extracted_knowledge.json.
+    1. Optionally pre-filter article_text through spaCy summarization for higher quality input.
+    2. Split article_text into sentences (regex-based).
+    3. For each sentence of sufficient length, attempt spaCy theme extraction.
+    4. Deduplicate against existing facts using SHA-256 content hash.
+    5. Append new facts to the on-disk extracted_knowledge.json.
 
     Args:
         article_text:          Full article text to extract from.
@@ -98,6 +100,8 @@ def extract_and_append_knowledge(
         confidence:            Confidence level to assign: 'high' | 'medium' | 'low'.
         path:                  Override path to extracted_knowledge.json (for testing).
         dry_run:               If True, extract but do not write to disk.
+        spacy_nlp:             Optional SpacyNLP instance for pre-extraction summarization.
+                               If provided and article_text > 800 chars, will summarize first.
 
     Returns:
         List of newly-appended ExtractedFact objects (empty if all were duplicates or dry_run).
@@ -140,8 +144,34 @@ def extract_and_append_knowledge(
     _stmt_hash = lambda s: hashlib.sha256(s.strip().lower().encode()).hexdigest()[:16]
     existing_stmt_hashes: set[str] = {_stmt_hash(f.statement) for f in existing_graph.facts}
 
+    # Pre-filter through spaCy summarization for higher quality extraction
+    # Use more sentences (8-10) than post generation (5) to preserve fact coverage
+    _preprocessing_text = article_text
+    if spacy_nlp is not None and len(article_text.strip()) > 800:
+        try:
+            _summary = spacy_nlp.summarize_article(
+                article_text=article_text[:5000],  # Wider window than post generation
+                max_sentences=10,  # More sentences to preserve fact diversity
+                focus_entities=True,
+            )
+            if _summary and len(_summary.strip()) >= 200:
+                logger.debug(
+                    "extract_and_append_knowledge: spaCy pre-filter %d → %d chars for '%s'",
+                    len(article_text), len(_summary), source_title[:60]
+                )
+                _preprocessing_text = _summary
+            else:
+                logger.debug(
+                    "extract_and_append_knowledge: spaCy summary too short, using full text"
+                )
+        except Exception as _sum_exc:
+            logger.debug(
+                "extract_and_append_knowledge: spaCy summarization failed, using full text: %s",
+                _sum_exc,
+            )
+
     # Strip HTML tags and decode common entities before extracting facts.
-    clean_text = re.sub(r"<[^>]+>", " ", article_text)
+    clean_text = re.sub(r"<[^>]+>", " ", _preprocessing_text)
     clean_text = re.sub(r"&[a-zA-Z]+;", " ", clean_text)
     clean_text = re.sub(r"&#\d+;", " ", clean_text)
     clean_text = re.sub(r"\[\s*[^\]]{0,20}\s*\]", " ", clean_text)

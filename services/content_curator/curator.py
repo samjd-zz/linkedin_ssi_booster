@@ -473,6 +473,7 @@ class ContentCurator:
                         article_text=_learn_text,
                         source_url=article["link"],
                         source_title=article["title"],
+                        spacy_nlp=self._spacy_nlp,
                     )
                     if _new_facts:
                         from services.avatar_intelligence import load_avatar_state, normalize_extracted_facts
@@ -518,6 +519,7 @@ class ContentCurator:
                         article_text=_learn_text,
                         source_url=article["link"],
                         source_title=article["title"],
+                        spacy_nlp=self._spacy_nlp,
                     )
                     if _new_facts:
                         from services.avatar_intelligence import load_avatar_state, normalize_extracted_facts
