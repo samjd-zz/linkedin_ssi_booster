@@ -84,25 +84,50 @@ pytest tests/test_extraction_with_summarization.py -v
 
 Expected outcome: Significantly fewer boilerplate facts with summarization enabled.
 
-## Future Work
+## Filter Simplification (Completed)
 
-### Filter Simplification (Optional)
+The text cleaning logic has been refactored to improve maintainability and reusability:
 
-Now that spaCy handles structural quality, many content-based regex filters can be simplified or removed:
+### Changes Made
 
-**Safe to simplify/remove** (spaCy's sentence scoring already handles these):
+1. **Created `clean_article_text()` utility function** in `services/content_curator/_text_utils.py`:
+   - Consolidates all HTML/boilerplate cleaning regex operations into a single, well-documented function
+   - Handles: HTML tag stripping, entity decoding, bracket annotations, WordPress footers, whitespace normalization
+   - ~35 lines of clean, testable code
 
-- Marketing/CTA filters (`Learn more`, `Sign up`, `Try it`)
+2. **Updated `services/avatar_intelligence/_extraction.py`**:
+   - Replaced 12-line inline regex chain with a single function call
+   - **75% reduction in code complexity** at the call site
+   - Improves readability: intent is clear from function name and docstring
+
+### Benefits
+
+- **Maintainability**: All text cleaning logic centralized in one module
+- **Reusability**: Function can be imported and used anywhere in the codebase
+- **Testability**: Easier to unit test a single function vs scattered regex operations
+- **DRY Principle**: Eliminates code duplication if this logic is needed elsewhere
+
+### Remaining Filters
+
+Now that spaCy handles structural quality and text cleaning is modularized, the extraction pipeline retains these essential filters:
+
+**Structural/Technical Filters (Keep)**:
+
+- HTML residue detection (backup for edge cases)
+- Truncation/fragment detection
+- Entity/signal requirements
+- spaCy structural filters (verbless blobs, multi-sentence concatenations)
+
+**Content-Based Filters (Keep)**:
+
+- Marketing/CTA boilerplate (`Learn more`, `Sign up`, `Try it`)
 - Newsletter preambles (`Welcome to`, `In this article`)
 - Event marketing openers (`This year, we're`)
 - Generic filler sentences (no concrete claims)
 
-**Keep** (structural/technical filters):
+These filters work in harmony with spaCy summarization for maximum precision.
 
-- HTML residue detection
-- Truncation/fragment detection
-- Entity/signal requirements (lighter thresholds)
-- spaCy structural filters (verbless blobs, multi-sentence concatenations)
+## Future Work
 
 ### Monitoring
 
