@@ -159,6 +159,13 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_NUM_PARALLEL: 1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
     entrypoint: >
       sh -c "
         MODEL=$${OLLAMA_MODEL:-llama3.2}
