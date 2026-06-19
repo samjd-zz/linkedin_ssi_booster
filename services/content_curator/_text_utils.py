@@ -42,6 +42,40 @@ def extract_hashtags(text: str) -> tuple[str, str]:
     return text, ""
 
 
+def clean_article_text(text: str) -> str:
+    """Clean article text by removing HTML tags, entities, and common boilerplate.
+
+    Consolidates all text cleaning operations for knowledge extraction:
+    - Strips HTML tags and entities
+    - Removes short bracket annotations [1], [a], etc.
+    - Removes WordPress/blog footers ("The post X appeared first on Y")
+    - Collapses multiple whitespace into single spaces
+
+    Args:
+        text: Raw article text (may contain HTML, entities, boilerplate).
+
+    Returns:
+        Cleaned text with HTML/boilerplate removed and whitespace normalized.
+    """
+    # Strip HTML tags
+    clean = re.sub(r"<[^>]+>", " ", text)
+    # Remove HTML entities (both named and numeric)
+    clean = re.sub(r"&[a-zA-Z]+;", " ", clean)
+    clean = re.sub(r"&#\d+;", " ", clean)
+    # Remove short bracket content (citations, annotations)
+    clean = re.sub(r"\[\s*[^\]]{0,20}\s*\]", " ", clean)
+    # Remove WordPress/blog post footers
+    clean = re.sub(
+        r"The post .+? appeared first on .+?\s*\.",
+        " ",
+        clean,
+        flags=re.IGNORECASE,
+    )
+    # Collapse multiple whitespace and trim
+    clean = re.sub(r"\s{2,}", " ", clean).strip()
+    return clean
+
+
 def append_url_and_hashtags(text: str, url: str) -> str:
     """Programmatically append source URL then hashtags to a LinkedIn post body.
 

@@ -170,18 +170,9 @@ def extract_and_append_knowledge(
                 _sum_exc,
             )
 
-    # Strip HTML tags and decode common entities before extracting facts.
-    clean_text = re.sub(r"<[^>]+>", " ", _preprocessing_text)
-    clean_text = re.sub(r"&[a-zA-Z]+;", " ", clean_text)
-    clean_text = re.sub(r"&#\d+;", " ", clean_text)
-    clean_text = re.sub(r"\[\s*[^\]]{0,20}\s*\]", " ", clean_text)
-    clean_text = re.sub(
-        r"The post .+? appeared first on .+?\s*\.",
-        " ",
-        clean_text,
-        flags=re.IGNORECASE,
-    )
-    clean_text = re.sub(r"\s{2,}", " ", clean_text).strip()
+    # Strip HTML tags, entities, and common boilerplate before extracting facts
+    from services.content_curator._text_utils import clean_article_text
+    clean_text = clean_article_text(_preprocessing_text)
 
     if len(clean_text) < 40:
         logger.debug(
