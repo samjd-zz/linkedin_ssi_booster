@@ -1,0 +1,10 @@
+# Live persona files — gitignored; populated by copying the .example.json counterparts
+persona_graph.json
+domain_knowledge.json
+domain_knowledge_*.json
+extracted_knowledge.json
+narrative_memory.json
+voice_history.json
+
+# Keep example files tracked
+!*.example.json
