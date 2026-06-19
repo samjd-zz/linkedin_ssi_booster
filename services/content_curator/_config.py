@@ -55,7 +55,7 @@ _DEFAULT_RSS_FEEDS: list = [
     # GovTech / broader tech
     {"name": "Apolitical",                  "url": "https://apolitical.co/en/feeds/articles"},
     {"name": "The New Stack",               "url": "https://thenewstack.io/feed/"},
-    {"name": "Dr Ben Goretzel",               "url": "https://bengoertzel.substack.com/feed"},
+    {"name": "Dr. Ben Goretzel",               "url": "https://bengoertzel.substack.com/feed"},
 ]
 
 _rss_env = os.getenv("CURATOR_RSS_FEEDS", "")
