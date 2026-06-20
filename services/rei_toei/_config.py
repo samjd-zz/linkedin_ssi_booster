@@ -9,6 +9,8 @@ import os
 from enum import Enum
 from pathlib import Path
 
+from services.avatar_intelligence._paths import _BASE_DIR as _AVATAR_DATA_DIR
+
 
 class MusicMode(Enum):
     """Music generation mode"""
@@ -40,6 +42,6 @@ class ReiToeiConfig:
         self.use_sam_persona = os.getenv("REI_TOEI_USE_SAM_PERSONA", "true").lower() == "true"
         
         # File paths
-        self.persona_path = Path("data/avatar/rei_toei_persona_graph.json")
-        self.domain_knowledge_path = Path("data/avatar/rei_toei_domain_knowledge.json")
-        self.strudel_patterns_path = Path("data/avatar/rei_toei_strudel_patterns.json")
+        self.persona_path = _AVATAR_DATA_DIR / "rei_toei_persona_graph.json"
+        self.domain_knowledge_path = _AVATAR_DATA_DIR / "rei_toei_domain_knowledge.json"
+        self.strudel_patterns_path = _AVATAR_DATA_DIR / "rei_toei_strudel_patterns.json"

@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
+from services.avatar_intelligence._paths import _BASE_DIR as _AVATAR_DATA_DIR
+
 if TYPE_CHECKING:
     from services.avatar_intelligence._models import ExtractedEvidenceFact
     from services.rei_toei._models import (
@@ -475,7 +477,7 @@ def save_pattern_to_library(
         bool: True if save successful, False otherwise
     """
     if library_path is None:
-        library_path = Path("data/avatar/rei_toei_generated_patterns.jsonl")
+        library_path = _AVATAR_DATA_DIR / "rei_toei_generated_patterns.jsonl"
     
     logger.info(f"Saving pattern {pattern.pattern_id} to library at {library_path}")
     
@@ -530,7 +532,7 @@ def load_pattern_from_library(
     from services.rei_toei._models import StrudelPattern
     
     if library_path is None:
-        library_path = Path("data/avatar/rei_toei_generated_patterns.jsonl")
+        library_path = _AVATAR_DATA_DIR / "rei_toei_generated_patterns.jsonl"
     
     if not library_path.exists():
         logger.warning(f"Pattern library not found at {library_path}")
