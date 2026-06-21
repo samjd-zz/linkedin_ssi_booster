@@ -39,6 +39,12 @@ THREADS_CHAR_LIMIT = 500  # Standard Threads post limit
 
 # ---------------------------------------------------------------------------
 # Persona — configurable via .env
+
+# ---------------------------------------------------------------------------
+# Database configuration
+# ---------------------------------------------------------------------------
+DATABASE_ENABLED = os.getenv("DATABASE_ENABLED", "false").lower() == "true"
+
 # ---------------------------------------------------------------------------
 
 YOUTUBE_SHORT_SYSTEM_PROMPT: str = os.getenv(

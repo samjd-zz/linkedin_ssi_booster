@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import sys
 import uuid
 from collections import Counter
@@ -40,6 +41,50 @@ def _learning_log_path():
     return _DEFAULT_LEARNING_LOG_PATH
 
 
+def _is_database_enabled() -> bool:
+    """Check if database dual-write is enabled."""
+    return os.getenv("DATABASE_ENABLED", "false").lower() == "true"
+
+
+def _write_moderation_event_to_db(
+    *,
+    timestamp: datetime,
+    channel: str,
+    reason_code: str,
+    decision: str,
+    sentence_hash: str,
+    article_ref: str,
+    project_refs: list[str],
+    run_id: str,
+) -> None:
+    """Persist one moderation event to PostgreSQL when dual-write is enabled."""
+    if not _is_database_enabled():
+        return
+
+    try:
+        from services.database.repositories import ModerationEventRepository
+        from services.database.session import get_session
+
+        session = next(get_session())
+        try:
+            ModerationEventRepository.create(
+                session=session,
+                timestamp=timestamp,
+                channel=channel,
+                reason_code=reason_code,
+                decision=decision,
+                sentence_hash=sentence_hash,
+                article_ref=article_ref,
+                project_refs=project_refs,
+                run_id=run_id,
+            )
+            session.commit()
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.warning("Moderation event DB write failed (continuing): %s", exc)
+
+
 # ---------------------------------------------------------------------------
 # Learning log writer (T2.1, T2.2)
 # ---------------------------------------------------------------------------
@@ -59,7 +104,7 @@ def record_moderation_event(
     article_ref: str,
     project_refs: list[str] | None = None,
 ) -> None:
-    """Append one ModerationEvent to learning_log.jsonl.
+    """Append one ModerationEvent to learning_log.jsonl and PostgreSQL.
 
     Failures emit a warning and do not interrupt the generation/publish path.
 
@@ -78,8 +123,9 @@ def record_moderation_event(
         )
         return
 
+    timestamp = datetime.now(timezone.utc)
     event = ModerationEvent(
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=timestamp.isoformat(),
         channel=channel,
         reason_code=reason_code,
         decision=decision,
@@ -88,6 +134,7 @@ def record_moderation_event(
         project_refs=project_refs or [],
         run_id=_RUN_ID,
     )
+
     try:
         log_path = _learning_log_path()
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -95,6 +142,17 @@ def record_moderation_event(
             fh.write(json.dumps(asdict(event)) + "\n")
     except OSError as exc:
         logger.warning("Learning log write failed (continuing): %s", exc)
+
+    _write_moderation_event_to_db(
+        timestamp=timestamp,
+        channel=channel,
+        reason_code=reason_code,
+        decision=decision,
+        sentence_hash=event.sentence_hash,
+        article_ref=article_ref,
+        project_refs=event.project_refs,
+        run_id=event.run_id,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 """T6.4 — Unit tests for confidence scoring and policy routing."""
 import pytest
 
+import services.avatar_intelligence._confidence as confidence_module
 from services.avatar_intelligence import (
     ConfidenceSignals,
     ConfidenceResult,
@@ -235,3 +236,47 @@ def test_decide_publish_mode_reason_nonempty() -> None:
     result = score_confidence(_medium_signals())
     decision = decide_publish_mode("balanced", result, "post")
     assert len(decision.reason) > 0
+
+
+def test_record_confidence_decision_dual_writes_db(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(confidence_module, "_is_database_enabled", lambda: True)
+
+    captured: dict[str, object] = {}
+
+    class DummySession:
+        def commit(self) -> None:
+            captured["committed"] = True
+
+        def close(self) -> None:
+            captured["closed"] = True
+
+    monkeypatch.setattr(
+        "services.database.session.get_session",
+        lambda: iter([DummySession()]),
+    )
+
+    def _capture_create(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        "services.database.repositories.ConfidenceDecisionRepository.create",
+        _capture_create,
+    )
+
+    result = score_confidence(_high_signals())
+    decision = decide_publish_mode("balanced", result, "post")
+    confidence_module.record_confidence_decision(
+        decision=decision,
+        confidence=result,
+        channel="linkedin",
+        article_ref="http://example.com",
+    )
+
+    assert captured["route"] == decision.route
+    assert captured["policy"] == decision.policy
+    assert captured["confidence_score"] == result.score
+    assert captured["confidence_level"] == result.level
+    assert captured["reason"] == decision.reason
+    assert captured["committed"] is True
+    assert captured["closed"] is True

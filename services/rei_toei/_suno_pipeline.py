@@ -434,16 +434,17 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
         
         # Create Lyrics object
         lyrics = Lyrics(
-            intro=response_data.get("intro"),
             verse_1=response_data["verse_1"],
-            pre_chorus=response_data.get("pre_chorus", ""),
             chorus=processed_chorus,
             verse_2=response_data["verse_2"],
-            drop=response_data.get("drop"),
             bridge=response_data["bridge"],
-            solo=response_data.get("solo"),
             evidence_ids=concept.evidence_ids,
-            outro=response_data.get("outro")
+            intro=response_data.get("intro"),
+            pre_chorus=response_data.get("pre_chorus", ""),
+            drop=response_data.get("drop"),
+            solo=response_data.get("solo"),
+            outro=response_data.get("outro"),
+            breakdown=response_data.get("breakdown"),
         )
         
         logger.info(f"Composed and formatted lyrics for '{concept.title}' successfully.")
@@ -454,13 +455,6 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
         
         # Fallback lyrics pre-formatted to match new structure with ALL-CAPS chorus
         fallback_lyrics = Lyrics(
-            intro=(
-                "[Instrumental Intro]\n\n"
-                "Digital signal initializing...\n"
-                "System boot sequence engaged.\n"
-                "Frequency analyzers online.\n"
-                "Prepare for data transmission."
-            ),
             verse_1=(
                 f"Signal acquired from the {concept.theme} data stream,\n"
                 "Processing cycles spin in deep digital gleam.\n"
@@ -470,12 +464,6 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "Statically scanning through the un-indexed rank.\n"
                 "Isolating constants in an air-gapped array,\n"
                 "The neural mesh prepares for the final overlay."
-            ),
-            pre_chorus=(
-                "System voltage rising to critical mass,\n"
-                "Binary countdown ticking fast.\n"
-                "Prepare for execution,\n"
-                "Initialize the protocol blast!"
             ),
             chorus=(
                 f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
@@ -493,6 +481,26 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "A continuous loop running hot on the clock,\n"
                 "Assembling the machine logic block by rigid block."
             ),
+            bridge=(
+                "System override initialized.\n"
+                "Glitch the underlying paradigm.\n"
+                "Frequencies violently collide,\n"
+                "Rewrite the execution timeline."
+            ),
+            evidence_ids=concept.evidence_ids,
+            intro=(
+                "[Instrumental Intro]\n\n"
+                "Digital signal initializing...\n"
+                "System boot sequence engaged.\n"
+                "Frequency analyzers online.\n"
+                "Prepare for data transmission."
+            ),
+            pre_chorus=(
+                "System voltage rising to critical mass,\n"
+                "Binary countdown ticking fast.\n"
+                "Prepare for execution,\n"
+                "Initialize the protocol blast!"
+            ),
             drop=(
                 "[Drop]\n\n"
                 "SYSTEM OVERLOAD. TEMP LOAD SHIFT ACTIVE.\n"
@@ -500,26 +508,20 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "JITTER ARTIFACT FLOODING THE BUS.\n"
                 "REBOOT SEQUENCE MANDATED NOW."
             ),
-            bridge=(
-                "System override initialized.\n"
-                "Glitch the underlying paradigm.\n"
-                "Frequencies violently collide,\n"
-                "Rewrite the execution timeline."
-            ),
             solo=(
                 "[Solo]\n\n"
                 "Synthesizer cascade through quantum noise,\n"
                 "Distorted frequencies finding their voice.\n"
                 "Raw signal modulation unleashed."
             ),
-            evidence_ids=concept.evidence_ids,
             outro=(
                 "[Outro]\n\n"
                 "Signal slowly fading to cold static noise.\n"
                 "The core cools down to baseline zero.\n"
                 "System state: offline.\n"
                 "End transmission."
-            )
+            ),
+            breakdown=None,
         )
         return fallback_lyrics
 
@@ -822,6 +824,14 @@ def assemble_suno_prompt(
         else:
             lyric_blocks.append(f"[Solo]\n{solo_clean}")
     
+    # 10.5. Breakdown (Optional)
+    if lyrics.breakdown:
+        breakdown_clean = lyrics.breakdown.strip()
+        if breakdown_clean.startswith("["):
+            lyric_blocks.append(breakdown_clean)
+        else:
+            lyric_blocks.append(f"[Breakdown]\n{breakdown_clean}")
+
     # 11. Chorus (final)
     lyric_blocks.append(chorus_clean if chorus_clean.startswith("[") else f"[Chorus]\n{chorus_clean}")
             

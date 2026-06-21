@@ -207,8 +207,9 @@ class Model2VecService:
         self._categories: dict[str, CategoryMetadata] = {}
         self._initialized = False
 
-        if MODEL2VEC_ENABLED and _MODEL2VEC_AVAILABLE:
-            self._register_default_categories()
+        # Always register default categories regardless of model availability so that
+        # list_categories() returns a populated dict even in test / degraded environments.
+        self._register_default_categories()
 
     # ------------------------------------------------------------------
     # Initialisation

@@ -43,9 +43,9 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Failed | Status              |
 | ----------- | ------- | ------ | ------------------- |
-| **660**     | **660** | **0**  | ✨ **100% Passing** |
+| **663**     | **663** | **0**  | ✨ **100% Passing** |
 
-- **Latest Run Date:** June 19, 2026
+- **Latest Run Date:** June 21, 2026
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
 
 ### Test Suite Breakdown
@@ -55,6 +55,8 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - _27 Foundation | 25 Suno | 20 Strudel | 9 Console Mode | 8 CLI Integration Flags_
 
 - **6** Continuous knowledge extraction quality assertions
+- **5** Selection Learning database integration tests (Phase 5)
+- _3 CandidateRecordRepository | 2 PublishedRecordRepository_
 
 ---
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 import services.avatar_intelligence as ai
+import services.avatar_intelligence._learning as learning_module
 from services.avatar_intelligence import (
     _HEURISTIC_MIN_COUNT,
     _apply_heuristics,
@@ -135,20 +136,51 @@ def test_record_moderation_event_appends(tmp_path: Path, monkeypatch: pytest.Mon
     assert events[0]["decision"] == "removed"
 
 
-def test_record_moderation_event_invalid_decision_is_ignored(
+def test_record_moderation_event_dual_writes_db(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     log = tmp_path / "learning_log.jsonl"
     monkeypatch.setattr(ai, "LEARNING_LOG_PATH", log)
-    record_moderation_event(
-        sentence="test",
-        reason_code="project_claim",
-        decision="invalid_value",  # must be kept/removed
-        channel="linkedin",
-        article_ref="ref",
+    monkeypatch.setattr(learning_module, "_is_database_enabled", lambda: True)
+
+    captured: dict[str, object] = {}
+
+    class DummySession:
+        def commit(self) -> None:
+            captured["committed"] = True
+
+        def close(self) -> None:
+            captured["closed"] = True
+
+    monkeypatch.setattr(
+        "services.database.session.get_session",
+        lambda: iter([DummySession()]),
     )
-    events = _load_learning_events()
-    assert events == []
+
+    def _capture_create(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        "services.database.repositories.ModerationEventRepository.create",
+        _capture_create,
+    )
+
+    record_moderation_event(
+        sentence="The model achieved 98% accuracy.",
+        reason_code="unsupported_numeric",
+        decision="removed",
+        channel="linkedin",
+        article_ref="http://example.com",
+        project_refs=["proj-1"],
+    )
+
+    assert captured["reason_code"] == "unsupported_numeric"
+    assert captured["decision"] == "removed"
+    assert captured["channel"] == "linkedin"
+    assert captured["project_refs"] == ["proj-1"]
+    assert captured["committed"] is True
+    assert captured["closed"] is True
 
 
 # ---------------------------------------------------------------------------

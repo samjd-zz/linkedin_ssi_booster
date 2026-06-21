@@ -104,16 +104,11 @@ class ProjectRepository:
         url: Optional[str] = None,
         skills: Optional[List[str]] = None,
         years: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> Project:
         """Create a new project."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the project
-        project_id = hashlib.sha256(f"{name}{time.time()}".encode()).hexdigest()[:12]
-        
         project = Project(
-            id=project_id,
+            id=project_id or name,
             persona_graph_id=persona_id,
             name=name,
             company_id=company_id,
@@ -152,16 +147,11 @@ class CompanyRepository:
         end_date: Optional[datetime] = None,
         skills: Optional[List[str]] = None,
         aliases: Optional[List[str]] = None,
+        company_id: Optional[str] = None,
     ) -> Company:
         """Create a new company record."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the company
-        company_id = hashlib.sha256(f"{name}{time.time()}".encode()).hexdigest()[:12]
-        
         company = Company(
-            id=company_id,
+            id=company_id or name,
             persona_graph_id=persona_id,
             name=name,
             aliases=aliases or [],
@@ -186,16 +176,11 @@ class SkillRepository:
         persona_id: int,
         name: str,
         aliases: Optional[List[str]] = None,
+        skill_id: Optional[str] = None,
     ) -> Skill:
         """Create a new skill."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the skill
-        skill_id = hashlib.sha256(f"{name}{time.time()}".encode()).hexdigest()[:12]
-        
         skill = Skill(
-            id=skill_id,
+            id=skill_id or name,
             persona_graph_id=persona_id,
             name=name,
             aliases=aliases or [],
@@ -222,20 +207,17 @@ class ClaimRepository:
         tags: Optional[List[str]] = None,
         project_ids: Optional[List[str]] = None,
         links: Optional[List[str]] = None,
+        confidence_hint: Optional[str] = None,
+        claim_id: Optional[str] = None,
     ) -> Claim:
         """Create a new claim."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the claim
-        claim_id = hashlib.sha256(f"{claim_text}{time.time()}".encode()).hexdigest()[:12]
-        
         claim = Claim(
-            id=claim_id,
+            id=claim_id or claim_text,
             persona_graph_id=persona_id,
             text=claim_text,
             project_ids=project_ids or [],
             links=links or [],
+            confidence_hint=confidence_hint or "medium",
         )
         session.add(claim)
         session.flush()
@@ -263,15 +245,9 @@ class DomainRepository:
         return session.execute(stmt).scalar_one_or_none()
 
     @staticmethod
-    def create(session: Session, name: str, description: str = "") -> Domain:
+    def create(session: Session, name: str, description: str = "", domain_id: Optional[str] = None) -> Domain:
         """Create a new domain."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the domain
-        domain_id = hashlib.sha256(f"{name}{time.time()}".encode()).hexdigest()[:12]
-        
-        domain = Domain(id=domain_id, name=name, description=description)
+        domain = Domain(id=domain_id or name, name=name, description=description)
         session.add(domain)
         session.flush()
         return domain
@@ -293,19 +269,17 @@ class DomainFactRepository:
         fact_text: str,
         tags: Optional[List[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        fact_id: Optional[str] = None,
     ) -> DomainFact:
         """Create a new domain fact."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the fact
-        fact_id = hashlib.sha256(f"{fact_text}{time.time()}".encode()).hexdigest()[:12]
-        
+        metadata = metadata or {}
         fact = DomainFact(
-            id=fact_id,
+            id=fact_id or fact_text,
             domain_id=domain_id,
             statement=fact_text,
             tags=tags or [],
+            confidence=metadata.get("confidence", "medium"),
+            scope=metadata.get("scope", "general"),
         )
         session.add(fact)
         session.flush()
@@ -328,16 +302,11 @@ class DomainRelationshipRepository:
         to_fact_id: str,
         relation_type: str,
         description: Optional[str] = None,
+        rel_id: Optional[str] = None,
     ) -> DomainRelationship:
         """Create a new domain relationship (triple)."""
-        import hashlib
-        import time
-        
-        # Generate a unique ID for the relationship
-        rel_id = hashlib.sha256(f"{from_fact_id}{to_fact_id}{time.time()}".encode()).hexdigest()[:12]
-        
         rel = DomainRelationship(
-            id=rel_id,
+            id=rel_id or f"{from_fact_id}:{to_fact_id}",
             from_fact_id=from_fact_id,
             to_fact_id=to_fact_id,
             relation_type=relation_type,
@@ -374,22 +343,23 @@ class ExtractedFactRepository:
         primary_category: Optional[str] = None,
         primary_ssi_component: Optional[str] = None,
         sentiment: Optional[Dict[str, Any]] = None,
+        fact_id: Optional[str] = None,
+        extracted_at: Optional[datetime] = None,
+        extraction_method: Optional[str] = None,
     ) -> ExtractedFact:
         """Create a new extracted fact."""
-        import hashlib
         from datetime import datetime, UTC
-        
-        # Generate a unique ID for the fact
-        fact_id = hashlib.sha256(f"{source_url}{fact_text}".encode()).hexdigest()[:12]
-        
+        sentiment = sentiment or {}
         fact = ExtractedFact(
-            id=fact_id,
+            id=fact_id or f"{source_url}{fact_text}",
             statement=fact_text,
             source_url=source_url or "",
             source_title=source_title or "",
-            extracted_at=datetime.now(UTC),
+            extracted_at=extracted_at or datetime.now(UTC),
             entities=entities or [],
             tags=themes or [],
+            confidence=sentiment.get("confidence", "medium"),
+            extraction_method=extraction_method or sentiment.get("extraction_method", "spacy_nlp"),
             primary_category=primary_category or "",
             primary_ssi_component=primary_ssi_component or "",
         )
@@ -411,6 +381,12 @@ class ExtractedFactRepository:
 
 class NarrativeMemoryRepository:
     """Repository for narrative_memory table."""
+
+    @staticmethod
+    def get_latest(session: Session) -> Optional[NarrativeMemory]:
+        """Get the most recently created narrative memory row."""
+        stmt = select(NarrativeMemory).order_by(NarrativeMemory.created_at.desc()).limit(1)
+        return session.execute(stmt).scalar_one_or_none()
 
     @staticmethod
     def create(
@@ -460,31 +436,67 @@ class CandidateRecordRepository:
     @staticmethod
     def create(
         session: Session,
-        post_text: str,
+        candidate_id: str,
+        timestamp: datetime,
+        article_url: str,
+        article_title: str,
+        article_source: str,
         ssi_component: str,
-        score: float,
-        curated_date: datetime,
-        metadata: Optional[Dict[str, Any]] = None,
+        channel: str,
+        text_hash: str,
+        text_snippet: str,
+        buffer_id: Optional[str],
+        route: str,
+        run_id: str,
+        themes: Optional[List[str]] = None,
+        sentiment: Optional[Dict[str, Any]] = None,
     ) -> CandidateRecord:
-        """Create a new candidate record."""
+        """Create a new candidate record from selection_learning data."""
         candidate = CandidateRecord(
-            post_text=post_text,
+            candidate_id=candidate_id,
+            timestamp=timestamp,
+            article_url=article_url,
+            article_title=article_title,
+            article_source=article_source,
             ssi_component=ssi_component,
-            score=score,
-            curated_date=curated_date,
-            metadata=metadata or {},
+            channel=channel,
+            text_hash=text_hash,
+            text_snippet=text_snippet,
+            buffer_id=buffer_id,
+            route=route,
+            run_id=run_id,
+            themes=themes or [],
+            sentiment=sentiment or {},
         )
         session.add(candidate)
         session.flush()
         return candidate
 
     @staticmethod
+    def update_selected(
+        session: Session,
+        candidate_id: str,
+        selected: bool,
+        selected_at: datetime,
+    ) -> None:
+        """Update selected status and timestamp on a candidate record."""
+        stmt = (
+            update(CandidateRecord)
+            .where(CandidateRecord.candidate_id == candidate_id)
+            .values(selected=selected, selected_at=selected_at)
+        )
+        session.execute(stmt)
+        session.flush()
+
+    @staticmethod
     def list_unpublished(session: Session, limit: int = 50) -> List[CandidateRecord]:
         """List candidates that haven't been published yet."""
+        from sqlalchemy import and_, not_
+
         stmt = (
             select(CandidateRecord)
-            .where(CandidateRecord.published_record_id.is_(None))
-            .order_by(CandidateRecord.score.desc())
+            .where(~CandidateRecord.published_record.has())
+            .order_by(CandidateRecord.created_at.desc())
             .limit(limit)
         )
         return list(session.execute(stmt).scalars().all())
@@ -496,35 +508,30 @@ class PublishedRecordRepository:
     @staticmethod
     def create(
         session: Session,
-        candidate_id: int,
-        buffer_update_id: str,
-        published_date: datetime,
-        engagement: Optional[Dict[str, Any]] = None,
+        buffer_id: str,
+        channel: str,
+        text_snippet: str,
+        published_at: datetime,
+        fetched_at: datetime,
+        candidate_id: Optional[str] = None,
     ) -> PublishedRecord:
-        """Create a new published record."""
+        """Create a new published record from selection_learning data."""
         published = PublishedRecord(
-            candidate_record_id=candidate_id,
-            buffer_update_id=buffer_update_id,
-            published_date=published_date,
-            engagement=engagement or {},
+            buffer_id=buffer_id,
+            channel=channel,
+            text_snippet=text_snippet,
+            published_at=published_at,
+            fetched_at=fetched_at,
+            candidate_id=candidate_id,
         )
         session.add(published)
         session.flush()
-        
-        # Link back to candidate
-        stmt_update = (
-            update(CandidateRecord)
-            .where(CandidateRecord.id == candidate_id)
-            .values(published_record_id=published.id)
-        )
-        session.execute(stmt_update)
-        
         return published
 
     @staticmethod
     def list_recent(session: Session, limit: int = 50) -> List[PublishedRecord]:
         """List most recently published records."""
-        stmt = select(PublishedRecord).order_by(PublishedRecord.published_date.desc()).limit(limit)
+        stmt = select(PublishedRecord).order_by(PublishedRecord.published_at.desc()).limit(limit)
         return list(session.execute(stmt).scalars().all())
 
 
@@ -539,15 +546,25 @@ class ModerationEventRepository:
     @staticmethod
     def create(
         session: Session,
-        candidate_id: int,
-        action: str,
-        reason: str,
+        timestamp: datetime,
+        channel: str,
+        reason_code: str,
+        decision: str,
+        sentence_hash: str,
+        article_ref: str,
+        project_refs: Optional[List[str]],
+        run_id: str,
     ) -> ModerationEvent:
         """Create a new moderation event."""
         event = ModerationEvent(
-            candidate_record_id=candidate_id,
-            action=action,
-            reason=reason,
+            timestamp=timestamp,
+            channel=channel,
+            reason_code=reason_code,
+            decision=decision,
+            sentence_hash=sentence_hash,
+            article_ref=article_ref,
+            project_refs=project_refs or [],
+            run_id=run_id,
         )
         session.add(event)
         session.flush()
@@ -560,17 +577,29 @@ class ConfidenceDecisionRepository:
     @staticmethod
     def create(
         session: Session,
-        candidate_id: int,
-        decision: str,
+        timestamp: datetime,
+        channel: str,
+        route: str,
+        policy: str,
         confidence_score: float,
+        confidence_level: str,
+        dominant_signal: Optional[str],
         reason: str,
+        article_ref: str,
+        run_id: str,
     ) -> ConfidenceDecision:
         """Create a new confidence decision."""
         decision_rec = ConfidenceDecision(
-            candidate_record_id=candidate_id,
-            decision=decision,
+            timestamp=timestamp,
+            channel=channel,
+            route=route,
+            policy=policy,
             confidence_score=confidence_score,
+            confidence_level=confidence_level,
+            dominant_signal=dominant_signal,
             reason=reason,
+            article_ref=article_ref,
+            run_id=run_id,
         )
         session.add(decision_rec)
         session.flush()
@@ -588,15 +617,13 @@ class TruthTrajectoryRepository:
     @staticmethod
     def create(
         session: Session,
-        statement: str,
-        initial_gradient: float,
-        initial_uncertainty: float,
+        claim_hash: str,
+        claim_text: str,
     ) -> TruthTrajectory:
         """Create a new truth trajectory."""
         trajectory = TruthTrajectory(
-            statement=statement,
-            initial_gradient=initial_gradient,
-            initial_uncertainty=initial_uncertainty,
+            claim_hash=claim_hash,
+            claim_text=claim_text,
         )
         session.add(trajectory)
         session.flush()
@@ -616,16 +643,20 @@ class TruthTrajectoryPointRepository:
     def create(
         session: Session,
         trajectory_id: int,
+        timestamp: datetime,
         truth_gradient: float,
         uncertainty: float,
-        evidence: Optional[Dict[str, Any]] = None,
+        evidence_count: int,
+        flagged: bool,
     ) -> TruthTrajectoryPoint:
         """Create a new trajectory point."""
         point = TruthTrajectoryPoint(
             trajectory_id=trajectory_id,
+            timestamp=timestamp,
             truth_gradient=truth_gradient,
             uncertainty=uncertainty,
-            evidence=evidence or {},
+            evidence_count=evidence_count,
+            flagged=flagged,
         )
         session.add(point)
         session.flush()
@@ -637,6 +668,6 @@ class TruthTrajectoryPointRepository:
         stmt = (
             select(TruthTrajectoryPoint)
             .where(TruthTrajectoryPoint.trajectory_id == trajectory_id)
-            .order_by(TruthTrajectoryPoint.measured_at)
+            .order_by(TruthTrajectoryPoint.timestamp)
         )
         return list(session.execute(stmt).scalars().all())
