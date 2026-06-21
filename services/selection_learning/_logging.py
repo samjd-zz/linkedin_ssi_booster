@@ -7,12 +7,16 @@ import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
+from sqlalchemy.orm import Session
+
+from services.database.repositories import CandidateRecordRepository
 from services.selection_learning._constants import CANDIDATES_LOG_PATH
 from services.selection_learning._models import CandidateRecord
 from services.selection_learning._storage import JsonlStore
 from services.selection_learning._text import TextMatcher
+from services.shared import DATABASE_ENABLED
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +48,7 @@ class CandidateService:
         path: Path | None = None,
         enable_nlp: bool = True,
     ) -> CandidateRecord:
-        """Append one CandidateRecord to the candidates log and return it."""
+        """Append one CandidateRecord to the candidates log and optionally to the database."""
         themes: list[str] = []
         sentiment: dict[str, Any] = {}
 
@@ -61,15 +65,18 @@ class CandidateService:
             except Exception as exc:
                 logger.warning("selection_learning: NLP analysis failed (continuing): %s", exc)
 
+        timestamp = datetime.now(timezone.utc)
+        text_hash = TextMatcher.text_hash(post_text)
+
         record = CandidateRecord(
             candidate_id=candidate_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=timestamp.isoformat(),
             article_url=article_url,
             article_title=article_title,
             article_source=article_source,
             ssi_component=ssi_component,
             channel=channel,
-            text_hash=TextMatcher.text_hash(post_text),
+            text_hash=text_hash,
             text_snippet=post_text[:200],
             buffer_id=buffer_id,
             route=route,
@@ -79,12 +86,77 @@ class CandidateService:
             themes=themes,
             sentiment=sentiment,
         )
+
+        # Write to JSONL
         target = path or CANDIDATES_LOG_PATH
         try:
             JsonlStore.append(target, asdict(record))
         except OSError as exc:
             logger.warning("selection_learning: candidate log write failed (continuing): %s", exc)
+
+        # Write to database if enabled
+        if DATABASE_ENABLED:
+            self._write_candidate_to_db(
+                candidate_id=candidate_id,
+                timestamp=timestamp,
+                article_url=article_url,
+                article_title=article_title,
+                article_source=article_source,
+                ssi_component=ssi_component,
+                channel=channel,
+                text_hash=text_hash,
+                text_snippet=post_text[:200],
+                buffer_id=buffer_id,
+                route=route,
+                run_id=run_id,
+                themes=themes,
+                sentiment=sentiment,
+            )
+
         return record
+
+    @staticmethod
+    def _write_candidate_to_db(
+        candidate_id: str,
+        timestamp: datetime,
+        article_url: str,
+        article_title: str,
+        article_source: str,
+        ssi_component: str,
+        channel: str,
+        text_hash: str,
+        text_snippet: str,
+        buffer_id: Optional[str],
+        route: str,
+        run_id: str,
+        themes: list[str],
+        sentiment: dict[str, Any],
+    ) -> None:
+        """Write candidate record to PostgreSQL database."""
+        try:
+            from services.database.session import get_session
+
+            with get_session() as session:
+                CandidateRecordRepository.create(
+                    session=session,
+                    candidate_id=candidate_id,
+                    timestamp=timestamp,
+                    article_url=article_url,
+                    article_title=article_title,
+                    article_source=article_source,
+                    ssi_component=ssi_component,
+                    channel=channel,
+                    text_hash=text_hash,
+                    text_snippet=text_snippet,
+                    buffer_id=buffer_id,
+                    route=route,
+                    run_id=run_id,
+                    themes=themes,
+                    sentiment=sentiment,
+                )
+                session.commit()
+        except Exception as exc:
+            logger.warning("selection_learning: failed to write candidate to database (continuing): %s", exc)
 
     @staticmethod
     def update_candidate_buffer_id(
@@ -92,7 +164,8 @@ class CandidateService:
         buffer_id: str,
         path: Path | None = None,
     ) -> bool:
-        """Set buffer_id on an existing candidate record in the log."""
+        """Set buffer_id on an existing candidate record in the log and database."""
+        # Update JSONL
         target = path or CANDIDATES_LOG_PATH
         records = JsonlStore.read(target)
         found = False
@@ -105,9 +178,32 @@ class CandidateService:
             JsonlStore.rewrite(target, records)
         else:
             logger.warning(
-                "selection_learning: candidate_id %s not found — buffer_id not updated",
+                "selection_learning: candidate_id %s not found in JSONL — buffer_id not updated",
                 candidate_id,
             )
+
+        # Update database if enabled
+        if DATABASE_ENABLED:
+            try:
+                from services.database.session import get_session
+
+                with get_session() as session:
+                    from sqlalchemy import update
+                    from services.database.models import CandidateRecord as CandidateRecordModel
+
+                    stmt = (
+                        update(CandidateRecordModel)
+                        .where(CandidateRecordModel.candidate_id == candidate_id)
+                        .values(buffer_id=buffer_id)
+                    )
+                    session.execute(stmt)
+                    session.commit()
+            except Exception as exc:
+                logger.warning(
+                    "selection_learning: failed to update candidate buffer_id in database (continuing): %s",
+                    exc,
+                )
+
         return found
 
     def find_similar_candidates(

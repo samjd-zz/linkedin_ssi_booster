@@ -110,13 +110,52 @@ def _load_persona_graph_from_db() -> tuple[PersonaGraph | None, list[str]]:
             persona_db = PersonaGraphRepository.get_latest(session)
             if not persona_db:
                 return None, ["No persona graph found in database"]
-            
-            # Extract graph data from JSONB
-            graph_data = persona_db.graph_data
-            if not graph_data:
-                return None, ["Persona graph data is empty"]
-            
-            # Parse the graph data into models
+
+            graph_data = {
+                "schemaVersion": persona_db.schema_version,
+                "person": persona_db.person or {},
+                "projects": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "companyId": p.company_id or "",
+                        "years": p.years or "",
+                        "details": p.details or "",
+                        "skills": p.skills or [],
+                        "aliases": p.aliases or [],
+                        "url": p.url or "",
+                    }
+                    for p in persona_db.projects
+                ],
+                "companies": [
+                    {
+                        "id": c.id,
+                        "name": c.name,
+                        "aliases": c.aliases or [],
+                    }
+                    for c in persona_db.companies
+                ],
+                "skills": [
+                    {
+                        "id": s.id,
+                        "name": s.name,
+                        "aliases": s.aliases or [],
+                        "scope": s.scope or "domain",
+                    }
+                    for s in persona_db.skills
+                ],
+                "claims": [
+                    {
+                        "id": cl.id,
+                        "text": cl.text,
+                        "projectIds": cl.project_ids or [],
+                        "links": cl.links or [],
+                        "confidenceHint": cl.confidence_hint or "medium",
+                    }
+                    for cl in persona_db.claims
+                ],
+            }
+
             errors = _validate_persona_graph(graph_data)
             if errors:
                 return None, [f"persona_graph schema error: {e}" for e in errors]
@@ -278,6 +317,29 @@ def _load_persona_graph(path: Path) -> tuple[PersonaGraph | None, list[str]]:
 
 
 def _load_narrative_memory(path: Path) -> tuple[NarrativeMemory | None, list[str]]:
+    if _is_database_enabled():
+        try:
+            from services.database.repositories import NarrativeMemoryRepository
+            from services.database.session import get_session
+
+            with next(get_session()) as session:
+                narrative_db = NarrativeMemoryRepository.get_latest(session)
+                if narrative_db is not None:
+                    memory = NarrativeMemory(
+                        recent_themes=narrative_db.recent_themes or [],
+                        recent_claims=narrative_db.recent_claims or [],
+                        open_narrative_arcs=narrative_db.open_narrative_arcs or [],
+                        last_updated=(
+                            narrative_db.last_updated.isoformat()
+                            if narrative_db.last_updated is not None
+                            else None
+                        ),
+                    )
+                    logger.debug("Loaded narrative memory from database")
+                    return memory, []
+        except Exception as exc:
+            logger.debug("Database narrative load failed, falling back to file: %s", exc)
+
     if not path.exists():
         return None, [f"narrative_memory not found at {path}"]
     try:

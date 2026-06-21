@@ -29,6 +29,19 @@ from services.database.repositories import (
 logger = logging.getLogger(__name__)
 
 
+def _parse_datetime(value: Any) -> datetime | None:
+    """Parse an ISO timestamp string into a datetime when possible."""
+    if isinstance(value, datetime):
+        return value
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        logger.warning("Could not parse datetime value '%s'; using current time", value)
+        return None
+
+
 # ============================================================================
 # PERSONA GRAPH WRITERS
 # ============================================================================
@@ -68,6 +81,7 @@ def write_persona_graph_to_db(
             role=None,
             skills=[],
             aliases=company_data.get("aliases", []),
+            company_id=company_data.get("id", ""),
         )
         json_company_id: str = company_data.get("id", "")
         db_company_id_val: str = company.id  # type: ignore
@@ -89,6 +103,7 @@ def write_persona_graph_to_db(
             url=project_data.get("url"),
             skills=project_data.get("skills", []),
             years=project_data.get("years"),
+            project_id=project_data.get("id", ""),
         )
         json_project_id: str = project_data.get("id", "")
         db_project_id_val: str = project.id  # type: ignore
@@ -101,6 +116,7 @@ def write_persona_graph_to_db(
             persona_id=persona_id_int,
             name=skill_data.get("name", ""),
             aliases=skill_data.get("aliases", []),
+            skill_id=skill_data.get("id", ""),
         )
     
     for claim_data in persona_data.get("claims", []):
@@ -115,6 +131,8 @@ def write_persona_graph_to_db(
             tags=[],
             project_ids=db_project_ids,
             links=claim_data.get("links", []),
+            confidence_hint=claim_data.get("confidenceHint", "medium"),
+            claim_id=claim_data.get("id", ""),
         )
     
     session.commit()
@@ -179,6 +197,7 @@ def write_domain_knowledge_to_db(
             session=session,
             name=domain_entry.get("name", ""),
             description=domain_entry.get("description", ""),
+            domain_id=domain_entry.get("id", ""),
         )
         session.flush()  # Flush to ensure domain.id is populated
         
@@ -209,6 +228,7 @@ def write_domain_knowledge_to_db(
                 "scope": fact_entry.get("scope", "general"),
                 "original_id": fact_entry.get("id", ""),
             },
+            fact_id=fact_entry.get("id", ""),
         )
         json_fact_id: str = fact_entry.get("id", "")
         db_fact_id: str = fact.id  # type: ignore
@@ -230,6 +250,7 @@ def write_domain_knowledge_to_db(
                 to_fact_id=to_fact_db_id,
                 relation_type=rel_entry.get("relationType", ""),
                 description=rel_entry.get("description", ""),
+                rel_id=rel_entry.get("id", ""),
             )
         else:
             logger.warning(f"Skipping relationship: fact IDs not found (from: {from_fact_json_id}, to: {to_fact_json_id})")
@@ -308,6 +329,9 @@ def write_extracted_knowledge_to_db(
                     "confidence": fact_entry.get("confidence", "medium"),
                     "extraction_method": fact_entry.get("extraction_method", "spacy_nlp"),
                 },
+                fact_id=fact_entry.get("id", ""),
+                extracted_at=_parse_datetime(fact_entry.get("extracted_at")),
+                extraction_method=fact_entry.get("extraction_method", "spacy_nlp"),
             )
             facts_written += 1
         except IntegrityError as e:

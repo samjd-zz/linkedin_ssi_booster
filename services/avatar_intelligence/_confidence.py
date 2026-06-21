@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 from collections import Counter
 from dataclasses import asdict
@@ -27,6 +28,55 @@ def _learning_log_path():
     if pkg is not None:
         return getattr(pkg, "LEARNING_LOG_PATH", _DEFAULT_LEARNING_LOG_PATH)
     return _DEFAULT_LEARNING_LOG_PATH
+
+
+def _is_database_enabled() -> bool:
+    """Check if database dual-write is enabled."""
+    return os.getenv("DATABASE_ENABLED", "false").lower() == "true"
+
+
+def _write_confidence_decision_to_db(
+    *,
+    timestamp: datetime,
+    channel: str,
+    route: str,
+    policy: str,
+    confidence_score: float,
+    confidence_level: str,
+    dominant_signal: str | None,
+    reason: str,
+    article_ref: str,
+    run_id: str,
+) -> None:
+    """Persist one confidence decision to PostgreSQL when dual-write is enabled."""
+    if not _is_database_enabled():
+        return
+
+    try:
+        from services.database.repositories import ConfidenceDecisionRepository
+        from services.database.session import get_session
+
+        session = next(get_session())
+        try:
+            ConfidenceDecisionRepository.create(
+                session=session,
+                timestamp=timestamp,
+                channel=channel,
+                route=route,
+                policy=policy,
+                confidence_score=confidence_score,
+                confidence_level=confidence_level,
+                dominant_signal=dominant_signal,
+                reason=reason,
+                article_ref=article_ref,
+                run_id=run_id,
+            )
+            session.commit()
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.warning("Confidence decision DB write failed (continuing): %s", exc)
+
 
 # Severity weights per reason code — higher means more concern.
 _REASON_SEVERITY: dict[str, float] = {
@@ -223,12 +273,13 @@ def record_confidence_decision(
     channel: str,
     article_ref: str,
 ) -> None:
-    """Append one ConfidenceDecisionEvent to learning_log.jsonl (T3.6).
+    """Append one ConfidenceDecisionEvent to learning_log.jsonl and PostgreSQL.
 
     Failures emit a warning and do not interrupt the publish path.
     """
+    timestamp = datetime.now(timezone.utc)
     event = ConfidenceDecisionEvent(
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=timestamp.isoformat(),
         channel=channel,
         route=decision.route,
         policy=decision.policy,
@@ -246,3 +297,16 @@ def record_confidence_decision(
             fh.write(json.dumps(asdict(event)) + "\n")
     except OSError as exc:
         logger.warning("Learning log write failed (confidence event, continuing): %s", exc)
+
+    _write_confidence_decision_to_db(
+        timestamp=timestamp,
+        channel=channel,
+        route=decision.route,
+        policy=decision.policy,
+        confidence_score=confidence.score,
+        confidence_level=confidence.level,
+        dominant_signal=confidence.dominant_signal,
+        reason=decision.reason,
+        article_ref=article_ref,
+        run_id=_RUN_ID,
+    )
