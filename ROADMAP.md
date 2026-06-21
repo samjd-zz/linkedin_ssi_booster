@@ -89,7 +89,7 @@ We're exploring the possibility of **merging SSI Booster and RIA into one comple
 
 ---
 
-## 🎨 In Progress: Alex Grey Avatar Enhancement
+## 🎨 Alex Grey Avatar Enhancement
 
 **High-fidelity persona-aligned image generation enhancements.**
 
