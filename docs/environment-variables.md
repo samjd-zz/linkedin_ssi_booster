@@ -205,6 +205,112 @@ AVATAR_MAX_MEMORY_ITEMS=200
 
 ---
 
+## Katzilla Integration (Phases 1-6)
+
+### `KATZILLA_ENABLED`
+
+Enable Katzilla-backed external evidence retrieval.
+
+Default: `false`
+
+When enabled, `KATZILLA_API_KEY` must also be set.
+
+```bash
+KATZILLA_ENABLED=false
+```
+
+### `KATZILLA_API_KEY`
+
+API key used for Katzilla requests (sent as `X-API-Key`).
+
+Required only when `KATZILLA_ENABLED=true`.
+
+```bash
+KATZILLA_API_KEY=your_katzilla_key_here
+```
+
+### `KATZILLA_BASE_URL`
+
+Base URL for Katzilla API calls.
+
+Default: `https://katzilla.dev`
+
+```bash
+KATZILLA_BASE_URL=https://katzilla.dev
+```
+
+### `KATZILLA_TIMEOUT_SECONDS`
+
+Per-request timeout for Katzilla calls.
+
+Default: `6.0`
+
+```bash
+KATZILLA_TIMEOUT_SECONDS=6.0
+```
+
+### `KATZILLA_DEFAULT_FORMAT`
+
+Default Katzilla response format requested by the client.
+
+Default: `compact`
+
+```bash
+KATZILLA_DEFAULT_FORMAT=compact
+```
+
+### `KATZILLA_MAX_EXTERNAL_RESULTS`
+
+Maximum number of external evidence items appended per retrieval query.
+
+Default: `2`
+
+```bash
+KATZILLA_MAX_EXTERNAL_RESULTS=2
+```
+
+### `KATZILLA_FIELD_ALLOWLIST`
+
+Comma-separated field list requested from Katzilla for token/cost optimization.
+
+Default: `title,summary,source_url,published_at,tags`
+
+```bash
+KATZILLA_FIELD_ALLOWLIST=title,summary,source_url,published_at,tags
+```
+
+### `KATZILLA_TELEMETRY_ENABLED`
+
+Enable JSONL telemetry capture for Katzilla calls.
+
+Default: `true`
+
+```bash
+KATZILLA_TELEMETRY_ENABLED=true
+```
+
+### `KATZILLA_MAX_CALLS_PER_DAY`
+
+Daily call budget for Katzilla external evidence retrieval.
+
+Default: `50`
+
+```bash
+KATZILLA_MAX_CALLS_PER_DAY=50
+```
+
+### `KATZILLA_MAX_UNCERTAINTY_PER_DAY`
+
+Daily uncertainty budget for Katzilla retrieval (sum of per-call average uncertainty).
+
+Default: `20.0`
+
+```bash
+KATZILLA_MAX_UNCERTAINTY_PER_DAY=20.0
+```
+
+---
+
 ## Model2Vec Classification
 
 ### `MODEL2VEC_ENABLED`

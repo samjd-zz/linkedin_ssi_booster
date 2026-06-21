@@ -257,6 +257,42 @@ def build_grounding_facts_block(facts: list[ProjectFact], limit: int | None = No
     return "\n".join(lines)
 
 
+def build_katzilla_citation_reply(query: str, external_facts: list[object]) -> str:
+    """Build a deterministic citation-first reply for Katzilla evidence."""
+    if not external_facts:
+        return (
+            "No Katzilla evidence was returned for that query. "
+            "Try a more specific request like 'congress AI bill', 'fda recall', or 'usgs earthquake'."
+        )
+
+    lines: list[str] = [
+        f"Katzilla evidence for: {query}",
+        "",
+    ]
+    for idx, fact in enumerate(external_facts, 1):
+        statement = str(getattr(fact, "statement", "")).strip()
+        source_name = str(getattr(fact, "source_name", "")).strip()
+        source_url = str(getattr(fact, "source_url", "")).strip()
+        retrieved_at = str(getattr(fact, "retrieved_at", "")).strip()
+        license_name = str(getattr(fact, "license", "")).strip()
+        update_frequency = str(getattr(fact, "update_frequency", "")).strip()
+        evidence_id = str(getattr(fact, "evidence_id", "")).strip()
+        lines.append(f"{idx}. {statement}")
+        lines.append(f"   [id: {evidence_id}]")
+        if source_name:
+            lines.append(f"   source: {source_name}")
+        if source_url:
+            lines.append(f"   url: {source_url}")
+        if retrieved_at:
+            lines.append(f"   retrieved_at: {retrieved_at}")
+        if license_name:
+            lines.append(f"   license: {license_name}")
+        if update_frequency:
+            lines.append(f"   update_frequency: {update_frequency}")
+
+    return "\n".join(lines)
+
+
 def get_latest_extracted_knowledge(all_facts: list[ProjectFact], limit: int = 5) -> list[ProjectFact]:
     """Get the latest N extracted knowledge facts for 'learned knowledge' queries.
     

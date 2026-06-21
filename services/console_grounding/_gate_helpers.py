@@ -262,6 +262,8 @@ def _build_evidence_paths_for_sentence(
             evidence_type, credibility = EVIDENCE_TYPE_PRIMARY, 0.90
         elif src_lower.startswith("domain:"):
             evidence_type, credibility = EVIDENCE_TYPE_SECONDARY, 0.70
+        elif src_lower.startswith("katzilla:"):
+            evidence_type, credibility = EVIDENCE_TYPE_SECONDARY, 0.55
         else:
             evidence_type, credibility = EVIDENCE_TYPE_SECONDARY, 0.60
         tag_set = {t.lower() for t in fact.tags}

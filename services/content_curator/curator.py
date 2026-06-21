@@ -35,6 +35,7 @@ from services.content_curator._evidence_paths import (
     fact_to_evidence_path,
     article_to_evidence_path,
     extracted_fact_to_evidence_path,
+    external_fact_to_evidence_path,
 )
 from services.content_curator._ssi_picker import build_topic_signal, pick_ssi_component
 from services.content_curator._grounding import (
@@ -120,7 +121,7 @@ class ContentCurator:
         article_title: str,
         article_summary: str,
         ssi_component: str,
-    ) -> tuple[list[ProjectFact], list[Any]]:
+    ) -> tuple[list[ProjectFact], list[Any], list[Any]]:
         """Retrieve top-N persona and domain facts, reranked via HybridRetriever when available."""
         query = f"{article_title}. {article_summary[:600]}. {ssi_component}"
         if self._avatar_facts or self._domain_facts or self._extracted_facts:
@@ -131,10 +132,12 @@ class ContentCurator:
                 EvidenceFact,
                 DomainEvidenceFact,
                 ExtractedEvidenceFact,
+                ExternalEvidenceFact,
                 _get_evidence_split,
             )
             n_persona, n_domain = _get_evidence_split()
             n_extracted = int(os.getenv("EXTRACTED_EVIDENCE_COUNT", "2"))
+            n_external = int(os.getenv("KATZILLA_MAX_EXTERNAL_RESULTS", "2"))
 
             if self._hybrid_retriever is not None:
                 all_candidates = list(self._avatar_facts) + list(self._domain_facts) + list(self._extracted_facts)
@@ -145,6 +148,15 @@ class ContentCurator:
                 persona_hits_typed: list[EvidenceFact] = [f for f in ranked if isinstance(f, EvidenceFact)][:n_persona]
                 domain_hits_typed: list[DomainEvidenceFact] = [f for f in ranked if isinstance(f, DomainEvidenceFact)][:n_domain]
                 extracted_hits_typed: list[ExtractedEvidenceFact] = [f for f in ranked if isinstance(f, ExtractedEvidenceFact)][:n_extracted]
+                combined_hits = retrieve_evidence(
+                    query,
+                    list(self._avatar_facts) + list(self._domain_facts),
+                    limit=n_persona + n_domain + n_external,
+                    category_filter=ssi_component,
+                )
+                external_hits_typed: list[ExternalEvidenceFact] = [
+                    f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
+                ][:n_external]
             else:
                 persona_hits = retrieve_evidence(query, self._avatar_facts, limit=n_persona) if self._avatar_facts else []
                 domain_hits = retrieve_evidence(query, self._domain_facts, limit=n_domain) if self._domain_facts else []
@@ -167,10 +179,31 @@ class ContentCurator:
                 if not extracted_hits_typed:
                     extracted_hits_typed = list(self._extracted_facts)[:n_extracted]
 
+                combined_hits = retrieve_evidence(
+                    query,
+                    list(self._avatar_facts) + list(self._domain_facts),
+                    limit=n_persona + n_domain + n_external,
+                    category_filter=ssi_component,
+                )
+                external_hits_typed = [
+                    f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
+                ][:n_external]
+
             persona_pf = evidence_facts_to_project_facts(persona_hits_typed)
             domain_pf = domain_facts_to_project_facts(domain_hits_typed)
-            return persona_pf + domain_pf, extracted_hits_typed
-        return [], []
+            external_pf: list[ProjectFact] = [
+                ProjectFact(
+                    project=f"Katzilla {ef.agent}/{ef.action}",
+                    company=ef.source_name or "Katzilla",
+                    years=(ef.retrieved_at or "")[:10],
+                    details=ef.statement,
+                    source=f"katzilla:{ef.agent}/{ef.action}",
+                    tags=set(ef.tags),
+                )
+                for ef in external_hits_typed
+            ]
+            return persona_pf + domain_pf + external_pf, extracted_hits_typed, external_hits_typed
+        return [], [], []
 
     def _load_published_titles(self) -> set:
         if IDEAS_CACHE_PATH.exists():
@@ -274,6 +307,7 @@ class ContentCurator:
         channel: str,
         ssi_component: str,
         extracted_facts: list[Any] | None = None,
+        external_facts: list[Any] | None = None,
     ) -> None:
         """Print the avatar explain block (evidence IDs + DoT/spaCy scores).
         
@@ -298,6 +332,7 @@ class ContentCurator:
             _relevant = retrieve_evidence(grounding_query, self._avatar_facts + self._domain_facts, limit=_exp_limit)
             _, _gate_meta = _tgr_exp(post_text, article["summary"], grounding_facts)
             _extracted = extracted_facts or []
+            _external = external_facts or []
             _explain = build_explain_output(
                 evidence_facts=_relevant,
                 article_ref=article.get("title", ""),
@@ -306,6 +341,7 @@ class ContentCurator:
                 dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
                 spacy_sim_scores=_gate_meta.spacy_sim_scores,
                 extracted_facts=_extracted,  # type: ignore[arg-type]
+                external_facts=_external,  # type: ignore[arg-type]
                 article_title=article.get("title", ""),
                 article_url=article.get("link", ""),
             )
@@ -319,6 +355,7 @@ class ContentCurator:
         article: dict[str, Any],
         grounding_facts: list[ProjectFact],
         extracted_facts: list[Any],
+        external_facts: list[Any],
     ) -> None:
         """Print the Derivative of Truth report for *post_text*."""
         try:
@@ -330,6 +367,7 @@ class ContentCurator:
             _dot_paths = (
                 [fact_to_evidence_path(f, post_text) for f in (grounding_facts or [])]
                 + [extracted_fact_to_evidence_path(f, post_text) for f in (extracted_facts or [])]
+                + [external_fact_to_evidence_path(f, post_text) for f in (external_facts or [])]
                 + [article_to_evidence_path(article, post_text)]
             )
             _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
@@ -499,7 +537,7 @@ class ContentCurator:
 
             _candidate_id = str(uuid.uuid4())
             ssi_component = pick_ssi_component(self._topic_signal)
-            grounding_facts, extracted_facts = self._grounding_facts_for_article(
+            grounding_facts, extracted_facts, external_facts = self._grounding_facts_for_article(
                 article_title=article["title"],
                 article_summary=article["summary"],
                 ssi_component=ssi_component,
@@ -562,6 +600,7 @@ class ContentCurator:
                     ssi_component=ssi_component,
                     grounding_facts=grounding_facts,
                     extracted_facts=extracted_facts,
+                    external_facts=external_facts,
                     dry_run=dry_run,
                     request_delay=request_delay,
                     message_type=message_type,
@@ -581,6 +620,7 @@ class ContentCurator:
                         ssi_component=ssi_component,
                         grounding_facts=grounding_facts,
                         extracted_facts=extracted_facts,
+                        external_facts=external_facts,
                         channel=ch,
                         message_type=message_type,
                         dry_run=dry_run,
@@ -600,6 +640,7 @@ class ContentCurator:
                     ssi_component=ssi_component,
                     grounding_facts=grounding_facts,
                     extracted_facts=extracted_facts,
+                    external_facts=external_facts,
                     channel=channel_list[0],
                     message_type=message_type,
                     dry_run=dry_run,
@@ -625,6 +666,7 @@ class ContentCurator:
         ssi_component: str,
         grounding_facts: list[ProjectFact],
         extracted_facts: list[Any],
+        external_facts: list[Any],
         dry_run: bool,
         request_delay: float,
         message_type: str,
@@ -746,9 +788,17 @@ class ContentCurator:
             print("GitHub: https://buff.ly/tfajNLI")
             print("Sign up for Buffer with my partner link — join.buffer.com/samjd42  — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.")
         if avatar_explain:
-            self._print_avatar_explain(li_text, article, grounding_facts, "all", ssi_component, extracted_facts=extracted_facts)
+            self._print_avatar_explain(
+                li_text,
+                article,
+                grounding_facts,
+                "all",
+                ssi_component,
+                extracted_facts=extracted_facts,
+                external_facts=external_facts,
+            )
         if dot_report:
-            self._print_dot_report(li_text, article, grounding_facts, extracted_facts)
+            self._print_dot_report(li_text, article, grounding_facts, extracted_facts, external_facts)
         if dry_run:
             created_ideas.append({"dry_run": True, "title": article["title"], "ssi_component": ssi_component, "channel": "all"})
             return created_ideas
@@ -819,6 +869,7 @@ class ContentCurator:
         ssi_component: str,
         grounding_facts: list[ProjectFact],
         extracted_facts: list[Any],
+        external_facts: list[Any],
         channel: str,
         message_type: str,
         dry_run: bool,
@@ -946,9 +997,17 @@ class ContentCurator:
         print(str(Fore.GREEN) + f"\n✍️  GENERATED POST:" + str(Style.RESET_ALL) + f"\n{post_text}")
 
         if avatar_explain:
-            self._print_avatar_explain(post_text, article, grounding_facts, channel, ssi_component, extracted_facts=extracted_facts)
+            self._print_avatar_explain(
+                post_text,
+                article,
+                grounding_facts,
+                channel,
+                ssi_component,
+                extracted_facts=extracted_facts,
+                external_facts=external_facts,
+            )
         if dot_report:
-            self._print_dot_report(post_text, article, grounding_facts, extracted_facts)
+            self._print_dot_report(post_text, article, grounding_facts, extracted_facts, external_facts)
 
         if dry_run:
             created_ideas.append({

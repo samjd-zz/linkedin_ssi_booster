@@ -176,3 +176,40 @@ def extracted_fact_to_evidence_path(extracted_fact: Any, claim_text: str) -> Any
         chain_length=1,
         overlap=round(min(overlap * 3, 1.0), 3) if claim_tokens else 0.0,
     )
+
+
+def external_fact_to_evidence_path(external_fact: Any, claim_text: str) -> Any:
+    """Convert one Katzilla external fact into an EvidencePath for DoT scoring."""
+    from services.derivative_of_truth import (
+        EvidencePath,
+        EVIDENCE_TYPE_SECONDARY,
+        REASONING_TYPE_STATISTICAL,
+    )
+
+    confidence = str(getattr(external_fact, "confidence", "medium") or "medium").lower()
+    credibility = {"high": 0.78, "medium": 0.64, "low": 0.50}.get(confidence, 0.64)
+
+    statement = str(getattr(external_fact, "statement", "") or "")
+    agent = str(getattr(external_fact, "agent", "unknown") or "unknown")
+    action = str(getattr(external_fact, "action", "unknown") or "unknown")
+    source = f"katzilla:{agent}/{action}"
+
+    claim_tokens = set(re.findall(r"[a-z]{3,}", claim_text.lower()))
+    fact_tokens = set(re.findall(r"[a-z]{3,}", statement.lower()))
+    overlap = 0.0
+    if claim_tokens and fact_tokens:
+        overlap = len(claim_tokens & fact_tokens) / len(claim_tokens)
+
+    uncertainty_hint = float(getattr(external_fact, "uncertainty", 0.0) or 0.0)
+    overlap_uncertainty = max(0.05, 0.28 * (1.0 - min(overlap * 2.5, 1.0)))
+    uncertainty = round(min(0.60, max(overlap_uncertainty, uncertainty_hint)), 3)
+
+    return EvidencePath(
+        source=source,
+        evidence_type=EVIDENCE_TYPE_SECONDARY,
+        reasoning_type=REASONING_TYPE_STATISTICAL,
+        credibility=credibility,
+        uncertainty=uncertainty,
+        chain_length=1,
+        overlap=round(min(overlap * 2.5, 1.0), 3) if claim_tokens else 0.0,
+    )

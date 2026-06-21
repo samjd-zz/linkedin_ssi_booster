@@ -5,16 +5,18 @@ from __future__ import annotations
 import os
 import re
 import logging
+import time
 from typing import Any, Sequence, TypeVar, Union, cast
 
 from services.avatar_intelligence._models import (
     DomainEvidenceFact,
     EvidenceFact,
+    ExternalEvidenceFact,
 )
 
 logger = logging.getLogger(__name__)
 
-_EvidenceT = TypeVar("_EvidenceT", EvidenceFact, DomainEvidenceFact)
+_EvidenceT = TypeVar("_EvidenceT", EvidenceFact, DomainEvidenceFact, ExternalEvidenceFact)
 
 try:
     from rank_bm25 import BM25Okapi as _BM25Okapi
@@ -65,6 +67,144 @@ def _get_evidence_split() -> tuple[int, int]:
     except Exception:
         project_count, domain_count = 3, 2
     return project_count, domain_count
+
+
+def _katzilla_action_allowlist_for_query(query: str, category_filter: str | None = None) -> list[tuple[str, str]]:
+    """Return a small allowlist of Katzilla actions relevant to the query."""
+    q = query.lower()
+    actions: list[tuple[str, str]] = []
+
+    if "bill" in q or "congress" in q or "legislation" in q:
+        actions.append(("government", "congress-bills"))
+    if "recall" in q or "fda" in q or "drug" in q or "device" in q:
+        actions.append(("health", "fda-recalls"))
+    if "earthquake" in q or "seismic" in q or "quake" in q or "usgs" in q:
+        actions.append(("hazards", "usgs-earthquakes"))
+
+    if category_filter:
+        cf = category_filter.lower()
+        if "government" in cf and ("government", "congress-bills") not in actions:
+            actions.append(("government", "congress-bills"))
+        if "health" in cf and ("health", "fda-recalls") not in actions:
+            actions.append(("health", "fda-recalls"))
+        if "hazard" in cf and ("hazards", "usgs-earthquakes") not in actions:
+            actions.append(("hazards", "usgs-earthquakes"))
+
+    return actions
+
+
+def _retrieve_external_evidence(
+    query: str,
+    category_filter: str | None,
+    limit: int,
+) -> list[ExternalEvidenceFact]:
+    """Retrieve optional Katzilla external evidence behind feature flags."""
+    from services.shared import (
+        KATZILLA_API_KEY,
+        KATZILLA_BASE_URL,
+        KATZILLA_DEFAULT_FORMAT,
+        KATZILLA_ENABLED,
+        KATZILLA_FIELD_ALLOWLIST,
+        KATZILLA_MAX_EXTERNAL_RESULTS,
+        KATZILLA_MAX_CALLS_PER_DAY,
+        KATZILLA_MAX_UNCERTAINTY_PER_DAY,
+        KATZILLA_TIMEOUT_SECONDS,
+        KATZILLA_TELEMETRY_ENABLED,
+    )
+
+    if not KATZILLA_ENABLED:
+        return []
+
+    max_items = max(0, min(limit, KATZILLA_MAX_EXTERNAL_RESULTS))
+    if max_items == 0:
+        return []
+
+    actions = _katzilla_action_allowlist_for_query(query, category_filter=category_filter)
+    if not actions:
+        return []
+
+    fields = [f.strip() for f in KATZILLA_FIELD_ALLOWLIST.split(",") if f.strip()]
+
+    from services.avatar_intelligence._katzilla_adapter import adapt_katzilla_envelope
+    from services.katzilla_service import KatzillaService
+
+    can_call = True
+    budget_reason = ""
+    if KATZILLA_TELEMETRY_ENABLED:
+        from services.katzilla_telemetry import can_call_katzilla
+
+        can_call, budget_reason = can_call_katzilla(
+            max_calls_per_day=KATZILLA_MAX_CALLS_PER_DAY,
+            max_uncertainty_per_day=KATZILLA_MAX_UNCERTAINTY_PER_DAY,
+        )
+    if not can_call:
+        logger.info("Katzilla call skipped due to budget: %s", budget_reason)
+        return []
+
+    service = KatzillaService(
+        api_key=KATZILLA_API_KEY,
+        base_url=KATZILLA_BASE_URL,
+        timeout_seconds=KATZILLA_TIMEOUT_SECONDS,
+        default_format=KATZILLA_DEFAULT_FORMAT,
+        max_retries=1,
+    )
+
+    collected: list[ExternalEvidenceFact] = []
+    for agent, action in actions:
+        if len(collected) >= max_items:
+            break
+        per_action_limit = max(1, max_items - len(collected))
+        started = time.perf_counter()
+        try:
+            envelope = service.query_action(
+                agent=agent,
+                action=action,
+                query=query,
+                result_limit=per_action_limit,
+                fields=fields,
+            )
+            adapted = adapt_katzilla_envelope(
+                envelope=envelope,
+                agent=agent,
+                action=action,
+                limit=per_action_limit,
+            )
+            collected.extend(adapted)
+
+            if KATZILLA_TELEMETRY_ENABLED:
+                from services.katzilla_telemetry import record_katzilla_event
+
+                duration_ms = int((time.perf_counter() - started) * 1000)
+                avg_uncertainty = 0.0
+                if adapted:
+                    avg_uncertainty = sum(f.uncertainty for f in adapted) / len(adapted)
+                record_katzilla_event(
+                    status="success",
+                    agent=agent,
+                    action=action,
+                    duration_ms=duration_ms,
+                    result_count=len(adapted),
+                    uncertainty_avg=avg_uncertainty,
+                    query=query,
+                )
+        except Exception as exc:
+            if KATZILLA_TELEMETRY_ENABLED:
+                from services.katzilla_telemetry import record_katzilla_event
+
+                duration_ms = int((time.perf_counter() - started) * 1000)
+                record_katzilla_event(
+                    status="error",
+                    agent=agent,
+                    action=action,
+                    duration_ms=duration_ms,
+                    result_count=0,
+                    uncertainty_avg=0.0,
+                    query=query,
+                    error_type=type(exc).__name__,
+                )
+            raise
+
+    return collected[:max_items]
 
 
 # ---------------------------------------------------------------------------
@@ -238,6 +378,7 @@ def retrieve_evidence(
 
     evidence_facts: list[EvidenceFact] = [f for f in facts if isinstance(f, EvidenceFact)]
     domain_facts: list[DomainEvidenceFact] = [f for f in facts if isinstance(f, DomainEvidenceFact)]
+    external_facts: list[ExternalEvidenceFact] = [f for f in facts if isinstance(f, ExternalEvidenceFact)]
 
     # Apply category filter to domain facts if specified
     if category_filter and domain_facts:
@@ -264,7 +405,7 @@ def retrieve_evidence(
             results.extend(_retrieve_domain_evidence_fallback(query, domain_facts, n_domain))
 
     if len(results) < limit:
-        all_facts = list(evidence_facts) + list(domain_facts)
+        all_facts = list(evidence_facts) + list(domain_facts) + list(external_facts)
         seen_ids = {getattr(f, "evidence_id", id(f)) for f in results}
         for f in all_facts:
             fid = getattr(f, "evidence_id", id(f))
@@ -273,5 +414,27 @@ def retrieve_evidence(
                 seen_ids.add(fid)
             if len(results) >= limit:
                 break
+
+    # Optional Phase 3 Katzilla branch: append bounded external evidence while
+    # preserving existing ranking semantics (internal results first).
+    if len(results) < limit:
+        try:
+            remaining = limit - len(results)
+            external = _retrieve_external_evidence(
+                query=query,
+                category_filter=category_filter,
+                limit=remaining,
+            )
+            if external:
+                seen_ids = {getattr(f, "evidence_id", id(f)) for f in results}
+                for item in external:
+                    if item.evidence_id in seen_ids:
+                        continue
+                    results.append(item)
+                    seen_ids.add(item.evidence_id)
+                    if len(results) >= limit:
+                        break
+        except Exception as exc:  # degrade gracefully; local retrieval remains primary
+            logger.warning("Katzilla retrieval degraded to local-only path: %s", exc)
 
     return cast(list[_EvidenceT], results[:limit])

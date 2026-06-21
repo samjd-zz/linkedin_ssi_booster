@@ -10,6 +10,7 @@ from services.avatar_intelligence._models import (
     AvatarState,
     DomainEvidenceFact,
     EvidenceFact,
+    ExternalEvidenceFact,
     ExtractedEvidenceFact,
 )
 from services.avatar_intelligence._normalizers import (
@@ -97,6 +98,24 @@ def build_extracted_grounding_context(extracted_facts: list[ExtractedEvidenceFac
     return "\n".join(lines)
 
 
+def build_external_grounding_context(external_facts: list[ExternalEvidenceFact]) -> str:
+    """Build a prompt-ready grounding block from external Katzilla evidence."""
+    if not external_facts:
+        return ""
+
+    lines = [
+        "External evidence — recent cited records fetched from trusted sources:",
+    ]
+    for fact in external_facts:
+        line = f"- [{fact.evidence_id}] {fact.statement}"
+        if fact.source_name:
+            line += f" | Source: {fact.source_name}"
+        if fact.source_url:
+            line += f" | URL: {fact.source_url}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def get_grounding_context_for_query(
     query: str,
     state: AvatarState | None = None,
@@ -171,20 +190,26 @@ def get_grounding_context_for_query(
         relevant = retrieve_evidence(query, facts + domain_facts, limit=limit)
         project_facts_sel = [f for f in relevant if isinstance(f, EvidenceFact)]
         domain_facts_sel = [f for f in relevant if isinstance(f, DomainEvidenceFact)]
+        external_facts_sel = [f for f in relevant if isinstance(f, ExternalEvidenceFact)]
         fallback_parts = []
         if project_facts_sel:
             fallback_parts.append(build_grounding_context(project_facts_sel))
         if domain_facts_sel:
             fallback_parts.append(build_domain_grounding_context(domain_facts_sel))
+        if external_facts_sel:
+            fallback_parts.append(build_external_grounding_context(external_facts_sel))
         return "\n\n".join(fallback_parts) if fallback_parts else ""
     else:
         # Fallback: use retrieve_evidence (which now uses the same split)
         relevant = retrieve_evidence(query, facts + domain_facts, limit=limit)
         project_facts_sel = [f for f in relevant if isinstance(f, EvidenceFact)]
         domain_facts_sel = [f for f in relevant if isinstance(f, DomainEvidenceFact)]
+        external_facts_sel = [f for f in relevant if isinstance(f, ExternalEvidenceFact)]
         context_parts = []
         if project_facts_sel:
             context_parts.append(build_grounding_context(project_facts_sel))
         if domain_facts_sel:
             context_parts.append(build_domain_grounding_context(domain_facts_sel))
+        if external_facts_sel:
+            context_parts.append(build_external_grounding_context(external_facts_sel))
         return "\n\n".join(context_parts) if context_parts else ""

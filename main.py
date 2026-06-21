@@ -117,6 +117,7 @@ from services.console_grounding import (
     parse_query_constraints,
     retrieve_relevant_facts,
     build_deterministic_grounded_reply,
+    build_katzilla_citation_reply,
     get_latest_extracted_knowledge,
     build_learned_knowledge_context,
     build_grounding_facts_block,
@@ -372,12 +373,13 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats, /rei, /rei-toei")
+            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
             print("  /verify — toggle DoT + similarity verification on/off")
             print("  /avatar-explain — toggle avatar-explain report on/off")
             print("  /dot-report — toggle DoT report on/off")
             print("  /graph-stats — show knowledge graph statistics")
+            print("  /katzilla <query> — show deterministic external evidence citations")
             print("  /rei or /rei-toei — switch to Rei Toei music avatar mode")
             continue
         if cmd == "/reset":
@@ -440,6 +442,25 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 print(str(Fore.RED) + f"⚠️ Rei error: {rei_err}" + str(Style.RESET_ALL))
             continue
 
+        if cmd.startswith("/katzilla"):
+            query = user_input[len("/katzilla"):].strip()
+            if not query:
+                print(str(Fore.YELLOW) + "Usage: /katzilla <query>" + str(Style.RESET_ALL))
+                continue
+            try:
+                from services.avatar_intelligence._retrieval import _retrieve_external_evidence
+
+                external = _retrieve_external_evidence(query=query, category_filter=None, limit=5)
+                reply = build_katzilla_citation_reply(query, external)
+                history.append({"role": "user", "content": user_input})
+                history.append({"role": "assistant", "content": reply})
+                if len(history) > max_turns * 2:
+                    history = history[-max_turns * 2 :]
+                print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+            except Exception as exc:
+                print(str(Fore.RED) + f"⚠️ Katzilla request failed: {exc}" + str(Style.RESET_ALL))
+            continue
+
         # Parse query to determine routing mode
         constraints = parse_query_constraints(user_input)
         
@@ -499,7 +520,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 raw_evidence=[],
                 raw_domain=[],
                 raw_extracted=used_extracted,
-                facts_used_for_dot=facts,
+                raw_external=[],
+                facts_used_for_dot=learned_facts,
                 verify=verify,
                 avatar_explain=avatar_explain,
                 dot_report=dot_report
@@ -534,12 +556,29 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             used_ev = [f for f in facts_ranked[:8] if isinstance(f, EvidenceFact)]
             used_dom = [f for f in facts_ranked[:8] if isinstance(f, DomainEvidenceFact)]
             used_ext = [f for f in facts_ranked[:8] if isinstance(f, ExtractedEvidenceFact)]
+            used_external = []
             # Ensure we have at least some facts even if conversion failed
             if not facts:
                 facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
         else:
             # Fallback to simple retrieval when graph not available
             facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+            used_ev, used_dom, used_ext, used_external = [], [], [], []
+
+        external_context = ""
+        try:
+            from services.avatar_intelligence import retrieve_evidence, ExternalEvidenceFact, build_external_grounding_context
+
+            external_candidates = retrieve_evidence(
+                user_input,
+                list(_raw_evidence_facts) + list(_raw_domain_facts),
+                limit=2,
+            )
+            used_external = [f for f in external_candidates if isinstance(f, ExternalEvidenceFact)]
+            external_context = build_external_grounding_context(used_external)
+        except Exception:
+            used_external = []
+
         facts_context = build_grounding_facts_block(facts, limit=8)
         history.append({"role": "user", "content": user_input})
         if len(history) > max_turns * 2:
@@ -547,6 +586,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         try:
             # Use retrieved facts as additional context
             enhanced_context = f"{_grounding_context}\n\n{facts_context}" if _grounding_context else facts_context
+            if external_context:
+                enhanced_context = f"{enhanced_context}\n\n{external_context}".strip()
             print(str(Fore.CYAN) + "🤔 Thinking..." + str(Style.RESET_ALL), end="", flush=True)
             reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
             print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
@@ -571,6 +612,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             raw_evidence=used_ev,
             raw_domain=used_dom,
             raw_extracted=used_ext,
+            raw_external=used_external,
             facts_used_for_dot=facts,
             verify=verify,
             avatar_explain=avatar_explain,

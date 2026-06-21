@@ -17,6 +17,7 @@ from services.avatar_intelligence._models import (
     DomainEvidenceFact,
     EvidenceFact,
     ExtractedEvidenceFact,
+    ExternalEvidenceFact,
     ExplainOutput,
     LearningRecommendation,
     LearningReport,
@@ -160,7 +161,9 @@ def record_moderation_event(
 # ---------------------------------------------------------------------------
 
 
-def _format_fact_summary(f: Union[EvidenceFact, DomainEvidenceFact, ExtractedEvidenceFact]) -> str:
+def _format_fact_summary(
+    f: Union[EvidenceFact, DomainEvidenceFact, ExtractedEvidenceFact, ExternalEvidenceFact]
+) -> str:
     """Helper to handle the string formatting for different fact types."""
     # Common truncation logic
     def trunc(s: str, length: int = 80) -> str:
@@ -178,6 +181,11 @@ def _format_fact_summary(f: Union[EvidenceFact, DomainEvidenceFact, ExtractedEvi
         source = f" ← {trunc(f.source_title, 60)}" if f.source_title else ""
         return f"[{f.evidence_id}] {trunc(f.statement)}{tags}{source}"
 
+    if isinstance(f, ExternalEvidenceFact):
+        tags = f" (Tags: {', '.join(f.tags)})" if f.tags else ""
+        source = f" ← {trunc(f.source_name, 40)}" if f.source_name else ""
+        return f"[{f.evidence_id}] {trunc(f.statement)}{tags}{source}"
+
     return f"[{getattr(f, 'evidence_id', '?')}] Unknown type: {str(f)[:100]}"
 
 def build_explain_output(
@@ -188,6 +196,7 @@ def build_explain_output(
     dot_per_sentence_scores: list[float] | None = None,
     spacy_sim_scores: dict[str, float] | None = None,
     extracted_facts: Sequence[ExtractedEvidenceFact] | None = None,
+    external_facts: Sequence[ExternalEvidenceFact] | None = None,
     article_title: str = "",
     article_url: str = "",
 ) -> ExplainOutput:
@@ -201,6 +210,7 @@ def build_explain_output(
 
     # 2. Map Extracted knowledge to summaries
     ext_summaries = [_format_fact_summary(xf) for xf in (extracted_facts or [])]
+    external_summaries = [_format_fact_summary(ef) for ef in (external_facts or [])]
 
     # 3. Build article evidence one-liner
     art_evidence = ""
@@ -218,6 +228,7 @@ def build_explain_output(
         dot_per_sentence_scores=dot_per_sentence_scores or [],
         spacy_sim_scores=spacy_sim_scores or {},
         extracted_summaries=ext_summaries,
+        external_summaries=external_summaries,
         article_evidence=art_evidence,
     )
 
@@ -316,6 +327,21 @@ def format_explain_output(explain: ExplainOutput) -> str:
                     eid = summary[1:bracket_end]
                     rest = summary[bracket_end + 1:].strip()
                     lines.append(_render_fact_line(eid, rest, "🗂️ ", C))
+                else:
+                    lines.append(f"    {summary}")
+            else:
+                lines.append(f"    {summary}")
+
+    if explain.external_summaries:
+        lines.append("")
+        lines.append(f"  {C}Katzilla External Evidence:{R}")
+        for summary in explain.external_summaries:
+            if summary.startswith("["):
+                bracket_end = summary.find("]")
+                if bracket_end != -1:
+                    eid = summary[1:bracket_end]
+                    rest = summary[bracket_end + 1:].strip()
+                    lines.append(_render_fact_line(eid, rest, "🔗", W))
                 else:
                     lines.append(f"    {summary}")
             else:

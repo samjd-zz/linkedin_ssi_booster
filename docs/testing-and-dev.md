@@ -43,9 +43,10 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Failed | Status              |
 | ----------- | ------- | ------ | ------------------- |
-| **663**     | **663** | **0**  | ✨ **100% Passing** |
+| **679**     | **679** | **0**  | ✨ **100% Passing** |
 
 - **Latest Run Date:** June 21, 2026
+- **Latest Run Scope:** Full pytest suite (`pytest tests/`)
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
 
 ### Test Suite Breakdown
@@ -57,6 +58,9 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - **6** Continuous knowledge extraction quality assertions
 - **5** Selection Learning database integration tests (Phase 5)
 - _3 CandidateRecordRepository | 2 PublishedRecordRepository_
+- **16** Katzilla integration tests (Phases 1-6)
+- _6 Service client | 2 Envelope adapter | 4 Retrieval integration/fallback_
+- _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
 
 ---
 

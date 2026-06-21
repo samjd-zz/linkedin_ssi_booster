@@ -218,6 +218,26 @@ class ExtractedEvidenceFact:
     source_fact_id: str
 
 
+@dataclass
+class ExternalEvidenceFact:
+    """A normalized fact from Katzilla external evidence with citation provenance."""
+
+    evidence_id: str
+    statement: str
+    source_name: str
+    source_url: str
+    retrieved_at: str
+    data_hash: str
+    license: str
+    update_frequency: str
+    request_url: str
+    confidence: str
+    uncertainty: float
+    agent: str
+    action: str
+    tags: list[str] = field(default_factory=list)
+
+
 # ---------------------------------------------------------------------------
 # Learning / moderation
 # ---------------------------------------------------------------------------
@@ -262,6 +282,8 @@ class ExplainOutput:
     spacy_sim_scores: dict[str, float] = field(default_factory=dict)
     # Extracted knowledge facts used as evidence (NLP-extracted from past articles)
     extracted_summaries: list[str] = field(default_factory=list)
+    # Katzilla external evidence facts used as evidence
+    external_summaries: list[str] = field(default_factory=list)
     # Article used as external evidence — "title | url" or empty
     article_evidence: str = ""
 

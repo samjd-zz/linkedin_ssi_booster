@@ -25,6 +25,7 @@ from services.avatar_intelligence._models import (
     DomainRelationship,
     EvidenceFact,
     ExplainOutput,
+    ExternalEvidenceFact,
     ExtractedEvidenceFact,
     ExtractedFact,
     ExtractedKnowledgeGraph,
@@ -107,6 +108,7 @@ from services.avatar_intelligence._retrieval import (
 # Grounding
 # ---------------------------------------------------------------------------
 from services.avatar_intelligence._grounding import (
+    build_external_grounding_context,
     build_domain_grounding_context,
     build_extracted_grounding_context,
     build_grounding_context,
@@ -178,6 +180,7 @@ __all__ = [
     "DomainRelationship",
     "EvidenceFact",
     "ExplainOutput",
+    "ExternalEvidenceFact",
     "ExtractedEvidenceFact",
     "ExtractedFact",
     "ExtractedKnowledgeGraph",
@@ -222,6 +225,7 @@ __all__ = [
     "retrieve_evidence",
     # Grounding
     "build_domain_grounding_context",
+    "build_external_grounding_context",
     "build_extracted_grounding_context",
     "build_grounding_context",
     "get_grounding_context_for_query",

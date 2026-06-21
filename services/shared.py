@@ -207,6 +207,31 @@ if AVATAR_CONFIDENCE_POLICY not in _VALID_CONFIDENCE_POLICIES:
 AVATAR_LEARNING_ENABLED: bool = os.getenv("AVATAR_LEARNING_ENABLED", "true").lower() == "true"
 AVATAR_MAX_MEMORY_ITEMS: int = int(os.getenv("AVATAR_MAX_MEMORY_ITEMS", "200"))
 
+# ---------------------------------------------------------------------------
+# Katzilla integration configuration defaults (Phases 1-3)
+# ---------------------------------------------------------------------------
+
+KATZILLA_ENABLED: bool = os.getenv("KATZILLA_ENABLED", "false").lower() == "true"
+KATZILLA_API_KEY: str = os.getenv("KATZILLA_API_KEY", "")
+KATZILLA_BASE_URL: str = os.getenv("KATZILLA_BASE_URL", "https://katzilla.dev")
+KATZILLA_TIMEOUT_SECONDS: float = float(os.getenv("KATZILLA_TIMEOUT_SECONDS", "6.0"))
+KATZILLA_DEFAULT_FORMAT: str = os.getenv("KATZILLA_DEFAULT_FORMAT", "compact")
+KATZILLA_MAX_EXTERNAL_RESULTS: int = int(os.getenv("KATZILLA_MAX_EXTERNAL_RESULTS", "2"))
+
+# Optional comma-separated list of fields requested from Katzilla to reduce tokens.
+KATZILLA_FIELD_ALLOWLIST: str = os.getenv(
+    "KATZILLA_FIELD_ALLOWLIST",
+    "title,summary,source_url,published_at,tags",
+)
+KATZILLA_TELEMETRY_ENABLED: bool = os.getenv("KATZILLA_TELEMETRY_ENABLED", "true").lower() == "true"
+KATZILLA_MAX_CALLS_PER_DAY: int = int(os.getenv("KATZILLA_MAX_CALLS_PER_DAY", "50"))
+KATZILLA_MAX_UNCERTAINTY_PER_DAY: float = float(
+    os.getenv("KATZILLA_MAX_UNCERTAINTY_PER_DAY", "20.0")
+)
+
+if KATZILLA_ENABLED and not KATZILLA_API_KEY:
+    raise ValueError("KATZILLA_ENABLED=true requires KATZILLA_API_KEY to be set.")
+
 from colorama import Fore, Style
 import logging
 
@@ -219,6 +244,7 @@ def print_validation_reports(
     raw_evidence: list,
     raw_domain: list,
     raw_extracted: list,
+    raw_external: list,
     facts_used_for_dot: list,
     verify: bool = False,
     avatar_explain: bool = False,
@@ -259,6 +285,7 @@ def print_validation_reports(
                 dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
                 spacy_sim_scores=_gate_meta.spacy_sim_scores,
                 extracted_facts=raw_extracted,
+                external_facts=raw_external,
             )
             print("\r" + " " * 45 + "\r", end="", flush=True)
             print(format_explain_output(_explain))
@@ -270,11 +297,20 @@ def print_validation_reports(
     if dot_report:
         print(f"{Fore.CYAN}📈 Generating DoT report...{Style.RESET_ALL}", end="", flush=True)
         try:
-            _dot_paths = [
-                EvidencePath(source=f.source, evidence_type=EVIDENCE_TYPE_SECONDARY, 
-                             reasoning_type=REASONING_TYPE_LOGICAL, credibility=0.7)
-                for f in facts_used_for_dot
-            ]
+            _dot_paths = []
+            for f in facts_used_for_dot:
+                source = getattr(f, "source", "")
+                credibility = 0.7
+                if isinstance(source, str) and source.startswith("katzilla:"):
+                    credibility = 0.55
+                _dot_paths.append(
+                    EvidencePath(
+                        source=source,
+                        evidence_type=EVIDENCE_TYPE_SECONDARY,
+                        reasoning_type=REASONING_TYPE_LOGICAL,
+                        credibility=credibility,
+                    )
+                )
             _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
             _dot_report_dict = report_truth_gradient(post_text, _dot_result, verbose=True)
             print("\r" + " " * 45 + "\r", end="", flush=True)
