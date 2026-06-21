@@ -109,6 +109,7 @@ The system now includes an autonomous Buffer integration agent powered by the **
 
 ## 📊 Future Considerations
 
+- **Database integration hardening** — expand the PostgreSQL dual-write layer beyond selection-learning records, keep the JSON/JSONL fallback intact, and continue validating schema/repository alignment as the rollout grows.
 - **Multi-avatar support** — Deploy multiple personas with isolated knowledge graphs (requires Neo4j backend)
 - **Voice-controlled Buffer operations** — Extend Wyoming Piper TTS integration for hands-free content management
 - **Automated post-performance analytics** — Buffer API metrics integration for learning signal feedback

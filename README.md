@@ -398,9 +398,11 @@ The primer covers core NLP concepts, practical communication techniques, technic
 
 ## Database Integration (PostgreSQL)
 
-> **⚠️ Status:** The core infrastructure is functional, but some features are still being refined. We're aware of outstanding issues and actively working on improvements. File-based storage (JSON/JSONL) remains the recommended default until the database integration is fully stabilized.
+> **⚠️ Status:** PostgreSQL dual-write now covers selection-learning candidate logging and published-record reconciliation. File-based storage (JSON/JSONL) remains the recommended default while the broader database rollout continues to harden.
 
 The system now supports **dual-write mode** with PostgreSQL for improved data integrity, query performance, and concurrent access. Database integration is **optional** — the system continues to work with file-based storage (JSON/JSONL) by default.
+
+Selection-learning now persists candidate and published records through dedicated repositories and writers when `DATABASE_ENABLED=true`, while the file-backed path remains the default fallback. An isolated in-memory SQLite test suite covers candidate creation, selected-state updates, unpublished listing, published writes, and recent-record queries so the ORM mapping stays aligned with the schema.
 
 **Setup (Docker):**
 
@@ -491,7 +493,7 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (654/654 tests passing)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (663/663 tests passing)
 
 ## 🐳 Docker Compose (Recommended)
 
