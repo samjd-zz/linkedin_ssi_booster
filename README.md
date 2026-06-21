@@ -98,7 +98,7 @@ Rei> [Generates song with Suno prompt and evidence IDs]
 
 ---
 
-## � Image Generation with FLUX.1 (Alex Grey Enhancement)
+## 🖼️ Image Generation with FLUX.1 (Alex Grey Enhancement)
 
 Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex Grey Avatar Enhancement adds aesthetic guidance to ensure generated images match the project's visual identity.
 
@@ -118,7 +118,7 @@ See [docs/multimodal-features.md](docs/multimodal-features.md) for setup and API
 
 ---
 
-## �🏆 What is the Social Selling Index (SSI)?
+## 🏆 What is the Social Selling Index (SSI)?
 
 The [LinkedIn specifically uses the Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
 
