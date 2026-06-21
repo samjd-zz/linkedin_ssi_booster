@@ -101,15 +101,70 @@ The local image generation pipeline (FLUX.1-schnell) is being enhanced with Alex
 
 ---
 
-## 📤 Ollama Buffer MCP Agent
+## � Ollama Buffer MCP Agent — In Progress
 
-The system now includes an autonomous Buffer integration agent powered by the **Buffer Model Context Protocol (MCP)**. This agent generates Buffer API requests using Gemma 4 and sends them directly to Buffer's MCP server for seamless social media management.
+**Status:** Code complete, integration pending, no tests yet
 
-- **Autonomous Agent Service:** Runs as a standalone Docker service (`buffer-mcp-agent`) in the stack.
-- **Natural Language Interface:** Uses Gemma 4 to translate plain English commands into properly formatted Buffer MCP requests.
-- **Direct MCP Integration:** Connects to Buffer's official MCP server at `https://mcp.buffer.com/mcp` — no custom bridge required.
-- **Full Buffer API Access:** List channels, create posts, manage drafts, schedule content, and more via conversational commands.
-- **Container-Native:** Runs alongside Ollama in Docker with automatic authentication using your `BUFFER_API_KEY`.
+The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is powered by **Gemma 4 + Buffer Model Context Protocol (MCP)**. However, this feature requires verification and testing before being marked as production-ready.
+
+### What Exists
+
+- **Agent Code:** `agents/buffer_mcp_agent.py` with Gemma 4 NLU for translating commands to Buffer MCP requests
+- **Architecture Design:** HTTP client, MCP request generation, async streaming
+- **Documentation:** Full docstrings and design patterns in place
+
+### What's Pending
+
+- ⏸️ **Docker Service Disabled:** The `buffer-mcp-agent` service is commented out in `docker-compose.yml` (lines 46-58)
+- ❌ **No Test Coverage:** Zero tests in `tests/` — needs unit + integration test suite
+- 🔍 **Verification Required:** Validate that Buffer MCP server endpoint (`https://mcp.buffer.com/mcp`) works as documented
+- 📋 **Consumer Integration:** Wire the agent into `main.py` CLI commands or console mode
+
+### Next Steps to Complete
+
+1. Uncomment the Docker service or create integration tests first
+2. Add `tests/test_buffer_mcp_agent.py` with auth, generation, and submission flows
+3. Verify Buffer MCP server connection and request/response contract
+4. Wire into console mode or scheduled posting pipeline if ready
+
+---
+
+## 🎵 Rei Toei AI Music Avatar — In Progress
+
+**Status:** Code complete, Strudel MCP agent disabled, integration pending
+
+Rei Toei is an AI music avatar system designed to generate personalized music and sonic branding aligned with persona aesthetics. The system uses **Suno vocal generation + Strudel live-coding patterns** for composable music creation.
+
+### What Exists
+
+- **Strudel MCP Agent:** `agents/strudel_mcp_agent.py` with Gemma 4 for translating music requests to live-coding Strudel patterns
+- **Suno Integration:** `services/rei_toei_service.py` for voice model selection, prompt engineering, and async generation
+- **Console Commands:** `/rei-compose`, `/rei-suno` for interactive music creation
+- **Architecture Design:** Full async/await patterns, streaming response handling, rate-limit guards
+- **Documentation:** Full docstrings and design patterns in place (see [docs/features/rei-toei/plan.md](docs/features/rei-toei/plan.md))
+
+### What's Pending
+
+- ⏸️ **Strudel MCP Agent Disabled:** The `strudel-mcp-agent` service is commented out in `docker-compose.yml` (similar to Buffer MCP)
+- ⏸️ **WebSocket Connection Disabled:** Strudel WebSocket server (`ws://localhost:4321`) integration disabled — requires manual startup or Docker service re-enable
+- ❌ **No Test Coverage:** Zero tests for Strudel agent — needs unit + integration test suite
+- 🔍 **Verification Required:** Validate live-coding music patterns work as designed; test Suno API integration for voice generation
+- 📋 **Console Integration:** Wire fully into console mode and scheduled generation pipeline
+
+### Current Architecture
+
+- **Suno-first:** Text-to-music voice generation with configurable voice models (Chirp, Bark variants)
+- **Strudel-second:** Live-coding pattern generation for instrumental accompaniment (disabled)
+- **Async rendering:** Non-blocking generation with streaming response collection
+- **Rate limiting:** Built-in guard against Suno API overuse
+
+### Next Steps to Complete
+
+1. Re-enable Strudel WebSocket in Docker or create local dev workflow
+2. Add `tests/test_rei_toei_service.py` and `tests/test_strudel_mcp_agent.py` with generation + streaming test cases
+3. Verify live-coding pattern generation works against live Strudel server
+4. Wire Suno voice selection into console `/rei-suno` command with CLI `--voice` flag
+5. Integrate with scheduled posting pipeline for automated sonic branding
 
 ---
 

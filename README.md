@@ -61,94 +61,64 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ---
 
-> **📋 Future Development:** See [ROADMAP.md](ROADMAP.md) for planned features including Katzilla.dev government data integration, RIA Canadian law knowledge, and more. Have ideas? [Open an issue on GitHub](https://github.com/samjd-zz/linkedin_ssi_booster/issues) with the `enhancement` label.
+## 📋 Status & Roadmap
+
+The SSI Booster is actively maintained with periodic development cycles. See **[ROADMAP.md](ROADMAP.md)** for:
+
+- ✅ **Complete:** Katzilla.dev government data integration (6 phases, 23 files, 16 tests)
+- 🔄 **In Progress:** Ollama Buffer MCP Agent (code exists, docker service disabled, tests pending)
+- 🎨 **In Progress:** Alex Grey Avatar Enhancement (persona-aligned image generation with FLUX.1)
+- 🎵 **In Progress:** Rei Toei AI Music Avatar (Suno vocal generation + Strudel live-coding patterns)
+- 🏛️ **Research:** RIA Canadian Law Knowledge integration (regulatory grounding for policy-aware content)
+
+**Have ideas?** [Open a GitHub issue](https://github.com/samjd-zz/linkedin_ssi_booster/issues) with the `enhancement` label.
 
 ---
 
-## 🎵 Rei Toei - AI Music Avatar
+## 🎵 Rei Toei - AI Music Avatar (In Development)
 
-> **Inspiration:** Rei Toei is the platform's AI music avatar, inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM) and the cyberpunk aesthetics of William Gibson's _Idoru_.
+> **Inspiration:** Cyberpunk-aesthetic AI music avatar inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) and William Gibson's _Idoru_. See [Rei Toei Customization Guide](docs/rei-toei-customization.md) for full details on architecture, customization, and persona tuning.
 
-**Rei Toei** transforms the SSI Booster from a knowledge extraction system into a **creative knowledge expression platform**. She's a virtual AI idol who converts curated technical knowledge into original music — both vocal songs (via Suno AI) and algorithmic live-coding patterns (via Strudel/Tidal Cycles).
+**Rei Toei** transforms the SSI Booster into a **creative knowledge expression platform**, converting your curated technical knowledge into algorithmic music. See [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) for architecture, commands, and usage examples.
 
-### Dual Music Generation
+**Current capabilities:**
+- **Suno Vocal Songs** — Generate cyberpunk industrial techno concepts with structured lyrics grounded in extracted knowledge
+- **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (under development)
+- **Knowledge Grounding** — Every lyric is validated via Derivative of Truth for factual accuracy
 
-- **Suno Vocal Songs:** Generate complete song concepts with cyberpunk industrial techno aesthetic, including title, genre tags, BPM, narrative arc, structured lyrics (verse/chorus/bridge/breakdown), and full Suno API integration for automated song creation.
-
-- **Strudel Live-Coding Patterns:** Generate executable Tidal Cycles code that translates technical concepts into algorithmic music. Recursion becomes nested patterns, concurrency becomes interleaved sequences, data flow becomes modulated synthesis. - UNDER DEVEVELOPMENT
-
-### Knowledge-to-Music Pipeline
-
-- **Theme Extraction:** Analyzes extracted knowledge base to identify recurring technical themes ranked by frequency and recency
-- **Technical Metaphors:** Translates technical concepts into musical structures (e.g., async programming → interleaved rhythms, neural networks → layered synthesis)
-- **Evidence Tracking:** Every lyric and pattern is grounded in extracted knowledge with full evidence ID tracing
-- **DoT Validation:** Lyrics undergo Derivative of Truth validation to ensure factual accuracy in technical claims
-
-### Console Integration
-
-Access Rei Toei directly in console mode:
+**Access in console:**
 
 ```bash
 python main.py --console
-
-Sam> /rei-toei
-Rei> ⚡ Online. I transform your technical knowledge into algorithmic music.
-     What concept should we sonify today?
-
-Sam> Generate a song about the recent ML architecture article
-Rei> [Generates song concept, lyrics, and Suno prompt]
-
-Sam> Create a Strudel pattern for that concurrent processing theme
-Rei> [Generates and executes Tidal Cycles code via MCP agent]
+Sam> /rei-toei                    # Switch to Rei's persona
+Rei> What concept should we sonify today?
+Sam> Generate a song about async programming
+Rei> [Generates song with Suno prompt and evidence IDs]
 ```
-
-Commands: `/rei-toei` or `/rei` to switch to Rei's personality, then describe what you want to generate.
-
-### CLI Generation
-
-Generate music directly from command line:
-
-```bash
-# Generate Suno song from recent knowledge
-python main.py --rei-generate --rei-explain
-
-# Generate Strudel pattern with live execution
-python main.py --rei-generate-strudel --rei-execute
-
-# Generate for specific theme
-python main.py --rei-generate --rei-theme "neural network backpropagation"
-
-# Preview without saving
-python main.py --rei-generate-strudel --rei-preview
-```
-
-### Technical Architecture
-
-- **Separate Persona Graph:** Rei has her own identity, musical expertise, and domain knowledge (music theory, Tidal Cycles syntax, genre conventions)
-- **Shared Knowledge Pool:** Accesses the same extracted knowledge as Sam for technical grounding
-- **Pattern Template Library:** 15+ reusable Strudel pattern templates mapping technical concepts to musical structures
-- **Suno API Integration:** Full HTTP client with async task polling for automated song generation (requires `SUNO_API_KEY`)
-- **Strudel MCP Agent:** WebSocket communication to Strudel server (port 4321) for real-time pattern execution
-- **DoT Integration:** Configurable truth validation for lyrical claims (`REI_TOEI_DOT_VALIDATION_ENABLED`, `REI_TOEI_DOT_MIN_TRUTH_GRADIENT`)
-
-### What Makes Rei Different
-
-Unlike generic AI music tools, Rei is **knowledge-grounded**:
-
-- Songs and patterns are generated from your actual curated technical knowledge
-- Every claim in lyrics is validated against extracted facts
-- Musical themes evolve as your knowledge base grows
-- Cyberpunk aesthetic maintains consistency with technical focus
-- Full transparency with evidence IDs and DoT scores
-
-See the following documentation for complete details:
-
-- **[Rei Toei Customization Guide](docs/rei-toei-customization.md)** — Comprehensive guide to customizing Rei's persona, musical style, domain knowledge, and pattern templates with examples
-- [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) — Complete implementation details, architecture diagrams, and usage examples
 
 ---
 
-## 🏆 What is the Social Selling Index (SSI)?
+## � Image Generation with FLUX.1 (Alex Grey Enhancement)
+
+Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex Grey Avatar Enhancement adds aesthetic guidance to ensure generated images match the project's visual identity.
+
+**Current status:** FLUX.1 integration complete; persona aesthetic tuning in progress (see [ROADMAP.md](ROADMAP.md)).
+
+**Requirements:**
+- GPU with 12GB+ VRAM (tested on RTX 3060)
+- Run with `--profile full` in Docker Compose
+- Or locally with `pip install -r requirements-flux.txt`
+
+**Use cases:**
+- Generate social-media-ready visuals for posts
+- Create persona-aligned avatar artwork
+- Batch generate imagery for content calendars
+
+See [docs/multimodal-features.md](docs/multimodal-features.md) for setup and API details.
+
+---
+
+## �🏆 What is the Social Selling Index (SSI)?
 
 The [LinkedIn specifically uses the Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
 
@@ -211,17 +181,19 @@ You control whether curated content is reviewed before publishing or scheduled d
 
 ---
 
-## 🚀 Schedule Your Content with Buffer (Partner Link)
+## 🚀 Scheduling & Buffer Integration
 
-Want to automate your LinkedIn growth with the best scheduling tool? [Sign up for Buffer with our partner link](https://join.buffer.com/samjd42) and get started in minutes!
+The SSI Booster integrates with **Buffer for seamless social scheduling**. All posts generated by the curator are pushed to your Buffer queue (or Ideas for review) via the Buffer GraphQL API.
 
 **Why Buffer?**
+- Optimal posting times for maximum reach
+- Multi-channel management (LinkedIn, Twitter, etc.)
+- Queue management and performance analytics
+- Full integration with SSI Booster's confidence routing (post → ideas → block)
 
-- Effortlessly schedule posts at optimal times for maximum reach
-- Manage multiple channels and queues from one dashboard
-- Integrates seamlessly with SSI Booster for hands-off publishing
+**Support the project:** Use our [Buffer partner link](https://join.buffer.com/samjd42) to help fund development while getting started with Buffer scheduling!
 
-**Support the project:** Using our [Buffer partner link](https://join.buffer.com/samjd42) helps fund ongoing development and keeps this tool open-source. Try Buffer today and see why top creators and engineers trust it for their content workflow!
+**In Development:** See [ROADMAP.md](ROADMAP.md) for details on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service disabled, tests pending).
 
 ---
 
