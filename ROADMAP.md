@@ -4,11 +4,11 @@ This document outlines planned features, integrations, and research directions f
 
 ---
 
-## 🔮 High-Priority: Katzilla.dev Integration
+## ✅ Complete: Katzilla.dev Integration (Phases 1-6)
 
 **One API. Every US government dataset. Citations baked into every response.**
 
-We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of truth for avatar knowledge grounding. Katzilla provides **287+ tool-use actions across 32 agent-ready categories**, wrapping every major US government dataset behind a single REST API with built-in citation tracking.
+[Katzilla.dev](https://katzilla.dev/) is fully integrated as an optional external evidence source for avatar knowledge grounding. Katzilla provides **287+ tool-use actions across 32 agent-ready categories**, wrapping every major US government dataset behind a single REST API with built-in citation tracking.
 
 ### What Katzilla Provides
 
@@ -25,16 +25,22 @@ We're planning to integrate [Katzilla.dev](https://katzilla.dev/) as a source of
 - **Automatic citation** — Every Katzilla-sourced fact includes full provenance (source URL, retrieval timestamp, license)
 - **Continual learning boost** — Knowledge extraction pipeline gains access to 283K+ datasets without manual curation
 
-### Technical Approach
+### What Was Built (6 Phases)
 
-- Katzilla API integration via new `services/katzilla_service.py` module
-- Hybrid knowledge graph — persona facts (your projects/outcomes) + Katzilla domain facts (government data)
-- Citation-aware retrieval — leverage Katzilla's built-in citation metadata for DoT validation
-- Evidence provenance — every Katzilla-sourced claim includes `data_hash` for byte-level verification
+- **Phase 1** — `services/katzilla_service.py`: HTTP client, envelope validation, error mapping, safe retry
+- **Phase 2** — `services/avatar_intelligence/_katzilla_adapter.py`: envelope → `ExternalEvidenceFact` with full citation provenance
+- **Phase 3** — Retrieval integration: action allowlist (congress-bills, fda-recalls, usgs-earthquakes), compact format, bounded result caps, graceful fallback
+- **Phase 4** — Truth-gate & DoT wiring: external facts flow into `ExplainOutput`, `_gate_helpers.py` credibility tier (0.55), and `external_fact_to_evidence_path()` for DoT scoring
+- **Phase 5** — Console `/katzilla <query>` command for deterministic citation-first output; curation enrichment pipelines external facts through all channel dispatch methods
+- **Phase 6** — `services/katzilla_telemetry.py`: JSONL event store, `can_call_katzilla()` daily call/uncertainty budget guard, env knobs (`KATZILLA_TELEMETRY_ENABLED`, `KATZILLA_MAX_CALLS_PER_DAY`, `KATZILLA_MAX_UNCERTAINTY_PER_DAY`)
+
+### Configuration
+
+All features are **default-off** (`KATZILLA_ENABLED=false`). Set `KATZILLA_ENABLED=true` and `KATZILLA_API_KEY` to activate. See [docs/environment-variables.md](docs/environment-variables.md) for all knobs.
 
 ### Status
 
-**Research & design phase** — evaluating API integration patterns and citation workflow
+**✅ Complete** — 23 files, 16 tests, fully committed and pushed (June 2026)
 
 > **Learn more:** [Katzilla Documentation](https://katzilla.dev/docs) — REST API with 287+ actions, TypeScript/Python SDKs, and Agent2Agent protocol support
 
