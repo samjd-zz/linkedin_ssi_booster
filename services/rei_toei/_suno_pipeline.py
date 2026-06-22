@@ -14,10 +14,11 @@ import logging
 import os
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from services.avatar_intelligence._models import ExtractedEvidenceFact, PersonaGraph
+    from services.ollama_service import OllamaService
 
 from ._models import (
     Theme,
@@ -141,7 +142,8 @@ def generate_song_concept(
     theme: Theme,
     persona: ReiPersonaGraph,
     domain_knowledge: ReiDomainKnowledge,
-    sam_persona: Optional["PersonaGraph"] = None
+    sam_persona: Optional["PersonaGraph"] = None,
+    ollama: Optional["OllamaService"] = None
 ) -> SongConcept:
     """
     Generate a high-level song concept from a technical theme using Ollama LLM
@@ -154,18 +156,18 @@ def generate_song_concept(
         persona: Rei's persona graph (identity, style, expertise)
         domain_knowledge: Rei's music production knowledge
         sam_persona: Optional Sam's persona graph for project knowledge inspiration
+        ollama: Optional pre-initialized OllamaService; creates one if not provided (P2 GPU opt)
         
     Returns:
         SongConcept: High-level song idea with all musical parameters
     """
-    from services.ollama_service import OllamaService
-    
     logger.info(f"Generating song concept for theme: {theme.name} (freq={theme.frequency}, recency={theme.recency_score})")
     
-    # Initialize Ollama service
-    ollama_model = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
-    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    ollama = OllamaService(model=ollama_model, base_url=ollama_base_url)
+    # Initialize Ollama service (reuse if provided, otherwise create)
+    if ollama is None:
+        from services.shared import get_ollama_service_cached
+        ollama = cast("OllamaService", get_ollama_service_cached())
+    assert ollama is not None  # type: ignore[assert-type]
     
     # Build system prompt with Rei's identity and musical expertise
     system_prompt = f"""You are {persona.identity['name']}, {persona.identity['role']}.
@@ -310,7 +312,8 @@ def compose_lyrics(
     concept: SongConcept,
     persona: ReiPersonaGraph,
     domain_knowledge: ReiDomainKnowledge,
-    sam_persona: Optional["PersonaGraph"] = None
+    sam_persona: Optional["PersonaGraph"] = None,
+    ollama: Optional["OllamaService"] = None
 ) -> Lyrics:
     """
     Compose structured song lyrics using Rei's voice and cyberpunk aesthetic.
@@ -322,18 +325,18 @@ def compose_lyrics(
         persona: Rei's persona graph (lyrical style, voice)
         domain_knowledge: Music production knowledge (lyrical structure, metaphors)
         sam_persona: Optional Sam's persona graph for project knowledge inspiration
+        ollama: Optional pre-initialized OllamaService; creates one if not provided (P2 GPU opt)
         
     Returns:
         Lyrics: Structured song sections with evidence tracking
     """
-    from services.ollama_service import OllamaService
-    
     logger.info(f"Composing formatted long-form lyrics for: '{concept.title}'")
     
-    # Initialize Ollama service
-    ollama_model = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
-    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    ollama = OllamaService(model=ollama_model, base_url=ollama_base_url)
+    # Initialize Ollama service (reuse if provided, otherwise create)
+    if ollama is None:
+        from services.shared import get_ollama_service_cached
+        ollama = cast("OllamaService", get_ollama_service_cached())
+    assert ollama is not None  # type: ignore[assert-type]
     
     # Build system prompt with Rei's lyrical voice
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})

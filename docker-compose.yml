@@ -93,6 +93,8 @@ services:
 
   # ── FLUX.1-schnell inference service ──────────────────────────────────────
   # Compiles llama-cpp-python with CUDA. Only starts with --profile full.
+  # P3 Note: GPU reservation is safe because FLUX is only triggered via --avatar-generate (not during --schedule).
+  # Sequential orchestration (OLLAMA_NUM_PARALLEL=1) prevents concurrent GPU contention.
   flux-app:
     build:
       context: .
@@ -153,6 +155,8 @@ services:
             - driver: nvidia
               count: all
               capabilities: [ gpu ]
+    # P3 Note: GPU reservation is safe because OLLAMA_NUM_PARALLEL=1 ensures sequential LLM calls.
+    # No concurrent GPU operations occur even in --profile full (FLUX runs separately via --avatar-generate).
     healthcheck:
       test: [ "CMD", "ollama", "list" ]
       interval: 10s

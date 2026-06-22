@@ -15,7 +15,7 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from services.avatar_intelligence._models import ExtractedEvidenceFact
@@ -24,6 +24,7 @@ if TYPE_CHECKING:
         ReiPersonaGraph, ReiDomainKnowledge, StrudelPattern,
         ValidationResult, ExecutionResult
     )
+    from services.ollama_service import OllamaService
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,8 @@ def generate_strudel_code(
     template: "StrudelPatternTemplate",
     persona: "ReiPersonaGraph",
     domain_knowledge: "ReiDomainKnowledge",
-    bpm: Optional[int] = None
+    bpm: Optional[int] = None,
+    ollama: Optional["OllamaService"] = None
 ) -> "StrudelPattern":
     """
     Generate Tidal Cycles code by filling pattern template parameters with LLM
@@ -115,11 +117,11 @@ def generate_strudel_code(
         persona: Rei's persona graph (production style)
         domain_knowledge: Rei's music production knowledge
         bpm: Optional BPM override (defaults to theme suggestion or config default)
+        ollama: Optional pre-initialized OllamaService; creates one if not provided (P2 GPU opt)
         
     Returns:
         StrudelPattern: Generated pattern with executable Tidal Cycles code
     """
-    from services.ollama_service import OllamaService
     from services.rei_toei._config import ReiToeiConfig
     from services.rei_toei._models import StrudelPattern
     
@@ -128,10 +130,10 @@ def generate_strudel_code(
         f"using template '{template.name}'"
     )
     
-    # Initialize Ollama service
-    ollama_model = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
-    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    ollama = OllamaService(model=ollama_model, base_url=ollama_base_url)
+    # Initialize Ollama service (reuse if provided, otherwise create)
+    if ollama is None:
+        from services.shared import get_ollama_service_cached
+        ollama = cast("OllamaService", get_ollama_service_cached())
     
     # Determine BPM
     config = ReiToeiConfig()

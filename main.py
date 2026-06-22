@@ -894,6 +894,9 @@ def main():
 
         async def _handle_rei_generate() -> None:
             """Suno song generation pipeline."""
+            import asyncio
+            from services.shared import get_ollama_service_cached
+            
             rei_persona = load_rei_persona()
             rei_domain = load_rei_domain_knowledge()
             avatar_state = _lav_rei()
@@ -928,12 +931,15 @@ def main():
                 print(str(Fore.CYAN) + f"\U0001f3b5 Selected theme: {theme.name} (frequency={theme.frequency}, recency={theme.recency_score:.2f})" + str(Style.RESET_ALL))
 
             print(str(Fore.CYAN) + "\U0001f3bc Generating song concept..." + str(Style.RESET_ALL))
-            # generate_song_concept creates its own OllamaService internally
-            concept = generate_song_concept(theme, rei_persona, rei_domain)
+            # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
+            import asyncio
+            from services.shared import get_ollama_service_cached
+            ollama_service = get_ollama_service_cached()
+            concept = await asyncio.to_thread(generate_song_concept, theme, rei_persona, rei_domain, None, ollama_service)
 
             print(str(Fore.CYAN) + "\u270d\ufe0f  Composing lyrics..." + str(Style.RESET_ALL))
-            # compose_lyrics creates its own OllamaService internally
-            lyrics = compose_lyrics(concept, rei_persona, rei_domain)
+            # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
+            lyrics = await asyncio.to_thread(compose_lyrics, concept, rei_persona, rei_domain, None, ollama_service)
 
             suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
 
@@ -1013,6 +1019,9 @@ def main():
 
         async def _handle_rei_generate_strudel() -> None:
             """Strudel pattern generation pipeline."""
+            import asyncio
+            from services.shared import get_ollama_service_cached
+            
             rei_persona = load_rei_persona()
             rei_domain = load_rei_domain_knowledge()
             pattern_library = load_strudel_patterns()
@@ -1061,8 +1070,11 @@ def main():
                 + f"\U0001f3bc Generating Strudel pattern (template: {template.name})..."
                 + str(Style.RESET_ALL)
             )
-            # generate_strudel_code is synchronous and returns a StrudelPattern object
-            strudel_pattern = generate_strudel_code(theme, template, rei_persona, rei_domain)
+            # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
+            import asyncio
+            from services.shared import get_ollama_service_cached
+            ollama_service = get_ollama_service_cached()
+            strudel_pattern = await asyncio.to_thread(generate_strudel_code, theme, template, rei_persona, rei_domain, None, ollama_service)
             strudel_code = strudel_pattern.strudel_code
             validation = validate_strudel_syntax(strudel_code)
 

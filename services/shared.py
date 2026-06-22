@@ -319,3 +319,31 @@ def print_validation_reports(
         except Exception as e:
             print("\r" + " " * 45 + "\r", end="", flush=True)
             logger.debug("DoT report failed: %s", e)
+
+
+# ---------------------------------------------------------------------------
+# GPU Optimization: Cached OllamaService for Rei Toei pipelines (P2 fix)
+# ---------------------------------------------------------------------------
+# Singleton pattern to prevent multiple OllamaService instantiations.
+# Reduces connection churn and improves latency in Rei Toei music generation.
+
+_OLLAMA_SERVICE_CACHE: Optional[object] = None  # type: ignore
+
+def get_ollama_service_cached():
+    """Get or create a cached OllamaService instance (singleton pattern).
+    
+    This function prevents multiple unnecessary OllamaService instantiations
+    across sequential Ollama calls (e.g., generate_song_concept → compose_lyrics).
+    
+    Returns:
+        OllamaService: Cached service instance reusing connection
+    """
+    global _OLLAMA_SERVICE_CACHE
+    
+    if _OLLAMA_SERVICE_CACHE is None:
+        from services.ollama_service import OllamaService
+        ollama_model = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+        ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        _OLLAMA_SERVICE_CACHE = OllamaService(model=ollama_model, base_url=ollama_base_url)
+    
+    return _OLLAMA_SERVICE_CACHE
