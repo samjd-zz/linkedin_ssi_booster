@@ -43,8 +43,7 @@ services:
     volumes:
       - ./agents:/app/agents:ro
     command: [ "python", "agents/strudel_mcp_agent.py" ]
-    restart: on-failure
-    max_retries: 3
+    restart: on-failure:3
 
   # ── Buffer MCP Agent ──────────────────────────────────────────────────────
   #  Python agent that generates Buffer API requests via Ollama and sends to Buffer MCP
@@ -68,8 +67,7 @@ services:
     volumes:
       - ./agents:/app/agents:ro
     command: [ "python", "agents/buffer_mcp_agent.py" ]
-    restart: on-failure
-    max_retries: 3
+    restart: on-failure:3
 
   # ── FLUX.1-schnell model downloader ───────────────────────────────────────
   # One-shot: downloads the GGUF weights from Civitai into ./models/flux/
