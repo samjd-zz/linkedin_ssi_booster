@@ -103,41 +103,53 @@ The local image generation pipeline (FLUX.1-schnell) is being enhanced with Alex
 
 ## � Ollama Buffer MCP Agent — In Progress
 
-**Status:** Code complete, integration pending, no tests yet
+**Status:** Code complete ✅, retry safety fixed ✅, Docker service re-enabled ✅, tests pending
 
-The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is powered by **Gemma 4 + Buffer Model Context Protocol (MCP)**. However, this feature requires verification and testing before being marked as production-ready.
+The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is powered by **Gemma 4 + Buffer Model Context Protocol (MCP)**. **The agent has been hardened against retry loops and GPU hammering** with proper health checks, exponential backoff, and timeouts.
 
-### What Exists
+### What's Fixed (June 2026)
 
-- **Agent Code:** `agents/buffer_mcp_agent.py` with Gemma 4 NLU for translating commands to Buffer MCP requests
-- **Architecture Design:** HTTP client, MCP request generation, async streaming
-- **Documentation:** Full docstrings and design patterns in place
+- ✅ **Health Check with Exponential Backoff:** `check_ollama_health()` prevents immediate connection failures from hammering Ollama
+- ✅ **Timeouts on All Operations:** 5s health check, 30s generation, 15s HTTP send
+- ✅ **Logging Infrastructure:** Replaced all `print()` calls with structured logging for Docker debugging
+- ✅ **Graceful Error Handling:** Proper `sys.exit(0/1)` codes and exception handling on all async operations
+- ✅ **Docker Service Re-enabled:** `buffer-mcp-agent` uncommented in `docker-compose.yml` with `restart: on-failure`
+- ✅ **Environment Variable Support:** `OLLAMA_HOST`, `OLLAMA_MODEL`, `BUFFER_MCP_URL`, `BUFFER_API_KEY`, `BUFFER_PROMPT`
 
 ### What's Pending
 
-- ⏸️ **Docker Service Disabled:** The `buffer-mcp-agent` service is commented out in `docker-compose.yml` (lines 46-58)
 - ❌ **No Test Coverage:** Zero tests in `tests/` — needs unit + integration test suite
 - 🔍 **Verification Required:** Validate that Buffer MCP server endpoint (`https://mcp.buffer.com/mcp`) works as documented
 - 📋 **Consumer Integration:** Wire the agent into `main.py` CLI commands or console mode
 
 ### Next Steps to Complete
 
-1. Uncomment the Docker service or create integration tests first
-2. Add `tests/test_buffer_mcp_agent.py` with auth, generation, and submission flows
-3. Verify Buffer MCP server connection and request/response contract
+1. Add `tests/test_buffer_mcp_agent.py` with auth, generation, and submission flows
+2. Verify Buffer MCP server connection and request/response contract via unit tests
+3. Run `docker compose --profile core up -d && docker logs -f ssi_booster_buffer_mcp_agent` to validate health check flow
 4. Wire into console mode or scheduled posting pipeline if ready
 
 ---
 
-## 🎵 Rei Toei AI Music Avatar — In Progress
+## 🎵 Rei Toei AI Music Avatar — Strudel MCP Ready for Testing
 
-**Status:** Code complete, Strudel MCP agent disabled, integration pending
+**Status:** Code complete ✅, Strudel MCP retry safety fixed ✅, Docker service re-enabled ✅, tests pending
 
-Rei Toei is an AI music avatar system designed to generate personalized music and sonic branding aligned with persona aesthetics. The system uses **Suno vocal generation + Strudel live-coding patterns** for composable music creation.
+Rei Toei is an AI music avatar system designed to generate personalized music and sonic branding aligned with persona aesthetics. The system uses **Suno vocal generation + Strudel live-coding patterns** for composable music creation. **The Strudel MCP agent has been hardened against retry loops and GPU hammering** with proper health checks, exponential backoff, and timeouts.
+
+### What's Fixed (June 2026)
+
+- ✅ **Strudel MCP Health Check:** `check_ollama_health()` prevents immediate Ollama connection failures from hammering GPU
+- ✅ **Exponential Backoff:** Retry failures wait 2s → 4s → 8s → 16s → 30s (max 5 retries) before giving up
+- ✅ **Comprehensive Timeouts:** 5s health check, 30s generation, 10s WebSocket send
+- ✅ **Logging Infrastructure:** Replaced all `print()` calls with structured logging for Docker debugging
+- ✅ **Graceful Error Handling:** Proper `sys.exit(0/1)` codes and exception handling on all async operations
+- ✅ **Docker Service Re-enabled:** `strudel-mcp-agent` and `strudel-music-server` uncommented in `docker-compose.yml` with healthchecks and `restart: on-failure`
+- ✅ **Environment Variable Support:** `OLLAMA_HOST`, `OLLAMA_MODEL`, `STRUDEL_WS_URL`, `STRUDEL_PROMPT`
 
 ### What Exists
 
-- **Strudel MCP Agent:** `agents/strudel_mcp_agent.py` with Gemma 4 for translating music requests to live-coding Strudel patterns
+- **Strudel MCP Agent:** `agents/strudel_mcp_agent.py` with Gemma 4 for translating music requests to live-coding Strudel patterns (now with retry safety)
 - **Suno Integration:** `services/rei_toei_service.py` for voice model selection, prompt engineering, and async generation
 - **Console Commands:** `/rei-compose`, `/rei-suno` for interactive music creation
 - **Architecture Design:** Full async/await patterns, streaming response handling, rate-limit guards
@@ -145,8 +157,6 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 
 ### What's Pending
 
-- ⏸️ **Strudel MCP Agent Disabled:** The `strudel-mcp-agent` service is commented out in `docker-compose.yml` (similar to Buffer MCP)
-- ⏸️ **WebSocket Connection Disabled:** Strudel WebSocket server (`ws://localhost:4321`) integration disabled — requires manual startup or Docker service re-enable
 - ❌ **No Test Coverage:** Zero tests for Strudel agent — needs unit + integration test suite
 - 🔍 **Verification Required:** Validate live-coding music patterns work as designed; test Suno API integration for voice generation
 - 📋 **Console Integration:** Wire fully into console mode and scheduled generation pipeline
@@ -154,14 +164,14 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 ### Current Architecture
 
 - **Suno-first:** Text-to-music voice generation with configurable voice models (Chirp, Bark variants)
-- **Strudel-second:** Live-coding pattern generation for instrumental accompaniment (disabled)
+- **Strudel-second:** Live-coding pattern generation for instrumental accompaniment (now enabled with safety fixes)
 - **Async rendering:** Non-blocking generation with streaming response collection
 - **Rate limiting:** Built-in guard against Suno API overuse
 
 ### Next Steps to Complete
 
-1. Re-enable Strudel WebSocket in Docker or create local dev workflow
-2. Add `tests/test_rei_toei_service.py` and `tests/test_strudel_mcp_agent.py` with generation + streaming test cases
+1. Add `tests/test_rei_toei_service.py` and `tests/test_strudel_mcp_agent.py` with generation + streaming test cases
+2. Run `docker compose --profile core up -d && docker logs -f ssi_booster_strudel_agent` to validate health check and music generation flow
 3. Verify live-coding pattern generation works against live Strudel server
 4. Wire Suno voice selection into console `/rei-suno` command with CLI `--voice` flag
 5. Integrate with scheduled posting pipeline for automated sonic branding
