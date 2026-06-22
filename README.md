@@ -66,7 +66,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 The SSI Booster is actively maintained with periodic development cycles. See **[ROADMAP.md](ROADMAP.md)** for:
 
 - ✅ **Complete:** Katzilla.dev government data integration (6 phases, 23 files, 16 tests)
-- � **Fixed & Re-enabled:** Ollama Buffer MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, tests pending)
+- ✅ **Fixed & Re-enabled:** Ollama Buffer MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, tests pending)
 - 🎨 **In Progress:** Alex Grey Avatar Enhancement (persona-aligned image generation with FLUX.1)
 - 🎵 **Fixed & Re-enabled:** Rei Toei AI Music Avatar — Strudel MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, Suno integration pending)
 - 🏛️ **Research:** RIA Canadian Law Knowledge integration (regulatory grounding for policy-aware content)
