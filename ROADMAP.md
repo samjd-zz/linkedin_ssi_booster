@@ -133,7 +133,7 @@ The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is p
 
 ## 🎵 Rei Toei AI Music Avatar — Strudel MCP Ready for Testing
 
-**Status:** Code complete ✅, Strudel MCP retry safety fixed ✅, Docker service re-enabled ✅, tests pending
+**Status:** Code complete ✅, Strudel MCP retry safety fixed ✅, MCP stdio flow active ✅, tests pending
 
 Rei Toei is an AI music avatar system designed to generate personalized music and sonic branding aligned with persona aesthetics. The system uses **Suno vocal generation + Strudel live-coding patterns** for composable music creation. **The Strudel MCP agent has been hardened against retry loops and GPU hammering** with proper health checks, exponential backoff, and timeouts.
 
@@ -144,7 +144,7 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 - ✅ **Comprehensive Timeouts:** 5s health check, 30s generation, bounded MCP request timeouts
 - ✅ **Logging Infrastructure:** Replaced all `print()` calls with structured logging for Docker debugging
 - ✅ **Graceful Error Handling:** Proper `sys.exit(0/1)` codes and exception handling on all async operations
-- ✅ **Docker Service Hardening:** `strudel-mcp-agent` runs as the single Strudel entrypoint; legacy websocket bridge service removed
+- ✅ **MCP Stdio Hardening:** `strudel-mcp-agent` runs as the single Strudel entrypoint via `STRUDEL_MCP_COMMAND`; legacy websocket bridge service removed
 - ✅ **Environment Variable Support:** `OLLAMA_HOST`, `OLLAMA_MODEL`, `STRUDEL_MCP_COMMAND`, `STRUDEL_PROMPT`
 
 ### What Exists
@@ -172,7 +172,7 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 
 1. Add `tests/test_rei_toei_service.py` and `tests/test_strudel_mcp_agent.py` with generation + streaming test cases
 2. Run `docker compose --profile core up -d && docker logs -f ssi_booster_strudel_agent` to validate health check and music generation flow
-3. Verify live-coding pattern generation works against live Strudel server
+3. Verify live-coding pattern generation works against Strudel MCP stdio command flow
 4. Wire Suno voice selection into console `/rei-suno` command with CLI `--voice` flag
 5. Integrate with scheduled posting pipeline for automated sonic branding
 
