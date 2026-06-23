@@ -43,11 +43,12 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Failed | Status              |
 | ----------- | ------- | ------ | ------------------- |
-| **679**     | **679** | **0**  | ✨ **100% Passing** |
+| **696**     | **688** | **8**  | ⚠️ **See Notes**    |
 
-- **Latest Run Date:** June 21, 2026
-- **Latest Run Scope:** Full pytest suite (`pytest tests/`)
+- **Latest Run Date:** June 23, 2026
+- **Latest Run Scope:** Full suite via VS Code test runner (`tests/`)
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
+- **Notes:** The 8 failures are in existing environment/integration-dependent tests (for example external Buffer authorization and current Rei Toei test expectations), not in the new MCP unit tests.
 
 ### Test Suite Breakdown
 
@@ -61,6 +62,8 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - **16** Katzilla integration tests (Phases 1-6)
 - _6 Service client | 2 Envelope adapter | 4 Retrieval integration/fallback_
 - _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
+- **17** MCP agent unit tests (new)
+- _9 Buffer MCP agent tests + 8 Strudel MCP agent tests_
 
 ---
 
@@ -157,3 +160,5 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_persona_graph_retrieval.py` | Assesses live profile data loading passes, keyword spot-check maps, and fallback routines.                                                                                 |
 | `tests/test_selection_learning.py`      | Audits candidate data logging loops, buffer assignment routines, published state reconciliation tasks, and ranking adjustments.                                            |
 | `tests/test_model2vec_service.py`       | Evaluates lazy model loads, graceful degradation on missing runtimes, metadata analytics, and item prioritization scoring within selection learning.                       |
+| `tests/test_buffer_mcp_agent.py`        | Verifies Buffer MCP agent health checks, Ollama request generation/parsing, MCP initialize handshake, tool-call payload wrapping, and JSON-RPC passthrough behavior.      |
+| `tests/test_strudel_mcp_agent.py`       | Verifies Strudel MCP agent JSON-RPC stdio flow, health-check tool discovery, tool-envelope parsing, and success/error handling for init/edit/playback tool calls.         |

@@ -8,7 +8,7 @@
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
-[![Version alpha-v0.0.3.2](https://img.shields.io/badge/version-alpha--v0.0.3.2-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![CUDA 13.0.1](https://img.shields.io/badge/CUDA-13.0.1-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![Katzilla.dev](https://img.shields.io/badge/Katzilla.dev-USGov%20Data-0057B8.svg)](https://katzilla.dev/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Tests 679 passed](https://img.shields.io/badge/tests-679%20passed-brightgreen.svg)]()
+[![Version alpha-v0.0.3.2](https://img.shields.io/badge/version-alpha--v0.0.3.2-orange.svg)]()[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-FF6B6B.svg)](https://github.com/black-forest-labs/flux)[![CUDA 13.0.1](https://img.shields.io/badge/CUDA-13.0.1-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg)](https://buffer.com/)[![Strudel MCP](https://img.shields.io/badge/Strudel-MCP-111111.svg)](https://github.com/williamzujkowski/live-coding-music-mcp)[![Katzilla.dev](https://img.shields.io/badge/Katzilla.dev-USGov%20Data-0057B8.svg)](https://katzilla.dev/)[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Tests 696 total](https://img.shields.io/badge/tests-696%20total-blue.svg)]()
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
@@ -66,9 +66,9 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 The SSI Booster is actively maintained with periodic development cycles. See **[ROADMAP.md](ROADMAP.md)** for:
 
 - ✅ **Complete:** Katzilla.dev government data integration (6 phases, 23 files, 16 tests)
-- ✅ **Fixed & Re-enabled:** Ollama Buffer MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, tests pending)
+- ✅ **Fixed & Re-enabled:** Ollama Buffer MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, unit tests added ✅)
 - 🎨 **In Progress:** Alex Grey Avatar Enhancement (persona-aligned image generation with FLUX.1)
-- 🎵 **Fixed & Re-enabled:** Rei Toei AI Music Avatar — Strudel MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, Suno integration pending)
+- 🎵 **Fixed & Re-enabled:** Rei Toei AI Music Avatar — Strudel MCP Agent (retry safety ✅, health checks ✅, MCP stdio flow active ✅, unit tests added ✅, Suno integration pending)
 - 🏛️ **Research:** RIA Canadian Law Knowledge integration (regulatory grounding for policy-aware content)
 
 **Have ideas?** [Open a GitHub issue](https://github.com/samjd-zz/linkedin_ssi_booster/issues) with the `enhancement` label.
@@ -193,7 +193,7 @@ The SSI Booster integrates with **Buffer for seamless social scheduling**. All p
 
 **Support the project:** Use our [Buffer partner link](https://join.buffer.com/samjd42) to help fund development while getting started with Buffer scheduling!
 
-**In Development:** See [ROADMAP.md](ROADMAP.md) for details on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service disabled, tests pending).
+**In Development:** See [ROADMAP.md](ROADMAP.md) for details on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service active, unit tests added; live endpoint validation and consumer wiring pending).
 
 ---
 
@@ -465,7 +465,7 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (679/679 tests passing)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (696 collected; latest full run: 688 passed, 8 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

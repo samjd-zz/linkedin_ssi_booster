@@ -103,7 +103,7 @@ The local image generation pipeline (FLUX.1-schnell) is being enhanced with Alex
 
 ## � Ollama Buffer MCP Agent — In Progress
 
-**Status:** Code complete ✅, retry safety fixed ✅, Docker service re-enabled ✅, tests pending
+**Status:** Code complete ✅, retry safety fixed ✅, Docker service re-enabled ✅, unit tests added ✅
 
 The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is powered by **Gemma 4 + Buffer Model Context Protocol (MCP)**. **The agent has been hardened against retry loops and GPU hammering** with proper health checks, exponential backoff, and timeouts.
 
@@ -118,22 +118,20 @@ The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is p
 
 ### What's Pending
 
-- ❌ **No Test Coverage:** Zero tests in `tests/` — needs unit + integration test suite
 - 🔍 **Verification Required:** Validate that Buffer MCP server endpoint (`https://mcp.buffer.com/mcp`) works as documented
 - 📋 **Consumer Integration:** Wire the agent into `main.py` CLI commands or console mode
 
 ### Next Steps to Complete
 
-1. Add `tests/test_buffer_mcp_agent.py` with auth, generation, and submission flows
-2. Verify Buffer MCP server connection and request/response contract via unit tests
-3. Run `docker compose --profile core up -d && docker logs -f ssi_booster_buffer_mcp_agent` to validate health check flow
-4. Wire into console mode or scheduled posting pipeline if ready
+1. Run live endpoint verification against Buffer MCP (`https://mcp.buffer.com/mcp`) in Docker and local flows
+2. Run `docker compose --profile core up -d && docker logs -f ssi_booster_buffer_mcp_agent` to validate health check flow
+3. Wire into console mode or scheduled posting pipeline if ready
 
 ---
 
 ## 🎵 Rei Toei AI Music Avatar — Strudel MCP Ready for Testing
 
-**Status:** Code complete ✅, Strudel MCP retry safety fixed ✅, MCP stdio flow active ✅, tests pending
+**Status:** Code complete ✅, Strudel MCP retry safety fixed ✅, MCP stdio flow active ✅, unit tests added ✅
 
 Rei Toei is an AI music avatar system designed to generate personalized music and sonic branding aligned with persona aesthetics. The system uses **Suno vocal generation + Strudel live-coding patterns** for composable music creation. **The Strudel MCP agent has been hardened against retry loops and GPU hammering** with proper health checks, exponential backoff, and timeouts.
 
@@ -157,7 +155,6 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 
 ### What's Pending
 
-- ❌ **No Test Coverage:** Zero tests for Strudel agent — needs unit + integration test suite
 - 🔍 **Verification Required:** Validate live-coding music patterns work as designed; test Suno API integration for voice generation
 - 📋 **Console Integration:** Wire fully into console mode and scheduled generation pipeline
 
@@ -170,11 +167,10 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 
 ### Next Steps to Complete
 
-1. Add `tests/test_rei_toei_service.py` and `tests/test_strudel_mcp_agent.py` with generation + streaming test cases
-2. Run `docker compose --profile core up -d && docker logs -f ssi_booster_strudel_agent` to validate health check and music generation flow
-3. Verify live-coding pattern generation works against Strudel MCP stdio command flow
-4. Wire Suno voice selection into console `/rei-suno` command with CLI `--voice` flag
-5. Integrate with scheduled posting pipeline for automated sonic branding
+1. Run `docker compose --profile core up -d && docker logs -f ssi_booster_strudel_agent` to validate health check and music generation flow
+2. Verify live-coding pattern generation works against Strudel MCP stdio command flow
+3. Wire Suno voice selection into console `/rei-suno` command with CLI `--voice` flag
+4. Integrate with scheduled posting pipeline for automated sonic branding
 
 ---
 
