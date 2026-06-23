@@ -8,7 +8,24 @@
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
-[![Version alpha-v0.0.3.2](https://img.shields.io/badge/version-alpha--v0.0.3.2-F97316.svg)]()[![CUDA 13.0.1](https://img.shields.io/badge/CUDA-13.0.1-76B900.svg?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)[![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white)](https://spacy.io/)[![FLUX.1](https://img.shields.io/badge/FLUX.1-Image%20Gen-E85D75.svg)](https://github.com/black-forest-labs/flux)[![Strudel MCP](https://img.shields.io/badge/Strudel-MCP-7C3AED.svg)](https://github.com/williamzujkowski/live-coding-music-mcp)[![Buffer API](https://img.shields.io/badge/Buffer-API-231F20.svg?logo=buffer&logoColor=white)](https://buffer.com/)[![Katzilla.dev](https://img.shields.io/badge/Katzilla.dev-USGov%20Data-0057B8.svg)](https://katzilla.dev/)[![License MIT](https://img.shields.io/badge/License-MIT-2563EB.svg)](LICENSE)[![Tests 696 total](https://img.shields.io/badge/tests-696%20total-16A34A.svg)]()
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/version-alpha--v0.0.3.2-F97316.svg" alt="Version alpha-v0.0.3.2"></a>
+  <a href="https://developer.nvidia.com/cuda-toolkit"><img src="https://img.shields.io/badge/CUDA-13.0.1-76B900.svg?logo=nvidia" alt="CUDA 13.0.1"></a>
+  <a href="https://spacy.io/"><img src="https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white" alt="spaCy"></a>
+  <a href="https://github.com/black-forest-labs/flux"><img src="https://img.shields.io/badge/FLUX.1-Image%20Gen-E85D75.svg" alt="FLUX.1"></a>
+</p>
+
+<p align="center">
+  <a href="https://buffer.com/"><img src="https://img.shields.io/badge/Buffer-API-231F20.svg?logo=buffer&logoColor=white" alt="Buffer API"></a>
+  <a href="https://buffer.com/"><img src="https://img.shields.io/badge/Buffer-MCP-231F20.svg?logo=buffer&logoColor=white" alt="Buffer MCP"></a>
+  <a href="https://github.com/williamzujkowski/live-coding-music-mcp"><img src="https://img.shields.io/badge/Strudel-MCP-7C3AED.svg" alt="Strudel MCP"></a>
+  <a href="https://katzilla.dev/"><img src="https://img.shields.io/badge/Katzilla.dev-USGov%20Data-0057B8.svg" alt="Katzilla.dev"></a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-696%20total-16A34A.svg" alt="Tests 696 total"></a>
+</p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
