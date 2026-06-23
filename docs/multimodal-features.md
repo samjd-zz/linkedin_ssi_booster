@@ -136,13 +136,13 @@ Generated images are saved to:
 
 > **Inspiration:** [Switch Angel](https://www.youtube.com/@Switch-Angel) | [Github: strudel-scripts](https://github.com/switchangel/strudel-scripts) | [Do I have your Attention???](https://youtube.com/shorts/sjsS60OTXSQ?si=s4lk7A1hsDyc5cTM)
 
-Strudel is a live-coding music language for generating algorithmic patterns. The SSI Booster includes an autonomous agent that uses Gemma 4 to generate Strudel.js code and sends it to a WebSocket bridge for real-time audio playback.
+Strudel is a live-coding music language for generating algorithmic patterns. The SSI Booster includes an autonomous agent that uses Gemma 4 to generate Strudel.js code and sends it to a local MCP server over stdio JSON-RPC for real-time audio playback.
 
 **Key Features:**
 
 - **Autonomous agent service** — Runs as standalone Docker service
 - **Live-coding generation** — Gemma 4 generates clean, executable Strudel.js code
-- **WebSocket bridge** — Real-time evaluation and audio playback
+- **MCP stdio execution** — JSON-RPC tool calls for real-time evaluation and audio playback
 - **Container-native** — All components in Docker with auto-dependency management
 - **Future enhancement** — Persona-aligned music tied to LinkedIn post themes/sentiment
 
@@ -152,7 +152,7 @@ Strudel is a live-coding music language for generating algorithmic patterns. The
 graph LR
     A[Strudel Agent] -->|Generate Code| B[Gemma 4 LLM]
     B -->|Strudel.js Pattern| C[Strudel MCP Server]
-    C -->|WebSocket| D[Audio Output]
+    C -->|MCP tools/call| D[Audio Output]
     A -.->|Reads Config| E[.env]
 ```
 
@@ -168,11 +168,8 @@ Strudel agent is enabled by default in `core` and `full` profiles. No additional
 # Ollama server URL (auto-set in Docker)
 OLLAMA_HOST=http://ollama:11434
 
-# Strudel MCP WebSocket URL
-STRUDEL_WS_URL=ws://strudel-music-server:4321
-
-# Strudel MCP HTTP URL
-STRUDEL_MCP_URL=http://strudel-music-server:3000
+# Strudel MCP command (stdio transport)
+STRUDEL_MCP_COMMAND=npx -y @williamzujkowski/live-coding-music-mcp
 ```
 
 #### 2. Launch Stack
@@ -208,7 +205,7 @@ docker compose restart strudel-mcp-agent
 
 1. **Agent** prompts Gemma 4 with system prompt optimized for Strudel.js syntax
 2. **Gemma 4** generates clean Strudel code (no markdown, no extra text)
-3. **Agent** sends code to Strudel MCP server via WebSocket
+3. **Agent** sends code to Strudel MCP server via MCP tools/call over stdio
 4. **Strudel MCP** evaluates pattern and outputs audio in real-time
 
 ### Example Strudel Pattern
@@ -220,15 +217,16 @@ note("c3 eb3 g3").s("sawtooth").room(0.5).delay(0.3);
 
 ### Troubleshooting
 
-**Problem:** Strudel MCP server not starting
+**Problem:** Strudel MCP health check fails
 
 **Solution:** Check logs:
 
 ```bash
-docker compose logs strudel-music-server
+docker compose logs strudel-mcp-agent
+docker compose --profile core run --rm strudel-mcp-agent python agents/strudel_mcp_agent.py --health-check
 ```
 
-Verify Node.js environment and Strudel repo clone completed successfully.
+Verify `STRUDEL_MCP_COMMAND` is valid and the MCP server can return required tools (`init`, `edit_pattern`, `playback`).
 
 **Problem:** Agent generating invalid code
 
@@ -236,10 +234,10 @@ Verify Node.js environment and Strudel repo clone completed successfully.
 
 **Problem:** No audio output
 
-**Solution:** Verify Strudel MCP WebSocket connection:
+**Solution:** Run health check mode and confirm MCP tool calls pass before running generation:
 
 ```bash
-docker compose logs strudel-mcp-agent | grep "Connected"
+docker compose --profile core run --rm strudel-mcp-agent python agents/strudel_mcp_agent.py --health-check
 ```
 
 ---

@@ -141,11 +141,11 @@ Rei Toei is an AI music avatar system designed to generate personalized music an
 
 - ✅ **Strudel MCP Health Check:** `check_ollama_health()` prevents immediate Ollama connection failures from hammering GPU
 - ✅ **Exponential Backoff:** Retry failures wait 2s → 4s → 8s → 16s → 30s (max 5 retries) before giving up
-- ✅ **Comprehensive Timeouts:** 5s health check, 30s generation, 10s WebSocket send
+- ✅ **Comprehensive Timeouts:** 5s health check, 30s generation, bounded MCP request timeouts
 - ✅ **Logging Infrastructure:** Replaced all `print()` calls with structured logging for Docker debugging
 - ✅ **Graceful Error Handling:** Proper `sys.exit(0/1)` codes and exception handling on all async operations
-- ✅ **Docker Service Re-enabled:** `strudel-mcp-agent` and `strudel-music-server` uncommented in `docker-compose.yml` with healthchecks and `restart: on-failure`
-- ✅ **Environment Variable Support:** `OLLAMA_HOST`, `OLLAMA_MODEL`, `STRUDEL_WS_URL`, `STRUDEL_PROMPT`
+- ✅ **Docker Service Hardening:** `strudel-mcp-agent` runs as the single Strudel entrypoint; legacy websocket bridge service removed
+- ✅ **Environment Variable Support:** `OLLAMA_HOST`, `OLLAMA_MODEL`, `STRUDEL_MCP_COMMAND`, `STRUDEL_PROMPT`
 
 ### What Exists
 

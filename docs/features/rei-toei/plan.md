@@ -529,7 +529,7 @@ class StrudelPatternTemplate:
        """
        Execute pattern via Strudel MCP agent
        - Import agents.strudel_mcp_agent
-       - Send code via WebSocket to port 4321
+         - Send code via MCP JSON-RPC tool calls (stdio transport)
        - Handle execution errors gracefully
        - Return success/failure status
        """
@@ -550,15 +550,15 @@ class StrudelPatternTemplate:
 - ✅ Concept-to-pattern mapping logic
 - ✅ Strudel code generation via Ollama (markdown stripping, template filling)
 - ✅ Syntax validation (balanced parens, quotes, forbidden eval(), Tidal function checks)
-- ✅ MCP agent integration for execution (WebSocket communication on port 4321)
+- ✅ MCP agent integration for execution (JSON-RPC tool calls via stdio)
 - ✅ Pattern library management (save/load from JSONL with reverse chronological order)
-- ✅ Unit tests (20 tests including WebSocket mocks via AsyncMock)
+- ✅ Unit tests (20 tests including MCP transport mocking)
 
 **Success Criteria:**
 
 - ✅ Generate valid Tidal Cycles code from themes
 - ✅ Syntax validation detects common errors (unbalanced parens, quotes, eval())
-- ✅ Successful execution via MCP agent (WebSocket protocol)
+- ✅ Successful execution via MCP agent (MCP JSON-RPC)
 - ✅ Patterns musically coherent and technically relevant
 
 **Implementation Notes (2026-05-20):**
@@ -567,10 +567,10 @@ class StrudelPatternTemplate:
 - `map_concept_to_pattern()`: Exact and substring matching for technical concepts
 - `generate_strudel_code()`: Ollama LLM generation with template filling, markdown stripping (```javascript removal)
 - `validate_strudel_syntax()`: Checks balanced parens, quotes, forbidden eval(), Tidal function presence
-- `execute_strudel_pattern()`: WebSocket client to Strudel MCP agent (ws://localhost:4321)
+- `execute_strudel_pattern()`: MCP client flow to Strudel agent/tooling
 - `save_pattern_to_library()` / `load_pattern_from_library()`: JSONL persistence with reverse chronological order
 - StrudelPattern dataclass with full metadata (pattern_id, title, theme, code, synths, evidence_ids, execution status)
-- 20 unit tests passing with WebSocket mocking via AsyncMock
+- 20 unit tests passing with MCP transport mocking
 - Fixed async mock setup: MagicMock for session.post/get methods, AsyncMock for **aenter**/**aexit**
 - Test count updated: 637 tests passing (565 original + 72 Rei Toei tests)
 
@@ -772,7 +772,7 @@ class StrudelPatternTemplate:
 - `--rei-theme`: creates synthetic Theme from CLI string, bypasses knowledge extraction
 - `--rei-preview`: displays output without saving or executing
 - `--rei-explain`: shows DoT score, genre tags, BPM, narrative arc, template reasoning
-- `--rei-execute`: sends StrudelPattern to MCP agent via WebSocket
+- `--rei-execute`: sends StrudelPattern to MCP agent via MCP JSON-RPC flow
 - Key fixes: `validate_lyrics_with_dot` (not `validate_lyrical_claims`), `generate_strudel_code` is synchronous (returns `StrudelPattern`), `extract_themes` wraps list in `SimpleNamespace(facts=...)`, `map_concept_to_pattern` None guard with fallback to first template
 - 8 integration tests in `tests/test_rei_cli_flags.py` using `ExitStack` for multi-patch mocking
 - Test count updated: 654 tests passing (646 + 8 new CLI flag tests)
@@ -923,7 +923,7 @@ No new packages required - all existing dependencies sufficient:
 **Required:**
 
 - `ollama` (port 11434) - LLM generation
-- `strudel-music-server` (port 4321 WebSocket, port 3000 HTTP) - Pattern execution
+- `strudel-mcp-agent` / `STRUDEL_MCP_COMMAND` runtime - Pattern execution
 
 **Optional:**
 
@@ -1013,7 +1013,7 @@ def mock_extracted_knowledge():
 @pytest.fixture
 def mock_strudel_mcp_agent(monkeypatch):
     """Mock Strudel MCP agent for testing"""
-    # Mock WebSocket connection and execution
+   # Mock MCP initialize/tools/list/tools/call flow
     # ...
 ```
 

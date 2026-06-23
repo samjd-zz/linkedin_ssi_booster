@@ -723,7 +723,7 @@ python main.py --rei-generate-strudel --rei-execute
 python main.py --rei-generate-strudel --rei-theme "neural networks" --rei-execute
 ```
 
-**Note:** Requires Strudel MCP agent running on port 4321 (Docker service: `strudel-music-server`)
+**Note:** Requires the Strudel MCP agent to be runnable with `STRUDEL_MCP_COMMAND` (default: `npx -y @williamzujkowski/live-coding-music-mcp`).
 
 ### Console Mode Alternative
 

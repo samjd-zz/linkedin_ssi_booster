@@ -1,26 +1,4 @@
 services:
-  # ── Strudel MCP server ───────────────────────────────────────────────────
-  #  Provides a WebSocket interface for running Strudel/Tidal Cycles patterns.
-  strudel-music-server:
-    image: mcr.microsoft.com/playwright:v1.40.0-focal
-    container_name: ssi_booster_strudel_mcp
-    profiles: [ "core", "full" ]
-    working_dir: /app
-    command: >
-      sh -c "git clone https://github.com/williamzujkowski/strudel-mcp-server.git . && 
-             npm install && 
-             npm run build && 
-             node dist/index.js"
-    ports:
-      - "3000:3000"
-      - "4321:4321"
-    restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
 
   strudel-mcp-agent:
     build:
@@ -32,13 +10,11 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
-      strudel-music-server:
-        condition: service_started
     env_file: .env
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=gemma4:e4b
-      - STRUDEL_WS_URL=ws://strudel-music-server:4321
+      - STRUDEL_MCP_COMMAND=npx -y @williamzujkowski/live-coding-music-mcp
       - STRUDEL_PROMPT=algorithmic music generation for AI content
     volumes:
       - ./agents:/app/agents:ro
@@ -230,8 +206,6 @@ services:
         condition: service_healthy
       piper:
         condition: service_started
-      # strudel-music-server:
-      #   condition: service_started
       flux-app:
         condition: service_started
         required: false # only present under --profile full; ignored under --profile core
@@ -242,7 +216,6 @@ services:
       - WYOMING_PIPER_HOST=piper
       - WYOMING_PIPER_PORT=10200
       - FLUX_SERVICE_URL=http://flux-app:5000
-      # - STRUDEL_MCP_URL=http://strudel-music-server:3000
       - DATABASE_URL=postgresql://${POSTGRES_USER:-ssi_booster}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ssi_booster}
     volumes:
       - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native

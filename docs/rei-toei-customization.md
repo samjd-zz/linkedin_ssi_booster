@@ -395,9 +395,8 @@ REI_TOEI_DOT_MIN_TRUTH_GRADIENT=0.60
 SUNO_API_KEY=your_key_here
 SUNO_API_BASE_URL=https://api.suno.ai/v1
 
-# Strudel MCP connection
-STRUDEL_WS_URL=ws://strudel-music-server:4321
-STRUDEL_MCP_URL=http://strudel-music-server:3000
+# Strudel MCP command (stdio)
+STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
 ```
 
 ### Example: Strict Truth Validation

@@ -535,36 +535,15 @@ Ollama server URL for Strudel agent. Automatically overridden to `http://ollama:
 OLLAMA_HOST=http://ollama:11434
 ```
 
-### `STRUDEL_WS_URL`
+### `STRUDEL_MCP_COMMAND`
 
-WebSocket URL for Strudel MCP server.
+Command used by the Strudel agent to launch the MCP server over stdio.
 
-**Default (local):** `ws://localhost:4321`
-
-**Docker:** `ws://strudel-music-server:4321`
+**Default:** `npx -y @williamzujkowski/live-coding-music-mcp`
 
 ```bash
-# Docker
-STRUDEL_WS_URL=ws://strudel-music-server:4321
-
-# Local development
-STRUDEL_WS_URL=ws://localhost:4321
-```
-
-### `STRUDEL_MCP_URL`
-
-HTTP URL for Strudel MCP server.
-
-**Default (local):** `http://localhost:3000`
-
-**Docker:** `http://strudel-music-server:3000`
-
-```bash
-# Docker
-STRUDEL_MCP_URL=http://strudel-music-server:3000
-
-# Local development
-STRUDEL_MCP_URL=http://localhost:3000
+# Docker / local (same by default)
+STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
 ```
 
 ---
@@ -734,8 +713,7 @@ IMAGE_OUTPUT_DIR=/app/yt-vid-data
 
 # Strudel Music Generation (Docker)
 OLLAMA_HOST=http://ollama:11434
-STRUDEL_WS_URL=ws://strudel-music-server:4321
-STRUDEL_MCP_URL=http://strudel-music-server:3000
+STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
 
 # Database Integration (optional)
 DATABASE_ENABLED=false
@@ -756,7 +734,7 @@ PERSONA_SYSTEM_PROMPT="You are Sam, a senior software engineer..."
 
 **Problem:** Services can't connect to Ollama or other services in Docker.
 
-**Solution:** Ensure you're using service names from `docker-compose.yml` (e.g., `ollama`, `piper`, `strudel-music-server`) not `localhost`. The system automatically overrides these in Docker.
+**Solution:** Ensure you're using service names from `docker-compose.yml` where applicable (e.g., `ollama`, `piper`) and that `STRUDEL_MCP_COMMAND` is valid in the runtime image.
 
 ### Voice Output Silent
 

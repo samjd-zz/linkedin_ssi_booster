@@ -39,7 +39,6 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 | `ollama`               | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume                                     |
 | `ollama-init`          | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits                               |
 | `piper`                | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                   |
-| `strudel-music-server` | `core`, `full` | Strudel MCP server — provides WebSocket API for live-coding music evaluation on port `3000`                       |
 | `strudel-mcp-agent`    | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server             |
 | `buffer-mcp-agent`     | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server           |
 | `postgres`             | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                  |
@@ -70,8 +69,7 @@ cp .env.example .env
 
 - `OLLAMA_BASE_URL` is automatically overridden to `http://ollama:11434` in `docker-compose.yml` — **do not change it in `.env`**
 - `OLLAMA_HOST` is automatically overridden to `http://ollama:11434` for Strudel agent
-- `STRUDEL_WS_URL` is automatically set to `ws://strudel-music-server:4321`
-- `STRUDEL_MCP_URL` is automatically set to `http://strudel-music-server:3000`
+- `STRUDEL_MCP_COMMAND` is set to `npx -y @williamzujkowski/live-coding-music-mcp`
 - `WYOMING_PIPER_HOST` should be set to `piper` (not `localhost`)
 
 See [Environment Variables Reference](environment-variables.md) for complete documentation.
@@ -129,12 +127,11 @@ docker compose --profile full up -d
 1. **`ollama-init`** pulls `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` from Ollama registry
 2. **`ollama`** starts LLM server on port `11434`
 3. **`piper`** downloads voice model (if not cached) and starts TTS server on port `10200`
-4. **`strudel-music-server`** clones Strudel MCP repo (if not cached) and starts WebSocket server on port `4321`
-5. **`flux-init`** (full profile only) downloads FLUX GGUF weights from Civitai
-6. **`flux-app`** (full profile only) compiles `llama-cpp-python` with GPU support and starts inference service
-7. **`strudel-mcp-agent`** and **`buffer-mcp-agent`** start autonomous agent services
-8. **`postgres`** (if `DATABASE_ENABLED=true`) starts PostgreSQL database on port `5432`
-9. **`app`** starts SSI Booster application
+4. **`flux-init`** (full profile only) downloads FLUX GGUF weights from Civitai
+5. **`flux-app`** (full profile only) compiles `llama-cpp-python` with GPU support and starts inference service
+6. **`strudel-mcp-agent`** and **`buffer-mcp-agent`** start autonomous agent services
+7. **`postgres`** (if `DATABASE_ENABLED=true`) starts PostgreSQL database on port `5432`
+8. **`app`** starts SSI Booster application
 
 > **Note:** `ollama-init` and `flux-init` are one-shot containers that exit after completing their tasks. This is expected behavior.
 

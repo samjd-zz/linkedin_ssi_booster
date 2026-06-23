@@ -262,7 +262,7 @@ python main.py --rei-generate-strudel --rei-explain --rei-preview
 
 ### Strudel MCP Integration
 
-**Current status**: Strudel MCP agent is running in Docker (port 4321 WebSocket)
+**Current status**: Strudel MCP agent runs via MCP stdio command execution (`STRUDEL_MCP_COMMAND`)
 
 **Integration approach:**
 

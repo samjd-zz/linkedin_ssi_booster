@@ -1,7 +1,7 @@
 """
 Strudel MCP Agent - Fixed for Retry Safety
 
-This agent provides Strudel pattern generation via websocket with proper:
+This agent provides Strudel pattern generation via MCP stdio JSON-RPC with proper:
 - Health checks before attempting to connect
 - Exponential backoff on connection failures
 - No GPU hammering on repeated failures
@@ -12,12 +12,15 @@ Version: alpha-v0.0.2.7
 """
 
 import asyncio
+import argparse
 import json
 import os
 import logging
 import sys
-from typing import Optional
-import websockets
+import shlex
+import select
+import subprocess
+from typing import Optional, Dict, Any
 from ollama import AsyncClient
 
 # Configure logging
@@ -29,14 +32,19 @@ logger = logging.getLogger(__name__)
 
 # Environment Variables pointing to your local container endpoints
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-STRUDEL_WS_URL = os.getenv("STRUDEL_WS_URL", "ws://localhost:4321")
 MODEL_NAME = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+STRUDEL_MCP_COMMAND = os.getenv(
+    "STRUDEL_MCP_COMMAND",
+    "npx -y @williamzujkowski/live-coding-music-mcp"
+)
 
 # Retry configuration
 MAX_HEALTH_CHECK_RETRIES = 5
 HEALTH_CHECK_TIMEOUT = 5.0
 INITIAL_BACKOFF = 2.0  # seconds
 MAX_BACKOFF = 30.0  # seconds
+MCP_PROTOCOL_VERSION = "2024-11-05"
+REQUIRED_MCP_TOOLS = {"init", "edit_pattern", "playback"}
 
 
 async def check_ollama_health(retries: int = MAX_HEALTH_CHECK_RETRIES) -> bool:
@@ -141,42 +149,221 @@ async def generate_strudel_code(user_prompt: str) -> Optional[str]:
         return None
 
 
-async def send_to_strudel_bridge(strudel_code: str) -> bool:
-    """
-    Establishes a websocket connection to the Strudel bridge 
-    and sends the generated pattern code instantly.
-    
-    Args:
-        strudel_code: The Strudel/Tidal Cycles pattern code to execute
-        
-    Returns:
-        bool: True if send was successful, False otherwise
-    """
-    logger.info(f"🚀 Sending code to Strudel Bridge ({len(strudel_code)} chars)...")
-    
+def _mcp_send(proc: subprocess.Popen, payload: Dict[str, Any], timeout: float = 20.0) -> Optional[Dict[str, Any]]:
+    """Send one JSON-RPC request line and read one JSON-RPC response line."""
+    if proc.stdin is None or proc.stdout is None:
+        return None
+
+    proc.stdin.write(json.dumps(payload) + "\n")
+    proc.stdin.flush()
+
+    ready, _, _ = select.select([proc.stdout], [], [], timeout)
+    if not ready:
+        return None
+
+    line = proc.stdout.readline()
+    if not line:
+        return None
+
     try:
-        async with websockets.connect(STRUDEL_WS_URL, timeout=10) as websocket:
-            payload = {
-                "type": "eval",
-                "code": strudel_code
-            }
-            await websocket.send(json.dumps(payload))
-            logger.info("✨ Code sent successfully to Strudel Bridge")
-            return True
-            
-    except Exception as e:
-        logger.error(f"❌ Failed to connect to Strudel Bridge at {STRUDEL_WS_URL}: {e}")
+        return json.loads(line.strip())
+    except json.JSONDecodeError:
+        logger.error("❌ MCP server returned non-JSON response: %s", line[:200])
+        return None
+
+
+def _extract_tool_envelope(response: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Extract wrapped envelope JSON from MCP tools/call response content text."""
+    try:
+        content = response.get("result", {}).get("content", [])
+        if not content:
+            return None
+        text = content[0].get("text", "")
+        if not text:
+            return None
+        return json.loads(text)
+    except Exception:
+        return None
+
+
+def run_strudel_mcp_health_check() -> bool:
+    """Run a fast MCP diagnostic: initialize -> tools/list -> required tools check."""
+    logger.info("🏥 Running Strudel MCP health check (initialize + tools/list)...")
+
+    cmd = shlex.split(STRUDEL_MCP_COMMAND)
+    if not cmd:
+        logger.error("❌ STRUDEL_MCP_COMMAND is empty")
         return False
 
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        bufsize=1,
+    )
 
-async def main():
+    try:
+        init_payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": MCP_PROTOCOL_VERSION,
+                "capabilities": {},
+                "clientInfo": {"name": "linkedin-ssi-booster-strudel-health", "version": "0.0.2.7"},
+            },
+        }
+        init_resp = _mcp_send(proc, init_payload, timeout=10.0)
+        if not init_resp or "error" in init_resp:
+            logger.error("❌ MCP initialize failed during health check: %s", init_resp)
+            return False
+
+        list_payload = {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list",
+            "params": {},
+        }
+        list_resp = _mcp_send(proc, list_payload, timeout=10.0)
+        if not list_resp or "error" in list_resp:
+            logger.error("❌ MCP tools/list failed during health check: %s", list_resp)
+            return False
+
+        tools = list_resp.get("result", {}).get("tools", [])
+        tool_names = {tool.get("name", "") for tool in tools if isinstance(tool, dict)}
+        missing = sorted(REQUIRED_MCP_TOOLS - tool_names)
+        if missing:
+            logger.error("❌ MCP health check failed, missing required tools: %s", ", ".join(missing))
+            return False
+
+        logger.info("✅ MCP health check passed (%d tools discovered)", len(tool_names))
+        return True
+    except Exception as e:
+        logger.error("❌ MCP health check failed with exception: %s", e)
+        return False
+    finally:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+
+
+def send_to_strudel_mcp(strudel_code: str) -> bool:
+    """Launch Strudel MCP server via stdio and call tools over JSON-RPC."""
+    logger.info("🚀 Sending code to Strudel MCP via JSON-RPC stdio (%d chars)...", len(strudel_code))
+
+    cmd = shlex.split(STRUDEL_MCP_COMMAND)
+    if not cmd:
+        logger.error("❌ STRUDEL_MCP_COMMAND is empty")
+        return False
+
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        bufsize=1,
+    )
+
+    try:
+        # 1) MCP initialize handshake
+        init_payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "linkedin-ssi-booster-strudel-agent", "version": "0.0.2.7"},
+            },
+        }
+        init_resp = _mcp_send(proc, init_payload)
+        if not init_resp or "error" in init_resp:
+            logger.error("❌ MCP initialize failed: %s", init_resp)
+            return False
+
+        # 2) Initialize browser/session in Strudel toolchain
+        init_tool_payload = {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "init", "arguments": {}},
+        }
+        tool_init_resp = _mcp_send(proc, init_tool_payload, timeout=60.0)
+        if not tool_init_resp or "error" in tool_init_resp:
+            logger.error("❌ tools/call init failed: %s", tool_init_resp)
+            return False
+
+        # 3) Write generated pattern into editor
+        write_payload = {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "edit_pattern",
+                "arguments": {"mode": "write", "pattern": strudel_code},
+            },
+        }
+        write_resp = _mcp_send(proc, write_payload, timeout=60.0)
+        if not write_resp or "error" in write_resp:
+            logger.error("❌ tools/call edit_pattern failed: %s", write_resp)
+            return False
+
+        envelope = _extract_tool_envelope(write_resp)
+        if envelope and envelope.get("isError"):
+            logger.error("❌ edit_pattern returned tool error: %s", envelope)
+            return False
+
+        # 4) Start playback
+        play_payload = {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "playback", "arguments": {"action": "play"}},
+        }
+        play_resp = _mcp_send(proc, play_payload, timeout=60.0)
+        if not play_resp or "error" in play_resp:
+            logger.error("❌ tools/call playback failed: %s", play_resp)
+            return False
+
+        play_envelope = _extract_tool_envelope(play_resp)
+        if play_envelope and play_envelope.get("isError"):
+            logger.error("❌ playback returned tool error: %s", play_envelope)
+            return False
+
+        logger.info("✨ Code sent successfully to Strudel MCP")
+        return True
+    except Exception as e:
+        logger.error("❌ Failed to execute Strudel MCP flow: %s", e)
+        return False
+    finally:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+
+
+async def main(health_check_only: bool = False):
     """
     Main entry point with health checks and proper error handling.
     """
     logger.info("Starting Strudel MCP Agent...")
     logger.info(f"Ollama host: {OLLAMA_HOST}")
-    logger.info(f"Strudel WebSocket: {STRUDEL_WS_URL}")
+    logger.info(f"Strudel MCP command: {STRUDEL_MCP_COMMAND}")
     logger.info(f"Model: {MODEL_NAME}")
+
+    if health_check_only:
+        success = await asyncio.to_thread(run_strudel_mcp_health_check)
+        sys.exit(0 if success else 1)
     
     # Step 1: Check if Ollama is ready (with backoff)
     if not await check_ollama_health():
@@ -193,15 +380,23 @@ async def main():
     
     logger.info(f"\n[Generated Code]:\n{strudel_code}\n")
     
-    # Step 3: Push code directly to your local Strudel audio instance
-    success = await send_to_strudel_bridge(strudel_code)
+    # Step 3: Push code to Strudel MCP (JSON-RPC over stdio)
+    success = await asyncio.to_thread(send_to_strudel_mcp, strudel_code)
     
     sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Strudel MCP agent")
+    parser.add_argument(
+        "--health-check",
+        action="store_true",
+        help="Run MCP initialize + tools/list diagnostics and exit"
+    )
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(health_check_only=args.health_check))
     except KeyboardInterrupt:
         logger.info("Agent interrupted by user")
         sys.exit(0)

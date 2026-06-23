@@ -174,20 +174,49 @@ async def send_to_buffer_mcp(request: Dict) -> Optional[Dict]:
     
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(
-                BUFFER_MCP_URL,
-                headers=headers,
-                json=request
-            )
-        
+            # MCP requires JSON-RPC initialize handshake before tool calls.
+            init_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "linkedin-ssi-booster-buffer-agent", "version": "0.0.2.7"}
+                },
+            }
+            init_response = await client.post(BUFFER_MCP_URL, headers=headers, json=init_payload)
+            if init_response.status_code != 200:
+                logger.error(f"❌ MCP initialize failed with status {init_response.status_code}")
+                logger.debug(f"Initialize response: {init_response.text}")
+                return None
+
+            # Backward compatibility: if request already looks like JSON-RPC, send as-is.
+            if request.get("jsonrpc") == "2.0":
+                payload = request
+            else:
+                tool_name = request.get("method", "list_channels")
+                tool_args = request.get("params", {})
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {
+                        "name": tool_name,
+                        "arguments": tool_args,
+                    },
+                }
+
+            response = await client.post(BUFFER_MCP_URL, headers=headers, json=payload)
+
         if response.status_code == 200:
             result = response.json()
             logger.info("✨ Request successful!")
             return result
-        else:
-            logger.error(f"❌ Request failed with status {response.status_code}")
-            logger.debug(f"Response: {response.text}")
-            return None
+
+        logger.error(f"❌ Request failed with status {response.status_code}")
+        logger.debug(f"Response: {response.text}")
+        return None
             
     except httpx.TimeoutException:
         logger.error(f"❌ Buffer MCP request timed out (15s) at {BUFFER_MCP_URL}")

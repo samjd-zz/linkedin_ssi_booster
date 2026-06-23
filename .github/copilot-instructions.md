@@ -14,7 +14,7 @@ Python automation tool that generates and schedules LinkedIn posts via the Buffe
 - **Logic/Inference**: PLN (Probabilistic Logic Networks) — `services/pln_inference.py`
 - **Voice/TTS**: Wyoming Piper — local neural TTS on port 10200 (Docker service)
 - **Image Gen**: FLUX.1-schnell (GGUF quantized) — local GPU image generation (full profile only)
-- **Music Gen**: Strudel MCP server — live-coding music via WebSocket (port 4321)
+- **Music Gen**: Strudel MCP server — live-coding music via stdio JSON-RPC (`STRUDEL_MCP_COMMAND`)
 - **Social Scheduling**: Buffer GraphQL API — all calls go through `services/buffer_service.py`
 - **RSS Parsing**: `feedparser` + `trafilatura` — used in `services/content_curator/_rss_fetcher.py`
 - **Graph / Retrieval**: NetworkX (`services/knowledge_graph.py`), BM25 + hybrid retrieval (`services/hybrid_retriever.py`)
@@ -153,7 +153,7 @@ linkedin_ssi_booster/
 - Optional (database): `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_ENABLED`
 - Optional (image gen): `CIVITAI_API_KEY`, `FLUX_MODEL_PATH`
 - Optional (voice): `CONSOLE_USE_VOICE`, `WYOMING_PIPER_HOST`, `WYOMING_PIPER_PORT`
-- Optional (music): `STRUDEL_WS_URL`, `STRUDEL_MCP_URL`
+- Optional (music): `STRUDEL_MCP_COMMAND`
 - Optional (classification): `MODEL2VEC_ENABLED`, `CURATE_CLASSIFY`
 - Never suggest hardcoding keys or committing `.env`
 
