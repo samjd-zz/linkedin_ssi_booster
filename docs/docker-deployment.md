@@ -42,8 +42,8 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 | `strudel-mcp-agent`    | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server             |
 | `buffer-mcp-agent`     | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server           |
 | `postgres`             | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                  |
-| `flux-init`            | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux-app` depends on it           |
-| `flux-app`             | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
+| `flux-init`            | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it           |
+| `flux_capacitor`       | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
 | `app`                  | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage)                                      |
 
 ---
@@ -128,7 +128,7 @@ docker compose --profile full up -d
 2. **`ollama`** starts LLM server on port `11434`
 3. **`piper`** downloads voice model (if not cached) and starts TTS server on port `10200`
 4. **`flux-init`** (full profile only) downloads FLUX GGUF weights from Civitai
-5. **`flux-app`** (full profile only) compiles `llama-cpp-python` with GPU support and starts inference service
+5. **`flux_capacitor`** (full profile only) compiles `llama-cpp-python` with GPU support and starts inference service
 6. **`strudel-mcp-agent`** and **`buffer-mcp-agent`** start autonomous agent services
 7. **`postgres`** (if `DATABASE_ENABLED=true`) starts PostgreSQL database on port `5432`
 8. **`app`** starts SSI Booster application
@@ -257,7 +257,7 @@ deploy:
 | Host Path               | Container Path          | Purpose                                |
 | ----------------------- | ----------------------- | -------------------------------------- |
 | `./data/`               | `/app/data/`            | Persona, domain, learning data         |
-| `./yt-vid-data/`        | `/app/yt-vid-data/`     | Generated images, YouTube scripts      |
+| `./yt-vid-data/`        | `/app/yt-vid-data/`     | Generated-content root (images/scripts/artifacts) |
 | `./agents/`             | `/app/agents/`          | Agent source code (read-only)          |
 | `./models/flux/`        | `/app/models/flux/`     | FLUX GGUF weights (read-only)          |
 | `~/.pulse/`             | `/home/appuser/.pulse/` | PulseAudio socket (via `run.sh`)       |
@@ -270,6 +270,10 @@ deploy:
 - **Ollama models** persist in the named `ollama_data` volume — survives `docker compose down`
 - **Agent code** is bind-mounted read-only — edit `./agents/` and restart service to apply changes
 - **FLUX weights** are bind-mounted read-only — downloaded once by `flux-init`, shared across containers
+- Generated-content subdirectories are controlled via env vars:
+  - `GENERATED_CONTENT_DIR=/app/yt-vid-data`
+  - `YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts`
+  - `REI_TOEI_SUBDIR=rei_toei`
 
 ---
 
@@ -437,7 +441,9 @@ docker compose restart strudel-mcp-agent
 # Add to .env
 CIVITAI_API_KEY=your_civitai_key_here
 FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
-IMAGE_OUTPUT_DIR=/app/yt-vid-data
+GENERATED_CONTENT_DIR=/app/yt-vid-data
+YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
+REI_TOEI_SUBDIR=rei_toei
 
 # Launch full stack
 bash run.sh --profile full up -d
@@ -446,9 +452,9 @@ bash run.sh --profile full up -d
 ### First Start Sequence
 
 1. `flux-init` downloads GGUF weights from Civitai to `./models/flux/`
-2. `flux-app` waits for `flux-init` to complete
-3. `flux-app` compiles `llama-cpp-python` with CUDA support (takes 5-10 minutes)
-4. `flux-app` starts inference service
+2. `flux_capacitor` waits for `flux-init` to complete
+3. `flux_capacitor` compiles `llama-cpp-python` with CUDA support (takes 5-10 minutes)
+4. `flux_capacitor` starts inference service
 5. `app` starts and can now generate images
 
 ### Pre-Download Weights (Optional)
@@ -461,7 +467,10 @@ docker compose --profile full run --rm flux-init
 
 ### Verify Image Generation
 
-Generated images are saved to `./yt-vid-data/` on the host.
+Generated artifacts are saved under `./yt-vid-data/` on the host.
+Examples:
+- YouTube scripts: `./yt-vid-data/youtube_scripts/`
+- Rei Toei outputs: `./yt-vid-data/rei_toei/`
 
 ---
 

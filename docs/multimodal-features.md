@@ -42,7 +42,9 @@ Add to `.env`:
 ```bash
 CIVITAI_API_KEY=your_civitai_key_here
 FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
-IMAGE_OUTPUT_DIR=/app/yt-vid-data
+GENERATED_CONTENT_DIR=/app/yt-vid-data
+YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
+REI_TOEI_SUBDIR=rei_toei
 ```
 
 #### 3. Launch Full Profile
@@ -60,9 +62,9 @@ docker compose --profile full up -d
 #### First Start Sequence
 
 1. **`flux-init`** (one-shot container) downloads GGUF weights from Civitai to `./models/flux/`
-2. **`flux-app`** waits for `flux-init` to complete
-3. **`flux-app`** compiles `llama-cpp-python` with CUDA support (5-10 minutes)
-4. **`flux-app`** starts inference service
+2. **`flux_capacitor`** waits for `flux-init` to complete
+3. **`flux_capacitor`** compiles `llama-cpp-python` with CUDA support (5-10 minutes)
+4. **`flux_capacitor`** starts inference service
 5. **`app`** can now generate images via FLUX API
 
 > **Note:** `flux-init` exits after downloading weights. This is expected behavior.
@@ -103,10 +105,14 @@ bash scripts/download-flux1-schnell-Q4_K_S.sh
 
 ### Output
 
-Generated images are saved to:
+Generated artifacts are saved under the generated-content root:
 
 - **Host:** `./yt-vid-data/` (bind-mounted)
 - **Container:** `/app/yt-vid-data/`
+
+Examples:
+- YouTube scripts: `./yt-vid-data/youtube_scripts/`
+- Rei Toei outputs: `./yt-vid-data/rei_toei/`
 
 **Naming convention:** `flux_<timestamp>_<hash>.png`
 
@@ -116,7 +122,7 @@ Generated images are saved to:
 
 **Solution:** Verify `CIVITAI_API_KEY` in `.env` is valid
 
-**Problem:** `flux-app` crashes with "Out of Memory"
+**Problem:** `flux_capacitor` crashes with "Out of Memory"
 
 **Solution:**
 

@@ -767,7 +767,7 @@ class StrudelPatternTemplate:
 **Implementation Notes (2026-05-21):**
 
 - Full async CLI handlers implemented in main.py (`_handle_rei_generate`, `_handle_rei_generate_strudel`)
-- `--rei-generate`: loads Rei persona/domain, extracts themes from extracted knowledge, generates song concept + lyrics + Suno prompt, displays output, saves JSON to `yt-vid-data/`, optionally submits to Suno API if `SUNO_API_KEY` set
+- `--rei-generate`: loads Rei persona/domain, extracts themes from extracted knowledge, generates song concept + lyrics + Suno prompt, displays output, saves JSON to `<GENERATED_CONTENT_DIR>/<REI_TOEI_SUBDIR>/`, optionally submits to Suno API if `SUNO_API_KEY` set
 - `--rei-generate-strudel`: loads pattern library, maps theme to template, generates Strudel code (synchronous), validates syntax, saves to pattern library, optionally executes via MCP agent
 - `--rei-theme`: creates synthetic Theme from CLI string, bypasses knowledge extraction
 - `--rei-preview`: displays output without saving or executing

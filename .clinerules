@@ -156,7 +156,9 @@ Four target components:
 
 - `CIVITAI_API_KEY` — Required for FLUX GGUF model download
 - `FLUX_MODEL_PATH` — Path to GGUF model (default: /app/models/flux/flux1-schnell-Q4_K_S.gguf)
-- `IMAGE_OUTPUT_DIR` — Where generated images are saved (default: /app/yt-vid-data)
+- `GENERATED_CONTENT_DIR` — Root for generated local artifacts (default: yt-vid-data)
+- `YOUTUBE_SCRIPTS_SUBDIR` — YouTube script subdirectory (default: youtube_scripts)
+- `REI_TOEI_SUBDIR` — Rei Toei artifact subdirectory (default: rei_toei)
 
 **Music Generation:**
 

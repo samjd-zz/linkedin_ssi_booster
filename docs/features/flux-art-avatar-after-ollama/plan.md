@@ -16,12 +16,15 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Shared flags and runtime helpers in [services/shared.py](../../../services/shared.py).
   - Ollama generation path in [services/ollama_service.py](../../../services/ollama_service.py).
   - FLUX image generation in [services/image_generation.py](../../../services/image_generation.py).
+  - `flux_capacitor` as the documented FLUX runtime/deployment service name in Docker-facing docs.
   - Rei Toei package pattern in [services/rei_toei](../../../services/rei_toei).
 - Service/component dependencies:
   - New art avatar package depends on Ollama and FLUX services via orchestrated sequencing.
   - Scheduling path depends on existing content generation and confidence routing.
 - Data flow requirements:
   - Text-first pipeline: generate/validate text, then request art generation.
+  - Save generated story text per story as local artifacts before publish/upload workflows.
+  - Apply the same local-first persistence rule as a system-wide contract for generated content, not only avatar outputs.
   - Telemetry capture for queue wait, defer, and completion outcomes.
 - API/interface integration needs:
   - New internal service API in services/art_avatar package.
@@ -38,6 +41,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
 - [ ] Test patterns reviewed from existing tests under [tests](../../../tests).
 - [ ] Quality gate commands confirmed (py_compile + focused pytest).
 - [ ] Env var naming convention aligned with [.env.example](../../../.env.example).
+- [ ] Generated-content persistence layout approved (local paths, naming, metadata sidecars).
+- [ ] Schema fit reviewed against [services/database/models.py](../../../services/database/models.py) for DB-second indexing.
 
 ## Implementation Steps
 ### Step 1: Create Art Avatar Package Skeleton
@@ -69,6 +74,7 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Add ArtAvatarRequest and ArtAvatarResult dataclasses.
   - Add clampable style parameters (saturation, geometry density, surreal intensity).
   - Add validation with fail-fast errors for invalid ranges.
+  - Include story artifact fields (story_path, story_metadata_path, save_status).
 - Verification:
   - Unit tests cover valid and invalid model inputs.
   - Invalid config raises ValueError with clear messages.
@@ -76,6 +82,40 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Conforms to typed-model patterns from existing services.
 - Dependencies:
   - Step 1.
+
+### Step 2.5: Add Local Story Persistence Contract (Local First)
+- Status: Not Started
+- Effort: 4 hours
+- Description: Define and implement deterministic local storage for generated story text per story.
+- Actions:
+  - Add story artifact writer in `services/art_avatar/_storage.py`.
+  - Add deterministic naming pattern: timestamp + channel + short hash + request id fragment.
+  - Save full story text plus sidecar metadata linking story and image artifacts.
+  - Define dedicated FLUX image artifact subdirectory usage under `GENERATED_CONTENT_DIR`.
+  - Ensure save errors propagate as explicit result states.
+- Verification:
+  - Unit tests verify story file creation, deterministic naming, and metadata linkage.
+  - Failure-path tests verify explicit non-silent save failures.
+- Project Integration:
+  - Supports manual Buffer UI upload and local-first review workflows.
+- Dependencies:
+  - Steps 1-2.
+
+### Step 2.6: Align With System-Wide Generated Content Persistence
+- Status: Not Started
+- Effort: 3 hours
+- Description: Ensure avatar persistence implementation conforms to a repository-wide generated-content save contract.
+- Actions:
+  - Document common generated-content persistence requirements shared by schedule/curate/console text flows and avatar flows.
+  - Verify non-avatar generated text outputs are included in the same local-first persistence model.
+  - Standardize metadata linkage expectations (run/request IDs, channel, source refs) across generated content types.
+- Verification:
+  - Test scenarios cover both avatar and non-avatar generated content persistence behavior.
+  - Documentation states one unified persistence policy.
+- Project Integration:
+  - Prevents feature-local persistence drift and keeps generated-content lifecycle consistent system-wide.
+- Dependencies:
+  - Steps 2 and 2.5.
 
 ### Step 3: Implement GPU Policy Configuration (Ollama First)
 - Status: Not Started
@@ -123,13 +163,14 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Add integration hook after Ollama text generation and truth/confidence stages.
   - Invoke art-avatar pipeline only if policy allows and queue conditions pass.
   - Attach image artifact metadata for downstream scheduling.
+  - Persist generated story text artifact before scheduling/upload decisions.
 - Verification:
   - Integration tests prove FLUX does not start during active mocked Ollama workload.
   - Successful run path includes generated art metadata.
 - Project Integration:
   - Hook via [main.py](../../../main.py) schedule path and shared service flow.
 - Dependencies:
-  - Steps 3-4.
+  - Steps 2.5, 3-4.
 
 ### Step 6: Integrate Curated Buffer Idea Flow (Primary Path)
 - Status: Not Started
@@ -139,13 +180,14 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Add integration hook in the curation flow after text selection and before Buffer publish.
   - Reuse the same GPU gate, style clamps, and fallback behavior as schedule flow.
   - Persist art metadata alongside the curated idea record for downstream use.
+  - Persist generated curated story text locally with story-to-image linkage metadata.
 - Verification:
   - Integration tests prove curated paths honor Ollama priority and do not bypass the gate.
   - Selected ideas produce deterministic image metadata when art-avatar output is enabled.
 - Project Integration:
   - Hook via [main.py](../../../main.py) curation path and shared service flow.
 - Dependencies:
-  - Steps 3-5.
+  - Steps 2.5, 3-5.
 
 ### Step 7: Integrate Console Path (Secondary Path)
 - Status: Not Started
@@ -155,13 +197,35 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Add command-level integration in console handling flow.
   - Reuse exact sequencing policy and defer behavior.
   - Return clear user feedback for queued/deferred image generation.
+  - Persist generated console story outputs locally when content is generated.
 - Verification:
   - Console integration tests validate sequencing parity with schedule path.
   - Deferred cases return deterministic, user-readable messages.
 - Project Integration:
   - Uses existing console architecture in [main.py](../../../main.py).
 - Dependencies:
-  - Steps 4-6.
+  - Steps 2.5, 4-6.
+
+### Step 7.5: DB-Second Schema Fit and Migration Instructions
+- Status: Not Started
+- Effort: 5 hours
+- Description: Document and implement optional DB indexing path for generated content while keeping local files canonical.
+- Actions:
+  - Review [services/database/models.py](../../../services/database/models.py) and confirm current fit:
+    - `candidate_records.text_snippet` is snippet-only.
+    - `published_records.text_snippet` is snippet-only.
+  - Add migration instructions for optional full-story archival support.
+  - Choose one DB strategy:
+    - add columns to `candidate_records` (`full_text`, `story_path`, `story_metadata_path`), or
+    - create dedicated `generated_content_records` table (preferred for separation of concerns).
+  - Define dual-write behavior: local always, DB optional when enabled.
+- Verification:
+  - Migration script is additive and reversible.
+  - Existing selection-learning behavior remains intact.
+- Project Integration:
+  - Aligns with local-first, DB-second architecture for the whole generated-content system.
+- Dependencies:
+  - Steps 2.5, 2.6, 5-7.
 
 ### Step 8: Add Prompt Presets and Toned-Down Style Controls
 - Status: Not Started
@@ -203,13 +267,16 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Create [tests/test_art_avatar_pipeline.py](../../../tests/test_art_avatar_pipeline.py).
   - Create [tests/test_gpu_orchestration_policy.py](../../../tests/test_gpu_orchestration_policy.py).
   - Add targeted integration tests with mocked Ollama/FLUX behaviors.
+  - Add persistence tests for local story artifacts and sidecars.
+  - Add DB-optional tests for dual-write behavior (enabled vs disabled).
+  - Add cross-flow persistence tests proving unified behavior for avatar and non-avatar generated outputs.
 - Verification:
   - Focused pytest targets pass.
   - New coverage includes ordering, defer, and style-clamp paths.
 - Project Integration:
   - Follows existing pytest conventions in [tests](../../../tests).
 - Dependencies:
-  - Steps 1-9.
+  - Steps 1-9, 7.5.
 
 ### Step 11: Documentation and Operational Updates
 - Status: Not Started
@@ -234,25 +301,32 @@ This plan is aligned to repository practices documented in [README.md](../../../
 - [ ] All new functions are type-annotated.
 - [ ] No broad exception handlers added.
 - [ ] Module boundaries remain under target size and single responsibility.
+- [ ] Generated story text persists locally per story with deterministic naming.
 
 ### Integration Gates
 - [ ] FLUX never executes concurrently with active Ollama GPU job.
 - [ ] Schedule and console flows both honor the same gate policy.
 - [ ] Timeout/defer path degrades to text-only without breaking post flow.
+- [ ] Curate/schedule/console all produce local story artifacts when generation occurs.
+- [ ] Persistence behavior is unified system-wide, not avatar-specific.
 
 ### Deployment Gates
 - [ ] Core/full profile behavior documented and validated.
 - [ ] Env variables in [.env.example](../../../.env.example) are complete.
 - [ ] Rollback path is clear: disable art-avatar feature flags and keep text pipeline intact.
+- [ ] DB-disabled mode still provides complete local artifact history (stories + images + metadata).
 
 ## Testing Phase
 - Unit tests:
   - Model validation and policy parsing.
   - Style clamp math and prompt assembly.
+  - Local story artifact write/read and metadata linkage.
 - Integration tests:
   - Queue ordering with mocked competing workloads.
   - Scheduled flow attachment after text completion.
   - Console route sequencing and fallback behavior.
+  - Curated flow local story persistence and dual-write optional DB indexing.
+  - System-wide persistence parity between avatar and non-avatar generated content flows.
 - Required verification commands:
   1. python -m py_compile services/art_avatar/__init__.py services/art_avatar/_config.py services/art_avatar/_models.py services/art_avatar/_prompting.py services/art_avatar/_pipeline.py services/art_avatar/_storage.py
   2. pytest -q tests/test_art_avatar_pipeline.py tests/test_gpu_orchestration_policy.py
@@ -260,6 +334,7 @@ This plan is aligned to repository practices documented in [README.md](../../../
 ## Post-Implementation
 - [ ] Confirm docs/features index and related references are updated if needed.
 - [ ] Capture initial operational observations (queue waits, defer frequency).
+- [ ] Capture artifact persistence observations (story save success rate, path consistency).
 - [ ] Create follow-up backlog items for optional off-peak rendering and adaptive FLUX downgrade heuristics.
 
 ## Risks and Mitigations

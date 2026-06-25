@@ -476,14 +476,37 @@ Path to the FLUX GGUF model file inside the container.
 FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
 ```
 
-### `IMAGE_OUTPUT_DIR`
+### `GENERATED_CONTENT_DIR`
 
-Directory where generated images are saved inside the container.
+Root directory where generated local artifacts are saved.
 
-**Default:** `/app/yt-vid-data`
+This is a system-wide local-first storage root for generated content
+(for example YouTube scripts, Rei Toei outputs, and future image/story artifacts).
+
+**Default:** `yt-vid-data` (relative to project root)
 
 ```bash
-IMAGE_OUTPUT_DIR=/app/yt-vid-data
+GENERATED_CONTENT_DIR=yt-vid-data
+```
+
+### `YOUTUBE_SCRIPTS_SUBDIR`
+
+Subdirectory under `GENERATED_CONTENT_DIR` used for generated YouTube scripts.
+
+**Default:** `youtube_scripts`
+
+```bash
+YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
+```
+
+### `REI_TOEI_SUBDIR`
+
+Subdirectory under `GENERATED_CONTENT_DIR` used for Rei Toei generated artifacts.
+
+**Default:** `rei_toei`
+
+```bash
+REI_TOEI_SUBDIR=rei_toei
 ```
 
 ---
@@ -709,7 +732,9 @@ CONSOLE_VOICE_SPEAKER=896
 # Image Generation (full profile only)
 CIVITAI_API_KEY=your_civitai_key_here
 FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
-IMAGE_OUTPUT_DIR=/app/yt-vid-data
+GENERATED_CONTENT_DIR=/app/yt-vid-data
+YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
+REI_TOEI_SUBDIR=rei_toei
 
 # Strudel Music Generation (Docker)
 OLLAMA_HOST=http://ollama:11434

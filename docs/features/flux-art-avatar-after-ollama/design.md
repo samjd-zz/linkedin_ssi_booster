@@ -5,6 +5,8 @@ This feature adds a new FLUX-based art avatar subsystem that transforms the proj
 
 The defining technical constraint is single-GPU sequencing on the RTX 3060. Ollama remains the first-class GPU consumer. FLUX generation must be deferred until Ollama work has completed, and FLUX must never run concurrently with active Ollama GPU work.
 
+Generated-content persistence is treated as a platform-level architecture rule. This design applies it to the avatar path while keeping compatibility with non-avatar generated content flows.
+
 ## Mermaid Overview
 ```mermaid
 flowchart TD
@@ -31,6 +33,8 @@ flowchart TD
 - Make FLUX generation safe on a single 3060 by serializing all GPU work.
 - Support both scheduled content generation and interactive console use.
 - Keep output visually distinctive but deliberately toned down.
+- Persist generated story text per story as local artifacts so manual-first publishing is reproducible.
+- Enforce persistence alignment with a whole-system generated-content contract (local first, DB second).
 
 ## Non-Goals
 - No multi-GPU scheduler.
@@ -44,6 +48,7 @@ The implementation builds on these existing surfaces:
 - [main.py](../../../main.py) for CLI and console entrypoints.
 - [services/ollama_service.py](../../../services/ollama_service.py) for all LLM calls.
 - [services/image_generation.py](../../../services/image_generation.py) for FLUX inference.
+- `flux_capacitor` as the documented FLUX runtime/deployment service name in Docker-facing docs.
 - [services/rei_toei](../../../services/rei_toei) as the modular reference for a dedicated avatar service package.
 - [.github/copilot-instructions.md](../../../.github/copilot-instructions.md) for repo conventions.
 - [README.md](../../../README.md) and [docs/testing-and-dev.md](../../testing-and-dev.md) for user-facing and developer-facing updates.
@@ -64,6 +69,12 @@ Routing rules:
 ## Architecture
 ### System Boundary
 The feature lives primarily in a new package, `services/art_avatar/`, that sits between caller surfaces and the actual FLUX image generator. It does not own post scheduling or console orchestration; instead, it acts as a policy-aware image pipeline that can be invoked from both the scheduled and console paths.
+
+Generated story text persistence is part of this system boundary for this feature release. Story text artifacts are produced in the same local-first workflow as image artifacts, then handed to downstream manual or automated publish steps.
+
+System contract note:
+- avatar storage logic is an implementation of the repository-wide generated-content persistence contract
+- the avatar module must not become an isolated persistence silo
 
 ### Component Model
 - `services/art_avatar/_config.py`
@@ -117,12 +128,14 @@ flowchart LR
 3. The art avatar pipeline receives a render request only after the Ollama work is complete.
 4. The GPU orchestrator grants access to FLUX only when no higher-priority Ollama job is active.
 5. The generated image is attached to the scheduled artifact and routed onward.
+6. The generated story text is saved as a local artifact with metadata linking it to the render request.
 
 ### Console Flow
 1. The console route continues to handle deterministic grounding, learned knowledge, and general chat.
 2. When the user asks for avatar-related artwork or an art-avatar-capable command path is selected, the art avatar pipeline is invoked.
 3. The same GPU orchestrator is used, with Ollama priority preserved.
 4. If the GPU is busy, the feature can return a deferred or text-only response rather than blocking the session indefinitely.
+5. Any generated story output is saved locally with request metadata for later manual upload/reuse.
 
 ### Mermaid Sequence
 ```mermaid
@@ -213,14 +226,43 @@ Fields:
 - `flux_steps`
 
 ## Artifact Storage Design
-Rendered output should be persisted as a local artifact plus a small metadata record.
+Rendered output and generated story text should be persisted as local artifacts plus metadata records.
+
+This artifact design represents a system-wide pattern for generated content and should be reused by other generation surfaces where possible.
 
 Recommended layout:
-- Image output directory: `yt-vid-data/` or a dedicated `data/avatar/` subpath for art-avatar artifacts.
+- Generated-content root directory: `GENERATED_CONTENT_DIR` (default `yt-vid-data/`) as the single local-first storage root.
+- Image output directory: `<GENERATED_CONTENT_DIR>/images/` or `<GENERATED_CONTENT_DIR>/art_avatar/` for art-avatar artifacts.
 - Metadata sidecar: JSON record next to each render, containing request ID, prompt summary, style preset, wait/defer data, and evidence IDs.
+- Story output directory: `<GENERATED_CONTENT_DIR>/stories/` (or channel-scoped subfolders such as `<GENERATED_CONTENT_DIR>/youtube_scripts/`) with one file per generated story.
+- Story metadata sidecar: JSON record linking story file, image file, channel, run ID, and request ID.
 - Deterministic naming: include feature prefix, timestamp, and short hash to avoid collisions.
 
+Current implementation note:
+- the generated-content root is already used for some text/script artifacts in the repository
+- the dedicated FLUX art-avatar image subdirectory convention described here is design intent for this feature and is not fully implemented yet
+
 The storage layer should not require a remote service. It should be able to write locally and hand back a path that downstream scheduling code can attach to the post payload or Buffer media workflow.
+
+### Story Artifact Contract
+Each generated story should persist:
+- full text body (not snippet-only)
+- channel and mode (`schedule`, `curate`, `console`)
+- source reference (article URL/title when applicable)
+- linkage to image artifact path when rendering occurs
+- linkage to request/result IDs for deterministic traceability
+
+Save failures should be explicit in the result status and must not silently discard generated content.
+
+### System-Wide Generated Content Contract
+The repository-level expectation is:
+- generated outputs are durably saved as local artifacts first
+- metadata provides deterministic traceability to runs/requests/channels
+- media and text linkage is preserved when both exist
+- snippet-only telemetry tables are not treated as canonical generated-content archives
+
+Avatar implementation requirement:
+- `services/art_avatar` must conform to this contract and be interoperable with existing non-avatar generated-content save behavior.
 
 ## Configuration Design
 The feature should expose environment-driven configuration in `.env.example` and `services/art_avatar/_config.py`.
@@ -298,6 +340,7 @@ The design should explicitly handle:
 - queue timeouts
 - Ollama service unavailability
 - image save failures
+- story text save failures
 - unsupported or malformed art-avatar requests
 - missing FLUX runtime in `core` profile
 - storage directory creation failures
@@ -325,6 +368,33 @@ Performance tactics:
 - Prevent prompt escalation into overly intense or unsafe visual language through hard clamps.
 - Maintain deterministic file output paths and metadata storage.
 - Keep prompt text, evidence IDs, and metadata local unless the existing Buffer flow explicitly requires upload.
+- Keep generated story text local by default and avoid introducing remote dependencies for baseline operation.
+
+## Database Schema Fit Review (DB Second)
+Review of [services/database/models.py](../../../services/database/models.py):
+- `CandidateRecord` is designed for selection learning and stores `text_snippet`, not full generated story bodies.
+- `PublishedRecord` also stores `text_snippet` and publish linkage metadata.
+- Current schema supports analytics/reconciliation, but does not represent a full local-story archive by itself.
+
+Conclusion:
+- For this feature, schema fit is partial. It is sufficient for secondary indexing and feedback loops, not for complete generated-content archival.
+
+DB-second design rule:
+- Local artifact files remain the source of truth.
+- Database writes are optional secondary mirrors/indexes.
+
+System implication:
+- this rule applies to generated content across the system, not only art-avatar artifacts.
+
+If full-story DB archival is needed, add a migration-backed extension:
+- Option A: add `full_text` and artifact linkage columns to `candidate_records`.
+- Option B (preferred): add a dedicated `generated_content_records` table linked by run/request/candidate identifiers.
+
+Migration instructions should include:
+- additive schema change only (no destructive rewrite)
+- backfill from local artifacts where available
+- dual-write period (local + DB) before relying on DB queries
+- rollback path that preserves local artifacts as canonical store
 
 ## CLI and Console Coverage
 ### CLI Coverage

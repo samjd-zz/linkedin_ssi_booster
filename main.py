@@ -32,6 +32,7 @@ from scheduler import PostScheduler
 from content_calendar import CONTENT_CALENDAR
 from services.buffer_service import BufferService, BufferQueueFullError, BufferRateLimitError, BufferChannelNotConnectedError
 from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
+from services.shared import get_rei_toei_dir, get_youtube_scripts_dir
 
 
 def _configure_stdio() -> None:
@@ -978,8 +979,7 @@ def main():
                 return
 
             # Save to file
-            output_dir = Path("yt-vid-data")
-            output_dir.mkdir(exist_ok=True)
+            output_dir = get_rei_toei_dir()
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_title = re.sub(r"[^\w\-]", "_", suno_prompt.title[:60]).strip("_")
             output_path = output_dir / f"rei_{timestamp}_{safe_title}_suno.json"
@@ -1200,7 +1200,7 @@ def main():
             )
             _gen_avatar_state = _lav_gen()
             if channel == "youtube" and not args.dry_run:
-                Path("yt-vid-data").mkdir(exist_ok=True)
+                get_youtube_scripts_dir()
             if args.avatar_explain:
                 from services.avatar_intelligence import build_explain_output, format_explain_output
 
@@ -1233,7 +1233,7 @@ def main():
                     )
                     safe_title = re.sub(r"[^\w\-]", "_", topic["title"][:60]).strip("_")
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    script_path = Path("yt-vid-data") / f"{timestamp}_{safe_title}.txt"
+                    script_path = get_youtube_scripts_dir() / f"{timestamp}_{safe_title}.txt"
                     script_content = (
                         f"TITLE: {topic['title']}\n"
                         f"SSI COMPONENT: {topic.get('ssi_component', 'establish_brand')}\n\n"

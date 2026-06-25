@@ -51,7 +51,7 @@ python main.py --curate --channel all
 | `bluesky`  | 300-character limit, X-like post behavior                                                         |
 | `threads`  | 500-character limit, conversational short post, no hashtag append                                 |
 | `facebook` | Similar to LinkedIn; source URL and hashtags appended for curation                                |
-| `youtube`  | Generates spoken script, prints it, saves to `yt-vid-data/`; not pushed to Buffer                 |
+| `youtube`  | Generates spoken script, prints it, saves to `<GENERATED_CONTENT_DIR>/<YOUTUBE_SCRIPTS_SUBDIR>/`; not pushed to Buffer |
 | `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together (YouTube as local script only) |
 
 ---

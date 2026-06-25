@@ -21,6 +21,7 @@ The ollama_service module owns API logic — nothing in here should import from 
 import os
 import re
 import logging
+from pathlib import Path
 from typing import Optional
 from colorama import Fore, Style
 
@@ -28,6 +29,36 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Generated content storage (local-first, configurable root)
+# ---------------------------------------------------------------------------
+
+GENERATED_CONTENT_DIR = Path(os.getenv("GENERATED_CONTENT_DIR", "yt-vid-data"))
+YOUTUBE_SCRIPTS_SUBDIR = os.getenv("YOUTUBE_SCRIPTS_SUBDIR", "youtube_scripts")
+REI_TOEI_SUBDIR = os.getenv("REI_TOEI_SUBDIR", "rei_toei")
+
+
+def get_generated_content_dir(*parts: str, create: bool = True) -> Path:
+    """Return a path under the generated-content root.
+
+    Defaults to ./yt-vid-data for backward compatibility, but can be overridden
+    via GENERATED_CONTENT_DIR to harmonize local artifact storage.
+    """
+    path = GENERATED_CONTENT_DIR.joinpath(*parts) if parts else GENERATED_CONTENT_DIR
+    if create:
+        path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def get_youtube_scripts_dir(create: bool = True) -> Path:
+    """Return the directory used for generated YouTube script artifacts."""
+    return get_generated_content_dir(YOUTUBE_SCRIPTS_SUBDIR, create=create)
+
+
+def get_rei_toei_dir(create: bool = True) -> Path:
+    """Return the directory used for Rei Toei generated artifacts."""
+    return get_generated_content_dir(REI_TOEI_SUBDIR, create=create)
 
 # ---------------------------------------------------------------------------
 # Platform limits

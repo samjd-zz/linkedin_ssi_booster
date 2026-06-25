@@ -204,7 +204,7 @@ The README documents channel-specific output rules across LinkedIn, X, Bluesky, 
 | `bluesky`  | 300-character limit, X-like post behavior.                                                                           |
 | `threads`  | 500-character limit, conversational short post behavior, no hashtag append.                                          |
 | `facebook` | Similar to LinkedIn; source URL and hashtags are appended programmatically for curation output.                      |
-| `youtube`  | Generates a spoken script, prints it, and saves it to `yt-vid-data/`; not pushed to Buffer.                          |
+| `youtube`  | Generates a spoken script, prints it, and saves it to `<GENERATED_CONTENT_DIR>/<YOUTUBE_SCRIPTS_SUBDIR>/`; not pushed to Buffer. |
 | `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together, with YouTube handled as a local script artifact. |
 
 ## Curation pipeline
@@ -217,7 +217,7 @@ On each `--curate` run, the project fetches RSS entries, filters them by keyword
 
 ## YouTube workflow
 
-YouTube output is intentionally treated as a script-generation path rather than a publish path because Buffer requires a video file for YouTube. The generated script is designed for avatar or lip-sync tools, printed to screen, and written to `yt-vid-data/<timestamp>_<title>.txt` for manual rendering and upload.
+YouTube output is intentionally treated as a script-generation path rather than a publish path because Buffer requires a video file for YouTube. The generated script is designed for avatar or lip-sync tools, printed to screen, and written to `<GENERATED_CONTENT_DIR>/<YOUTUBE_SCRIPTS_SUBDIR>/<timestamp>_<title>.txt` for manual rendering and upload.
 
 ### **Troubleshooting Grounding Quality**
 

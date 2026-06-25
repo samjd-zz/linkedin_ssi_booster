@@ -216,6 +216,9 @@ services:
       - WYOMING_PIPER_HOST=piper
       - WYOMING_PIPER_PORT=10200
       - FLUX_SERVICE_URL=http://flux-app:5000
+      - GENERATED_CONTENT_DIR=/app/yt-vid-data
+      - YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
+      - REI_TOEI_SUBDIR=rei_toei
       - DATABASE_URL=postgresql://${POSTGRES_USER:-ssi_booster}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ssi_booster}
     volumes:
       - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native

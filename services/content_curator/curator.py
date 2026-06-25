@@ -18,7 +18,7 @@ from typing import Any, Callable
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
-from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT
+from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, get_youtube_scripts_dir
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
 from services.console_grounding import ProjectFact, truth_gate_result
 
@@ -768,8 +768,7 @@ class ContentCurator:
 
         yt_script_path = None
         if yt_script and not dry_run:
-            yt_dir = Path("yt-vid-data")
-            yt_dir.mkdir(exist_ok=True)
+            yt_dir = get_youtube_scripts_dir()
             safe_title = re.sub(r"[^\w\-]", "_", article["title"][:60]).strip("_")
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             yt_script_path = yt_dir / f"{timestamp}_{safe_title}.txt"
@@ -1034,8 +1033,7 @@ class ContentCurator:
         effective_message_type = "idea" if _conf_route == "idea" else message_type
         if effective_message_type == "post":
             if channel == "youtube":
-                yt_dir = Path("yt-vid-data")
-                yt_dir.mkdir(exist_ok=True)
+                yt_dir = get_youtube_scripts_dir()
                 safe_title = re.sub(r"[^\w\-]", "_", article["title"][:60]).strip("_")
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 script_path = yt_dir / f"{timestamp}_{safe_title}.txt"
