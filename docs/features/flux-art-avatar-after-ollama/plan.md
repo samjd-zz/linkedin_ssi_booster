@@ -27,7 +27,7 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Apply the same local-first persistence rule as a system-wide contract for generated content, not only avatar outputs.
   - Telemetry capture for queue wait, defer, and completion outcomes.
 - API/interface integration needs:
-  - New internal service API in services/art_avatar package.
+  - New internal service API in services/flux_capacitor package.
   - Optional CLI and console command hooks through main flow.
 - Monitoring/logging requirements:
   - Structured logger events for queue timing and fallback decisions.
@@ -50,7 +50,7 @@ This plan is aligned to repository practices documented in [README.md](../../../
 - Effort: 4 hours
 - Description: Create the new modular package with minimal public API and internal private modules.
 - Actions:
-  - Create folder services/art_avatar with:
+  - Create folder services/flux_capacitor with:
     - _config.py
     - _models.py
     - _prompting.py
@@ -88,7 +88,7 @@ This plan is aligned to repository practices documented in [README.md](../../../
 - Effort: 4 hours
 - Description: Define and implement deterministic local storage for generated story text per story.
 - Actions:
-  - Add story artifact writer in `services/art_avatar/_storage.py`.
+  - Add story artifact writer in `services/flux_capacitor/_storage.py`.
   - Add deterministic naming pattern: timestamp + channel + short hash + request id fragment.
   - Save full story text plus sidecar metadata linking story and image artifacts.
   - Define dedicated FLUX image artifact subdirectory usage under `GENERATED_CONTENT_DIR`.
@@ -264,7 +264,7 @@ This plan is aligned to repository practices documented in [README.md](../../../
 - Effort: 8 hours
 - Description: Add focused tests for models, policy, queue semantics, integration, and fallback.
 - Actions:
-  - Create [tests/test_art_avatar_pipeline.py](../../../tests/test_art_avatar_pipeline.py).
+  - Create [tests/test_flux_capacitor_pipeline.py](../../../tests/test_flux_capacitor_pipeline.py).
   - Create [tests/test_gpu_orchestration_policy.py](../../../tests/test_gpu_orchestration_policy.py).
   - Add targeted integration tests with mocked Ollama/FLUX behaviors.
   - Add persistence tests for local story artifacts and sidecars.
@@ -328,8 +328,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Curated flow local story persistence and dual-write optional DB indexing.
   - System-wide persistence parity between avatar and non-avatar generated content flows.
 - Required verification commands:
-  1. python -m py_compile services/art_avatar/__init__.py services/art_avatar/_config.py services/art_avatar/_models.py services/art_avatar/_prompting.py services/art_avatar/_pipeline.py services/art_avatar/_storage.py
-  2. pytest -q tests/test_art_avatar_pipeline.py tests/test_gpu_orchestration_policy.py
+  1. python -m py_compile services/flux_capacitor/__init__.py services/flux_capacitor/_config.py services/flux_capacitor/_models.py services/flux_capacitor/_prompting.py services/flux_capacitor/_pipeline.py services/flux_capacitor/_storage.py
+  2. pytest -q tests/test_flux_capacitor_pipeline.py tests/test_gpu_orchestration_policy.py
 
 ## Post-Implementation
 - [ ] Confirm docs/features index and related references are updated if needed.

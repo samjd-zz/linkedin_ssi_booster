@@ -68,7 +68,7 @@ Routing rules:
 
 ## Architecture
 ### System Boundary
-The feature lives primarily in a new package, `services/art_avatar/`, that sits between caller surfaces and the actual FLUX image generator. It does not own post scheduling or console orchestration; instead, it acts as a policy-aware image pipeline that can be invoked from both the scheduled and console paths.
+The feature lives primarily in a new package, `services/flux_capacitor/`, that sits between caller surfaces and the actual FLUX image generator. It does not own post scheduling or console orchestration; instead, it acts as a policy-aware image pipeline that can be invoked from both the scheduled and console paths.
 
 Generated story text persistence is part of this system boundary for this feature release. Story text artifacts are produced in the same local-first workflow as image artifacts, then handed to downstream manual or automated publish steps.
 
@@ -77,17 +77,17 @@ System contract note:
 - the avatar module must not become an isolated persistence silo
 
 ### Component Model
-- `services/art_avatar/_config.py`
+- `services/flux_capacitor/_config.py`
   - Feature flags, style clamps, queue thresholds, and GPU policy values.
-- `services/art_avatar/_models.py`
+- `services/flux_capacitor/_models.py`
   - Request/result models, style presets, queue state, and telemetry payloads.
-- `services/art_avatar/_prompting.py`
+- `services/flux_capacitor/_prompting.py`
   - Prompt assembly and tone constraints.
-- `services/art_avatar/_pipeline.py`
+- `services/flux_capacitor/_pipeline.py`
   - Orchestration, GPU gate integration, and sequencing logic.
-- `services/art_avatar/_storage.py`
+- `services/flux_capacitor/_storage.py`
   - Artifact paths, metadata persistence, and style template storage.
-- `services/art_avatar/__init__.py`
+- `services/flux_capacitor/__init__.py`
   - Stable public API for callers.
 
 ### Mermaid Component Diagram
@@ -98,7 +98,7 @@ flowchart LR
         Cons[Console Flow]
     end
 
-    subgraph ArtAvatar[services/art_avatar]
+    subgraph FluxCapacitor[services/flux_capacitor]
         Cfg[_config.py]
         Models[_models.py]
         Prompt[_prompting.py]
@@ -232,7 +232,7 @@ This artifact design represents a system-wide pattern for generated content and 
 
 Recommended layout:
 - Generated-content root directory: `GENERATED_CONTENT_DIR` (default `yt-vid-data/`) as the single local-first storage root.
-- Image output directory: `<GENERATED_CONTENT_DIR>/images/` or `<GENERATED_CONTENT_DIR>/art_avatar/` for art-avatar artifacts.
+- Image output directory: `<GENERATED_CONTENT_DIR>/images/` or `<GENERATED_CONTENT_DIR>/flux_capacitor/` for art-avatar artifacts.
 - Metadata sidecar: JSON record next to each render, containing request ID, prompt summary, style preset, wait/defer data, and evidence IDs.
 - Story output directory: `<GENERATED_CONTENT_DIR>/stories/` (or channel-scoped subfolders such as `<GENERATED_CONTENT_DIR>/youtube_scripts/`) with one file per generated story.
 - Story metadata sidecar: JSON record linking story file, image file, channel, run ID, and request ID.
@@ -262,25 +262,25 @@ The repository-level expectation is:
 - snippet-only telemetry tables are not treated as canonical generated-content archives
 
 Avatar implementation requirement:
-- `services/art_avatar` must conform to this contract and be interoperable with existing non-avatar generated-content save behavior.
+- `services/flux_capacitor` must conform to this contract and be interoperable with existing non-avatar generated-content save behavior.
 
 ## Configuration Design
-The feature should expose environment-driven configuration in `.env.example` and `services/art_avatar/_config.py`.
+The feature should expose environment-driven configuration in `.env.example` and `services/flux_capacitor/_config.py`.
 
 Recommended variables:
-- `ART_AVATAR_ENABLED`
-- `ART_AVATAR_STYLE_PRESET`
-- `ART_AVATAR_MINIMAL_MODE`
-- `ART_AVATAR_OLLAMA_FIRST`
-- `ART_AVATAR_FLUX_AFTER_OLLAMA`
-- `ART_AVATAR_MAX_CONCURRENT_GPU_JOBS`
-- `ART_AVATAR_QUEUE_WAIT_TIMEOUT_SECONDS`
-- `ART_AVATAR_RENDER_WIDTH`
-- `ART_AVATAR_RENDER_HEIGHT`
-- `ART_AVATAR_RENDER_STEPS`
-- `ART_AVATAR_SATURATION_CAP`
-- `ART_AVATAR_GEOMETRY_DENSITY_CAP`
-- `ART_AVATAR_SURREAL_INTENSITY_CAP`
+- `FLUX_CAPACITOR_ENABLED`
+- `FLUX_CAPACITOR_STYLE_PRESET`
+- `FLUX_CAPACITOR_MINIMAL_MODE`
+- `FLUX_CAPACITOR_OLLAMA_FIRST`
+- `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA`
+- `FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS`
+- `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS`
+- `FLUX_CAPACITOR_RENDER_WIDTH`
+- `FLUX_CAPACITOR_RENDER_HEIGHT`
+- `FLUX_CAPACITOR_RENDER_STEPS`
+- `FLUX_CAPACITOR_SATURATION_CAP`
+- `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP`
+- `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP`
 
 Policy defaults should reflect the RTX 3060 constraint:
 - One active GPU job at a time.
@@ -437,16 +437,16 @@ Required test coverage:
 - CLI argument-routing tests for existing command combinations
 
 Recommended test file layout:
-- `tests/test_art_avatar_pipeline.py`
+- `tests/test_flux_capacitor_pipeline.py`
 - `tests/test_gpu_orchestration_policy.py`
-- `tests/test_art_avatar_console_integration.py`
-- `tests/test_art_avatar_schedule_integration.py`
-- `tests/test_art_avatar_cli_routing.py`
+- `tests/test_flux_capacitor_console_integration.py`
+- `tests/test_flux_capacitor_schedule_integration.py`
+- `tests/test_flux_capacitor_cli_routing.py`
 
 Required validation commands:
 ```bash
-python -m py_compile services/art_avatar/__init__.py services/art_avatar/_config.py services/art_avatar/_models.py services/art_avatar/_prompting.py services/art_avatar/_pipeline.py services/art_avatar/_storage.py
-pytest -q tests/test_art_avatar_pipeline.py tests/test_gpu_orchestration_policy.py
+python -m py_compile services/flux_capacitor/__init__.py services/flux_capacitor/_config.py services/flux_capacitor/_models.py services/flux_capacitor/_prompting.py services/flux_capacitor/_pipeline.py services/flux_capacitor/_storage.py
+pytest -q tests/test_flux_capacitor_pipeline.py tests/test_gpu_orchestration_policy.py
 ```
 
 ## Rollout Plan

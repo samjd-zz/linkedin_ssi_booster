@@ -15,7 +15,7 @@ The first problem is sequencing. Ollama remains the primary GPU consumer, so FLU
 The second problem is scope clarity. The art avatar needs to serve real workflows, not become a sidecar feature. It should support scheduled posts, curated Buffer ideas, and console-driven requests using one consistent policy and one shared set of style rules.
 
 ## Proposed Solution
-Create a new `services/art_avatar/` package that mirrors the modular Rei Toei pattern and acts as the single orchestration layer for art-avatar rendering.
+Create a new `services/flux_capacitor/` package that mirrors the modular Rei Toei pattern and acts as the single orchestration layer for art-avatar rendering.
 
 The package should expose:
 - request and result models for art renders
@@ -102,7 +102,7 @@ Integration behavior:
 
 ## Initial Scope
 First release should include:
-- `services/art_avatar/` package skeleton
+- `services/flux_capacitor/` package skeleton
 - request/result models
 - GPU policy config with Ollama-first defaults
 - in-process GPU gate and defer behavior
