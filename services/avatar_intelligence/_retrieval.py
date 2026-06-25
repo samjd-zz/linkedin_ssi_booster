@@ -389,7 +389,7 @@ def retrieve_evidence(
         ]
         logger.debug("Category filter '%s' reduced domain facts from %d to %d", category_filter, len([f for f in facts if isinstance(f, DomainEvidenceFact)]), len(domain_facts))
 
-    results: list[Union[EvidenceFact, DomainEvidenceFact]] = []
+    results: list[EvidenceFact | DomainEvidenceFact | ExternalEvidenceFact] = []
     n_evidence = min(project_count, len(evidence_facts))
     n_domain = min(domain_count, len(domain_facts))
 

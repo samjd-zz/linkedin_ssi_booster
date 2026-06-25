@@ -17,6 +17,13 @@ from services.shared import DATABASE_ENABLED
 logger = logging.getLogger(__name__)
 
 
+def _coerce_published_at(value: datetime | str) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    normalized_value = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized_value)
+
+
 def upsert_published_record(
     *,
     buffer_id: str,
@@ -69,15 +76,12 @@ def _write_published_to_db(
 ) -> None:
     """Write published record to PostgreSQL database."""
     try:
-        from services.database.session import get_session
+        from services.database.session import get_session_factory
 
-        with get_session() as session:
-            # Parse published_at if it's a string ISO format
-            if isinstance(published_at, str):
-                from dateutil.parser import parse
-                published_at_dt = parse(published_at)
-            else:
-                published_at_dt = published_at
+        published_at_dt = _coerce_published_at(published_at)
+
+        SessionLocal = get_session_factory()
+        with SessionLocal() as session:
 
             PublishedRecordRepository.create(
                 session=session,

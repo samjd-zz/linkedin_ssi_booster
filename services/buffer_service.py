@@ -30,13 +30,14 @@ class BufferChannelNotConnectedError(RuntimeError):
 
 
 class BufferService:
+    headers: dict[str, str | bytes]
 
     def __init__(self, api_key: str):
         if not api_key:
             raise ValueError("BUFFER_API_KEY is required. Get it from: https://publish.buffer.com/settings/api")
         self.headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def _query(self, query: str, variables: Optional[dict] = None) -> dict:

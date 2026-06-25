@@ -134,9 +134,10 @@ class CandidateService:
     ) -> None:
         """Write candidate record to PostgreSQL database."""
         try:
-            from services.database.session import get_session
+            from services.database.session import get_session_factory
 
-            with get_session() as session:
+            SessionLocal = get_session_factory()
+            with SessionLocal() as session:
                 CandidateRecordRepository.create(
                     session=session,
                     candidate_id=candidate_id,
@@ -185,9 +186,10 @@ class CandidateService:
         # Update database if enabled
         if DATABASE_ENABLED:
             try:
-                from services.database.session import get_session
+                from services.database.session import get_session_factory
 
-                with get_session() as session:
+                SessionLocal = get_session_factory()
+                with SessionLocal() as session:
                     from sqlalchemy import update
                     from services.database.models import CandidateRecord as CandidateRecordModel
 
