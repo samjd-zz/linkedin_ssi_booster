@@ -136,7 +136,107 @@ Examples:
 
 ---
 
-## 🎵 Strudel Live-Coding Music Agent
+## � FLUX Capacitor Art Avatar
+
+### Overview
+
+The `services/flux_capacitor` package is an in-process art-avatar layer that runs on top of FLUX.1-schnell with a strict **Ollama-first GPU sequencing policy**. It is integrated into the three main CLI workflows and can be triggered interactively from the console.
+
+**Key design rules:**
+- Ollama text generation always runs first; FLUX only starts after Ollama drains.
+- One GPU job at a time (`FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS=1`).
+- Requests that exceed the wait threshold degrade gracefully to `text_only` — no hard failure.
+- Story text (the narrative prompt given to FLUX) is persisted locally as a `.txt` sidecar alongside each image.
+- **Disabled by default** — set `FLUX_CAPACITOR_ENABLED=true` to activate.
+
+### Integration Points
+
+| Flow | Where art fires | Skip conditions |
+|---|---|---|
+| `--schedule` | After Ollama post generation, per post | `channel == youtube` |
+| `--curate` | After `curate_and_create_ideas()`, per returned idea | `channel == youtube` or `channel == all` |
+| `--console` | `/art [topic]` command — renders from last AI reply | Empty history |
+
+### GPU Sequencing
+
+```mermaid
+sequenceDiagram
+    participant CLI as main.py
+    participant Gate as GPUOrchestrator
+    participant Ollama
+    participant FLUX
+
+    CLI->>Gate: notify_ollama_start()
+    Gate->>Ollama: Text generation (Tier 1 — priority)
+    Ollama-->>CLI: Post text
+    CLI->>Gate: notify_ollama_done()
+    CLI->>Gate: render(ArtAvatarRequest)
+    Gate->>FLUX: Image generation (Tier 2 — after Ollama drains)
+    FLUX-->>CLI: ArtAvatarResult (RENDERED / DEFERRED / TEXT_ONLY)
+    CLI-->>CLI: Merge art metadata into post dict
+```
+
+### Console `/art` Command
+
+In `--console` mode, type `/art` (with optional topic hint) to render FLUX art from the last assistant reply:
+
+```
+You> write a LinkedIn post about async Rust
+Sam> [reply...]
+
+You> /art async Rust event loop
+🎨 Requesting art avatar...
+✅  Art rendered → yt-vid-data/flux_capacitor/20260625_143500_linkedin_a1b2c3d4_req-frag.png
+   Story → yt-vid-data/flux_capacitor/stories/20260625_143500_linkedin_a1b2c3d4_req-frag.txt
+```
+
+If the GPU is busy the response is:
+
+```
+⏳  GPU busy — Ollama active, FLUX deferred (waited 120s)
+```
+
+### Output Artifacts
+
+Generated files are saved under `GENERATED_CONTENT_DIR/FLUX_CAPACITOR_SUBDIR/`:
+
+```
+yt-vid-data/
+  flux_capacitor/
+    20260625_143000_linkedin_abc12345_req-frag.png         ← image
+    20260625_143000_linkedin_abc12345_req-frag.json        ← image metadata sidecar
+    stories/
+      20260625_143000_linkedin_abc12345_req-frag.txt       ← story text
+      20260625_143000_linkedin_abc12345_req-frag_meta.json ← story metadata sidecar
+```
+
+### Style Presets
+
+Three presets are available via `FLUX_CAPACITOR_STYLE_PRESET`:
+
+| Preset | Visual Character |
+|---|---|
+| `corporate_minimal` | Muted palette, shallow sacred-geometry hints, polished corporate-safe |
+| `sacred_geometry_light` | Soft light accents, subtle geometry, still restrained |
+| `tech_dark` | Dark background, cyan/purple accents, grid-inspired tech aesthetic |
+
+All presets enforce hard clamps on saturation, geometry density, and surreal intensity. See [environment-variables.md](environment-variables.md#flux-capacitor-art-avatar) for tuning knobs.
+
+### Enabling in `.env`
+
+```bash
+# Enable art-avatar generation
+FLUX_CAPACITOR_ENABLED=true
+
+# Requires --profile full (FLUX model must be available)
+# bash run.sh --profile full up -d
+```
+
+> **Note:** `FLUX_CAPACITOR_ENABLED=true` without `--profile full` will log a warning and return `text_only` results — no crash.
+
+---
+
+## �🎵 Strudel Live-Coding Music Agent
 
 ### Overview
 

@@ -459,8 +459,8 @@ Recommended test file layout:
 
 Required validation commands:
 ```bash
-python -m py_compile services/flux_capacitor/__init__.py services/flux_capacitor/_config.py services/flux_capacitor/_models.py services/flux_capacitor/_prompting.py services/flux_capacitor/_pipeline.py services/flux_capacitor/_storage.py
-pytest -q tests/test_flux_capacitor_pipeline.py tests/test_gpu_orchestration_policy.py
+source .venv/bin/activate && python -m py_compile services/flux_capacitor/__init__.py services/flux_capacitor/_config.py services/flux_capacitor/_models.py services/flux_capacitor/_prompting.py services/flux_capacitor/_pipeline.py services/flux_capacitor/_storage.py
+source .venv/bin/activate && python -m pytest -q tests/test_flux_capacitor_pipeline.py tests/test_gpu_orchestration_policy.py
 ```
 
 ## Rollout Plan

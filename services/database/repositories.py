@@ -29,6 +29,7 @@ from services.database.models import (
     ConfidenceDecision,
     TruthTrajectory,
     TruthTrajectoryPoint,
+    GeneratedContentRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -670,4 +671,123 @@ class TruthTrajectoryPointRepository:
             .where(TruthTrajectoryPoint.trajectory_id == trajectory_id)
             .order_by(TruthTrajectoryPoint.timestamp)
         )
+
+
+# ============================================================================
+# GENERATED CONTENT RECORDS
+# ============================================================================
+
+
+class GeneratedContentRecordRepository:
+    """Repository for generated_content_records table operations.
+
+    Provides optional DB indexing for FLUX art-avatar artifacts.  The local
+    filesystem remains the canonical store — this repo is DB-second only.
+    """
+
+    @staticmethod
+    def upsert(
+        session: Session,
+        request_id: str,
+        run_id: str,
+        source_mode: str,
+        render_status: str,
+        generated_at: datetime,
+        *,
+        candidate_id: Optional[str] = None,
+        channel: Optional[str] = None,
+        ssi_component: Optional[str] = None,
+        source_url: Optional[str] = None,
+        source_title: Optional[str] = None,
+        story_path: Optional[str] = None,
+        story_metadata_path: Optional[str] = None,
+        image_path: Optional[str] = None,
+        image_metadata_path: Optional[str] = None,
+        save_status: str = "saved",
+        style_preset: Optional[str] = None,
+        prompt_text: Optional[str] = None,
+        evidence_ids: Optional[List[str]] = None,
+        queue_wait_seconds: float = 0.0,
+        render_duration_seconds: float = 0.0,
+    ) -> GeneratedContentRecord:
+        """Insert or update a generated content record by request_id."""
+        existing = session.execute(
+            select(GeneratedContentRecord).where(
+                GeneratedContentRecord.id == request_id
+            )
+        ).scalar_one_or_none()
+
+        if existing is None:
+            record = GeneratedContentRecord(
+                id=request_id,
+                run_id=run_id,
+                candidate_id=candidate_id,
+                source_mode=source_mode,
+                channel=channel,
+                ssi_component=ssi_component,
+                source_url=source_url,
+                source_title=source_title,
+                story_path=story_path,
+                story_metadata_path=story_metadata_path,
+                image_path=image_path,
+                image_metadata_path=image_metadata_path,
+                render_status=render_status,
+                save_status=save_status,
+                style_preset=style_preset,
+                prompt_text=prompt_text,
+                evidence_ids=evidence_ids or [],
+                queue_wait_seconds=queue_wait_seconds,
+                render_duration_seconds=render_duration_seconds,
+                generated_at=generated_at,
+            )
+            session.add(record)
+        else:
+            # Update mutable fields in place
+            existing.render_status = render_status
+            existing.save_status = save_status
+            existing.story_path = story_path or existing.story_path
+            existing.story_metadata_path = story_metadata_path or existing.story_metadata_path
+            existing.image_path = image_path or existing.image_path
+            existing.image_metadata_path = image_metadata_path or existing.image_metadata_path
+            existing.render_duration_seconds = render_duration_seconds
+            record = existing
+
+        session.flush()
+        return record
+
+    @staticmethod
+    def get_by_request_id(
+        session: Session, request_id: str
+    ) -> Optional[GeneratedContentRecord]:
+        """Fetch a single record by its request_id."""
+        return session.execute(
+            select(GeneratedContentRecord).where(
+                GeneratedContentRecord.id == request_id
+            )
+        ).scalar_one_or_none()
+
+    @staticmethod
+    def list_by_run(
+        session: Session, run_id: str
+    ) -> List[GeneratedContentRecord]:
+        """Fetch all records for a run, newest first."""
+        stmt = (
+            select(GeneratedContentRecord)
+            .where(GeneratedContentRecord.run_id == run_id)
+            .order_by(GeneratedContentRecord.generated_at.desc())
+        )
+        return list(session.execute(stmt).scalars().all())
+
+    @staticmethod
+    def list_recent(
+        session: Session,
+        limit: int = 20,
+        source_mode: Optional[str] = None,
+    ) -> List[GeneratedContentRecord]:
+        """Fetch the most-recent generated content records."""
+        stmt = select(GeneratedContentRecord)
+        if source_mode:
+            stmt = stmt.where(GeneratedContentRecord.source_mode == source_mode)
+        stmt = stmt.order_by(GeneratedContentRecord.generated_at.desc()).limit(limit)
+        return list(session.execute(stmt).scalars().all())
         return list(session.execute(stmt).scalars().all())

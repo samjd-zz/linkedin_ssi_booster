@@ -8,9 +8,9 @@ This document provides a comprehensive reference for all command-line flags supp
 
 The CLI centers on three main workflows:
 
-1. **Schedule mode** (`--schedule`) — Generate posts from your private content calendar
-2. **Curate mode** (`--curate`) — Fetch and comment on live RSS articles
-3. **Console mode** (`--console`) — Interactive persona chat with deterministic grounding
+1. **Schedule mode** (`--schedule`) — Generate posts from your private content calendar, with optional FLUX art-avatar rendering
+2. **Curate mode** (`--curate`) — Fetch and comment on live RSS articles, with optional FLUX art-avatar rendering
+3. **Console mode** (`--console`) — Interactive persona chat with deterministic grounding and on-demand art generation (`/art`)
 
 All modes support `--dry-run` to preview outputs without making Buffer API calls.
 
@@ -84,6 +84,7 @@ python main.py --schedule --week 3 --dry-run
 - Applies truth gate validation and confidence scoring
 - Routes to Buffer queue or Ideas board based on confidence policy
 - Uses configured posting slots from `.env` (`SSI_FOCUS_*` weights)
+- **Art avatar:** When `FLUX_CAPACITOR_ENABLED=true`, a FLUX image is rendered for each non-YouTube post after Ollama text generation completes. Art metadata (`art_avatar_status`, `art_avatar_image_path`, `art_avatar_story_path`, etc.) is attached to each post entry.
 
 ---
 
@@ -91,7 +92,7 @@ python main.py --schedule --week 3 --dry-run
 
 ### `--curate`
 
-Fetch RSS articles, filter by keywords, rank by relevance and acceptance priors, generate commentary, and route to Buffer Ideas or scheduled posts.
+Fetch RSS articles, filter by keywords, rank by relevance and acceptance priors, generate commentary, and route to Buffer Ideas or scheduled posts. When `FLUX_CAPACITOR_ENABLED=true`, a FLUX art avatar is rendered for each non-YouTube, non-all-channel idea after generation.
 
 **Example:**
 
@@ -224,16 +225,19 @@ python main.py --console --verify --avatar-explain --dot-report
 
 **Console commands:**
 
-| Command            | Description                                                               |
-| ------------------ | ------------------------------------------------------------------------- |
-| `/help`            | Display all available commands                                            |
-| `/reset`           | Clear conversation history                                                |
-| `/reload`          | Re-read persona graph, domain packs, and extracted_knowledge.json         |
-| `/exit` or `/quit` | Exit console mode                                                         |
-| `/verify`          | Toggle DoT + similarity verification on/off                               |
-| `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
-| `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off |
-| `/graph-stats`     | Show knowledge graph statistics (node/edge counts, node types)            |
+| Command            | Description                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `/help`            | Display all available commands                                                                   |
+| `/reset`           | Clear conversation history                                                                       |
+| `/reload`          | Re-read persona graph, domain packs, and extracted_knowledge.json                                |
+| `/exit` or `/quit` | Exit console mode                                                                                |
+| `/verify`          | Toggle DoT + similarity verification on/off                                                      |
+| `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off                         |
+| `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off                        |
+| `/graph-stats`     | Show knowledge graph statistics (node/edge counts, node types)                                   |
+| `/katzilla <query>`| Show deterministic external evidence citations for a query                                       |
+| `/rei` or `/rei-toei` | Switch to Rei Toei music avatar mode                                                          |
+| `/art [topic]`     | Render FLUX art avatar from the last AI reply. Optional topic hint narrows the visual prompt.    |
 
 **Query routing:**
 

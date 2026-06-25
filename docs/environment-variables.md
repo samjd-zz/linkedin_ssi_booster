@@ -481,7 +481,7 @@ FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
 Root directory where generated local artifacts are saved.
 
 This is a system-wide local-first storage root for generated content
-(for example YouTube scripts, Rei Toei outputs, and future image/story artifacts).
+(YouTube scripts, Rei Toei outputs, and FLUX art-avatar image/story artifacts).
 
 **Default:** `yt-vid-data` (relative to project root)
 
@@ -507,6 +507,129 @@ Subdirectory under `GENERATED_CONTENT_DIR` used for Rei Toei generated artifacts
 
 ```bash
 REI_TOEI_SUBDIR=rei_toei
+```
+
+---
+
+## FLUX Capacitor Art Avatar
+
+The `services/flux_capacitor` package orchestrates FLUX image generation with strict Ollama-first GPU sequencing. All variables below are optional — the feature is **disabled by default** (`FLUX_CAPACITOR_ENABLED=false`) so the core profile is unaffected.
+
+### `FLUX_CAPACITOR_ENABLED`
+
+Master switch. Set to `true` to enable art-avatar generation in the schedule, curate, and console (`/art`) flows.
+
+**Default:** `false`
+
+```bash
+FLUX_CAPACITOR_ENABLED=true
+```
+
+### `FLUX_CAPACITOR_MINIMAL_MODE`
+
+Skip FLUX rendering entirely and always return the text-only path. Useful for testing the integration wiring without GPU load.
+
+**Default:** `false`
+
+```bash
+FLUX_CAPACITOR_MINIMAL_MODE=true
+```
+
+### `FLUX_CAPACITOR_STYLE_PRESET`
+
+Active style preset name. Controls visual tone and composition language injected into the FLUX prompt.
+
+**Default:** `corporate_minimal`
+
+**Available presets:**
+- `corporate_minimal` — Muted palette, shallow geometry, polished corporate-safe composition
+- `sacred_geometry_light` — Subtle sacred geometry with soft light accents, still restrained
+- `tech_dark` — Dark background, cyan/purple accent tones, grid-inspired tech aesthetic
+
+```bash
+FLUX_CAPACITOR_STYLE_PRESET=corporate_minimal
+```
+
+### `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`
+
+Custom style system prompt that appends to (or replaces) the active preset's suffix. Override to inject your own visual identity.
+
+**Default:** `"Minimalist corporate-art hybrid aesthetic. Muted palette, shallow sacred-geometry hints, restrained symmetry. Polished but corporate-safe composition. No excessive saturation, no disturbing imagery."`
+
+```bash
+FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT="Clean isometric tech illustration, monochrome with single blue accent"
+```
+
+### Style Clamp Variables
+
+Hard limits enforced at render time — cannot be overridden by individual caller requests.
+
+| Variable | Default | Range | Description |
+|---|---|---|---|
+| `FLUX_CAPACITOR_SATURATION_CAP` | `0.55` | `0.0–1.0` | Maximum colour saturation allowed in the prompt |
+| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP` | `0.40` | `0.0–1.0` | Maximum geometric complexity in the scene |
+| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP` | `0.30` | `0.0–1.0` | Maximum surrealism / abstract distortion |
+
+```bash
+FLUX_CAPACITOR_SATURATION_CAP=0.55
+FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP=0.40
+FLUX_CAPACITOR_SURREAL_INTENSITY_CAP=0.30
+```
+
+### GPU Policy Variables
+
+Control single-GPU sequencing on RTX 3060.
+
+| Variable | Default | Description |
+|---|---|---|
+| `FLUX_CAPACITOR_OLLAMA_FIRST` | `true` | Ollama jobs always take priority over FLUX jobs |
+| `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA` | `true` | FLUX rendering only starts after Ollama work drains |
+| `FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS` | `1` | Hard cap on simultaneous GPU jobs (FLUX + Ollama combined) |
+| `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS` | `120` | Seconds to wait for a free GPU slot before deferring to text-only |
+
+```bash
+FLUX_CAPACITOR_OLLAMA_FIRST=true
+FLUX_CAPACITOR_FLUX_AFTER_OLLAMA=true
+FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS=1
+FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS=120
+```
+
+### Render Dimension Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `FLUX_CAPACITOR_RENDER_WIDTH` | `768` | Output image width in pixels |
+| `FLUX_CAPACITOR_RENDER_HEIGHT` | `768` | Output image height in pixels |
+| `FLUX_CAPACITOR_RENDER_STEPS` | `4` | Diffusion steps (higher = slower but sharper; 4 is schnell-optimal) |
+
+```bash
+FLUX_CAPACITOR_RENDER_WIDTH=768
+FLUX_CAPACITOR_RENDER_HEIGHT=768
+FLUX_CAPACITOR_RENDER_STEPS=4
+```
+
+### Artifact Storage Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `FLUX_CAPACITOR_SUBDIR` | `flux_capacitor` | Subdirectory under `GENERATED_CONTENT_DIR` for art-avatar images and metadata |
+| `FLUX_CAPACITOR_STORIES_SUBDIR` | `stories` | Subdirectory under `FLUX_CAPACITOR_SUBDIR` for story text artifacts |
+
+```bash
+FLUX_CAPACITOR_SUBDIR=flux_capacitor
+FLUX_CAPACITOR_STORIES_SUBDIR=stories
+```
+
+**Generated artifact layout:**
+
+```
+yt-vid-data/
+  flux_capacitor/
+    20260625_143000_linkedin_abc12345_req-id-fragment.png
+    20260625_143000_linkedin_abc12345_req-id-fragment.json   ← image metadata
+    stories/
+      20260625_143000_linkedin_abc12345_req-id-fragment.txt  ← story text
+      20260625_143000_linkedin_abc12345_req-id-fragment_meta.json
 ```
 
 ---
@@ -729,12 +852,28 @@ WYOMING_PIPER_HOST=piper
 WYOMING_PIPER_PORT=10200
 CONSOLE_VOICE_SPEAKER=896
 
-# Image Generation (full profile only)
+# Image Generation (FLUX.1-schnell + Art Avatar)
 CIVITAI_API_KEY=your_civitai_key_here
 FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
 GENERATED_CONTENT_DIR=/app/yt-vid-data
 YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
 REI_TOEI_SUBDIR=rei_toei
+
+# FLUX Capacitor Art Avatar (optional — disabled by default)
+FLUX_CAPACITOR_ENABLED=false
+FLUX_CAPACITOR_STYLE_PRESET=corporate_minimal
+FLUX_CAPACITOR_SATURATION_CAP=0.55
+FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP=0.40
+FLUX_CAPACITOR_SURREAL_INTENSITY_CAP=0.30
+FLUX_CAPACITOR_OLLAMA_FIRST=true
+FLUX_CAPACITOR_FLUX_AFTER_OLLAMA=true
+FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS=1
+FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS=120
+FLUX_CAPACITOR_RENDER_WIDTH=768
+FLUX_CAPACITOR_RENDER_HEIGHT=768
+FLUX_CAPACITOR_RENDER_STEPS=4
+FLUX_CAPACITOR_SUBDIR=flux_capacitor
+FLUX_CAPACITOR_STORIES_SUBDIR=stories
 
 # Strudel Music Generation (Docker)
 OLLAMA_HOST=http://ollama:11434

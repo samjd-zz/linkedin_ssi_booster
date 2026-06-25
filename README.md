@@ -483,7 +483,7 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (740 collected; latest full run: 738 passed, 2 skipped, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (768 collected; latest full run: 766 passed, 2 skipped, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

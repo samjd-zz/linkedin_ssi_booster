@@ -158,7 +158,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Steps 2-3.
 
 ### Step 5: Integrate Scheduled Posting Flow (Primary Path)
-- Status: Not Started — pending schedule-path hook in main.py
+- Status: **Complete** ✅ (2026-06-25)
+- Notes: `_render_schedule_art_avatar()` helper wired into `main.py` schedule loop; `notify_ollama_start/done` lifecycle wraps every Ollama call; art rendered only after text gen completes; story artifact persisted; 3 tests in `tests/test_flux_capacitor_schedule_integration.py`.
 - Effort: 7 hours
 - Description: Ensure art generation runs after text generation and validation.
 - Actions:
@@ -175,7 +176,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Steps 2.5, 3-4.
 
 ### Step 6: Integrate Curated Buffer Idea Flow (Primary Path)
-- Status: Not Started — pending curation-path hook in main.py
+- Status: **Complete** ✅ (2026-06-25)
+- Notes: `_render_curate_art_avatar()` helper added to `main.py`; called per-idea after `curate_and_create_ideas()` returns; skips youtube and all-channel ideas; art metadata merged into idea dict; 8 tests in `tests/test_flux_capacitor_curate_console_integration.py`.
 - Effort: 6 hours
 - Description: Add art-avatar generation to curated ideas before publishing decisions so selected concepts can be visualized.
 - Actions:
@@ -192,7 +194,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Steps 2.5, 3-5.
 
 ### Step 7: Integrate Console Path (Secondary Path)
-- Status: Not Started — pending console routing in main.py
+- Status: **Complete** ✅ (2026-06-25)
+- Notes: `/art [topic]` command added to console loop in `run_console()`; uses `_render_console_art_avatar()` helper (SourceMode.CONSOLE); renders from last assistant reply in history; deferred/failed results print user-readable messages; `/help` updated; 7 tests in `tests/test_flux_capacitor_curate_console_integration.py`.
 - Effort: 5 hours
 - Description: Add console capability with same GPU gate and fallback semantics.
 - Actions:
@@ -209,25 +212,21 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Steps 2.5, 4-6.
 
 ### Step 7.5: DB-Second Schema Fit and Migration Instructions
-- Status: Not Started — deferred to after schedule/curate/console integration
-- Effort: 5 hours
-- Description: Document and implement optional DB indexing path for generated content while keeping local files canonical.
-- Actions:
-  - Review [services/database/models.py](../../../services/database/models.py) and confirm current fit:
-    - `candidate_records.text_snippet` is snippet-only.
-    - `published_records.text_snippet` is snippet-only.
-  - Add migration instructions for optional full-story archival support.
-  - Choose one DB strategy:
-    - add columns to `candidate_records` (`full_text`, `story_path`, `story_metadata_path`), or
-    - create dedicated `generated_content_records` table (preferred for separation of concerns).
-  - Define dual-write behavior: local always, DB optional when enabled.
+- Status: **Complete** ✅ (2026-06-25)
+- Notes:
+  - New `generated_content_records` table — 18 columns, 4 indexes, FK → `candidate_records` (nullable)
+  - ORM model `GeneratedContentRecord` in `services/database/models.py`
+  - Repository `GeneratedContentRecordRepository` in `services/database/repositories.py` — `upsert`, `get_by_request_id`, `list_by_run`, `list_recent`
+  - Migration script `scripts/migrate_v1_1_0_generated_content.sql` (additive, idempotent, bumps schema to 1.1.0)
+  - `services/flux_capacitor/_storage.py` — `save_to_db()` writes when `DATABASE_ENABLED=true`; silently skips when disabled or on any error
+  - `services/flux_capacitor/_pipeline.py` — calls `save_to_db()` after all local artifacts are persisted (step 7 of pipeline)
+  - `ArtAvatarRequest` gains three optional linkage fields: `run_id`, `candidate_id`, `ssi_component`
+  - 6 new tests in `TestSaveToDb` (test_flux_capacitor_pipeline.py): disabled no-op, env-absent no-op, success path, import-error silent, runtime-error silent, optional-fields propagation
+  - Local files remain canonical — DB is secondary index only
 - Verification:
-  - Migration script is additive and reversible.
-  - Existing selection-learning behavior remains intact.
-- Project Integration:
-  - Aligns with local-first, DB-second architecture for the whole generated-content system.
-- Dependencies:
-  - Steps 2.5, 2.6, 5-7.
+  - [x] Migration script is additive and reversible (all `IF NOT EXISTS` / `ON CONFLICT DO NOTHING`)
+  - [x] Existing selection-learning behavior intact (no schema changes to existing tables)
+  - [x] `source .venv/bin/activate && python -m pytest -q` → 766 passed, 2 skipped, 0 failed
 
 ### Step 8: Add Prompt Presets and Toned-Down Style Controls
 - Status: **Complete** ✅ (2026-06-25)
@@ -286,8 +285,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Steps 1-9, 7.5.
 
 ### Step 11: Documentation and Operational Updates
-- Status: **In Progress** (2026-06-25)
-- Notes: ROADMAP and testing-and-dev updated; multimodal-features and docker-deployment updates pending schedule/console integration.
+- Status: **Complete** ✅ (2026-06-25)
+- Notes: README, testing-and-dev, multimodal-features, cli-reference, environment-variables, docker-deployment, and plan.md all updated.
 - Effort: 4 hours
 - Description: Update user/developer docs to reflect new sequencing policy and usage.
 - Actions:
@@ -313,14 +312,14 @@ This plan is aligned to repository practices documented in [README.md](../../../
 
 ### Integration Gates
 - [x] FLUX never executes concurrently with active Ollama GPU job.
-- [ ] Schedule and console flows both honor the same gate policy. (pending main.py hooks)
+- [x] Schedule and console flows both honor the same gate policy.
 - [x] Timeout/defer path degrades to text-only without breaking post flow.
-- [ ] Curate/schedule/console all produce local story artifacts when generation occurs. (pending integration)
+- [x] Curate/schedule/console all produce local story artifacts when generation occurs.
 - [x] Persistence behavior is unified system-wide, not avatar-specific.
 
 ### Deployment Gates
-- [ ] Core/full profile behavior documented and validated.
-- [ ] Env variables in [.env.example](../../../.env.example) are complete.
+- [x] Core/full profile behavior documented and validated.
+  - [x] Env variables in [.env.example](../../../.env.example) are complete.
 - [x] Rollback path is clear: disable art-avatar feature flags and keep text pipeline intact.
 - [x] DB-disabled mode still provides complete local artifact history (stories + images + metadata).
 
@@ -336,8 +335,8 @@ This plan is aligned to repository practices documented in [README.md](../../../
   - Curated flow local story persistence and dual-write optional DB indexing.
   - System-wide persistence parity between avatar and non-avatar generated content flows.
 - Required verification commands:
-  1. python -m py_compile services/flux_capacitor/__init__.py services/flux_capacitor/_config.py services/flux_capacitor/_models.py services/flux_capacitor/_prompting.py services/flux_capacitor/_pipeline.py services/flux_capacitor/_storage.py
-  2. pytest -q tests/test_flux_capacitor_pipeline.py tests/test_gpu_orchestration_policy.py
+  1. `source .venv/bin/activate && python -m py_compile services/flux_capacitor/__init__.py services/flux_capacitor/_config.py services/flux_capacitor/_models.py services/flux_capacitor/_prompting.py services/flux_capacitor/_pipeline.py services/flux_capacitor/_storage.py`
+  2. `source .venv/bin/activate && python -m pytest -q tests/test_flux_capacitor_pipeline.py tests/test_gpu_orchestration_policy.py`
 
 ## Post-Implementation
 - [ ] Confirm docs/features index and related references are updated if needed.

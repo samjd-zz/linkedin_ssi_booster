@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from threading import Thread
 from typing import Any, Optional
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -501,3 +501,113 @@ class TestFluxCapacitorService:
         svc2 = get_flux_service()
         assert svc1 is svc2
         fc_pkg._service_instance = None  # cleanup
+
+
+# ============================================================================
+# DB dual-write tests
+# ============================================================================
+
+
+class TestSaveToDb:
+    """Unit tests for services.flux_capacitor._storage.save_to_db.
+
+    All tests run with DATABASE_ENABLED=false (default) except where
+    explicitly overridden — this matches the expected deployment default.
+    """
+
+    def _call(self, **overrides: Any) -> bool:
+        from services.flux_capacitor._storage import save_to_db
+        from datetime import datetime
+
+        request_id: str = overrides.get("request_id", "req-abc123")
+        run_id: str = overrides.get("run_id", "run-xyz")
+        source_mode: str = overrides.get("source_mode", "curate")
+        render_status: str = overrides.get("render_status", "rendered")
+        generated_at: datetime = overrides.get(
+            "generated_at", datetime(2026, 6, 25, 12, 0, 0)
+        )
+        return save_to_db(
+            request_id=request_id,
+            run_id=run_id,
+            source_mode=source_mode,
+            render_status=render_status,
+            generated_at=generated_at,
+            **{
+                k: v
+                for k, v in overrides.items()
+                if k not in {"request_id", "run_id", "source_mode", "render_status", "generated_at"}
+            },
+        )
+
+    def test_returns_false_when_db_disabled(self) -> None:
+        """save_to_db is a no-op when DATABASE_ENABLED is not true."""
+        with patch.dict("os.environ", {"DATABASE_ENABLED": "false"}):
+            result = self._call()
+        assert result is False
+
+    def test_returns_false_when_db_env_absent(self) -> None:
+        """save_to_db is a no-op when DATABASE_ENABLED is absent."""
+        env = {k: v for k, v in __import__("os").environ.items() if k != "DATABASE_ENABLED"}
+        with patch.dict("os.environ", env, clear=True):
+            result = self._call()
+        assert result is False
+
+    def test_returns_true_when_db_enabled_and_upsert_succeeds(self) -> None:
+        """When DATABASE_ENABLED=true and the session upserts cleanly, returns True."""
+        mock_record = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        with patch.dict("os.environ", {"DATABASE_ENABLED": "true"}), \
+             patch("services.database.repositories.GeneratedContentRecordRepository") as MockRepo, \
+             patch("services.database.session.get_session", return_value=mock_session):
+            MockRepo.upsert.return_value = mock_record
+            result = self._call()
+
+        assert result is True
+
+    def test_returns_false_on_db_import_error(self) -> None:
+        """When the DB session module is unavailable, returns False (never raises)."""
+        with patch.dict("os.environ", {"DATABASE_ENABLED": "true"}), \
+             patch("services.database.session.get_session", side_effect=ImportError("no db")):
+            result = self._call()
+        assert result is False
+
+    def test_returns_false_on_db_runtime_error(self) -> None:
+        """When the DB write raises unexpectedly, returns False (never raises)."""
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        with patch.dict("os.environ", {"DATABASE_ENABLED": "true"}), \
+             patch("services.database.session.get_session", return_value=mock_session), \
+             patch("services.database.repositories.GeneratedContentRecordRepository") as MockRepo:
+            MockRepo.upsert.side_effect = RuntimeError("db is down")
+            result = self._call()
+        assert result is False
+
+    def test_optional_fields_propagate(self) -> None:
+        """Optional linkage fields are forwarded to the repository."""
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        with patch.dict("os.environ", {"DATABASE_ENABLED": "true"}), \
+             patch("services.database.session.get_session", return_value=mock_session), \
+             patch("services.database.repositories.GeneratedContentRecordRepository") as MockRepo:
+            MockRepo.upsert.return_value = MagicMock()
+            self._call(
+                candidate_id="cand-001",
+                channel="linkedin",
+                ssi_component="establish_brand",
+                story_path="/data/story.txt",
+                image_path="/data/img.png",
+            )
+
+        _, kwargs = MockRepo.upsert.call_args
+        assert kwargs["candidate_id"] == "cand-001"
+        assert kwargs["channel"] == "linkedin"
+        assert kwargs["ssi_component"] == "establish_brand"
+        assert kwargs["story_path"] == "/data/story.txt"
+        assert kwargs["image_path"] == "/data/img.png"

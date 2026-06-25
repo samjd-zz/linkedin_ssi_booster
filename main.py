@@ -33,6 +33,7 @@ from content_calendar import CONTENT_CALENDAR
 from services.buffer_service import BufferService, BufferQueueFullError, BufferRateLimitError, BufferChannelNotConnectedError
 from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
 from services.shared import get_rei_toei_dir, get_youtube_scripts_dir
+from services.flux_capacitor import get_flux_service, SourceMode, RenderStatus
 
 
 def _configure_stdio() -> None:
@@ -112,6 +113,196 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(_ColourFormatter("%(asctime)s [%(levelname)s] %(message)s"))
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
+
+
+def _render_schedule_art_avatar(
+    post_text: str,
+    channel: str,
+    topic: dict,
+) -> dict:
+    """Run FLUX art-avatar rendering for schedule flow and return metadata.
+
+    Returns an empty dict when rendering is not available.
+    """
+    if not post_text or channel == "youtube":
+        return {}
+
+    try:
+        flux_service = get_flux_service()
+        request = flux_service.make_request(
+            post_text=post_text,
+            source_mode=SourceMode.SCHEDULE,
+            channel=channel,
+            theme=topic.get("title"),
+            knowledge_context=topic.get("angle"),
+            defer_if_busy=True,
+        )
+        result = flux_service.render(request)
+
+        if result.status == RenderStatus.RENDERED:
+            logger.info(
+                "🎨 FLUX rendered for topic='%s' channel=%s image=%s",
+                topic.get("title", ""),
+                channel,
+                result.image_path,
+            )
+        else:
+            logger.info(
+                "🎨 FLUX status=%s for topic='%s' channel=%s reason=%s",
+                result.status.value,
+                topic.get("title", ""),
+                channel,
+                result.defer_reason or result.render_error or "",
+            )
+
+        return {
+            "art_avatar_status": result.status.value,
+            "art_avatar_image_path": result.image_path,
+            "art_avatar_metadata_path": result.metadata_path,
+            "art_avatar_story_path": result.story_path,
+            "art_avatar_story_metadata_path": result.story_metadata_path,
+            "art_avatar_story_save_status": result.story_save_status,
+            "art_avatar_defer_reason": result.defer_reason,
+            "art_avatar_render_error": result.render_error,
+            "art_avatar_wait_seconds": result.wait_time_seconds,
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "FLUX schedule integration failed for topic='%s' channel=%s: %s",
+            topic.get("title", ""),
+            channel,
+            exc,
+        )
+        return {"art_avatar_status": "failed", "art_avatar_render_error": str(exc)}
+
+
+def _render_curate_art_avatar(
+    idea: dict,
+    channel: str,
+) -> dict:
+    """Run FLUX art-avatar rendering for the curate flow and return metadata.
+
+    Returns an empty dict when rendering is not available or not applicable.
+    """
+    post_text: str = idea.get("generated_text") or idea.get("text", "")  # type: ignore[assignment]
+    if not post_text or channel in ("youtube", "all"):
+        return {}
+
+    try:
+        flux_service = get_flux_service()
+        request = flux_service.make_request(
+            post_text=post_text,
+            source_mode=SourceMode.CURATE,
+            channel=channel,
+            theme=idea.get("title"),
+            defer_if_busy=True,
+        )
+        result = flux_service.render(request)
+
+        if result.status == RenderStatus.RENDERED:
+            logger.info(
+                "🎨 FLUX rendered for idea='%s' channel=%s image=%s",
+                idea.get("title", ""),
+                channel,
+                result.image_path,
+            )
+        else:
+            logger.info(
+                "🎨 FLUX status=%s for idea='%s' channel=%s reason=%s",
+                result.status.value,
+                idea.get("title", ""),
+                channel,
+                result.defer_reason or result.render_error or "",
+            )
+
+        return {
+            "art_avatar_status": result.status.value,
+            "art_avatar_image_path": result.image_path,
+            "art_avatar_metadata_path": result.metadata_path,
+            "art_avatar_story_path": result.story_path,
+            "art_avatar_story_metadata_path": result.story_metadata_path,
+            "art_avatar_story_save_status": result.story_save_status,
+            "art_avatar_defer_reason": result.defer_reason,
+            "art_avatar_render_error": result.render_error,
+            "art_avatar_wait_seconds": result.wait_time_seconds,
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "FLUX curate integration failed for idea='%s' channel=%s: %s",
+            idea.get("title", ""),
+            channel,
+            exc,
+        )
+        return {"art_avatar_status": "failed", "art_avatar_render_error": str(exc)}
+
+
+def _render_console_art_avatar(
+    post_text: str,
+    topic_hint: str | None = None,
+) -> dict:
+    """Run FLUX art-avatar rendering for the console flow and return metadata.
+
+    Returns an empty dict when rendering is not available.
+    """
+    if not post_text:
+        return {}
+
+    try:
+        flux_service = get_flux_service()
+        request = flux_service.make_request(
+            post_text=post_text,
+            source_mode=SourceMode.CONSOLE,
+            channel="linkedin",
+            theme=topic_hint,
+            defer_if_busy=True,
+        )
+        result = flux_service.render(request)
+
+        if result.status == RenderStatus.RENDERED:
+            logger.info(
+                "🎨 FLUX rendered for console reply image=%s",
+                result.image_path,
+            )
+        else:
+            logger.info(
+                "🎨 FLUX status=%s for console reply reason=%s",
+                result.status.value,
+                result.defer_reason or result.render_error or "",
+            )
+
+        return {
+            "art_avatar_status": result.status.value,
+            "art_avatar_image_path": result.image_path,
+            "art_avatar_metadata_path": result.metadata_path,
+            "art_avatar_story_path": result.story_path,
+            "art_avatar_story_metadata_path": result.story_metadata_path,
+            "art_avatar_story_save_status": result.story_save_status,
+            "art_avatar_defer_reason": result.defer_reason,
+            "art_avatar_render_error": result.render_error,
+            "art_avatar_wait_seconds": result.wait_time_seconds,
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("FLUX console integration failed: %s", exc)
+        return {"art_avatar_status": "failed", "art_avatar_render_error": str(exc)}
+
+
+def _display_art_in_terminal(image_path: str | None, width: int = 60) -> None:
+    """Render a FLUX-generated image inline in the terminal using term-image.
+
+    Silently skips if the path is missing, the file does not exist, or
+    term-image is unavailable / the terminal does not support inline graphics.
+    """
+    if not image_path:
+        return
+    try:
+        from pathlib import Path as _Path
+        if not _Path(image_path).is_file():
+            return
+        from term_image.image import from_file as _ti_from_file
+        _img = _ti_from_file(image_path, width=width)
+        _img.draw()
+    except Exception as _ti_err:  # noqa: BLE001
+        logger.debug("term-image display skipped: %s", _ti_err)
 
 
 from services.console_grounding import (
@@ -374,7 +565,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei")
+            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
             print("  /verify — toggle DoT + similarity verification on/off")
             print("  /avatar-explain — toggle avatar-explain report on/off")
@@ -382,6 +573,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("  /graph-stats — show knowledge graph statistics")
             print("  /katzilla <query> — show deterministic external evidence citations")
             print("  /rei or /rei-toei — switch to Rei Toei music avatar mode")
+            print("  /art [topic] — render FLUX art avatar from the last AI reply (topic hint optional)")
             continue
         if cmd == "/reset":
             history.clear()
@@ -443,6 +635,30 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 print(str(Fore.RED) + f"⚠️ Rei error: {rei_err}" + str(Style.RESET_ALL))
             continue
 
+        if cmd.startswith("/art"):
+            _art_topic_hint = user_input[len("/art"):].strip() or None
+            _art_src = next(
+                (m["content"] for m in reversed(history) if m["role"] == "assistant"),
+                None,
+            )
+            if not _art_src:
+                print(str(Fore.YELLOW) + "⚠️  No previous reply to render art from. Generate a response first." + str(Style.RESET_ALL))
+            else:
+                print(str(Fore.CYAN) + "🎨 Requesting art avatar..." + str(Style.RESET_ALL))
+                _art_result = _render_console_art_avatar(_art_src, _art_topic_hint)
+                _art_status = _art_result.get("art_avatar_status", "unavailable")
+                if _art_status == RenderStatus.RENDERED.value:
+                    print(str(Fore.GREEN) + f"✅  Art rendered → {_art_result.get('art_avatar_image_path', '')}" + str(Style.RESET_ALL))
+                    _display_art_in_terminal(_art_result.get("art_avatar_image_path"))
+                    _story = _art_result.get("art_avatar_story_path")
+                    if _story:
+                        print(str(Fore.GREEN) + f"   Story → {_story}" + str(Style.RESET_ALL))
+                elif _art_status in (RenderStatus.DEFERRED.value, RenderStatus.TEXT_ONLY.value):
+                    print(str(Fore.YELLOW) + f"⏳  GPU busy — {_art_result.get('art_avatar_defer_reason', 'image deferred')}" + str(Style.RESET_ALL))
+                else:
+                    print(str(Fore.RED) + f"⚠️  Art generation: {_art_status} — {_art_result.get('art_avatar_render_error', '')}" + str(Style.RESET_ALL))
+            continue
+
         if cmd.startswith("/katzilla"):
             query = user_input[len("/katzilla"):].strip()
             if not query:
@@ -452,7 +668,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 from services.avatar_intelligence._retrieval import _retrieve_external_evidence
 
                 external = _retrieve_external_evidence(query=query, category_filter=None, limit=5)
-                reply = build_katzilla_citation_reply(query, external)
+                from services.avatar_intelligence import ExternalEvidenceFact as _ExtFact
+                reply = build_katzilla_citation_reply(query, [e for e in external if isinstance(e, _ExtFact)])
                 history.append({"role": "user", "content": user_input})
                 history.append({"role": "assistant", "content": reply})
                 if len(history) > max_turns * 2:
@@ -935,7 +1152,8 @@ def main():
             # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
             import asyncio
             from services.shared import get_ollama_service_cached
-            ollama_service = get_ollama_service_cached()
+            from services.ollama_service import OllamaService as _OllamaSvc
+            ollama_service: _OllamaSvc = get_ollama_service_cached()  # type: ignore[assignment]
             concept = await asyncio.to_thread(generate_song_concept, theme, rei_persona, rei_domain, None, ollama_service)
 
             print(str(Fore.CYAN) + "\u270d\ufe0f  Composing lyrics..." + str(Style.RESET_ALL))
@@ -1073,7 +1291,8 @@ def main():
             # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
             import asyncio
             from services.shared import get_ollama_service_cached
-            ollama_service = get_ollama_service_cached()
+            from services.ollama_service import OllamaService as _OllamaSvc
+            ollama_service: _OllamaSvc = get_ollama_service_cached()  # type: ignore[assignment]
             strudel_pattern = await asyncio.to_thread(generate_strudel_code, theme, template, rei_persona, rei_domain, None, ollama_service)
             strudel_code = strudel_pattern.strudel_code
             validation = validate_strudel_syntax(strudel_code)
@@ -1174,7 +1393,31 @@ def main():
             return
         noun = "posts" if args.type == "post" else "ideas"
 
-        
+        # Step 6: Render art avatars for curated ideas (non-dry-run, non-youtube, non-all-channel)
+        if ideas:
+            for _idea in ideas:
+                if not isinstance(_idea, dict):
+                    continue
+                _idea_channel = _idea.get("channel", "linkedin")
+                if _idea.get("dry_run") or _idea_channel in ("youtube", "all"):
+                    continue
+                _art_meta = _render_curate_art_avatar(_idea, str(_idea_channel))
+                if _art_meta:
+                    _idea.update(_art_meta)
+                    _art_status = _art_meta.get("art_avatar_status", "")
+                    if _art_status == RenderStatus.RENDERED.value:
+                        print(
+                            str(Fore.GREEN)
+                            + f"🎨  Art avatar rendered → {_art_meta.get('art_avatar_image_path', '')}"
+                            + str(Style.RESET_ALL)
+                        )
+                        _display_art_in_terminal(_art_meta.get("art_avatar_image_path"))
+                    elif _art_status in (RenderStatus.DEFERRED.value, RenderStatus.TEXT_ONLY.value):
+                        print(
+                            str(Fore.YELLOW)
+                            + f"⏳  Art avatar deferred: {_art_meta.get('art_avatar_defer_reason', 'GPU busy')}"
+                            + str(Style.RESET_ALL)
+                        )
         return
 
 
@@ -1223,14 +1466,31 @@ def main():
                     + domain_facts_to_project_facts(domain_facts)
                 )
 
+                flux_service = get_flux_service()
+                ollama_job_id = flux_service.notify_ollama_start()
+                try:
+                    if channel == "youtube":
+                        post = ai.generate_youtube_short_script(
+                            title=topic["title"],
+                            angle=topic["angle"],
+                            ssi_component=topic.get("ssi_component", "establish_brand"),
+                            grounding_facts=grounding_facts,
+                            interactive=args.interactive,
+                        )
+                    else:
+                        post = ai.generate_linkedin_post(
+                            title=topic["title"],
+                            angle=topic["angle"],
+                            ssi_component=topic.get("ssi_component", "establish_brand"),
+                            hashtags=topic.get("hashtags", []),
+                            grounding_facts=grounding_facts,
+                            channel=channel,
+                            interactive=args.interactive,
+                        )
+                finally:
+                    flux_service.notify_ollama_done(ollama_job_id)
+
                 if channel == "youtube":
-                    post = ai.generate_youtube_short_script(
-                        title=topic["title"],
-                        angle=topic["angle"],
-                        ssi_component=topic.get("ssi_component", "establish_brand"),
-                        grounding_facts=grounding_facts,
-                        interactive=args.interactive,
-                    )
                     safe_title = re.sub(r"[^\w\-]", "_", topic["title"][:60]).strip("_")
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     script_path = get_youtube_scripts_dir() / f"{timestamp}_{safe_title}.txt"
@@ -1251,21 +1511,15 @@ def main():
                         print(str(Fore.GREEN) + f"💾 Saved to: {script_path}" + str(Style.RESET_ALL))
                     posts.append({**topic, "generated_text": post})
                 else:
-                    post = ai.generate_linkedin_post(
-                        title=topic["title"],
-                        angle=topic["angle"],
-                        ssi_component=topic.get("ssi_component", "establish_brand"),
-                        hashtags=topic.get("hashtags", []),
-                        grounding_facts=grounding_facts,
-                        channel=channel,
-                        interactive=args.interactive,
-                    )
                     # Hashtags are only appended for LinkedIn-style posts.
                     if channel not in ("x", "bluesky", "threads", "youtube"):
                         hashtag_str = " ".join(f"#{h.lstrip('#')}" for h in topic.get("hashtags", []))
                         if hashtag_str and hashtag_str not in post:
                             post = post.rstrip() + f"\n\n{hashtag_str}"
-                    posts.append({**topic, "generated_text": post})
+                    art_meta = _render_schedule_art_avatar(post, channel, topic)
+                    posts.append({**topic, "generated_text": post, **art_meta})
+                    if art_meta.get("art_avatar_status") == RenderStatus.RENDERED.value:
+                        _display_art_in_terminal(art_meta.get("art_avatar_image_path"))
 
                 if channel != "youtube":
                     print(str(Fore.CYAN) + f"\n{'='*60}" + str(Style.RESET_ALL))

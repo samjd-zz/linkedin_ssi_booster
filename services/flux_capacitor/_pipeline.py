@@ -42,6 +42,7 @@ from services.flux_capacitor._storage import (
     build_image_path,
     save_image_metadata,
     save_story_artifact,
+    save_to_db,
 )
 
 logger = logging.getLogger(__name__)
@@ -317,7 +318,34 @@ def run_art_avatar(
         )
 
     # ------------------------------------------------------------------ #
-    # 7. Build result
+    # 7. Optional DB dual-write (local files are canonical)
+    # ------------------------------------------------------------------ #
+    final_render_status = RenderStatus.RENDERED.value if render_ok else RenderStatus.FAILED.value
+    save_to_db(
+        request_id=request.request_id,
+        run_id=request.run_id or request.request_id,
+        source_mode=request.source_mode.value,
+        render_status=final_render_status,
+        generated_at=datetime.utcnow(),
+        candidate_id=request.candidate_id,
+        channel=request.source_channel,
+        ssi_component=request.ssi_component,
+        source_url=None,
+        source_title=None,
+        story_path=story_path_str,
+        story_metadata_path=story_meta_str,
+        image_path=str(image_path) if render_ok else None,
+        image_metadata_path=meta_path_str,
+        save_status=story_status,
+        style_preset=request.style_profile,
+        prompt_text=prompt_text,
+        evidence_ids=request.prompt_overrides.get("evidence_ids", []),
+        queue_wait_seconds=telemetry.queue_wait_seconds,
+        render_duration_seconds=telemetry.render_duration_seconds,
+    )
+
+    # ------------------------------------------------------------------ #
+    # 8. Build result
     # ------------------------------------------------------------------ #
     if render_ok:
         return ArtAvatarResult(

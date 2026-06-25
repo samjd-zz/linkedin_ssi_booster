@@ -471,6 +471,13 @@ Generated artifacts are saved under `./yt-vid-data/` on the host.
 Examples:
 - YouTube scripts: `./yt-vid-data/youtube_scripts/`
 - Rei Toei outputs: `./yt-vid-data/rei_toei/`
+- FLUX art-avatar images: `./yt-vid-data/flux_capacitor/`
+- FLUX art-avatar stories: `./yt-vid-data/flux_capacitor/stories/`
+
+> **Note:** Art-avatar rendering is controlled by `FLUX_CAPACITOR_ENABLED=true` in `.env`.
+> When disabled (the default), the text pipeline runs normally and no GPU work is submitted to the FLUX service.
+> When enabled, the GPU orchestrator enforces Ollama-first sequencing: FLUX jobs start only after all active Ollama work drains.
+> If the queue wait exceeds `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS`, the pipeline degrades gracefully to text-only output.
 
 ---
 

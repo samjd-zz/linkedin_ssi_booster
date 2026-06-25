@@ -117,6 +117,11 @@ class ArtAvatarRequest:
     prompt_overrides: Dict[str, Any] = field(default_factory=dict)
     style_overrides: Dict[str, Any] = field(default_factory=dict)
 
+    # DB linkage (optional — used for secondary DB index when DATABASE_ENABLED=true)
+    run_id: Optional[str] = None        # groups requests within a pipeline run
+    candidate_id: Optional[str] = None  # FK → candidate_records.candidate_id
+    ssi_component: Optional[str] = None # e.g. establish_brand
+
     def __post_init__(self) -> None:
         if not self.post_text and not self.concept_text:
             raise ValueError(

@@ -373,6 +373,67 @@ class TruthTrajectoryPoint(Base):
 
 
 # ============================================================================
+# GENERATED CONTENT RECORDS (local-first artifact index — DB second)
+# ============================================================================
+
+
+class GeneratedContentRecord(Base):
+    """Secondary DB index for generated content artifacts (images + stories).
+
+    Local artifact files remain the canonical source of truth.
+    This table is an optional secondary index written only when
+    DATABASE_ENABLED=true.  It never replaces or shadows the local files.
+
+    Links back to candidate_records (optional) and carries enough metadata
+    to reconstruct the full artifact context from the local filesystem.
+    """
+
+    __tablename__ = "generated_content_records"
+
+    id = Column(String(255), primary_key=True)   # request_id from flux_capacitor
+    run_id = Column(String(255), nullable=False)
+    candidate_id = Column(
+        String(255),
+        ForeignKey("candidate_records.candidate_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    # Content classification
+    source_mode = Column(String(50), nullable=False)   # schedule | curate | console
+    channel = Column(String(50))
+    ssi_component = Column(String(100))
+
+    # Source linkage
+    source_url = Column(Text)
+    source_title = Column(Text)
+
+    # Local artifact paths (canonical store)
+    story_path = Column(Text)
+    story_metadata_path = Column(Text)
+    image_path = Column(Text)
+    image_metadata_path = Column(Text)
+
+    # Render outcome
+    render_status = Column(String(50), nullable=False)  # rendered | deferred | text_only | failed
+    save_status = Column(String(50), nullable=False, default="saved")  # saved | failed | skipped
+
+    # Style / prompt traceability
+    style_preset = Column(String(100))
+    prompt_text = Column(Text)
+    evidence_ids = Column(JSONType, default=list)
+
+    # Timing telemetry
+    queue_wait_seconds = Column(Float, default=0.0)
+    render_duration_seconds = Column(Float, default=0.0)
+
+    generated_at = Column(TIMESTAMP, nullable=False)
+    created_at = Column(TIMESTAMP, default=func.now())
+
+    # Relationship
+    candidate = relationship("CandidateRecord", foreign_keys=[candidate_id])
+
+
+# ============================================================================
 # SCHEMA MIGRATIONS
 # ============================================================================
 

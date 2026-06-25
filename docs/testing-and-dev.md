@@ -43,10 +43,10 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **740**     | **738** | **2**   | **0**  | ✅ **All pass** |
+| **768**     | **766** | **2**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** June 25, 2026
-- **Latest Run Scope:** Full suite via VS Code test runner (`tests/`)
+- **Latest Run Scope:** Full suite via `python -m pytest` from project root
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
 - **Notes:** 2 skipped = `test_get_scheduled_posts` / `test_get_published_posts` — Buffer API key present but lacks `channels` permission in this environment; tests skip cleanly via fixture guard.
 
@@ -64,6 +64,10 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
 - **44** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
 - _33 Pipeline | 11 GPU Orchestration Policy_
+- **18** FLUX Capacitor main.py integration tests (Steps 5–7)
+- _3 Schedule flow | 7 Curate flow | 7 Console flow (plus 1 SourceMode assertion)_
+  - `tests/test_flux_capacitor_schedule_integration.py`
+  - `tests/test_flux_capacitor_curate_console_integration.py`
 
 - **17** MCP agent unit tests (new)
 - _9 Buffer MCP agent tests + 8 Strudel MCP agent tests_
@@ -168,3 +172,5 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_strudel_mcp_agent.py`       | Verifies Strudel MCP agent JSON-RPC stdio flow, health-check tool discovery, tool-envelope parsing, and success/error handling for init/edit/playback tool calls.         |
 | `tests/test_flux_capacitor_pipeline.py` | Config validation, model contracts, style preset clamping, prompt assembly, GPU orchestrator state machine, pipeline disabled/deferred/FAILED paths, story artifact persistence, service singleton. |
 | `tests/test_gpu_orchestration_policy.py`| Ollama-first queue ordering, TEXT_ONLY timeout fallback, slot acquire/release lifecycle, exception-safe context manager, concurrency safety with multiple FLUX requests.   |
+| `tests/test_flux_capacitor_schedule_integration.py` | Schedule-flow wiring: skips YouTube channel, records rendered metadata, catches and wraps exceptions as failed result. |
+| `tests/test_flux_capacitor_curate_console_integration.py` | Curate-flow wiring: skips youtube/all channels, rendered/deferred/failed paths, SourceMode.CURATE propagation. Console-flow wiring: empty-text guard, rendered/deferred/failed paths, SourceMode.CONSOLE propagation, None topic hint. |

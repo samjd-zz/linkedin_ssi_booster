@@ -175,18 +175,23 @@ linkedin_ssi_booster/
 
 ## After Every Code Change
 
-- Always run `python -m py_compile <changed_files>` immediately after editing any `.py` file
+- Always run `source .venv/bin/activate && python -m py_compile <changed_files>` immediately after editing any `.py` file
 - Fix all syntax errors before considering a task complete
-- Example: `python -m py_compile services/content_curator/curator.py services/console_grounding/_gate_helpers.py`
+- Example: `source .venv/bin/activate && python -m py_compile services/content_curator/curator.py services/console_grounding/_gate_helpers.py`
+- **Always run tests with the project venv activated and `python -m pytest`** — never use a bare `pytest` binary or `.venv/bin/pytest` directly:
+  ```bash
+  source .venv/bin/activate && python -m pytest -q tests/test_<module>.py
+  source .venv/bin/activate && python -m pytest -q   # full suite
+  ```
 - **Write unit tests** for every new module or significant new function — place them in `tests/test_<module_name>.py` following the patterns in `tests/test_learning_report.py` and `tests/test_confidence_scoring.py`. Tests must pass before a task is considered complete.
-- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 565/565) or new behaviour is covered — keep the test table and count in sync.
+- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 766 passed, 2 skipped) or new behaviour is covered — keep the test table and count in sync.
 - **Update README.md** whenever you change how the tool is configured, how a feature works, or what env vars are required — keep the docs in sync with the code.
 - **Update relevant feature docs** in `docs/features/` when implementing new subsystems.
 
 ## Version & Test Status
 
 - **Version**: alpha-v0.0.2.7
-- **Test Count**: 565/565 passing (16 database tests added in Phase 4)
+- **Test Count**: 768 collected; 766 passed, 2 skipped, 0 failed
 - **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
 
 ## Docker & Deployment
