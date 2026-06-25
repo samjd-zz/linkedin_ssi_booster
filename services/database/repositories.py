@@ -671,6 +671,7 @@ class TruthTrajectoryPointRepository:
             .where(TruthTrajectoryPoint.trajectory_id == trajectory_id)
             .order_by(TruthTrajectoryPoint.timestamp)
         )
+        return list(session.execute(stmt).scalars().all())
 
 
 # ============================================================================
@@ -743,13 +744,13 @@ class GeneratedContentRecordRepository:
             session.add(record)
         else:
             # Update mutable fields in place
-            existing.render_status = render_status
-            existing.save_status = save_status
-            existing.story_path = story_path or existing.story_path
-            existing.story_metadata_path = story_metadata_path or existing.story_metadata_path
-            existing.image_path = image_path or existing.image_path
-            existing.image_metadata_path = image_metadata_path or existing.image_metadata_path
-            existing.render_duration_seconds = render_duration_seconds
+            setattr(existing, "render_status", render_status)
+            setattr(existing, "save_status", save_status)
+            setattr(existing, "story_path", story_path or existing.story_path)
+            setattr(existing, "story_metadata_path", story_metadata_path or existing.story_metadata_path)
+            setattr(existing, "image_path", image_path or existing.image_path)
+            setattr(existing, "image_metadata_path", image_metadata_path or existing.image_metadata_path)
+            setattr(existing, "render_duration_seconds", render_duration_seconds)
             record = existing
 
         session.flush()

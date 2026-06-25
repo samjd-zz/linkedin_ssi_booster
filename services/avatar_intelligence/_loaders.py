@@ -85,6 +85,12 @@ def _validate_domain_knowledge(data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _coerce_str_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return []
+
+
 # ---------------------------------------------------------------------------
 # Database loaders (dual-read: try DB first, fallback to file)
 # ---------------------------------------------------------------------------
@@ -326,9 +332,15 @@ def _load_narrative_memory(path: Path) -> tuple[NarrativeMemory | None, list[str
                 narrative_db = NarrativeMemoryRepository.get_latest(session)
                 if narrative_db is not None:
                     memory = NarrativeMemory(
-                        recent_themes=narrative_db.recent_themes or [],
-                        recent_claims=narrative_db.recent_claims or [],
-                        open_narrative_arcs=narrative_db.open_narrative_arcs or [],
+                        recent_themes=_coerce_str_list(
+                            getattr(narrative_db, "recent_themes", [])
+                        ),
+                        recent_claims=_coerce_str_list(
+                            getattr(narrative_db, "recent_claims", [])
+                        ),
+                        open_narrative_arcs=_coerce_str_list(
+                            getattr(narrative_db, "open_narrative_arcs", [])
+                        ),
                         last_updated=(
                             narrative_db.last_updated.isoformat()
                             if narrative_db.last_updated is not None

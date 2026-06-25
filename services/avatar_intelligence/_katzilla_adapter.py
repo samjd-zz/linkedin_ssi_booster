@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 import hashlib
 import json
 from typing import Any
@@ -35,14 +34,20 @@ def _build_statement(record: Any) -> str:
     return str(record)
 
 
+def _coerce_mapping(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
 def _record_to_external_fact(
     record: Any,
     envelope: KatzillaEnvelope,
     agent: str,
     action: str,
 ) -> ExternalEvidenceFact:
-    citation = envelope.citation or {}
-    quality = envelope.quality or {}
+    citation = _coerce_mapping(envelope.citation)
+    quality = _coerce_mapping(envelope.quality)
 
     item: dict[str, Any] = record if isinstance(record, dict) else {}
     statement = _build_statement(record)
@@ -64,20 +69,20 @@ def _record_to_external_fact(
         tags = [str(tag) for tag in raw_tags if str(tag).strip()]
 
     return ExternalEvidenceFact(
-        evidence_id=_make_external_evidence_id(agent, action, statement, source_url),
-        statement=statement,
-        source_name=source_name,
-        source_url=source_url,
-        retrieved_at=retrieved_at,
-        data_hash=data_hash,
-        license=license_value,
-        update_frequency=update_frequency,
-        request_url=request_url,
-        confidence=confidence,
-        uncertainty=uncertainty,
-        agent=agent,
-        action=action,
-        tags=tags,
+        _make_external_evidence_id(agent, action, statement, source_url),
+        statement,
+        source_name,
+        source_url,
+        retrieved_at,
+        data_hash,
+        license_value,
+        update_frequency,
+        request_url,
+        confidence,
+        uncertainty,
+        agent,
+        action,
+        tags,
     )
 
 
@@ -114,4 +119,19 @@ def adapt_katzilla_envelope(
 
 def external_fact_to_dict(fact: ExternalEvidenceFact) -> dict[str, Any]:
     """Helper for logging/inspection in tests and diagnostics."""
-    return asdict(fact)
+    return {
+        "evidence_id": fact.evidence_id,
+        "statement": fact.statement,
+        "source_name": fact.source_name,
+        "source_url": fact.source_url,
+        "retrieved_at": fact.retrieved_at,
+        "data_hash": fact.data_hash,
+        "license": fact.license,
+        "update_frequency": fact.update_frequency,
+        "request_url": fact.request_url,
+        "confidence": fact.confidence,
+        "uncertainty": fact.uncertainty,
+        "agent": fact.agent,
+        "action": fact.action,
+        "tags": list(fact.tags),
+    }
