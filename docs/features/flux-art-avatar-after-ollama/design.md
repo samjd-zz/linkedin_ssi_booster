@@ -270,6 +270,7 @@ The feature should expose environment-driven configuration in `.env.example` and
 Recommended variables:
 - `FLUX_CAPACITOR_ENABLED`
 - `FLUX_CAPACITOR_STYLE_PRESET`
+- `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`
 - `FLUX_CAPACITOR_MINIMAL_MODE`
 - `FLUX_CAPACITOR_OLLAMA_FIRST`
 - `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA`
@@ -301,15 +302,28 @@ The avatar should not imitate the high-intensity visual language of the original
 - polished but corporate-safe composition
 - low surreal intensity
 
+To make this user-adjustable, the feature should support an env-driven art persona prompt, similar in spirit to `YOUTUBE_SHORT_SYSTEM_PROMPT`:
+- `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`: a multi-line style/persona instruction block in `.env` that defines visual tone, composition boundaries, and banned motifs.
+- This prompt should be treated as user-owned configuration and should not require code edits for routine style changes.
+- Safety/style clamps in config still apply as hard limits even when this prompt is customized.
+
 Prompt generation should combine:
 - the post or concept text
 - relevant theme or channel cues
+- optional `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT` text when configured
 - optional knowledge context from the active run
 - the selected style preset
 - explicit negative constraints to suppress over-saturation or excessive visual complexity
 - image dimension and step settings tuned for the 3060
 
 The prompt builder should treat style constraints as hard limits rather than soft suggestions.
+
+Prompt precedence (recommended):
+1. Hard safety/style clamps from config
+2. Explicit caller overrides (`prompt_overrides`, `style_overrides`)
+3. `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`
+4. Style preset defaults
+5. Post/concept/topic context
 
 ## GPU Sequencing Design
 The core design choice is to treat the single 3060 as a shared, serialized resource.
