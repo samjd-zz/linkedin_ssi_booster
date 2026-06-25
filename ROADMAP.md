@@ -95,6 +95,18 @@ We're exploring the possibility of **merging SSI Booster and RIA into one comple
 
 The local image generation pipeline (FLUX.1-schnell) is being enhanced with Alex Grey-inspired aesthetic guidance for persona-aligned visual content. This will enable the avatar to generate visuals that match the technical/artistic fusion style associated with the project's identity.
 
+### Coming Soon (Next Milestones)
+
+- **Ollama-first generation sequencing** — text grounding and narrative generation complete first, then image generation starts to keep single-GPU workloads predictable.
+- **System-wide local-first artifact persistence** — generated outputs are saved locally by default across features (not avatar-only), with a consistent generated-content directory strategy.
+- **Unified generated-content paths** — env-driven storage layout for generated artifacts:
+	- `GENERATED_CONTENT_DIR`
+	- `YOUTUBE_SCRIPTS_SUBDIR`
+	- `REI_TOEI_SUBDIR`
+- **Database-second rollout** — PostgreSQL remains an optional secondary layer for indexing/analytics while local JSON/JSONL artifacts remain the source of truth during transition.
+- **Flux capacitor service direction** — FLUX docs and feature planning align on `flux_capacitor` naming; runtime compose service naming migration remains a planned follow-up.
+- **FLUX art-avatar implementation phase** — move from planning docs to runtime implementation (`services/art_avatar/*`) with channel-aware visual generation and publish safety controls.
+
 ### Status
 
 **Active development** — FLUX.1 integration complete, persona aesthetic tuning in progress
