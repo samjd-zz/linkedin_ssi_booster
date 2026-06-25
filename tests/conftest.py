@@ -77,6 +77,23 @@ def db_session(test_engine):
     session.close()
 
 
+@pytest.fixture(autouse=True)
+def _reset_ollama_service_cache():
+    """Reset the OllamaService singleton cache after every test.
+
+    Prevents _OLLAMA_SERVICE_CACHE from being polluted by tests that patch
+    services.ollama_service.OllamaService (e.g. test_rei_cli_flags) — the
+    patched constructor writes a MagicMock into the cache which then leaks
+    into unrelated tests that call get_ollama_service_cached().
+    """
+    yield
+    try:
+        import services.shared as _shared
+        _shared._OLLAMA_SERVICE_CACHE = None
+    except Exception:
+        pass
+
+
 @pytest.fixture()
 def avatar_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Create a temp avatar data dir and point AVATAR_DATA_DIR at it.

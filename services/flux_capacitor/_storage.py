@@ -1,0 +1,182 @@
+"""
+FLUX Capacitor Artifact Storage
+
+Local-first artifact persistence for rendered images and generated story text.
+Implements the system-wide generated-content persistence contract:
+  - every generated story has a durable local artifact
+  - metadata sidecars link story text, image path, run/request IDs, channel,
+    and source references
+  - save failures propagate as explicit status strings (never silent)
+  - all paths live under GENERATED_CONTENT_DIR (shared.get_generated_content_dir)
+
+Naming pattern:  <prefix>_<YYYYMMDD_HHMMSS>_<8-char hash>_<request_id[:8]>.<ext>
+
+Author: Shawn Jackson Dyck
+Version: alpha-v0.0.2.7
+"""
+
+import hashlib
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from services.shared import get_generated_content_dir
+from services.flux_capacitor._config import FluxCapacitorConfig
+
+logger = logging.getLogger(__name__)
+
+
+# --------------------------------------------------------------------------- #
+# Path helpers
+# --------------------------------------------------------------------------- #
+
+
+def _flux_dir(config: FluxCapacitorConfig) -> Path:
+    """Return the image artifact directory, creating it if needed."""
+    return get_generated_content_dir(config.flux_subdir, create=True)
+
+
+def _stories_dir(config: FluxCapacitorConfig) -> Path:
+    """Return the story text artifact directory, creating it if needed."""
+    return get_generated_content_dir(config.stories_subdir, create=True)
+
+
+def _make_slug(text: str, length: int = 8) -> str:
+    """Return a short deterministic hash slug for *text*."""
+    return hashlib.sha256(text.encode()).hexdigest()[:length]
+
+
+def _timestamp() -> str:
+    return datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+
+def build_image_path(
+    request_id: str,
+    channel: Optional[str],
+    config: FluxCapacitorConfig,
+) -> Path:
+    """Return the deterministic output path for an image artifact."""
+    ts = _timestamp()
+    slug = _make_slug(request_id)
+    channel_tag = (channel or "generic").replace("/", "-")[:12]
+    filename = f"flux_{channel_tag}_{ts}_{slug}_{request_id[:8]}.png"
+    return _flux_dir(config) / filename
+
+
+def build_story_path(
+    request_id: str,
+    channel: Optional[str],
+    config: FluxCapacitorConfig,
+) -> Path:
+    """Return the deterministic output path for a story text artifact."""
+    ts = _timestamp()
+    slug = _make_slug(request_id)
+    channel_tag = (channel or "generic").replace("/", "-")[:12]
+    filename = f"story_{channel_tag}_{ts}_{slug}_{request_id[:8]}.txt"
+    return _stories_dir(config) / filename
+
+
+def build_metadata_path(base_path: Path) -> Path:
+    """Return the sidecar metadata path next to *base_path*."""
+    return base_path.with_suffix(".json")
+
+
+# --------------------------------------------------------------------------- #
+# Story persistence
+# --------------------------------------------------------------------------- #
+
+
+def save_story_artifact(
+    story_text: str,
+    request_id: str,
+    source_mode: str,
+    channel: Optional[str],
+    source_url: Optional[str],
+    source_title: Optional[str],
+    image_path: Optional[str],
+    config: FluxCapacitorConfig,
+) -> tuple[Optional[str], Optional[str], str]:
+    """Persist a generated story text artifact with its metadata sidecar.
+
+    Returns (story_path_str, metadata_path_str, save_status).
+    save_status is "saved" on success, "failed" on error.
+    The caller must treat a "failed" status as an explicit signal — never silently ignored.
+    """
+    if not story_text or not story_text.strip():
+        return None, None, "skipped"
+
+    story_path = build_story_path(request_id, channel, config)
+    meta_path = build_metadata_path(story_path)
+
+    metadata: Dict[str, Any] = {
+        "request_id": request_id,
+        "source_mode": source_mode,
+        "channel": channel,
+        "source_url": source_url,
+        "source_title": source_title,
+        "image_path": image_path,
+        "story_path": str(story_path),
+        "saved_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        story_path.write_text(story_text, encoding="utf-8")
+        meta_path.write_text(
+            json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        logger.info(
+            "Story artifact saved: %s (request_id=%s)", story_path.name, request_id
+        )
+        return str(story_path), str(meta_path), "saved"
+    except OSError as exc:
+        logger.error(
+            "Story artifact save FAILED for request_id=%s: %s", request_id, exc
+        )
+        return None, None, "failed"
+
+
+# --------------------------------------------------------------------------- #
+# Image metadata sidecar
+# --------------------------------------------------------------------------- #
+
+
+def save_image_metadata(
+    image_path: Path,
+    request_id: str,
+    prompt_text: str,
+    style_preset: str,
+    wait_time_seconds: float,
+    render_duration_seconds: float,
+    evidence_ids: list[str],
+    story_path: Optional[str],
+    config: FluxCapacitorConfig,
+) -> Optional[str]:
+    """Write a JSON sidecar next to the rendered image.
+
+    Returns the metadata path string on success, None on failure.
+    """
+    meta_path = build_metadata_path(image_path)
+    metadata: Dict[str, Any] = {
+        "request_id": request_id,
+        "prompt_summary": prompt_text[:300],
+        "style_preset": style_preset,
+        "queue_wait_seconds": wait_time_seconds,
+        "render_duration_seconds": render_duration_seconds,
+        "evidence_ids": evidence_ids,
+        "story_path": story_path,
+        "saved_at": datetime.utcnow().isoformat(),
+        "image_path": str(image_path),
+    }
+    try:
+        meta_path.write_text(
+            json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        logger.debug("Image metadata sidecar saved: %s", meta_path.name)
+        return str(meta_path)
+    except OSError as exc:
+        logger.error(
+            "Image metadata sidecar save FAILED for %s: %s", image_path.name, exc
+        )
+        return None

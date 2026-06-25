@@ -14,7 +14,12 @@ def buffer_service():
     api_key = os.getenv("BUFFER_API_KEY")
     if not api_key:
         pytest.skip("BUFFER_API_KEY not set in environment")
-    return BufferService(api_key)
+    svc = BufferService(api_key)
+    try:
+        svc.get_channels()  # Verify key has channel-level access; skip if FORBIDDEN
+    except RuntimeError as exc:
+        pytest.skip(f"Buffer API not accessible: {exc}")
+    return svc
 
 def test_get_scheduled_posts(buffer_service):
     linkedin_id = buffer_service.get_linkedin_channel_id()

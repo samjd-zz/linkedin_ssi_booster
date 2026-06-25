@@ -89,6 +89,38 @@ We're exploring the possibility of **merging SSI Booster and RIA into one comple
 
 ---
 
+## 🎨 FLUX Art Avatar After Ollama — Phase 1 Complete
+
+**Single-GPU art-avatar pipeline with restrained corporate-art aesthetic.**
+
+The `services/flux_capacitor/` package is now implemented and tested. The pipeline enforces strict Ollama-first GPU sequencing on the RTX 3060 and provides a full local-first artifact persistence contract for generated story text and render metadata.
+
+### What Was Built (Phase 1 — June 2026)
+
+- ✅ **`services/flux_capacitor/_config.py`** — Environment-driven feature flags, style clamps, GPU policy defaults, 3 built-in style presets
+- ✅ **`services/flux_capacitor/_models.py`** — Typed `ArtAvatarRequest`, `ArtAvatarResult`, `ArtAvatarTelemetry`, `GPUPolicy`, `StylePreset`, `GPUJobSlot` dataclasses
+- ✅ **`services/flux_capacitor/_prompting.py`** — Prompt assembly with preset resolution, style override clamping, and `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT` persona injection
+- ✅ **`services/flux_capacitor/_pipeline.py`** — `GPUOrchestrator` (threading.Lock gate, Ollama-first priority queue, `flux_slot()` context manager) + `run_art_avatar()` orchestration
+- ✅ **`services/flux_capacitor/_storage.py`** — Local-first story artifact + image metadata sidecar persistence via `services.shared.get_generated_content_dir`
+- ✅ **`services/flux_capacitor/__init__.py`** — `FluxCapacitorService` singleton, `make_request()` factory, `notify_ollama_start/done()` lifecycle hooks
+- ✅ **44 tests** — All passing (`test_flux_capacitor_pipeline.py` + `test_gpu_orchestration_policy.py`)
+
+### What's Pending (Phase 2)
+
+- 📋 **Schedule / curate / console integration** — Wire `FluxCapacitorService` into `main.py` flows (Steps 5–7 in the plan)
+- 📋 **DB-second schema** — Optional `generated_content_records` table (Step 7.5)
+- 📋 **`.env.example` and docker-deployment docs** — Add `FLUX_CAPACITOR_*` env vars (Step 11)
+
+### Configuration
+
+All features are **default-off** (`FLUX_CAPACITOR_ENABLED=false`). Requires `--profile full` Docker profile to render images. See [docs/features/flux-art-avatar-after-ollama/plan.md](docs/features/flux-art-avatar-after-ollama/plan.md) for the full plan.
+
+### Status
+
+**Phase 1 complete** — Package foundation, GPU gate, style presets, and test suite committed (June 2026)
+
+---
+
 ## 🎨 Alex Grey Avatar Enhancement
 
 **High-fidelity persona-aligned image generation enhancements.**
@@ -97,19 +129,15 @@ The local image generation pipeline (FLUX.1-schnell) is being enhanced with Alex
 
 ### Coming Soon (Next Milestones)
 
-- **Ollama-first generation sequencing** — text grounding and narrative generation complete first, then image generation starts to keep single-GPU workloads predictable.
-- **System-wide local-first artifact persistence** — generated outputs are saved locally by default across features (not avatar-only), with a consistent generated-content directory strategy.
-- **Unified generated-content paths** — env-driven storage layout for generated artifacts:
-	- `GENERATED_CONTENT_DIR`
-	- `YOUTUBE_SCRIPTS_SUBDIR`
-	- `REI_TOEI_SUBDIR`
+- **Ollama-first generation sequencing** — ✅ Implemented in `services/flux_capacitor/_pipeline.py`
+- **System-wide local-first artifact persistence** — ✅ Implemented via `services.shared.get_generated_content_dir`
+- **Unified generated-content paths** — ✅ `GENERATED_CONTENT_DIR`, `YOUTUBE_SCRIPTS_SUBDIR`, `REI_TOEI_SUBDIR`, plus new `FLUX_CAPACITOR_SUBDIR` and `FLUX_CAPACITOR_STORIES_SUBDIR`
 - **Database-second rollout** — PostgreSQL remains an optional secondary layer for indexing/analytics while local JSON/JSONL artifacts remain the source of truth during transition.
-- **Flux capacitor service direction** — FLUX docs and feature planning align on `flux_capacitor` naming; runtime compose service naming migration remains a planned follow-up.
-- **FLUX art-avatar implementation phase** — move from planning docs to runtime implementation (`services/art_avatar/*`) with channel-aware visual generation and publish safety controls.
+- **FLUX art-avatar implementation phase** — ✅ `services/flux_capacitor/` package complete; schedule/curate/console hooks are Phase 2.
 
 ### Status
 
-**Active development** — FLUX.1 integration complete, persona aesthetic tuning in progress
+**Phase 1 complete** — FLUX.1 integration package built; schedule/curate/console wiring is next
 
 ---
 
@@ -203,4 +231,4 @@ Have a feature request or integration idea? Open an issue on [GitHub](https://gi
 
 ---
 
-**Last Updated:** June 2026
+**Last Updated:** June 2026 (FLUX Art Avatar Phase 1 complete)
