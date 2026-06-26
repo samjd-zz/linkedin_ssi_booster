@@ -28,15 +28,23 @@ linkedin_ssi_booster/
 ├── main.py                        # CLI entrypoint (argparse)
 ├── scheduler.py                   # Optimal posting-time logic
 ├── content_calendar.py            # 4-week topic list
+├── docker-compose.yml             # Local orchestration (core/full profiles)
+├── run.sh                         # Docker profile launcher
 ├── services/
 │   ├── buffer_service.py          # Buffer GraphQL wrapper
 │   ├── ollama_service.py          # Ollama LLM wrapper (summarise, generate)
+│   ├── image_generation.py        # FLUX model runtime wrapper
+│   ├── rei_toei_service.py        # Rei Toei orchestration entrypoint
+│   ├── katzilla_service.py        # Katzilla API client + envelope validation
+│   ├── katzilla_telemetry.py      # Katzilla budget/usage telemetry
 │   ├── hybrid_retriever.py        # BM25 + KG hybrid retrieval + persona reranking
 │   ├── knowledge_graph.py         # NetworkX graph manager
 │   ├── github_service.py          # GitHub repo context enrichment (cached 24h)
 │   ├── spacy_nlp.py               # spaCy: themes, similarity, sentiment
+│   ├── model2vec_service.py       # Model2Vec classification helpers
+│   ├── piper_service.py           # Wyoming Piper TTS integration
 │   ├── ssi_tracker.py             # SSI score tracking + report
-│   ├── shared.py                  # Shared env flags (AVATAR_LEARNING_ENABLED, etc.)
+│   ├── shared.py                  # Shared env flags/config constants
 │   ├── console_grounding/         # Truth gate + deterministic grounding
 │   │   ├── _config.py             # env/config knobs and keyword defaults
 │   │   ├── _models.py             # ProjectFact, QueryConstraints, TruthGateMeta
@@ -67,7 +75,7 @@ linkedin_ssi_booster/
 │   │   ├── _models.py             # EvidencePath, TruthGradientResult
 │   │   ├── _scoring.py            # 4-term gradient formula
 │   │   └── _reporting.py          # CLI report formatters (format_truth_gradient_report)
-│   └── selection_learning/        # Article ranking + feedback loop
+│   ├── selection_learning/        # Article ranking + feedback loop
 │       ├── _constants.py          # paths and scoring thresholds
 │       ├── _models.py             # CandidateRecord, PublishedRecord, FeaturePrior
 │       ├── _storage.py            # JSONL read/append/rewrite helpers
@@ -78,6 +86,22 @@ linkedin_ssi_booster/
 │       ├── _priors.py             # Beta-smoothed acceptance priors + boosts
 │       ├── _ranking.py            # article ranking: relevance + freshness + priors
 │       └── _feedback.py           # explicit user feedback capture/application
+│   ├── database/                  # SQLAlchemy models, repos, sessions, migration runner
+│   │   ├── models.py              # ORM models (17 tables)
+│   │   ├── repositories.py        # repository abstraction layer
+│   │   ├── session.py             # engine/session factory helpers
+│   │   └── migrate_data.py        # JSON/JSONL -> PostgreSQL migration entrypoint
+│   ├── flux_capacitor/            # FLUX art-avatar subsystem
+│   │   ├── _config.py             # feature flags + GPU policy knobs
+│   │   ├── _models.py             # request/result dataclasses
+│   │   ├── _pipeline.py           # GPU orchestrator + sequencing policy
+│   │   ├── _prompting.py          # style presets + hard clamps
+│   │   └── _storage.py            # local-first artifact persistence
+│   └── rei_toei/                  # Rei Toei music avatar subsystem
+│       ├── _models.py             # song/pattern request contracts
+│       ├── _prompting.py          # lyric/prompt assembly
+│       ├── _storage.py            # song artifact persistence
+│       └── _strudel.py            # Strudel MCP execution helpers
 ├── data/
 │   ├── avatar/
 │   │   ├── persona_graph.json     # persona facts, projects, companies, claims
@@ -90,7 +114,7 @@ linkedin_ssi_booster/
 ├── scripts/
 │   ├── download-flux1-schnell-Q4_K_S.sh # FLUX model download script
 │   └── init-db.sql                # PostgreSQL schema DDL
-├── tests/                         # pytest suite (565 tests, all passing)
+├── tests/                         # pytest suite (768 collected; 766 passed, 2 skipped)
 └── docs/                          # architecture, features, usage docs
 ```
 
@@ -126,6 +150,19 @@ linkedin_ssi_booster/
 - `--dry-run` flag to preview without hitting external APIs
 - All LLM calls go through `services/ollama_service.py` — do not scatter model calls across the codebase
 - All Buffer API calls go through `services/buffer_service.py`
+
+## Python Unit Testing Best Practices (pytest)
+
+- Follow pytest discovery conventions: tests in `tests/`, filenames `test_*.py`, test functions `test_*`.
+- Use fixtures for setup/teardown; prefer `yield` fixtures when cleanup is required.
+- Scope fixtures intentionally (`function`, `class`, `module`, `session`) and default to `function` unless a broader scope is justified.
+- Keep tests deterministic: avoid live network/time dependencies; mock external APIs (Buffer/Ollama/Katzilla) and freeze random inputs where needed.
+- Prefer behavior assertions over implementation detail assertions; validate outputs, side effects, and error handling contracts.
+- Use parametrization for coverage instead of duplicating similar test bodies.
+- Keep tests isolated: no shared mutable state between tests unless explicitly session-scoped and safe.
+- Use `conftest.py` for shared fixtures and test helpers; keep test data local to the test module unless reused.
+- Run tests as `python -m pytest` from the project venv (never bare `pytest`), and run focused tests first before full-suite runs.
+- Treat flaky tests as defects: fix fixture state leaks, timing assumptions, and environment coupling before merging.
 
 ## File Size & Modularization (CRITICAL)
 

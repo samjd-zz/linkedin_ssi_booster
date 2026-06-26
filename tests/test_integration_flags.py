@@ -6,24 +6,7 @@ from pathlib import Path
 import pytest
 
 
-# ---------------------------------------------------------------------------
-# Helper: run main.py argparse with --help to capture output
-# ---------------------------------------------------------------------------
-
 _MAIN = str(Path(__file__).parent.parent / "main.py")
-
-
-def _parse_args(*args: str) -> "argparse.Namespace":  # type: ignore[name-defined]  # noqa: F821
-    """Import build_parser (or create_parser) and parse args in-process."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("main_module", _MAIN)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    # Patch sys.argv so argparse doesn't fail on test runner's own args
-    import unittest.mock as mock
-    with mock.patch("sys.argv", ["main.py", *args]):
-        spec.loader.exec_module(mod)  # type: ignore[union-attr]
-    return mod  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -37,7 +20,8 @@ def test_main_imports_without_profile_context(monkeypatch: pytest.MonkeyPatch) -
     result = subprocess.run(
         [sys.executable, "-c", "import importlib.util; "
          "spec = importlib.util.spec_from_file_location('m', 'main.py'); "
-         "mod = importlib.util.module_from_spec(spec)"],
+         "mod = importlib.util.module_from_spec(spec); "
+         "spec.loader.exec_module(mod)"],
         cwd=str(Path(_MAIN).parent),
         capture_output=True,
         text=True,

@@ -74,17 +74,12 @@ def test_persona_graph_create(test_session):
 
 def test_persona_graph_get_latest(test_session):
     """Test getting the latest persona graph."""
-    # Create two persona graphs with a small delay to ensure different timestamps
-    import time
-    
+    # Create two persona graphs; repository selects latest by descending id.
     graph_data_1 = {"schemaVersion": "1.0", "person": {"name": "User 1"}}
     graph_data_2 = {"schemaVersion": "1.0", "person": {"name": "User 2"}}
     
     PersonaGraphRepository.create(test_session, graph_data_1)
     test_session.commit()
-    
-    # Small delay to ensure different updated_at timestamp
-    time.sleep(0.01)
     
     persona_2 = PersonaGraphRepository.create(test_session, graph_data_2)
     test_session.commit()

@@ -5,7 +5,7 @@ Author: Shawn Jackson Dyck
 """
 
 import time
-from threading import Thread
+from threading import Event, Thread
 
 import pytest
 
@@ -43,16 +43,19 @@ class TestOllamaFirstPolicy:
         orch.mark_ollama_start("ollama-a")
 
         outcomes = []
+        outcome_ready = Event()
 
         def flux_request():
             outcome, _ = orch.request_flux_slot("flux-a", max_wait_seconds=3)
             outcomes.append(outcome)
+            outcome_ready.set()
 
         t = Thread(target=flux_request)
         t.start()
-        time.sleep(0.3)
-        # Ollama still active — flux should not have resolved yet (or timed out)
+        # While Ollama is active, FLUX should still be queued.
+        assert not outcome_ready.wait(timeout=0.2)
         orch.mark_ollama_done("ollama-a")
+        assert outcome_ready.wait(timeout=5)
         t.join(timeout=5)
 
         assert len(outcomes) == 1
@@ -149,18 +152,24 @@ class TestConcurrencySafety:
         """Two concurrent FLUX requests should not overlap."""
         orch = _orch(timeout=5)
         results: list[tuple[GPUGateOutcome, float]] = []
+        first_acquired = Event()
+        release_first = Event()
 
         def request(req_id: str) -> None:
             out, wait = orch.request_flux_slot(req_id, max_wait_seconds=5)
             results.append((out, wait))
             if out == GPUGateOutcome.ALLOWED:
-                time.sleep(0.1)  # simulate render
+                if not first_acquired.is_set():
+                    first_acquired.set()
+                    release_first.wait(timeout=1.0)
                 orch.release_flux_slot(req_id)
 
         t1 = Thread(target=request, args=("flux-c1",))
         t2 = Thread(target=request, args=("flux-c2",))
         t1.start()
         t2.start()
+        assert first_acquired.wait(timeout=2.0)
+        release_first.set()
         t1.join(timeout=10)
         t2.join(timeout=10)
 
