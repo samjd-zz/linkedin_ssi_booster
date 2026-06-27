@@ -132,6 +132,13 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 - Create persona-aligned avatar artwork
 - Batch generate imagery for content calendars
 
+**Key Fixes Applied:**
+- Fixed T5 encoder loading to use `from_pretrained` with `gguf_file` parameter instead of `from_single_file`
+- Added VAE config to prevent fallback to SD1.5 default repo
+- Fixed `LD_LIBRARY_PATH` in Dockerfile to use real driver libcuda at runtime
+- Added comprehensive error handling and logging
+- Fixed CUDA visibility issues by ensuring runtime uses real libcuda
+
 See [docs/multimodal-features.md](docs/multimodal-features.md) for setup and API details.
 
 ---

@@ -91,6 +91,17 @@ sequenceDiagram
     App->>User: Post + Image saved
 ```
 
+#### Key Fixes Applied
+
+- **T5 Encoder Loading**: Fixed to use `from_pretrained` with `gguf_file` parameter instead of `from_single_file` to prevent "Cannot copy out of meta tensor" errors
+- **VAE Configuration**: Added local VAE config to prevent fallback to SD1.5 default repo
+- **CUDA Visibility**: Fixed `LD_LIBRARY_PATH` in Dockerfile to use real driver libcuda at runtime instead of stub
+- **Cleanup**: Removed unused `model_index.json` from download script
+- **Error Handling**: Added comprehensive error handling and logging throughout
+- **GPU Sequencing**: Fixed CUDA visibility issues by ensuring runtime uses real libcuda
+
+These fixes resolve the "Cannot copy out of meta tensor" error and enable GPU-accelerated FLUX image generation on RTX 3060 systems.
+
 ### Pre-Download Weights (Optional)
 
 Download weights without starting the full stack:
