@@ -19,6 +19,7 @@ Version: alpha-v0.0.2.7
 """
 
 import logging
+import os
 import time
 import uuid
 from contextlib import contextmanager
@@ -256,17 +257,32 @@ def run_art_avatar(
         render_ok = False
         render_error: Optional[str] = None
 
+        flux_service_url = os.getenv("FLUX_SERVICE_URL", "").rstrip("/")
+
         try:
-            if _generate_flux_image is None:
-                raise ImportError("FLUX model not available in this Docker profile.")
-            _generate_flux_image(
-                prompt=prompt_text,
-                output_path=str(image_path),
-                model_dir=str(
-                    __import__("pathlib").Path("models/flux")
-                ),
-            )
-            render_ok = True
+            if flux_service_url:
+                # Call the FLUX HTTP service (full Docker profile).
+                import requests as _requests
+                resp = _requests.post(
+                    f"{flux_service_url}/generate",
+                    json={"prompt": prompt_text, "output_path": str(image_path)},
+                    timeout=300,
+                )
+                if not resp.ok:
+                    raise RuntimeError(resp.json().get("error", resp.text))
+                render_ok = True
+            elif _generate_flux_image is not None:
+                # Fallback: direct in-process call (only works in full_build image).
+                _generate_flux_image(
+                    prompt=prompt_text,
+                    output_path=str(image_path),
+                    model_dir=str(
+                        __import__("pathlib").Path("models/flux")
+                    ),
+                )
+                render_ok = True
+            else:
+                raise ImportError("FLUX model not available: set FLUX_SERVICE_URL or install torch/diffusers.")
         except ImportError as exc:
             render_error = str(exc)
             logger.warning(

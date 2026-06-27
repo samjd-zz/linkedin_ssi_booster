@@ -111,7 +111,7 @@ def _load_persona_graph_from_db() -> tuple[PersonaGraph | None, list[str]]:
             ClaimRepository,
         )
         
-        with next(get_session()) as session:
+        with get_session() as session:
             # Get the latest persona graph
             persona_db = PersonaGraphRepository.get_latest(session)
             if not persona_db:
@@ -328,7 +328,7 @@ def _load_narrative_memory(path: Path) -> tuple[NarrativeMemory | None, list[str
             from services.database.repositories import NarrativeMemoryRepository
             from services.database.session import get_session
 
-            with next(get_session()) as session:
+            with get_session() as session:
                 narrative_db = NarrativeMemoryRepository.get_latest(session)
                 if narrative_db is not None:
                     memory = NarrativeMemory(

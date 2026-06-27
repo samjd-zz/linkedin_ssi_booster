@@ -1,38 +1,14 @@
 #!/bin/bash
 
-# this script will download the FLUX.1-schnell GGUF model from CivitAI and the 
-# associated VAE and text encoders, saving them to ~/models/flux/
-# direct link (requires login): 
-# https://civitai.com/models/648580/flux1-schnell-gguf-q2k-q3ks-q4q41q4ks-q5q51-q5ks-q6k-q8?modelVersionId=746301
+set -euo pipefail
 
-# Load variables — skip if already set in environment (e.g. passed via Docker Compose)
-if [ -z "$CIVITAI_API_KEY" ]; then
-    # Try loading from .env relative to script location, then /app/.env (Docker mount)
-    ENV_FILE=""
-    [ -f "$(dirname "$0")/../.env" ] && ENV_FILE="$(dirname "$0")/../.env"
-    [ -f "/app/.env" ] && ENV_FILE="/app/.env"
-    [ -f ".env" ] && ENV_FILE=".env"
-    if [ -n "$ENV_FILE" ]; then
-        export $(grep -v '^#' "$ENV_FILE" | xargs)
-    else
-        echo "❌ Error: .env file not found and CIVITAI_API_KEY not set."
-        exit 1
-    fi
-fi
-
-if [ -z "$CIVITAI_API_KEY" ]; then
-    echo "⚠️ Warning: CIVITAI_API_KEY is not set. Image generation will fail."
-    echo "Please add your key to .env and restart to enable FLUX."
-    exit 0 # Exit 0 so service_started doesn't hang the rest of the stack
-fi
-
-# Define path
+# Define path mapping
 MODEL_DIR="/app/models/flux"
 mkdir -p "$MODEL_DIR"
 
 echo "-------------------------------------------------------"
-echo "🚀 SSI Booster: Initializing FLUX Intelligence Stack"
-echo "📂 Models will be saved to: $MODEL_DIR"
+echo "🚀 Initializing Unified FLUX GGUF Engine Stack"
+echo "📂 Target Directory: $MODEL_DIR"
 echo "-------------------------------------------------------"
 
 download_file() {
@@ -44,30 +20,33 @@ download_file() {
         echo "✅ $label already exists. Skipping."
     else
         echo "📥 Downloading $label..."
-        # -f fails on 401/404, -L follows redirects, -C - resumes
-        curl -f -C - -L -H "Authorization: Bearer $CIVITAI_API_KEY" "$url" -o "$output"
+        mkdir -p "$(dirname "$output")"
+        # Pure LFS / direct endpoint download
+        curl -f -L "$url" -o "$output"
         if [ $? -ne 0 ]; then
-            echo "❌ Failed to download $label. Check your API key and connection."
+            echo "❌ Failed to download $label."
+            return 1
         fi
     fi
+    return 0
 }
 
-# 1. The Brain (Transformer)
-download_file "https://civitai.com/api/download/models/746301" \
-              "$MODEL_DIR/flux1-schnell-Q4_K_S.gguf" "Flux Brain (GGUF)"
+# 1. The Quantized Brain (Already working!)
+download_file "https://huggingface.co/city96/FLUX.1-schnell-gguf/resolve/main/flux1-schnell-Q4_K_S.gguf" \
+              "$MODEL_DIR/flux1-schnell-Q4_K_S.gguf" "Flux Transformer (Q4_K_S GGUF)"
 
-# 2. VAE
-download_file "https://huggingface.co/second-state/FLUX.1-dev-GGUF/resolve/main/ae.safetensors" \
+# 2. VAE (Pulled from second-state's un-gated public mirror)
+download_file "https://huggingface.co/second-state/FLUX.1-schnell-GGUF/resolve/main/ae.safetensors" \
               "$MODEL_DIR/ae.safetensors" "VAE"
 
-# 3. CLIP Encoder
+# 3. CLIP Encoder (Pulled from comfyanonymous's wide-open text encoder hub)
 download_file "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" \
-              "$MODEL_DIR/clip_l.safetensors" "CLIP Encoder"
+              "$MODEL_DIR/clip_l.safetensors" "CLIP Text Encoder"
 
-# 4. T5 Encoder
-download_file "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_q4_k_m.gguf" \
-              "$MODEL_DIR/t5xxl_q4_k_m.gguf" "T5 Encoder"
+# 4. T5 Encoder (Matches your python filename expectation exactly)
+download_file "https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf/resolve/main/t5-v1_1-xxl-encoder-Q4_K_M.gguf" \
+              "$MODEL_DIR/t5-v1_1-xxl-encoder-Q4_K_M.gguf" "T5 Text Encoder"
 
 echo "-------------------------------------------------------"
-echo "✅ Setup Complete. Your RTX 3060 is ready for FLUX."
+echo "✅ Initialization Completed Successfully."
 echo "-------------------------------------------------------"

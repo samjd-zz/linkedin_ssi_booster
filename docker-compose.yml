@@ -53,6 +53,7 @@ services:
     image: alpine:latest
     container_name: ssi_booster_flux_init
     profiles: [ "full" ]
+    env_file: .env
     volumes:
       - ./models/flux:/app/models/flux
       - ./scripts:/app/scripts:ro
@@ -63,6 +64,8 @@ services:
       "
     environment:
       - CIVITAI_API_KEY=${CIVITAI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - FLUX_DIFFUSERS_CONFIG_DIR=${FLUX_DIFFUSERS_CONFIG_DIR:-/app/models/flux/diffusers_config}
     restart: "no"
 
   # ── FLUX.1-schnell inference service ──────────────────────────────────────
@@ -76,11 +79,18 @@ services:
       target: full_build
     container_name: ssi_booster_flux
     profiles: [ "full" ]
+    env_file: .env
     depends_on:
       flux-init:
         condition: service_completed_successfully
+    environment:
+      - FLUX_MODEL_PATH=${FLUX_MODEL_PATH:-/app/models/flux}
+      - FLUX_DIFFUSERS_CONFIG_DIR=${FLUX_DIFFUSERS_CONFIG_DIR:-/app/models/flux/diffusers_config}
     volumes:
-      - ./models/flux:/app/models/flux:ro
+      - ./models/flux:/app/models/flux
+      - ./yt-vid-data:/app/yt-vid-data
+    ports:
+      - "5000:5000"
     deploy:
       resources:
         reservations:
@@ -226,7 +236,7 @@ services:
       - ./data:/app/data
       - ./yt-vid-data:/app/yt-vid-data
       - ./content_calendar.py:/app/content_calendar.py:ro
-      - ./models/flux:/app/models/flux:ro
+      - ./models/flux:/app/models/flux
     stdin_open: true
     tty: true
     command: [ "python", "main.py", "--help" ]

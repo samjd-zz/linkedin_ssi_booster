@@ -6,5 +6,8 @@ diffusers
 accelerate
 transformers
 sentencepiece
+tiktoken
 gguf
 Pillow
+flask
+protobuf

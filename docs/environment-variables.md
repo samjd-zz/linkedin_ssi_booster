@@ -468,12 +468,30 @@ CIVITAI_API_KEY=your_civitai_key_here
 
 ### `FLUX_MODEL_PATH`
 
-Path to the FLUX GGUF model file inside the container.
+Path to FLUX local model assets inside the container.
 
-**Default:** `/app/models/flux/flux1-schnell-Q4_K_S.gguf`
+- Supports either a model directory (recommended) or a direct `.gguf` file path.
+- Runtime now loads in strict offline mode and will not download configs from Hugging Face.
+
+**Default:** `/app/models/flux`
 
 ```bash
-FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
+FLUX_MODEL_PATH=/app/models/flux
+```
+
+### `FLUX_DIFFUSERS_CONFIG_DIR`
+
+Path to a local diffusers config directory used for offline FLUX loading.
+
+Required files:
+
+- `model_index.json`
+- `transformer/config.json`
+
+**Default:** `/app/models/flux/diffusers_config`
+
+```bash
+FLUX_DIFFUSERS_CONFIG_DIR=/app/models/flux/diffusers_config
 ```
 
 ### `GENERATED_CONTENT_DIR`
@@ -854,7 +872,8 @@ CONSOLE_VOICE_SPEAKER=896
 
 # Image Generation (FLUX.1-schnell + Art Avatar)
 CIVITAI_API_KEY=your_civitai_key_here
-FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
+FLUX_MODEL_PATH=/app/models/flux
+FLUX_DIFFUSERS_CONFIG_DIR=/app/models/flux/diffusers_config
 GENERATED_CONTENT_DIR=/app/yt-vid-data
 YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
 REI_TOEI_SUBDIR=rei_toei

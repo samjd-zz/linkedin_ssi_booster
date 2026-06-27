@@ -453,6 +453,10 @@ class CandidateRecordRepository:
         sentiment: Optional[Dict[str, Any]] = None,
     ) -> CandidateRecord:
         """Create a new candidate record from selection_learning data."""
+        # Check for existing record to avoid duplicate key violations across runs.
+        existing = session.get(CandidateRecord, candidate_id)
+        if existing is not None:
+            return existing
         candidate = CandidateRecord(
             candidate_id=candidate_id,
             timestamp=timestamp,

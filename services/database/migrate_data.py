@@ -56,7 +56,7 @@ def migrate_persona_graph(dry_run: bool = False) -> bool:
             logger.info("[DRY RUN] Would write persona graph to database")
             return True
         
-        with next(get_session()) as session:
+        with get_session() as session:
             write_persona_graph_dual(session, data, PERSONA_GRAPH_PATH)
         logger.info("✓ Persona graph migrated successfully")
         return True
@@ -81,7 +81,7 @@ def migrate_narrative_memory(dry_run: bool = False) -> bool:
             logger.info("[DRY RUN] Would write narrative memory to database")
             return True
         
-        with next(get_session()) as session:
+        with get_session() as session:
             write_narrative_memory_dual(session, data, NARRATIVE_MEMORY_PATH)
         logger.info("✓ Narrative memory migrated successfully")
         return True
@@ -112,7 +112,7 @@ def migrate_domain_knowledge(dry_run: bool = False) -> bool:
                 success_count += 1
                 continue
             
-            with next(get_session()) as session:
+            with get_session() as session:
                 write_domain_knowledge_dual(session, data, dk_path)
             logger.info(f"✓ {dk_path.name} migrated successfully")
             success_count += 1
@@ -140,7 +140,7 @@ def migrate_extracted_knowledge(dry_run: bool = False) -> bool:
             logger.info("[DRY RUN] Would write extracted knowledge to database")
             return True
         
-        with next(get_session()) as session:
+        with get_session() as session:
             write_extracted_knowledge_dual(session, data, EXTRACTED_KNOWLEDGE_PATH)
         logger.info("✓ Extracted knowledge migrated successfully")
         return True

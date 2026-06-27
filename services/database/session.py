@@ -7,6 +7,7 @@ for the LinkedIn SSI Booster PostgreSQL backend.
 
 import logging
 import os
+from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine, event, Engine
@@ -117,6 +118,7 @@ def get_session_factory() -> sessionmaker:
     return _SessionLocal
 
 
+@contextmanager
 def get_session() -> Generator[Session, None, None]:
     """
     Dependency injection pattern for database sessions.

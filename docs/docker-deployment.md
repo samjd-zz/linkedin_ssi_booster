@@ -440,7 +440,8 @@ docker compose restart strudel-mcp-agent
 ```bash
 # Add to .env
 CIVITAI_API_KEY=your_civitai_key_here
-FLUX_MODEL_PATH=/app/models/flux/flux1-schnell-Q4_K_S.gguf
+FLUX_MODEL_PATH=/app/models/flux
+FLUX_DIFFUSERS_CONFIG_DIR=/app/models/flux/diffusers_config
 GENERATED_CONTENT_DIR=/app/yt-vid-data
 YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
 REI_TOEI_SUBDIR=rei_toei
@@ -451,11 +452,12 @@ bash run.sh --profile full up -d
 
 ### First Start Sequence
 
-1. `flux-init` downloads GGUF weights from Civitai to `./models/flux/`
-2. `flux_capacitor` waits for `flux-init` to complete
-3. `flux_capacitor` compiles `llama-cpp-python` with CUDA support (takes 5-10 minutes)
-4. `flux_capacitor` starts inference service
-5. `app` starts and can now generate images
+1. `flux-init` downloads model files to `./models/flux/`
+2. Verify local diffusers config exists at `./models/flux/diffusers_config/`
+3. `flux_capacitor` waits for `flux-init` to complete
+4. `flux_capacitor` compiles `llama-cpp-python` with CUDA support (takes 5-10 minutes)
+5. `flux_capacitor` starts inference service
+6. `app` starts and can now generate images
 
 ### Pre-Download Weights (Optional)
 

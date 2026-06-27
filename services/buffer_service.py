@@ -91,25 +91,19 @@ class BufferService:
         return orgs[0]["id"]
 
     def get_channels(self) -> list:
-        """Get all connected social channels."""
+        """Get all connected social channels using the current top-level channels query."""
+        org_id = self.get_organization_id()
         query = """
-        query GetChannels {
-          account {
-            organizations {
-              channels {
-                id
-                name
-                service
-              }
-            }
+        query GetChannels($orgId: OrganizationId!) {
+          channels(input: { organizationId: $orgId }) {
+            id
+            name
+            service
           }
         }
         """
-        data = self._query(query)
-        channels = []
-        for org in data.get("account", {}).get("organizations", []):
-            channels.extend(org.get("channels", []))
-        return channels
+        data = self._query(query, variables={"orgId": org_id})
+        return data.get("channels", [])
 
     def get_linkedin_channel_id(self) -> Optional[str]:
         """Find the LinkedIn personal profile channel ID."""
@@ -234,6 +228,13 @@ class BufferService:
           }
         }
         """
+        # Per-platform character limits — truncate before sending to avoid API rejection.
+        _CHAR_LIMITS: dict[str, int] = {"x": 280, "twitter": 280, "bluesky": 300}
+        limit = _CHAR_LIMITS.get(channel)
+        if limit and len(text) > limit:
+            text = text[: limit - 1] + "…"
+            logger.warning("Post truncated to %d chars for channel '%s'.", limit, channel)
+
         post_input: dict = {
             "channelId": channel_id,
             "text": text,
