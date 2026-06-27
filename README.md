@@ -126,6 +126,7 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 - GPU with 12GB+ VRAM (tested on RTX 3060)
 - Run with `--profile full` in Docker Compose
 - Or locally with `pip install -r requirements-flux.txt`
+- **Hugging Face FLUX.1-schnell model files** must be downloaded locally using the provided script (`scripts/download-flux1-schnell-Q4_K_S.sh`)
 
 **Use cases:**
 - Generate social-media-ready visuals for posts
