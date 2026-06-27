@@ -324,14 +324,6 @@ This approach creates a symbiotic relationship where AI handles the repetitive, 
 
 
 
-**Don't think of this too rigidly as a contest.** The submission process is your opportunity to demonstrate your capabilities to solve our marketing problems. The best candidates use their submission as a way to demonstrate their skills and fit for the role — or, more directly, as a forum to convince me to hire you.
-
-**How you think, and the other intangibles, will be weighed equal to or more heavily than the actual contents of what you submit.** So use the readme as an opportunity to elaborate — make your case on your skillset, show how the project you submitted demonstrates your fit, and include anything else you want to convince me you're the right person for the job.
-
-**The best submission will be more than just some impressive whiz-bang Claude app.** If you can demonstrate a true understanding of marketing, and extreme proficiency deploying these kinds of tools on real problems, that's what stands out.
-
-**This is the best mechanism I have for seeing how people actually think and what they're capable of before final interviews.** So don't let the contest structure constrain you too much. Build whatever makes the strongest case for you.
-
 My LinkedIn SSI Booster submission demonstrates:
 
 **1. Deep Marketing Understanding**
