@@ -322,7 +322,7 @@ This approach creates a symbiotic relationship where AI handles the repetitive, 
 
 ## How I Approach This Challenge
 
-I want to make sure one thing is clear before you build, because I think a lot of people are thinking about this the wrong way:
+
 
 **Don't think of this too rigidly as a contest.** The submission process is your opportunity to demonstrate your capabilities to solve our marketing problems. The best candidates use their submission as a way to demonstrate their skills and fit for the role — or, more directly, as a forum to convince me to hire you.
 
