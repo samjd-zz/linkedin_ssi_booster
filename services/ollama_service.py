@@ -11,6 +11,7 @@ Pull a model: ollama pull qwen2.5:14b
 
 import os
 import re
+import time
 
 import logging
 from typing import Any, Optional, Literal
@@ -175,6 +176,54 @@ class OllamaService:
             return _run_fallback("returned empty output")
 
         return text
+
+    def _loaded_model_names(self) -> list[str]:
+        """Return the names of models currently resident in Ollama (VRAM/RAM)."""
+        try:
+            resp = self.client.ps()
+        except Exception as exc:  # noqa: BLE001 — server unreachable / no models
+            logger.debug("ollama ps() failed: %s", exc)
+            return []
+        models = getattr(resp, "models", None)
+        if models is None and isinstance(resp, dict):
+            models = resp.get("models", [])
+        names: list[str] = []
+        for m in models or []:
+            name = getattr(m, "model", None) or getattr(m, "name", None)
+            if name is None and isinstance(m, dict):
+                name = m.get("model") or m.get("name")
+            if name:
+                names.append(name)
+        return names
+
+    def unload(self, wait_seconds: float = 30.0, poll_interval: float = 0.5) -> bool:
+        """Force Ollama to evict loaded models from VRAM and block until freed.
+
+        keep_alive=0 only schedules an unload *after* a request returns, and that
+        eviction is asynchronous. This issues an explicit keep_alive=0 eviction
+        for every loaded model, then polls `ollama ps` until VRAM is confirmed
+        free (or the timeout elapses). Returns True if no models remain loaded.
+        """
+        deadline = time.monotonic() + max(0.0, wait_seconds)
+        targets = self._loaded_model_names() or [self.model]
+        for name in targets:
+            try:
+                self.client.generate(model=name, prompt="", keep_alive=0)
+                logger.info("Requested Ollama unload for model '%s'", name)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Unload request failed for '%s': %s", name, exc)
+
+        while True:
+            remaining = self._loaded_model_names()
+            if not remaining:
+                logger.info("Ollama VRAM freed — no models loaded")
+                return True
+            if time.monotonic() >= deadline:
+                logger.warning(
+                    "Ollama models still loaded after %.1fs: %s", wait_seconds, remaining
+                )
+                return False
+            time.sleep(poll_interval)
 
     def chat_as_persona(
         self,

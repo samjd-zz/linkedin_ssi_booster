@@ -1,3 +1,4 @@
+import gc
 from pathlib import Path
 from typing import Any
 import logging
@@ -141,7 +142,8 @@ def generate_flux_image(
     image.save(str(output))
     logger.info("FLUX image saved to %s", output)
     
-    # Cleanup routines
+    # Cleanup routines — explicit delete + GC ensures RAM/VRAM is released
+    # before Ollama reclaims the GPU for the next inference job.
     del pipe
     del transformer
     del vae
@@ -149,10 +151,14 @@ def generate_flux_image(
     del tokenizer
     del text_encoder_2
     del tokenizer_2
+    gc.collect()  # flush Python-level ref cycles before CUDA cleanup
     if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-    
+        torch.cuda.synchronize()  # wait for all CUDA kernels to finish
+        torch.cuda.empty_cache()  # return VRAM to the pool
+        torch.cuda.ipc_collect()  # release shared-memory handles
+    gc.collect()  # second pass — clears any pinned-memory CPU tensors
+    logger.info("FLUX cleanup complete — VRAM and CPU buffers released")
+
     return str(output)
 
 

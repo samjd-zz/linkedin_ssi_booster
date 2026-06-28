@@ -190,11 +190,15 @@ def _render_curate_art_avatar(
 
     try:
         flux_service = get_flux_service()
+        # Pass article summary as knowledge context so the FLUX prompt has
+        # the same enrichment that schedule mode gets from topic.get("angle").
+        _knowledge_ctx: str = (idea.get("summary") or idea.get("article_text") or "").strip()
         request = flux_service.make_request(
             post_text=post_text,
             source_mode=SourceMode.CURATE,
             channel=channel,
             theme=idea.get("title"),
+            knowledge_context=_knowledge_ctx or None,
             defer_if_busy=True,
         )
         result = flux_service.render(request)

@@ -18,6 +18,7 @@ Author: Shawn Jackson Dyck
 Version: alpha-v0.0.2.7
 """
 
+import gc
 import logging
 import os
 import time
@@ -53,6 +54,28 @@ try:
     from services.image_generation import generate_flux_image as _generate_flux_image  # type: ignore
 except ImportError:  # 'full' profile not installed
     _generate_flux_image = None  # type: ignore[assignment]
+
+
+def _evict_ollama_from_vram(max_wait_seconds: int) -> None:
+    """Force the Ollama model out of VRAM before a FLUX render starts.
+
+    keep_alive=0 on chat calls only schedules an async unload; this blocks
+    until `ollama ps` confirms the model is gone so FLUX can allocate the GPU.
+    Fully defensive — never raises into the render path.
+    """
+    if os.getenv("FLUX_CAPACITOR_FORCE_OLLAMA_UNLOAD", "true").lower() != "true":
+        return
+    try:
+        from services.ollama_service import OllamaService
+
+        svc = OllamaService(
+            model=os.getenv("OLLAMA_MODEL", "llama3.2"),
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        )
+        if not svc.unload(wait_seconds=min(float(max_wait_seconds), 60.0)):
+            logger.warning("FLUX gate: Ollama VRAM not confirmed freed before render")
+    except Exception as exc:  # noqa: BLE001 — never block the render path
+        logger.warning("FLUX gate: Ollama unload hook failed: %s", exc)
 
 
 # --------------------------------------------------------------------------- #
@@ -257,6 +280,10 @@ def run_art_avatar(
         render_ok = False
         render_error: Optional[str] = None
 
+        # Free the Ollama model from VRAM before FLUX allocates on the same GPU.
+        if config.ollama_first:
+            _evict_ollama_from_vram(request.max_wait_seconds)
+
         flux_service_url = os.getenv("FLUX_SERVICE_URL", "").rstrip("/")
 
         try:
@@ -299,6 +326,14 @@ def run_art_avatar(
 
         telemetry.render_duration_seconds = time.monotonic() - render_start
         telemetry.gpu_job_id = request.request_id
+
+    # ------------------------------------------------------------------ #
+    # 4b. Post-render memory cleanup (runs after GPU slot released above)
+    # ------------------------------------------------------------------ #
+    # For the HTTP-service path the cleanup happens inside generate_flux_image.
+    # For any remaining Python-side references (request objects, prompt strings,
+    # etc.) we nudge the GC so RAM returns to the OS before Ollama reloads.
+    gc.collect()
 
     # ------------------------------------------------------------------ #
     # 5. Persist story artifact (always — independent of render outcome)
