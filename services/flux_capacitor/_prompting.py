@@ -147,8 +147,9 @@ def build_prompt(
 
     # 9. Combine
     prompt = (
-        f"Digital artwork inspired by: {subject_text}."
+        f"Create an ultra realistic image of this input story: {subject_text}."
         f"{theme_cue}{knowledge_snippet} "
+        "Photorealistic, lifelike, highly detailed, natural lighting, realistic textures. "
         f"{style_block}{style_persona}"
     ).strip()
 

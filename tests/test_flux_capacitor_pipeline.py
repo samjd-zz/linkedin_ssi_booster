@@ -208,6 +208,7 @@ class TestBuildPrompt:
         req = _minimal_request(post_text="Testing AI grounding pipelines.")
         prompt = build_prompt(req, cfg)
         assert "Testing AI grounding pipelines" in prompt
+        assert "ultra realistic image" in prompt.lower()
 
     def test_prompt_includes_theme_cue(self):
         cfg = _default_config()
