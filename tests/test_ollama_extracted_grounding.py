@@ -5,8 +5,10 @@ from services.ollama_service import OllamaService
 class DummyOllamaService(OllamaService):
     def __init__(self) -> None:
         self.last_user_prompt = ""
+        self.last_system_prompt = ""
 
     def _chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
+        self.last_system_prompt = system_prompt
         self.last_user_prompt = user_prompt
         return "This is a grounded response."
 
@@ -46,3 +48,22 @@ def test_summarise_for_curation_includes_extracted_grounding(monkeypatch):
 
     assert "Recently learned context" in svc.last_user_prompt
     assert "Claude Managed Agents" in svc.last_user_prompt
+
+
+def test_optimize_flux_art_prompt_defaults_to_ultra_realistic_image():
+    svc = DummyOllamaService()
+
+    prompt = svc.optimise_flux_art_prompt(
+        "A founder presents a new AI workflow on stage.",
+        title="AI summit",
+        angle="product launch",
+        theme="founder story",
+        knowledge_context="conference keynote",
+        channel="linkedin",
+        source_mode="schedule",
+    )
+
+    assert prompt == "This is a grounded response."
+    assert "FLUX image generation" in svc.last_system_prompt
+    assert "ultra realistic image of the input story" in svc.last_system_prompt.lower()
+    assert "A founder presents a new AI workflow on stage" in svc.last_user_prompt

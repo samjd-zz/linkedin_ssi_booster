@@ -471,6 +471,55 @@ Post:
             comment = comment.rstrip() + f"\n\n{source_url}"
         return comment
 
+    def optimise_flux_art_prompt(
+        self,
+        story_text: str,
+        *,
+        title: str = "",
+        angle: str = "",
+        theme: str = "",
+        knowledge_context: str = "",
+        channel: str = "linkedin",
+        source_mode: str = "schedule",
+        max_tokens: int = 260,
+    ) -> str:
+        """Rewrite source story text into a FLUX-ready visual prompt.
+
+        The default output should describe an ultra-realistic image of the
+        input story, while keeping the original meaning and avoiding new facts.
+        """
+        story_text = (story_text or "").strip()
+        if not story_text:
+            return ""
+
+        system_prompt = f"""{PERSONA_SYSTEM_PROMPT}
+You are preparing text for FLUX image generation.
+- Default style: ultra realistic image of the input story.
+- Keep the core scene, objects, action, tone, and setting from the story.
+- Do not add new facts, brands, metrics, dates, or claims.
+- Prefer concrete visual language over abstract commentary.
+- Output plain text only. No markdown, no hashtags, no bullet points.
+- Keep it short, vivid, and directly usable as an image prompt.
+"""
+
+        user_prompt = f"""Source story:
+{story_text[:4000]}
+
+Context:
+- title: {title}
+- angle: {angle}
+- theme: {theme}
+- channel: {channel}
+- source_mode: {source_mode}
+
+Optional grounding context:
+{knowledge_context[:1200] if knowledge_context else ""}
+
+Rewrite the source story into a FLUX-ready prompt that would produce an ultra realistic image of the story."""
+
+        optimized = clean_llm_text(self._chat(system_prompt, user_prompt, max_tokens=max_tokens))
+        return optimized or story_text
+
     def summarise_for_curation(
         self,
         article_text: str,

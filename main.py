@@ -116,6 +116,7 @@ logger = logging.getLogger(__name__)
 
 
 def _render_schedule_art_avatar(
+    ai: OllamaService,
     post_text: str,
     channel: str,
     topic: dict,
@@ -128,9 +129,19 @@ def _render_schedule_art_avatar(
         return {}
 
     try:
+        optimized_post_text = _optimize_flux_story_for_render(
+            ai,
+            post_text,
+            source_mode=SourceMode.SCHEDULE,
+            channel=channel,
+            title=topic.get("title", ""),
+            angle=topic.get("angle", ""),
+            theme=topic.get("title", ""),
+            knowledge_context=topic.get("angle", ""),
+        )
         flux_service = get_flux_service()
         request = flux_service.make_request(
-            post_text=post_text,
+            post_text=optimized_post_text,
             source_mode=SourceMode.SCHEDULE,
             channel=channel,
             theme=topic.get("title"),
@@ -177,6 +188,7 @@ def _render_schedule_art_avatar(
 
 
 def _render_curate_art_avatar(
+    ai: OllamaService,
     idea: dict,
     channel: str,
 ) -> dict:
@@ -189,12 +201,20 @@ def _render_curate_art_avatar(
         return {}
 
     try:
+        optimized_post_text = _optimize_flux_story_for_render(
+            ai,
+            post_text,
+            source_mode=SourceMode.CURATE,
+            channel=channel,
+            title=idea.get("title", ""),
+            angle=idea.get("summary", ""),
+            theme=idea.get("title", ""),
+            knowledge_context=(idea.get("summary") or idea.get("article_text") or ""),
+        )
         flux_service = get_flux_service()
-        # Pass article summary as knowledge context so the FLUX prompt has
-        # the same enrichment that schedule mode gets from topic.get("angle").
         _knowledge_ctx: str = (idea.get("summary") or idea.get("article_text") or "").strip()
         request = flux_service.make_request(
-            post_text=post_text,
+            post_text=optimized_post_text,
             source_mode=SourceMode.CURATE,
             channel=channel,
             theme=idea.get("title"),
@@ -241,6 +261,7 @@ def _render_curate_art_avatar(
 
 
 def _render_console_art_avatar(
+    ai: OllamaService,
     post_text: str,
     topic_hint: str | None = None,
 ) -> dict:
@@ -252,9 +273,17 @@ def _render_console_art_avatar(
         return {}
 
     try:
+        optimized_post_text = _optimize_flux_story_for_render(
+            ai,
+            post_text,
+            source_mode=SourceMode.CONSOLE,
+            channel="linkedin",
+            theme=topic_hint or "",
+            knowledge_context=topic_hint or "",
+        )
         flux_service = get_flux_service()
         request = flux_service.make_request(
-            post_text=post_text,
+            post_text=optimized_post_text,
             source_mode=SourceMode.CONSOLE,
             channel="linkedin",
             theme=topic_hint,
@@ -307,6 +336,41 @@ def _display_art_in_terminal(image_path: str | None, width: int = 60) -> None:
         _img.draw()
     except Exception as _ti_err:  # noqa: BLE001
         logger.debug("term-image display skipped: %s", _ti_err)
+
+
+def _optimize_flux_story_for_render(
+    ai: OllamaService,
+    story_text: str,
+    *,
+    source_mode: SourceMode,
+    channel: str,
+    title: str = "",
+    angle: str = "",
+    theme: str = "",
+    knowledge_context: str = "",
+) -> str:
+    """Rewrite story text into a FLUX-ready visual prompt."""
+    story_text = (story_text or "").strip()
+    if not story_text:
+        return ""
+    try:
+        return ai.optimise_flux_art_prompt(
+            story_text,
+            title=title,
+            angle=angle,
+            theme=theme,
+            knowledge_context=knowledge_context,
+            channel=channel,
+            source_mode=source_mode.value,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "FLUX prompt optimization failed for source_mode=%s channel=%s: %s",
+            source_mode.value,
+            channel,
+            exc,
+        )
+        return story_text
 
 
 from services.console_grounding import (
@@ -649,7 +713,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 print(str(Fore.YELLOW) + "⚠️  No previous reply to render art from. Generate a response first." + str(Style.RESET_ALL))
             else:
                 print(str(Fore.CYAN) + "🎨 Requesting art avatar..." + str(Style.RESET_ALL))
-                _art_result = _render_console_art_avatar(_art_src, _art_topic_hint)
+                _art_result = _render_console_art_avatar(ai, _art_src, _art_topic_hint)
                 _art_status = _art_result.get("art_avatar_status", "unavailable")
                 if _art_status == RenderStatus.RENDERED.value:
                     print(str(Fore.GREEN) + f"✅  Art rendered → {_art_result.get('art_avatar_image_path', '')}" + str(Style.RESET_ALL))
@@ -1405,7 +1469,7 @@ def main():
                 _idea_channel = _idea.get("channel", "linkedin")
                 if _idea.get("dry_run") or _idea_channel in ("youtube", "all"):
                     continue
-                _art_meta = _render_curate_art_avatar(_idea, str(_idea_channel))
+                _art_meta = _render_curate_art_avatar(ai, _idea, str(_idea_channel))
                 if _art_meta:
                     _idea.update(_art_meta)
                     _art_status = _art_meta.get("art_avatar_status", "")
@@ -1520,7 +1584,7 @@ def main():
                         hashtag_str = " ".join(f"#{h.lstrip('#')}" for h in topic.get("hashtags", []))
                         if hashtag_str and hashtag_str not in post:
                             post = post.rstrip() + f"\n\n{hashtag_str}"
-                    art_meta = _render_schedule_art_avatar(post, channel, topic)
+                        art_meta = _render_schedule_art_avatar(ai, post, channel, topic)
                     posts.append({**topic, "generated_text": post, **art_meta})
                     if art_meta.get("art_avatar_status") == RenderStatus.RENDERED.value:
                         _display_art_in_terminal(art_meta.get("art_avatar_image_path"))

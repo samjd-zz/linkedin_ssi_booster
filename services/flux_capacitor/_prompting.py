@@ -146,8 +146,8 @@ def build_prompt(
         style_persona = f" Style persona: {config.style_system_prompt.strip()}"
 
     # 9. Combine
-    prompt = (
-        f"Create an ultra realistic image of this input story: {subject_text}."
+        prompt = (
+            f"Ultra realistic image of the input story: {subject_text}."
         f"{theme_cue}{knowledge_snippet} "
         "Photorealistic, lifelike, highly detailed, natural lighting, realistic textures. "
         f"{style_block}{style_persona}"
