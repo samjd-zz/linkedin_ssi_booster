@@ -363,7 +363,7 @@ def _optimize_flux_story_for_render(
 ) -> str:
     """Rewrite story text into a FLUX-ready visual prompt."""
     story_text = (story_text or "").strip()
-    if not story_text:
+    if not story_text or not os.getenv("FLUX_CAPACITOR_ENABLED", "false").lower() == "true":
         return ""
     try:
         return ai.optimise_flux_art_prompt(
