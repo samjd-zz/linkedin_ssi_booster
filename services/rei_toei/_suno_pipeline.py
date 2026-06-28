@@ -249,8 +249,8 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown):
 
 Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
     
-    # Call Ollama LLM
-    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=512)
+    # Call Ollama LLM with JSON format to ensure structured output
+    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=512, format="json")
     
     logger.debug(f"Ollama response: {response_text[:200]}...")
     
@@ -317,8 +317,11 @@ def compose_lyrics(
 ) -> Lyrics:
     """
     Compose structured song lyrics using Rei's voice and cyberpunk aesthetic.
-    Optimized for long-form 5-minute tracks with strict formatting rules
-    for Suno compatibility (ALL-CAPS chorus, character capping, no code syntax).
+    Optimized for Suno compatibility with strict formatting rules:
+    - ALL-CAPS chorus for dynamic velocity
+    - Section labels like [Verse 1], [Chorus], [Pre-Chorus], [Bridge], [Outro]
+    - No parenthetical instructions or comments inside text fields
+    - Character caps per section for API parsing
     
     Args:
         concept: The song concept with mood, BPM, and theme
@@ -352,11 +355,14 @@ Your lyrical style:
 Vocabulary pool: {', '.join(communication_vocab[:15])}
 Communication style: {persona.communication_style['tone']}
 
-Lyrical Formatting Rules:
-1. Speak in cryptic technical metaphors and electronic jargon.
-2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields.
-3. ABSOLUTELY NO parenthetical instructions like '(Stanza 1)' or '(More chaos)'. Use plain line breaks only."""
-#4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) to signal high dynamic energy to the audio model."""
+Suno Formatting Rules:
+1. Use section labels: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Drop], [Solo], [Outro]
+2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields
+3. ABSOLUTELY NO parenthetical instructions like '(Stanza 1)' or '(More chaos)'
+4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity
+5. Keep intros simple: [Instrumental Build] (not [Intro Drums], [Intro Bass], etc.)
+6. Start with vocalization: (Ahh ahh ahh) to encourage Suno to prioritize lyrics
+7. Follow character caps per section for API parsing compliance"""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -384,9 +390,9 @@ Lyrical Formatting Rules:
                 sam_context += f"\n- Companies: {', '.join(company_names)}"
             sam_context += "\n(You may naturally weave these into the lyrics if thematically relevant, but it's optional.)"
     
-    # Build user prompt with strict formatting and character caps
+    # Build user prompt with Suno-compatible formatting
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
-Adhere to strict character caps per section to ensure compliance with API parsing boundaries.
+Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 
 Title: {concept.title}
 Theme: {concept.theme}
@@ -396,16 +402,16 @@ Genre tags: {', '.join(concept.genre_tags)}
 Narrative arc: {concept.narrative_arc}{metaphor_context}{sam_context}
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown outside the JSON structure). 
-Ensure you inject the requested musical arrangement tags directly inside the string fields:
+Each field should contain the complete lyrics for that section, including any section markers:
 
 {{
-  "intro": "[Instrumental Intro] followed by atmospheric build-up text (4-6 lines total). (Character Cap: 400 chars)",
-  "verse_1": "Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
-  "pre_chorus": "4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
-  "chorus": "CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
-  "verse_2": "Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "intro": "[Instrumental Build] followed by atmospheric build-up text (4-6 lines total). (Character Cap: 400 chars)",
+  "verse_1": "[Verse 1] Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
+  "chorus": "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
+  "verse_2": "[Verse 2] Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "drop": "[Drop] followed by 4-6 lines of high-energy electronic phrases (total). (Character Cap: 400 chars)",
-  "bridge": "A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
+  "bridge": "[Bridge] A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
   "solo": "[Solo] followed by 3-4 lines describing the instrumental solo moment (total). (Character Cap: 300 chars)",
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
@@ -457,6 +463,7 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
         logger.error(f"Failed to parse Ollama lyrics response: {e}. Reverting to formatted fallback.")
         
         # Fallback lyrics pre-formatted to match new structure with ALL-CAPS chorus
+        # Added enhanced newline formatting for better readability and visual separation
         fallback_lyrics = Lyrics(
             verse_1=(
                 f"Signal acquired from the {concept.theme} data stream,\n"
@@ -466,13 +473,13 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "Cache lines flushing to the core memory bank,\n"
                 "Statically scanning through the un-indexed rank.\n"
                 "Isolating constants in an air-gapped array,\n"
-                "The neural mesh prepares for the final overlay."
+                "The neural mesh prepares for the final overlay.\n"
             ),
             chorus=(
                 f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
                 "COMPILE THE FUTURE STATE WITHOUT DELAY!\n"
                 f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
-                "RENDER THE PROTOCOL, OVERRIDE THE GATE!"
+                "RENDER THE PROTOCOL, OVERRIDE THE GATE!\n"
             ),
             verse_2=(
                 "Binary logic mapping the dark paths ahead,\n"
@@ -482,13 +489,13 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "Registers locking down under cryptographic weight,\n"
                 "The system state mutates as we pass the threshold gate.\n"
                 "A continuous loop running hot on the clock,\n"
-                "Assembling the machine logic block by rigid block."
+                "Assembling the machine logic block by rigid block.\n"
             ),
             bridge=(
                 "System override initialized.\n"
                 "Glitch the underlying paradigm.\n"
                 "Frequencies violently collide,\n"
-                "Rewrite the execution timeline."
+                "Rewrite the execution timeline.\n"
             ),
             evidence_ids=concept.evidence_ids,
             intro=(
@@ -496,33 +503,33 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 "Digital signal initializing...\n"
                 "System boot sequence engaged.\n"
                 "Frequency analyzers online.\n"
-                "Prepare for data transmission."
+                "Prepare for data transmission.\n"
             ),
             pre_chorus=(
                 "System voltage rising to critical mass,\n"
                 "Binary countdown ticking fast.\n"
                 "Prepare for execution,\n"
-                "Initialize the protocol blast!"
+                "Initialize the protocol blast!\n"
             ),
             drop=(
                 "[Drop]\n\n"
                 "SYSTEM OVERLOAD. TEMP LOAD SHIFT ACTIVE.\n"
                 "BUFFER BLEED DETECTED. MUTATE SYSTEM STATE.\n"
                 "JITTER ARTIFACT FLOODING THE BUS.\n"
-                "REBOOT SEQUENCE MANDATED NOW."
+                "REBOOT SEQUENCE MANDATED NOW.\n"
             ),
             solo=(
                 "[Solo]\n\n"
                 "Synthesizer cascade through quantum noise,\n"
                 "Distorted frequencies finding their voice.\n"
-                "Raw signal modulation unleashed."
+                "Raw signal modulation unleashed.\n"
             ),
             outro=(
                 "[Outro]\n\n"
                 "Signal slowly fading to cold static noise.\n"
                 "The core cools down to baseline zero.\n"
                 "System state: offline.\n"
-                "End transmission."
+                "End transmission.\n"
             ),
             breakdown=None,
         )

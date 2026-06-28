@@ -71,8 +71,8 @@ async def generate_music_api(
     
     logger.info(f"Calling Suno API: generate_music (title: {title})")
     
-    # Call Suno API
-    api_url = "https://api.sunoapi.org/v2/ai-music/generate"
+    # Call Suno API - use correct endpoint from tutorial
+    api_url = "https://api.suno.ai/api/v2/ai-music/generate"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -117,8 +117,8 @@ async def query_status_api(
     
     logger.info(f"Querying Suno API status for {len(task_ids)} tasks")
     
-    # Call Suno API
-    api_url = "https://api.sunoapi.org/v2/ai-music/query"
+    # Call Suno API - use correct endpoint from tutorial
+    api_url = "https://api.suno.ai/api/v2/ai-music/query"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
