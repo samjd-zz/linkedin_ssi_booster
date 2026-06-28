@@ -120,6 +120,8 @@ def _render_schedule_art_avatar(
     post_text: str,
     channel: str,
     topic: dict,
+    *,
+    optimize_story: bool = True,
 ) -> dict:
     """Run FLUX art-avatar rendering for schedule flow and return metadata.
 
@@ -129,16 +131,18 @@ def _render_schedule_art_avatar(
         return {}
 
     try:
-        optimized_post_text = _optimize_flux_story_for_render(
-            ai,
-            post_text,
-            source_mode=SourceMode.SCHEDULE,
-            channel=channel,
-            title=topic.get("title", ""),
-            angle=topic.get("angle", ""),
-            theme=topic.get("title", ""),
-            knowledge_context=topic.get("angle", ""),
-        )
+        optimized_post_text = (post_text or "").strip()
+        if optimize_story:
+            optimized_post_text = _optimize_flux_story_for_render(
+                ai,
+                post_text,
+                source_mode=SourceMode.SCHEDULE,
+                channel=channel,
+                title=topic.get("title", ""),
+                angle=topic.get("angle", ""),
+                theme=topic.get("title", ""),
+                knowledge_context=topic.get("angle", ""),
+            )
         flux_service = get_flux_service()
         request = flux_service.make_request(
             post_text=optimized_post_text,
@@ -191,26 +195,34 @@ def _render_curate_art_avatar(
     ai: OllamaService,
     idea: dict,
     channel: str,
+    *,
+    optimize_story: bool = True,
 ) -> dict:
     """Run FLUX art-avatar rendering for the curate flow and return metadata.
 
     Returns an empty dict when rendering is not available or not applicable.
     """
     post_text: str = idea.get("generated_text") or idea.get("text", "")  # type: ignore[assignment]
+    if not optimize_story:
+        _preoptimized_text = str(idea.get("_flux_optimized_post_text") or "").strip()
+        if _preoptimized_text:
+            post_text = _preoptimized_text
     if not post_text or channel in ("youtube", "all"):
         return {}
 
     try:
-        optimized_post_text = _optimize_flux_story_for_render(
-            ai,
-            post_text,
-            source_mode=SourceMode.CURATE,
-            channel=channel,
-            title=idea.get("title", ""),
-            angle=idea.get("summary", ""),
-            theme=idea.get("title", ""),
-            knowledge_context=(idea.get("summary") or idea.get("article_text") or ""),
-        )
+        optimized_post_text = post_text.strip()
+        if optimize_story:
+            optimized_post_text = _optimize_flux_story_for_render(
+                ai,
+                post_text,
+                source_mode=SourceMode.CURATE,
+                channel=channel,
+                title=idea.get("title", ""),
+                angle=idea.get("summary", ""),
+                theme=idea.get("title", ""),
+                knowledge_context=(idea.get("summary") or idea.get("article_text") or ""),
+            )
         flux_service = get_flux_service()
         _knowledge_ctx: str = (idea.get("summary") or idea.get("article_text") or "").strip()
         request = flux_service.make_request(
@@ -1461,6 +1473,27 @@ def main():
             return
         noun = "posts" if args.type == "post" else "ideas"
 
+        if ideas:
+            for _idea in ideas:
+                if not isinstance(_idea, dict):
+                    continue
+                _idea_channel = _idea.get("channel", "linkedin")
+                if _idea.get("dry_run") or _idea_channel in ("youtube", "all"):
+                    continue
+                _idea_post_text = str(_idea.get("generated_text") or _idea.get("text") or "").strip()
+                if not _idea_post_text:
+                    continue
+                _idea["_flux_optimized_post_text"] = _optimize_flux_story_for_render(
+                    ai,
+                    _idea_post_text,
+                    source_mode=SourceMode.CURATE,
+                    channel=str(_idea_channel),
+                    title=_idea.get("title", ""),
+                    angle=_idea.get("summary", ""),
+                    theme=_idea.get("title", ""),
+                    knowledge_context=(_idea.get("summary") or _idea.get("article_text") or ""),
+                )
+
         # Step 6: Render art avatars for curated ideas (non-dry-run, non-youtube, non-all-channel)
         if ideas:
             for _idea in ideas:
@@ -1469,7 +1502,17 @@ def main():
                 _idea_channel = _idea.get("channel", "linkedin")
                 if _idea.get("dry_run") or _idea_channel in ("youtube", "all"):
                     continue
-                _art_meta = _render_curate_art_avatar(ai, _idea, str(_idea_channel))
+                _optimized_story = (_idea.get("_flux_optimized_post_text", "") or "").strip()
+                if _optimized_story:
+                    _art_meta = _render_curate_art_avatar(
+                        ai,
+                        _idea,
+                        str(_idea_channel),
+                        optimize_story=False,
+                    )
+                    _idea.pop("_flux_optimized_post_text", None)
+                else:
+                    _art_meta = _render_curate_art_avatar(ai, _idea, str(_idea_channel))
                 if _art_meta:
                     _idea.update(_art_meta)
                     _art_status = _art_meta.get("art_avatar_status", "")
@@ -1584,10 +1627,17 @@ def main():
                         hashtag_str = " ".join(f"#{h.lstrip('#')}" for h in topic.get("hashtags", []))
                         if hashtag_str and hashtag_str not in post:
                             post = post.rstrip() + f"\n\n{hashtag_str}"
-                        art_meta = _render_schedule_art_avatar(ai, post, channel, topic)
-                    posts.append({**topic, "generated_text": post, **art_meta})
-                    if art_meta.get("art_avatar_status") == RenderStatus.RENDERED.value:
-                        _display_art_in_terminal(art_meta.get("art_avatar_image_path"))
+                    optimized_post = _optimize_flux_story_for_render(
+                        ai,
+                        post,
+                        source_mode=SourceMode.SCHEDULE,
+                        channel=channel,
+                        title=topic.get("title", ""),
+                        angle=topic.get("angle", ""),
+                        theme=topic.get("title", ""),
+                        knowledge_context=topic.get("angle", ""),
+                    )
+                    posts.append({**topic, "generated_text": post, "_flux_optimized_post_text": optimized_post})
 
                 if channel != "youtube":
                     print(str(Fore.CYAN) + f"\n{'='*60}" + str(Style.RESET_ALL))
@@ -1664,6 +1714,22 @@ def main():
                         extracted_facts=_relevant_extracted,
                     )
                     print(format_explain_output(_explain))
+
+            if channel != "youtube":
+                for _scheduled_post in posts:
+                    _optimized_story = (_scheduled_post.pop("_flux_optimized_post_text", "") or "").strip()
+                    if not _optimized_story:
+                        _optimized_story = str(_scheduled_post.get("generated_text", "")).strip()
+                    _art_meta = _render_schedule_art_avatar(
+                        ai,
+                        _optimized_story,
+                        channel,
+                        _scheduled_post,
+                        optimize_story=False,
+                    )
+                    _scheduled_post.update(_art_meta)
+                    if _art_meta.get("art_avatar_status") == RenderStatus.RENDERED.value:
+                        _display_art_in_terminal(_art_meta.get("art_avatar_image_path"))
 
             # Only schedule if not dry-run and not YouTube
             if not args.dry_run:
