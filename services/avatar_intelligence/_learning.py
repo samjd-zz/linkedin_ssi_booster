@@ -66,8 +66,7 @@ def _write_moderation_event_to_db(
         from services.database.repositories import ModerationEventRepository
         from services.database.session import get_session
 
-        session = next(get_session())
-        try:
+        with get_session() as session:
             ModerationEventRepository.create(
                 session=session,
                 timestamp=timestamp,
@@ -80,8 +79,6 @@ def _write_moderation_event_to_db(
                 run_id=run_id,
             )
             session.commit()
-        finally:
-            session.close()
     except Exception as exc:
         logger.warning("Moderation event DB write failed (continuing): %s", exc)
 

@@ -1,4 +1,6 @@
 """T6.4 — Unit tests for confidence scoring and policy routing."""
+from contextlib import contextmanager
+
 import pytest
 
 import services.avatar_intelligence._confidence as confidence_module
@@ -250,9 +252,17 @@ def test_record_confidence_decision_dual_writes_db(monkeypatch: pytest.MonkeyPat
         def close(self) -> None:
             captured["closed"] = True
 
+    @contextmanager
+    def _mock_get_session():
+        session = DummySession()
+        try:
+            yield session
+        finally:
+            session.close()
+
     monkeypatch.setattr(
         "services.database.session.get_session",
-        lambda: iter([DummySession()]),
+        _mock_get_session,
     )
 
     def _capture_create(**kwargs: object) -> object:

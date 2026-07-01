@@ -56,8 +56,7 @@ def _write_confidence_decision_to_db(
         from services.database.repositories import ConfidenceDecisionRepository
         from services.database.session import get_session
 
-        session = next(get_session())
-        try:
+        with get_session() as session:
             ConfidenceDecisionRepository.create(
                 session=session,
                 timestamp=timestamp,
@@ -72,8 +71,6 @@ def _write_confidence_decision_to_db(
                 run_id=run_id,
             )
             session.commit()
-        finally:
-            session.close()
     except Exception as exc:
         logger.warning("Confidence decision DB write failed (continuing): %s", exc)
 
