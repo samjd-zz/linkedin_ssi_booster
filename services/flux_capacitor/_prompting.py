@@ -17,6 +17,7 @@ Version: alpha-v0.0.2.7
 """
 
 import logging
+import os
 from typing import Any, Dict, Optional
 
 from services.flux_capacitor._config import (
@@ -27,6 +28,12 @@ from services.flux_capacitor._config import (
 from services.flux_capacitor._models import ArtAvatarRequest, StylePreset
 
 logger = logging.getLogger(__name__)
+
+# Optional realism guidance — empty by default so preset-driven art direction
+# remains primary unless explicitly enabled via env/style override.
+_OPTIONAL_REALISM_HINT: str = " ".join(
+    os.getenv("FLUX_CAPACITOR_REALISM_HINT", "").strip().split()
+)
 
 # Negative prompt shared by all presets
 _NEGATIVE_PROMPT: str = (
@@ -145,12 +152,23 @@ def build_prompt(
     if config.style_system_prompt:
         style_persona = f" Style persona: {config.style_system_prompt.strip()}"
 
-    # 9. Combine
-        prompt = (
-            f"Ultra realistic image of the input story: {subject_text}."
+    # 9. Optional realism guidance
+    # Default is off; callers can opt in through style overrides or env var.
+    realism_override = request.style_overrides.get("realism_hint")
+    realism_hint = ""
+    if isinstance(realism_override, str) and realism_override.strip():
+        realism_hint = " ".join(realism_override.strip().split())
+    elif _OPTIONAL_REALISM_HINT:
+        realism_hint = _OPTIONAL_REALISM_HINT
+
+    realism_clause = f" {realism_hint}" if realism_hint else ""
+
+    # 10. Combine
+    prompt = (
+        f"Visual concept inspired by the input story: {subject_text}."
         f"{theme_cue}{knowledge_snippet} "
-        "Photorealistic, lifelike, highly detailed, natural lighting, realistic textures. "
-        f"{style_block}{style_persona}"
+        "Prioritize cohesive composition, clear focal hierarchy, and refined illustration quality. "
+        f"{style_block}{style_persona}{realism_clause}"
     ).strip()
 
     logger.debug("FLUX prompt assembled (len=%d): %.80s…", len(prompt), prompt)

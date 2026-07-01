@@ -140,6 +140,7 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 - Added comprehensive error handling and logging
 - Fixed CUDA visibility issues by ensuring runtime uses real libcuda
 - Verified and concurrency-tested `FluxCapacitorService` singleton (`get_flux_service`) to ensure a single shared orchestrator instance under parallel access
+- Removed hard-coded `Ultra realistic` / `Photorealistic` wording from the prompt builder; preset-driven art direction (corporate-minimal, sacred-geometry, tech-dark) is now primary. Realism is opt-in via `FLUX_CAPACITOR_REALISM_HINT` env var or per-request `style_overrides["realism_hint"]`.
 
 See [docs/multimodal-features.md](docs/multimodal-features.md) for setup and API details.
 

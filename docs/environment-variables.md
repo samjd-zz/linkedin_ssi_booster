@@ -630,6 +630,28 @@ Custom style system prompt that appends to (or replaces) the active preset's suf
 FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT="Clean isometric tech illustration, monochrome with single blue accent"
 ```
 
+### `FLUX_CAPACITOR_REALISM_HINT`
+
+Optional photographic/realism phrase appended at the end of every FLUX prompt.
+
+Leave **unset** (default) to let the active style preset drive the image direction — this is the recommended default because photographic language can conflict with corporate-minimal and illustration presets.
+
+Set this only when you explicitly want photographic quality, for example for headshots or product shots.
+
+**Default:** `` (empty — realism is off)
+
+**Range:** Any short comma-separated directive string, for example:
+
+- `photorealistic, studio lighting, high detail` — strong photographic push
+- `highly detailed, soft diffuse lighting` — quality boost without full realism
+
+Can also be set per-request as `style_overrides["realism_hint"]` in code without affecting the global default.
+
+```bash
+# Off by default — preset-driven art direction is primary
+# FLUX_CAPACITOR_REALISM_HINT=photorealistic, studio lighting, high detail
+```
+
 ### Style Clamp Variables
 
 Hard limits enforced at render time — cannot be overridden by individual caller requests.

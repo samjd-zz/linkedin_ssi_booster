@@ -361,9 +361,15 @@ def _optimize_flux_story_for_render(
     theme: str = "",
     knowledge_context: str = "",
 ) -> str:
-    """Rewrite story text into a FLUX-ready visual prompt."""
+    """Rewrite story text into a FLUX-ready visual prompt.
+
+    Intentionally does NOT gate on FLUX_CAPACITOR_ENABLED — the caller decides
+    whether to invoke optimization, and flux_service.render() handles the
+    feature-disabled path by returning TEXT_ONLY.  Checking the env flag here
+    caused make_request(post_text="") when the feature was off, breaking tests.
+    """
     story_text = (story_text or "").strip()
-    if not story_text or not os.getenv("FLUX_CAPACITOR_ENABLED", "false").lower() == "true":
+    if not story_text:
         return ""
     try:
         return ai.optimise_flux_art_prompt(
