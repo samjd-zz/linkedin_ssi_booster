@@ -43,10 +43,10 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **774**     | **772** | **2**   | **0**  | ✅ **All pass** |
+| **775**     | **773** | **2**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** July 1, 2026
-- **Latest Run Scope:** Focused singleton verification via `python -m pytest -q tests/test_database_session_singleton.py tests/test_flux_service_singleton.py tests/test_gpu_orchestration_policy.py` (14 passed)
+- **Latest Run Scope:** Full suite — confirmed 0 failed after session-management bug fixes and FLUX config env-isolation fix
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
 - **Notes:** 2 skipped = `test_get_scheduled_posts` / `test_get_published_posts` — Buffer API key present but lacks `channels` permission in this environment; tests skip cleanly via fixture guard.
 
@@ -73,6 +73,18 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - _9 Buffer MCP agent tests + 8 Strudel MCP agent tests_
 - **4** Singleton concurrency tests (new)
 - _3 Database engine/session singleton lifecycle + 1 Flux service singleton under concurrent access_
+
+---
+
+## Recent Bug Fixes Covered by Tests
+
+### `next(get_session())` anti-pattern — `_confidence.py` and `_learning.py`
+
+Two DB write helpers in `services/avatar_intelligence/` were calling `next(get_session())` instead of using the context manager. This abandoned the generator before its `finally: session.close()` and `except: session.rollback()` branches could execute, leaking connections and silently skipping rollbacks on error. Fixed to `with get_session() as session:` in both files. Test mocks in `test_confidence_scoring.py` and `test_learning_report.py` updated from `lambda: iter([DummySession()])` to proper `@contextmanager` functions.
+
+### `test_defaults_valid` env leakage — `test_flux_capacitor_pipeline.py`
+
+`TestFluxCapacitorConfig.test_defaults_valid` was constructing `FluxCapacitorConfig()` without clearing `FLUX_CAPACITOR_ENABLED`, so it picked up the live `.env` value (`true`) instead of testing the code default (`false`). Fixed with `patch.dict("os.environ", {"FLUX_CAPACITOR_ENABLED": "false"})` scoped to that test.
 
 ---
 

@@ -25,7 +25,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-774%20total-16A34A.svg" alt="Tests 774 total"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-775%20total-16A34A.svg" alt="Tests 775 total"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -499,7 +499,7 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (774 collected; 772 passed, 2 skipped, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (775 collected; 773 passed, 2 skipped, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 
