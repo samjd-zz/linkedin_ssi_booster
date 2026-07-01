@@ -8,7 +8,7 @@ This document covers the three multimodal extensions to the LinkedIn SSI Booster
 
 ### Overview
 
-FLUX.1-schnell is a state-of-the-art image generation model running locally on your GPU. The system generates professional, persona-aligned visuals for LinkedIn posts without cloud costs or privacy concerns.
+FLUX.1-schnell is a state-of-the-art image generation model running locally on your GPU. The system generates professional, persona-aligned visuals for LinkedIn posts without cloud costs or privacy concerns. In the README, this is presented as the Alex Grey Avatar Enhancement: a visual-branding layer built from the source text plus FLUX style controls.
 
 **Key Features:**
 

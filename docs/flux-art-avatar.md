@@ -1,6 +1,6 @@
 # FLUX Art Avatar
 
-Local GPU image generation for persona-aligned visual content, built on FLUX.1-schnell (GGUF quantised). The `services/flux_capacitor/` package integrates image rendering into all three main flows — schedule, curate, and console — with a single shared GPU orchestrator that enforces Ollama-first sequencing on the RTX 3060.
+Local GPU image generation for persona-aligned visual content, built on FLUX.1-schnell (GGUF quantised). The README refers to this as the Alex Grey Avatar Enhancement: a style-and-aesthetic layer that guides the image prompt without introducing a separate visual persona. The `services/flux_capacitor/` package integrates image rendering into all three main flows — schedule, curate, and console — with a single shared GPU orchestrator that enforces Ollama-first sequencing on the RTX 3060.
 
 ---
 
