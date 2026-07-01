@@ -89,7 +89,7 @@ We're exploring the possibility of **merging SSI Booster and RIA into one comple
 
 ---
 
-## 🎨 FLUX Art Avatar After Ollama — Phase 1 Complete
+## 🎨 FLUX Art Avatar After Ollama — Phase 2 Complete
 
 **Single-GPU art-avatar pipeline with restrained corporate-art aesthetic.**
 
@@ -105,11 +105,12 @@ The `services/flux_capacitor/` package is now implemented and tested. The pipeli
 - ✅ **`services/flux_capacitor/__init__.py`** — `FluxCapacitorService` singleton, `make_request()` factory, `notify_ollama_start/done()` lifecycle hooks
 - ✅ **44 tests** — All passing (`test_flux_capacitor_pipeline.py` + `test_gpu_orchestration_policy.py`)
 
-### What's Pending (Phase 2)
+### What Was Built (Phase 2 — Completed)
 
-- 📋 **Schedule / curate / console integration** — Wire `FluxCapacitorService` into `main.py` flows (Steps 5–7 in the plan)
-- 📋 **DB-second schema** — Optional `generated_content_records` table (Step 7.5)
-- 📋 **`.env.example` and docker-deployment docs** — Add `FLUX_CAPACITOR_*` env vars (Step 11)
+- ✅ **Schedule / curate / console integration** — `FluxCapacitorService` is wired into `main.py` rendering flows (`_render_schedule_art_avatar`, `_render_curate_art_avatar`, `_render_console_art_avatar`)
+- ✅ **DB-second schema** — optional `generated_content_records` table plus repository support implemented in `services/database/models.py` and `services/database/repositories.py`
+- ✅ **Config/docs alignment** — `FLUX_CAPACITOR_*` and related display/realism variables documented and surfaced in `.env.example`, environment docs, CLI docs, and deployment docs
+- ✅ **Integration coverage** — dedicated flow tests added for schedule and curate/console integration; singleton and orchestration coverage retained
 
 ### Configuration
 
@@ -117,31 +118,33 @@ All features are **default-off** (`FLUX_CAPACITOR_ENABLED=false`). Requires `--p
 
 ### Status
 
-**Phase 1 complete** — Package foundation, GPU gate, style presets, and test suite committed (June 2026)
+**Phase 2 complete** — FLUX art-avatar package + main-flow integration + DB-second schema + docs/config alignment complete (July 2026)
 
 ---
 
-## 🎨 Alex Grey Avatar Enhancement
+## 🎨 Alex Grey Avatar Enhancement (Polish Track)
 
-**High-fidelity persona-aligned image generation enhancements.**
+**Status:** Core implementation complete; this track is now focused on aesthetic quality iteration.
 
-The local image generation pipeline (FLUX.1-schnell) is being enhanced with Alex Grey-inspired aesthetic guidance for persona-aligned visual content. This will enable the avatar to generate visuals that match the technical/artistic fusion style associated with the project's identity.
+The FLUX.1 art-avatar infrastructure is complete (GPU orchestration, flow integration, persistence, DB-second indexing). Remaining work is creative tuning rather than systems integration.
 
-### Coming Soon (Next Milestones)
+### Completed Foundation
 
-- **Ollama-first generation sequencing** — ✅ Implemented in `services/flux_capacitor/_pipeline.py`
-- **System-wide local-first artifact persistence** — ✅ Implemented via `services.shared.get_generated_content_dir`
-- **Unified generated-content paths** — ✅ `GENERATED_CONTENT_DIR`, `YOUTUBE_SCRIPTS_SUBDIR`, `REI_TOEI_SUBDIR`, plus new `FLUX_CAPACITOR_SUBDIR` and `FLUX_CAPACITOR_STORIES_SUBDIR`
-- **Database-second rollout** — PostgreSQL remains an optional secondary layer for indexing/analytics while local JSON/JSONL artifacts remain the source of truth during transition.
-- **FLUX art-avatar implementation phase** — ✅ `services/flux_capacitor/` package complete; schedule/curate/console hooks are Phase 2.
+- ✅ Ollama-first GPU sequencing in `services/flux_capacitor/_pipeline.py`
+- ✅ Local-first artifact persistence via `services.shared.get_generated_content_dir`
+- ✅ Unified generated-content paths (`GENERATED_CONTENT_DIR`, `FLUX_CAPACITOR_SUBDIR`, `FLUX_CAPACITOR_STORIES_SUBDIR`)
+- ✅ Optional DB-second indexing via `generated_content_records`
+- ✅ Schedule / curate / console hooks active in `main.py`
 
-### Status
+### Next Enhancements (Optional)
 
-**Phase 1 complete** — FLUX.1 integration package built; schedule/curate/console wiring is next
+- Additional style/prompt tuning passes for stronger persona-specific visual identity
+- Expanded preset experimentation and evaluation loops
+- Artifact quality benchmarking for render consistency across profiles
 
 ---
 
-## � Ollama Buffer MCP Agent — In Progress
+## 🤖 Ollama Buffer MCP Agent — In Progress
 
 **Status:** Code complete ✅, retry safety fixed ✅, Docker service re-enabled ✅, unit tests added ✅
 
@@ -169,48 +172,25 @@ The Buffer integration agent code exists (`agents/buffer_mcp_agent.py`) and is p
 
 ---
 
-## 🎵 Rei Toei AI Music Avatar — Strudel MCP Ready for Testing
+## 🎵 Rei Toei AI Music Avatar — Complete
 
-**Status:** Code complete ✅, Strudel MCP retry safety fixed ✅, MCP stdio flow active ✅, unit tests added ✅
+**Status:** Complete ✅ (retry safety, MCP stdio flow, Suno integration, console routing, and tests).
 
-Rei Toei is an AI music avatar system designed to generate personalized music and sonic branding aligned with persona aesthetics. The system uses **Suno vocal generation + Strudel live-coding patterns** for composable music creation. **The Strudel MCP agent has been hardened against retry loops and GPU hammering** with proper health checks, exponential backoff, and timeouts.
+Rei Toei is the music-avatar subsystem for generating persona-aligned sonic output using **Suno vocal generation + Strudel live-coding patterns**.
 
-### What's Fixed (June 2026)
+### Completed
 
-- ✅ **Strudel MCP Health Check:** `check_ollama_health()` prevents immediate Ollama connection failures from hammering GPU
-- ✅ **Exponential Backoff:** Retry failures wait 2s → 4s → 8s → 16s → 30s (max 5 retries) before giving up
-- ✅ **Comprehensive Timeouts:** 5s health check, 30s generation, bounded MCP request timeouts
-- ✅ **Logging Infrastructure:** Replaced all `print()` calls with structured logging for Docker debugging
-- ✅ **Graceful Error Handling:** Proper `sys.exit(0/1)` codes and exception handling on all async operations
-- ✅ **MCP Stdio Hardening:** `strudel-mcp-agent` runs as the single Strudel entrypoint via `STRUDEL_MCP_COMMAND`; legacy websocket bridge service removed
-- ✅ **Environment Variable Support:** `OLLAMA_HOST`, `OLLAMA_MODEL`, `STRUDEL_MCP_COMMAND`, `STRUDEL_PROMPT`
+- ✅ Strudel MCP agent hardening (health checks, exponential backoff, bounded timeouts, structured logging)
+- ✅ MCP stdio flow enabled via `STRUDEL_MCP_COMMAND` and `agents/strudel_mcp_agent.py`
+- ✅ Suno pipeline integrated in `services/rei_toei_service.py`
+- ✅ Console routing available via `/rei` and `/rei-toei` commands in `main.py`
+- ✅ Test coverage added for Rei console routing and CLI flows
 
-### What Exists
+### Follow-on Enhancements (Optional)
 
-- **Strudel MCP Agent:** `agents/strudel_mcp_agent.py` with Gemma 4 for translating music requests to live-coding Strudel patterns (now with retry safety)
-- **Suno Integration:** `services/rei_toei_service.py` for voice model selection, prompt engineering, and async generation
-- **Console Commands:** `/rei-compose`, `/rei-suno` for interactive music creation
-- **Architecture Design:** Full async/await patterns, streaming response handling, rate-limit guards
-- **Documentation:** Full docstrings and design patterns in place (see [docs/features/rei-toei/plan.md](docs/features/rei-toei/plan.md))
-
-### What's Pending
-
-- 🔍 **Verification Required:** Validate live-coding music patterns work as designed; test Suno API integration for voice generation
-- 📋 **Console Integration:** Wire fully into console mode and scheduled generation pipeline
-
-### Current Architecture
-
-- **Suno-first:** Text-to-music voice generation with configurable voice models (Chirp, Bark variants)
-- **Strudel-second:** Live-coding pattern generation for instrumental accompaniment (now enabled with safety fixes)
-- **Async rendering:** Non-blocking generation with streaming response collection
-- **Rate limiting:** Built-in guard against Suno API overuse
-
-### Next Steps to Complete
-
-1. Run `docker compose --profile core up -d && docker logs -f ssi_booster_strudel_agent` to validate health check and music generation flow
-2. Verify live-coding pattern generation works against Strudel MCP stdio command flow
-3. Wire Suno voice selection into console `/rei-suno` command with CLI `--voice` flag
-4. Integrate with scheduled posting pipeline for automated sonic branding
+- Automated scheduled-pipeline music generation for recurring sonic branding
+- Additional voice/prompt templates and genre packs
+- Post-generation analytics loop for song/pattern performance
 
 ---
 
@@ -231,4 +211,4 @@ Have a feature request or integration idea? Open an issue on [GitHub](https://gi
 
 ---
 
-**Last Updated:** June 2026 (FLUX Art Avatar Phase 1 complete)
+**Last Updated:** July 2026 (feature status cleanup; FLUX Phase 2 + Rei Toei marked complete)
