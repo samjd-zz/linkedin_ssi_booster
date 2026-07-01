@@ -113,7 +113,7 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 
 The FLUX art avatar pipeline is complete — GPU orchestration, Ollama-first sequencing, singleton-safe service, style presets with neutral art-direction by default, and opt-in realism via `FLUX_CAPACITOR_REALISM_HINT`.
 
-In console mode, `/art` renders from the most recent AI reply in the current session; an optional topic hint narrows the visual prompt.
+The avatar does not use a separate persona graph identity for images. In console mode, `/art` renders from the most recent AI reply in the current session, then FLUX layers on the active style preset, `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`, and any optional realism hint or knowledge context. An optional topic hint narrows the visual prompt.
 
 See [docs/flux-art-avatar.md](docs/flux-art-avatar.md) for configuration, style presets, GPU sequencing, and terminal display details. See [docs/multimodal-features.md](docs/multimodal-features.md) for the broader multimodal overview.
 

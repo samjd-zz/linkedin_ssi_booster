@@ -48,6 +48,18 @@ Hard-coded photorealistic wording was removed in v0.0.3.3. Art direction default
 
 Leave unset for preset-driven art direction — mixing photographic terms with corporate-minimal or sacred-geometry presets produces incoherent prompts.
 
+## Prompt Inputs
+
+The art avatar does not pull a separate visual persona from the persona graph. The prompt is assembled from:
+
+- The source story text passed in from schedule, curate, or console flows
+- The active style preset selected by `FLUX_CAPACITOR_STYLE_PRESET`
+- The optional `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT` style persona override
+- The optional `FLUX_CAPACITOR_REALISM_HINT` or per-request `realism_hint`
+- The optional `knowledge_context` provided by the caller, such as a console topic hint
+
+For console `/art`, the source story is the most recent assistant reply in the current session. The topic hint becomes both the visual theme and the short knowledge context passed into the optimizer.
+
 ---
 
 ## Terminal Display

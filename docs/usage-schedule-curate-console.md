@@ -107,6 +107,8 @@ When you run `--console`, the startup screen explains the three query modes and 
   Art note: /art uses the most recent AI reply in this session as source text.
 ```
 
+The art avatar does not have its own separate persona graph. The FLUX prompt is based on the previous assistant reply, then refined with the active style preset, style system prompt, and optional realism hint / topic hint.
+
 #### Console Commands
 
 Console mode supports the following slash commands:

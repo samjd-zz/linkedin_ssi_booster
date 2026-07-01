@@ -91,6 +91,10 @@ sequenceDiagram
     App->>User: Post + Image saved
 ```
 
+#### Art avatar prompt influence
+
+The art avatar is not driven by a separate persona graph. It uses the source story or console reply as the main input, then layers on the active FLUX style preset, the optional `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`, and any realism hint or short knowledge context supplied by the caller.
+
 #### Key Fixes Applied
 
 - **T5 Encoder Loading**: Fixed to use `from_pretrained` with `gguf_file` parameter instead of `from_single_file` to prevent "Cannot copy out of meta tensor" errors
@@ -208,6 +212,8 @@ If the GPU is busy the response is:
 ```
 ⏳  GPU busy — Ollama active, FLUX deferred (waited 120s)
 ```
+
+The optional topic hint is used as the short knowledge/context input for the image prompt, so it can steer the composition without replacing the actual source reply.
 
 ### Output Artifacts
 

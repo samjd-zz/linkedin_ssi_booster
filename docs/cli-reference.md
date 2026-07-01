@@ -246,6 +246,8 @@ python main.py --console --verify --avatar-explain --dot-report
 
 `/art` always uses the previous assistant message in the current console session as source text. If you have not generated an AI reply yet, ask a question or produce a response first, then run `/art` with an optional topic hint.
 
+The image prompt is then influenced by the active FLUX style preset, the `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`, and any optional realism hint or knowledge context. There is no separate art persona graph.
+
 **Query routing:**
 
 Console mode intelligently routes queries to the appropriate subsystem:
