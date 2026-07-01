@@ -467,7 +467,11 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     print("    • 20% graph proximity (facts closer to persona node rank higher)")
     print("    • 10% claim support (facts with more supporting edges rank higher)")
     print()
-    print(str(Fore.WHITE) + "  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats" + str(Style.RESET_ALL))
+    print(
+        str(Fore.WHITE)
+        + "  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art"
+        + str(Style.RESET_ALL)
+    )
     print()
 
 
@@ -659,7 +663,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art")
+            print("Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
             print("  /verify — toggle DoT + similarity verification on/off")
             print("  /avatar-explain — toggle avatar-explain report on/off")
