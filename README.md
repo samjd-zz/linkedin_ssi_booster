@@ -550,6 +550,8 @@ Copy `.env.example` to `.env` and fill in required values. Key variables include
 - `MODEL2VEC_ENABLED` — Static embedding classification
 - `CONSOLE_USE_VOICE` — Wyoming Piper TTS
 - `DATABASE_ENABLED` — PostgreSQL dual-write mode
+- `REI_TOEI_THEME_POOL_SIZE` / `REI_TOEI_THEME_REPEAT_PENALTY` — Rei theme variety tuning
+- `REI_TOEI_RECENT_TITLE_WINDOW` / `REI_TOEI_THEME_JITTER_RATIO` — Rei title uniqueness and randomness tuning
 - `KATZILLA_ENABLED` / `KATZILLA_API_KEY` — Optional external evidence retrieval via Katzilla
 - `KATZILLA_TELEMETRY_ENABLED` / `KATZILLA_MAX_CALLS_PER_DAY` — Katzilla observability and daily budget controls
 

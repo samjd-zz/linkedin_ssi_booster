@@ -13,11 +13,14 @@ from typing import Any
 from pathlib import Path
 
 from services.rei_toei_service import (
+    ReiToeiConfig,
     ReiToeiService,
     load_rei_persona,
     load_rei_domain_knowledge,
     load_strudel_patterns,
     extract_themes,
+    choose_diverse_theme,
+    load_recent_rei_titles,
     generate_song_concept,
     compose_lyrics,
     assemble_suno_prompt,
@@ -32,6 +35,8 @@ from services.avatar_intelligence import (
     load_avatar_state as _lav_rei_console,
     normalize_extracted_facts as _normalize_extracted_rei,
 )
+REI_CONFIG = ReiToeiConfig()
+from services.shared import get_rei_toei_dir
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +121,8 @@ async def _handle_strudel_request(
                 "Try running `--learn` first to extract knowledge from curated articles."
             )
             return reply, history
-        themes = extract_themes(extracted_facts, limit=5)
+
+        themes = extract_themes(extracted_facts, limit=REI_CONFIG.theme_pool_size)
 
         if not themes:
             reply = (
@@ -125,8 +131,16 @@ async def _handle_strudel_request(
             )
             return reply, history
 
-        # Use the first theme for now (can add user selection later)
-        theme = themes[0]
+        recent_titles = load_recent_rei_titles(
+            get_rei_toei_dir(create=False),
+            limit=REI_CONFIG.recent_title_window,
+        )
+        theme = choose_diverse_theme(
+            themes,
+            recent_theme_names=recent_titles,
+            repeat_penalty=REI_CONFIG.theme_repeat_penalty,
+            jitter_ratio=REI_CONFIG.theme_jitter_ratio,
+        )
 
         # Map theme to pattern template
         template = map_concept_to_pattern(theme, strudel_patterns)
@@ -207,7 +221,8 @@ async def _handle_suno_request(
                 "Try running `--learn` first to extract knowledge from curated articles."
             )
             return reply, history
-        themes = extract_themes(extracted_facts, limit=5)
+
+        themes = extract_themes(extracted_facts, limit=REI_CONFIG.theme_pool_size)
 
         if not themes:
             reply = (
@@ -216,11 +231,24 @@ async def _handle_suno_request(
             )
             return reply, history
 
-        # Use the first theme
-        theme = themes[0]
+        recent_titles = load_recent_rei_titles(
+            get_rei_toei_dir(create=False),
+            limit=REI_CONFIG.recent_title_window,
+        )
+        theme = choose_diverse_theme(
+            themes,
+            recent_theme_names=recent_titles,
+            repeat_penalty=REI_CONFIG.theme_repeat_penalty,
+            jitter_ratio=REI_CONFIG.theme_jitter_ratio,
+        )
         
         # Generate song concept
-        concept = generate_song_concept(theme, rei_persona, rei_domain)
+        concept = generate_song_concept(
+            theme,
+            rei_persona,
+            rei_domain,
+            recent_titles=recent_titles,
+        )
         
         # Compose lyrics
         lyrics = compose_lyrics(concept, rei_persona, rei_domain)

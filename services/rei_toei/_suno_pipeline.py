@@ -12,6 +12,9 @@ import asyncio
 import json
 import logging
 import os
+import random
+import re
+from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
@@ -34,6 +37,79 @@ from ._config import ReiToeiConfig
 from ._suno_client import generate_music_api, query_status_api
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_title(value: str) -> str:
+    """Normalize a title string for uniqueness comparisons."""
+    return re.sub(r"\W+", " ", value.lower()).strip()
+
+
+def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
+    """Load recent Suno titles from saved Rei artifacts."""
+    if not output_dir.exists():
+        return []
+
+    titles: List[str] = []
+    for path in sorted(output_dir.glob("*_suno.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        if len(titles) >= limit:
+            break
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                payload = json.load(f)
+            title = str(payload.get("title", "")).strip()
+            if title:
+                titles.append(title)
+        except (OSError, json.JSONDecodeError, TypeError):
+            continue
+    return titles
+
+
+def ensure_unique_rei_title(title: str, recent_titles: Optional[List[str]] = None) -> str:
+    """Ensure generated title is unique versus recent Rei titles."""
+    cleaned_title = " ".join(title.split()).strip() or "Untitled Protocol"
+    if not recent_titles:
+        return cleaned_title
+
+    normalized_recent = {_normalize_title(t) for t in recent_titles if t}
+    if _normalize_title(cleaned_title) not in normalized_recent:
+        return cleaned_title
+
+    suffix_options = ["Signal", "Vector", "Pulse", "Drift", "Phase", "Delta", "Echo"]
+    for suffix in suffix_options:
+        candidate = f"{cleaned_title} {suffix}"
+        if _normalize_title(candidate) not in normalized_recent:
+            return candidate
+
+    stamp = datetime.now().strftime("%H%M")
+    return f"{cleaned_title} {stamp}"
+
+
+def choose_diverse_theme(
+    themes: List[Theme],
+    recent_theme_names: Optional[List[str]] = None,
+    repeat_penalty: float = 0.1,
+    jitter_ratio: float = 0.1,
+) -> Theme:
+    """Choose a theme with weighted randomness and anti-repeat penalties."""
+    if not themes:
+        raise ValueError("themes must not be empty")
+
+    recent_set = {t.strip().lower() for t in (recent_theme_names or []) if t and t.strip()}
+
+    clamped_penalty = max(0.01, min(1.0, repeat_penalty))
+    clamped_jitter = max(0.0, min(0.5, jitter_ratio))
+
+    weights: List[float] = []
+    for theme in themes:
+        base = max(0.05, float(theme.frequency) * float(theme.recency_score))
+        if theme.name.strip().lower() in recent_set:
+            base *= clamped_penalty
+        # Add subtle jitter so ties do not repeatedly collapse to the same candidate.
+        if clamped_jitter > 0:
+            base *= random.uniform(1.0 - clamped_jitter, 1.0 + clamped_jitter)
+        weights.append(max(base, 0.01))
+
+    return random.choices(themes, weights=weights, k=1)[0]
 
 
 def extract_themes(
@@ -143,7 +219,8 @@ def generate_song_concept(
     persona: ReiPersonaGraph,
     domain_knowledge: ReiDomainKnowledge,
     sam_persona: Optional["PersonaGraph"] = None,
-    ollama: Optional["OllamaService"] = None
+    ollama: Optional["OllamaService"] = None,
+    recent_titles: Optional[List[str]] = None,
 ) -> SongConcept:
     """
     Generate a high-level song concept from a technical theme using Ollama LLM
@@ -157,6 +234,7 @@ def generate_song_concept(
         domain_knowledge: Rei's music production knowledge
         sam_persona: Optional Sam's persona graph for project knowledge inspiration
         ollama: Optional pre-initialized OllamaService; creates one if not provided (P2 GPU opt)
+        recent_titles: Optional list of recent titles to avoid near-duplicate naming
         
     Returns:
         SongConcept: High-level song idea with all musical parameters
@@ -222,6 +300,14 @@ You transform technical knowledge into high-energy electronic music. You speak i
             if company_names:
                 sam_context += f"\n- Companies: {', '.join(company_names)}"
             sam_context += "\n(You may naturally reference these if relevant to the theme, but it's optional.)"
+
+    title_guardrail = ""
+    if recent_titles:
+        recent_preview = ", ".join(recent_titles[:8])
+        title_guardrail = (
+            "\n\nRecent titles to avoid repeating (do not copy or trivially mutate these): "
+            f"{recent_preview}"
+        )
     
     # Build user prompt
     user_prompt = f"""Generate a song concept for this technical theme:
@@ -232,7 +318,7 @@ Frequency in knowledge base: {theme.frequency} facts
 Recency score: {theme.recency_score} (higher = more recent)
 Suggested BPM: {suggested_bpm}
 Suggested mood: {suggested_mood}
-Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{metaphor_hint}{sam_context}
+Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{metaphor_hint}{sam_context}{title_guardrail}
 
 Mood-to-BPM reference: {mood_context}
 
@@ -274,7 +360,7 @@ Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
         song_id = f"rei_suno_{datetime.now().strftime('%Y_%m_%d_%H%M%S')}"
         concept = SongConcept(
             song_id=song_id,
-            title=response_data["title"],
+            title=ensure_unique_rei_title(str(response_data["title"]), recent_titles),
             theme=theme.name,
             mood=response_data["mood"],
             bpm=int(response_data["bpm"]),
@@ -296,7 +382,7 @@ Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
         song_id = f"rei_suno_{datetime.now().strftime('%Y_%m_%d_%H%M%S')}"
         fallback_concept = SongConcept(
             song_id=song_id,
-            title=f"{theme.name} Protocol",
+            title=ensure_unique_rei_title(f"{theme.name} Protocol", recent_titles),
             theme=theme.name,
             mood=suggested_mood,
             bpm=suggested_bpm,

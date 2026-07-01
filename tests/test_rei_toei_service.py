@@ -40,6 +40,8 @@ from services.rei_toei_service import (
     ReiToeiService,
     get_rei_service,
     extract_themes,
+    choose_diverse_theme,
+    ensure_unique_rei_title,
     generate_song_concept,
     compose_lyrics,
     validate_lyrics_with_dot,
@@ -189,6 +191,10 @@ def mock_env_vars(monkeypatch):
     monkeypatch.setenv("REI_TOEI_STRUDEL_ENABLED", "true")
     monkeypatch.setenv("REI_TOEI_STRUDEL_DEFAULT_BARS", "16")
     monkeypatch.setenv("REI_TOEI_STRUDEL_AUTO_EXECUTE", "false")
+    monkeypatch.setenv("REI_TOEI_THEME_POOL_SIZE", "24")
+    monkeypatch.setenv("REI_TOEI_RECENT_TITLE_WINDOW", "30")
+    monkeypatch.setenv("REI_TOEI_THEME_REPEAT_PENALTY", "0.15")
+    monkeypatch.setenv("REI_TOEI_THEME_JITTER_RATIO", "0.12")
 
 
 # ============================================================================
@@ -207,6 +213,10 @@ def test_config_defaults():
     assert config.strudel_enabled is True
     assert config.strudel_default_bars == 16
     assert config.strudel_auto_execute is False
+    assert config.theme_pool_size == 20
+    assert config.recent_title_window == 20
+    assert config.theme_repeat_penalty == 0.10
+    assert config.theme_jitter_ratio == 0.10
 
 
 def test_config_from_env(mock_env_vars):
@@ -215,6 +225,10 @@ def test_config_from_env(mock_env_vars):
     assert config.enabled is True
     assert config.default_bpm == 142
     assert config.strudel_default_bars == 16
+    assert config.theme_pool_size == 24
+    assert config.recent_title_window == 30
+    assert config.theme_repeat_penalty == 0.15
+    assert config.theme_jitter_ratio == 0.12
 
 
 def test_config_paths():
@@ -700,6 +714,49 @@ def test_extract_themes_suggests_bpm_and_mood(mock_extracted_knowledge):
     
     # At least one theme should have suggestions
     assert len(themes_with_suggestions) > 0
+
+
+def test_choose_diverse_theme_penalizes_recent_repeats():
+    """Test that recent themes are penalized during random selection."""
+    themes = [
+        Theme(
+            id="theme_hot",
+            name="Hot Theme",
+            technical_concepts=["hot"],
+            evidence_ids=[],
+            frequency=20,
+            recency_score=0.9,
+        ),
+        Theme(
+            id="theme_fresh",
+            name="Fresh Theme",
+            technical_concepts=["fresh"],
+            evidence_ids=[],
+            frequency=3,
+            recency_score=0.7,
+        ),
+    ]
+
+    # With the recent-repeat penalty, Hot Theme should be less likely than base scoring suggests.
+    with patch("services.rei_toei._suno_pipeline.random.uniform", return_value=1.0):
+        picks = [
+            choose_diverse_theme(themes, recent_theme_names=["Hot Theme"]).name
+            for _ in range(300)
+        ]
+
+    hot_count = picks.count("Hot Theme")
+    fresh_count = picks.count("Fresh Theme")
+    assert fresh_count > hot_count
+
+
+def test_ensure_unique_rei_title_adds_suffix_on_collision():
+    """Test duplicate titles are rewritten to a unique variant."""
+    recent_titles = ["Parameter Cascade Overload", "Event Horizon Protocol Engage"]
+
+    title = ensure_unique_rei_title("Parameter Cascade Overload", recent_titles)
+
+    assert title != "Parameter Cascade Overload"
+    assert "Parameter Cascade Overload" in title
 
 
 def test_generate_song_concept_with_ollama(mock_domain_knowledge_data):

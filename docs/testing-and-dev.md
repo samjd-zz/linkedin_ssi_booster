@@ -43,17 +43,17 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **768**     | **766** | **2**   | **0**  | ✅ **All pass** |
+| **770**     | **768** | **2**   | **0**  | ✅ **All pass** |
 
-- **Latest Run Date:** June 25, 2026
-- **Latest Run Scope:** Full suite via `python -m pytest` from project root
+- **Latest Run Date:** July 1, 2026
+- **Latest Run Scope:** Focused Rei suite via `python -m pytest -q tests/test_rei_toei_service.py tests/test_rei_cli_flags.py tests/test_rei_console_routing.py`
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
 - **Notes:** 2 skipped = `test_get_scheduled_posts` / `test_get_published_posts` — Buffer API key present but lacks `channels` permission in this environment; tests skip cleanly via fixture guard.
 
 ### Test Suite Breakdown
 
 - **565** Original core logic assertions
-- **89** Rei Toei validation tests (Phases 1A–1E)
+- **91** Rei Toei validation tests (Phases 1A–1E)
 - _27 Foundation | 25 Suno | 20 Strudel | 9 Console Mode | 8 CLI Integration Flags_
 
 - **6** Continuous knowledge extraction quality assertions

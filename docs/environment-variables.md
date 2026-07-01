@@ -81,6 +81,58 @@ OLLAMA_NUM_CTX=32768
 
 ---
 
+## Rei Toei Diversity Controls
+
+### `REI_TOEI_THEME_POOL_SIZE`
+
+Number of extracted theme candidates considered before weighted selection.
+
+Higher values increase variety; lower values keep selection focused on the strongest themes.
+
+**Default:** `20`
+
+```bash
+REI_TOEI_THEME_POOL_SIZE=20
+```
+
+### `REI_TOEI_RECENT_TITLE_WINDOW`
+
+How many recent Rei Suno artifacts are scanned to avoid repeating title patterns.
+
+**Default:** `20`
+
+```bash
+REI_TOEI_RECENT_TITLE_WINDOW=20
+```
+
+### `REI_TOEI_THEME_REPEAT_PENALTY`
+
+Penalty multiplier applied when a selected theme matches recent title history.
+
+**Default:** `0.10`
+
+**Range:** `0.01` (strong anti-repeat) to `1.0` (no penalty)
+
+```bash
+REI_TOEI_THEME_REPEAT_PENALTY=0.10
+```
+
+### `REI_TOEI_THEME_JITTER_RATIO`
+
+Random jitter ratio applied to weighted theme scores before final selection.
+
+Increases randomness among similarly scored themes.
+
+**Default:** `0.10`
+
+**Range:** `0.0` (deterministic weights) to `0.5` (high variance)
+
+```bash
+REI_TOEI_THEME_JITTER_RATIO=0.10
+```
+
+---
+
 ## Truth Gate Thresholds
 
 ### `TRUTH_GATE_BM25_THRESHOLD`

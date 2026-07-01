@@ -1168,10 +1168,13 @@ def main():
         import types as _types
         import uuid as _uuid
         from services.rei_toei_service import (
+            ReiToeiConfig,
             load_rei_persona,
             load_rei_domain_knowledge,
             load_strudel_patterns,
             extract_themes,
+            choose_diverse_theme,
+            load_recent_rei_titles,
             generate_song_concept,
             compose_lyrics,
             assemble_suno_prompt,
@@ -1189,6 +1192,8 @@ def main():
             load_avatar_state as _lav_rei,
             normalize_extracted_facts as _nef_rei,
         )
+
+        rei_config = ReiToeiConfig()
 
         async def _handle_rei_generate() -> None:
             """Suno song generation pipeline."""
@@ -1213,7 +1218,7 @@ def main():
                 )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
             else:
-                themes = extract_themes(_extracted_facts, limit=5)
+                themes = extract_themes(_extracted_facts, limit=rei_config.theme_pool_size)
                 if not themes:
                     print(
                         str(Fore.YELLOW)
@@ -1222,11 +1227,22 @@ def main():
                         + str(Style.RESET_ALL)
                     )
                     return
-                # Weighted random selection: top themes have higher probability
-                import random
-                weights = [t.frequency * t.recency_score for t in themes]
-                theme = random.choices(themes, weights=weights, k=1)[0]
+                recent_titles = load_recent_rei_titles(
+                    get_rei_toei_dir(create=False),
+                    limit=rei_config.recent_title_window,
+                )
+                theme = choose_diverse_theme(
+                    themes,
+                    recent_theme_names=recent_titles,
+                    repeat_penalty=rei_config.theme_repeat_penalty,
+                    jitter_ratio=rei_config.theme_jitter_ratio,
+                )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Selected theme: {theme.name} (frequency={theme.frequency}, recency={theme.recency_score:.2f})" + str(Style.RESET_ALL))
+
+            recent_titles = load_recent_rei_titles(
+                get_rei_toei_dir(create=False),
+                limit=rei_config.recent_title_window,
+            )
 
             print(str(Fore.CYAN) + "\U0001f3bc Generating song concept..." + str(Style.RESET_ALL))
             # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
@@ -1234,7 +1250,15 @@ def main():
             from services.shared import get_ollama_service_cached
             from services.ollama_service import OllamaService as _OllamaSvc
             ollama_service: _OllamaSvc = get_ollama_service_cached()  # type: ignore[assignment]
-            concept = await asyncio.to_thread(generate_song_concept, theme, rei_persona, rei_domain, None, ollama_service)
+            concept = await asyncio.to_thread(
+                generate_song_concept,
+                theme,
+                rei_persona,
+                rei_domain,
+                None,
+                ollama_service,
+                recent_titles,
+            )
 
             print(str(Fore.CYAN) + "\u270d\ufe0f  Composing lyrics..." + str(Style.RESET_ALL))
             # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
@@ -1339,7 +1363,7 @@ def main():
                 )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
             else:
-                themes = extract_themes(_extracted_facts, limit=5)
+                themes = extract_themes(_extracted_facts, limit=rei_config.theme_pool_size)
                 if not themes:
                     print(
                         str(Fore.YELLOW)
@@ -1348,10 +1372,16 @@ def main():
                         + str(Style.RESET_ALL)
                     )
                     return
-                # Weighted random selection: top themes have higher probability
-                import random
-                weights = [t.frequency * t.recency_score for t in themes]
-                theme = random.choices(themes, weights=weights, k=1)[0]
+                recent_titles = load_recent_rei_titles(
+                    get_rei_toei_dir(create=False),
+                    limit=rei_config.recent_title_window,
+                )
+                theme = choose_diverse_theme(
+                    themes,
+                    recent_theme_names=recent_titles,
+                    repeat_penalty=rei_config.theme_repeat_penalty,
+                    jitter_ratio=rei_config.theme_jitter_ratio,
+                )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Selected theme: {theme.name} (frequency={theme.frequency}, recency={theme.recency_score:.2f})" + str(Style.RESET_ALL))
 
             template = map_concept_to_pattern(theme, pattern_library)

@@ -48,6 +48,9 @@ from services.rei_toei._suno_client import (
 # Suno Pipeline Functions
 from services.rei_toei._suno_pipeline import (
     extract_themes,
+    choose_diverse_theme,
+    load_recent_rei_titles,
+    ensure_unique_rei_title,
     generate_song_concept,
     compose_lyrics,
     validate_lyrics_with_dot,
@@ -97,6 +100,9 @@ __all__ = [
     "query_status_api",
     # Suno Pipeline
     "extract_themes",
+    "choose_diverse_theme",
+    "load_recent_rei_titles",
+    "ensure_unique_rei_title",
     "generate_song_concept",
     "compose_lyrics",
     "validate_lyrics_with_dot",
