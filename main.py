@@ -472,6 +472,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         + "  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art"
         + str(Style.RESET_ALL)
     )
+    print(str(Fore.WHITE) + "  Art command note: /art uses the most recent AI reply in this session as source text." + str(Style.RESET_ALL))
+    print(str(Fore.WHITE) + "    Usage: /art [optional topic hint]  (example: /art cloud architecture)" + str(Style.RESET_ALL))
     print()
 
 
@@ -671,7 +673,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("  /graph-stats — show knowledge graph statistics")
             print("  /katzilla <query> — show deterministic external evidence citations")
             print("  /rei or /rei-toei — switch to Rei Toei music avatar mode")
-            print("  /art [topic] — render FLUX art avatar from the last AI reply (topic hint optional)")
+            print("  /art [topic] — render FLUX art avatar from the most recent AI reply in this session")
+            print("    If no AI reply exists yet, generate a reply first. Optional topic hint narrows visual direction.")
             continue
         if cmd == "/reset":
             history.clear()
