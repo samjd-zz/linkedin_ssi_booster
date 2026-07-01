@@ -41,41 +41,19 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ##### _<ul><u>— Why This Is Smarter Than Just 'AI Writes Posts'</u></ul>_
 
-- **Advanced NLP with spaCy** — Theme/claim extraction, semantic similarity, sentiment/tone analysis, and advanced curation/grounding features:
-  - **Fact Suggestion:** When the truth gate drops a sentence, spaCy suggests the closest matching fact or evidence from your persona graph, or recommends how to rephrase for grounding.
-  - **Contextual Summarization:** spaCy generates concise, context-aware summaries of curated articles, improving the quality of commentary and learning signals.
-  - **Knowledge Extraction Quality Improvement:** spaCy summarization preprocessing filters out boilerplate, marketing copy, and navigation chrome before fact extraction, significantly improving signal-to-noise ratio. See [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md) for implementation details, architecture changes, and testing results.
+- **Advanced NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and preprocessing that filters boilerplate before fact storage. See [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
+- **Model2Vec static embedding classification** — ultra-fast article categorisation (`minishlab/potion-base-8M`, 30MB, zero API deps) mapped to 10 SSI categories; results boost selection-learning rankings and stamp extracted facts with `primary_category` and `primary_ssi_component`.
+- **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
+- **Hybrid RAG + agent pipeline** — BM25 retrieval, deterministic validation, multi-step orchestration, and a BM25+graph reranker for high factuality and variety.
+- **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
+- **Truth gate** — four-layer post-generation filter: BM25 evidence scoring → Derivative of Truth gradient → spaCy semantic similarity floor → spaCy NER org-name validation. Removes unsupported claims before anything reaches Buffer. See [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
+- **Confidence scoring & policy routing** — grounding, novelty, and repetition score routes each post to `post`, `idea`, or `block`.
+- **DoT + Probabilistic Logic Networks** — probabilistic logic scoring with truth trajectory tracking (`dT/dt`) and dual-mode comparison. Use `--dot-report` for full gradient and evidence breakdowns.
+- **Memory & repetition penalty** — recent themes and claims penalised to keep your feed fresh.
+- **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
+- **No cloud AI keys required** — all generation runs locally via Ollama.
 
-- **Fast static embedding-based text classification with Model2Vec** — Automatically categorize RSS articles and posts into predefined categories (Technology, Business, AI, Science, etc.) and custom categories. Classification runs on every article during curation and maps results to SSI components for balanced content generation. Uses `minishlab/potion-base-8M` (30MB model) for fast inference with zero external API dependencies. Categories are automatically attached to articles and used to boost ranking when selection learning picks articles that align with your target SSI component. **Category-aware knowledge extraction** — every fact extracted by the NLP pipeline (`--learn`) is now stamped with the source article's `primary_category` and `primary_ssi_component`, enabling category-filtered retrieval and category-aware grounding. Existing facts in `extracted_knowledge.json` load with empty-string defaults for full backward compatibility.
-
-- **Persona-grounded generation** — Every post is written in your real technical voice, with facts, projects, and outcomes pulled from your private persona graph and knowledge graph (not just keywords or a bio blurb).
-
-- **Hybrid RAG + agent pipeline** — Combines BM25 retrieval, deterministic validation, multi-step agent orchestration, and a hybrid BM25+graph reranker for high factuality, persona-awareness, and variety.
-
-- **Curation learning loop** — The system tracks every generated candidate, learns which ones you actually publish, and automatically floats the best sources/topics to the top in future runs (Beta-smoothed acceptance priors per source/SSI component).
-
-- **Truth gate** — Post-generation filter removes unsupported claims (numbers, dates, company names, project-tech mismatches) for maximum credibility. Four validation layers run in sequence on every sentence:
-  - **BM25 evidence scoring** — each sentence is ranked against article text and persona facts; sentences below the configurable threshold (`TRUTH_GATE_BM25_THRESHOLD`) are flagged as weakly supported.
-  - **Derivative of Truth per-sentence scoring** — every sentence receives a composite truth gradient (evidence type × reasoning quality × source credibility × token overlap). Sentences that pass BM25 but score below `TRUTH_GRADIENT_FLAG_THRESHOLD` (0.35) are flagged `weak_dot_gradient` and auto-removed. The 4-term DoT formula is active — token overlap between the sentence and each evidence fact is computed (Jaccard) and included as a 25%-weight component.
-  - **spaCy semantic similarity floor** — for sentences containing numeric claims, years, dollar amounts, or org names, `compute_similarity()` checks the sentence against the source article. Similarity below `TRUTH_GATE_SPACY_SIM_FLOOR` (default `0.10`, configurable) flags the sentence as `low_semantic_similarity`, catching paraphrased hallucinations BM25 misses.
-  - **spaCy NER org-name validation** — org/company names are extracted via spaCy named entity recognition (`ORG` entities) and verified against the allowed evidence set. Falls back to the legacy regex when spaCy is unavailable.
-  - **False-positive hardening for tech terms** — concept/service tokens and tech-version entities (for example `S3`, `AI Q&A`, `Java 21`) are filtered before ORG enforcement so technical references are not incorrectly blocked as `unsupported_org`.
-  - **Expanded domain evidence via multi-file loading** — avatar state now auto-merges sibling `domain_knowledge_*.json` files (for example Java and Python packs), which broadens allowed evidence tokens and improves support checks.
-  - **Fact-pool spaCy similarity** — for every sentence that passes BM25, the best spaCy cosine similarity across all persona/domain facts (individually) is computed. Sentences below `TRUTH_GATE_FACT_SIM_FLOOR` (default `0.05`) are flagged `low_fact_similarity`. Unlike the article-sim check, this runs in **all contexts including console mode** because persona/domain facts are always present.
-
-  > See [docs/derivative-of-truth.md](docs/derivative-of-truth.md) for the full layer-by-layer breakdown, the DoT vs spaCy sim comparison table, all env var thresholds, and the mathematical framework.
-
-- **Confidence scoring & policy routing** — Each post is scored for grounding, novelty, and repetition; you control what gets scheduled, sent to Ideas, or blocked entirely.
-
-- **Memory & repetition penalty** — The system remembers recent themes and claims, penalizing repeated angles so your feed stays fresh.
-
-- **Explainability & learning reports** — CLI flags let you see exactly which facts grounded each post, trace graph-based support, and generate advisory reports from moderation history.
-
-- **Derivative of Truth (DoT) reporting** — Use `--dot-report` with either `--schedule` or `--curate` to print a detailed truth gradient, evidence, and uncertainty breakdown for every generated post or curated idea.
-
-- **No cloud AI keys required** — All generation is local (Ollama), with persona and learning data stored only on your machine.
-
-**Result:** You get a self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and systematically grows your SSI — with full transparency, control, and explainability.
+**Result:** A self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and grows your SSI — with full transparency and explainability.
 
 ---
 
@@ -133,16 +111,9 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 - Create persona-aligned avatar artwork
 - Batch generate imagery for content calendars
 
-**Key Fixes Applied:**
-- Fixed T5 encoder loading to use `from_pretrained` with `gguf_file` parameter instead of `from_single_file`
-- Added VAE config to prevent fallback to SD1.5 default repo
-- Fixed `LD_LIBRARY_PATH` in Dockerfile to use real driver libcuda at runtime
-- Added comprehensive error handling and logging
-- Fixed CUDA visibility issues by ensuring runtime uses real libcuda
-- Verified and concurrency-tested `FluxCapacitorService` singleton (`get_flux_service`) to ensure a single shared orchestrator instance under parallel access
-- Removed hard-coded `Ultra realistic` / `Photorealistic` wording from the prompt builder; preset-driven art direction (corporate-minimal, sacred-geometry, tech-dark) is now primary. Realism is opt-in via `FLUX_CAPACITOR_REALISM_HINT` env var or per-request `style_overrides["realism_hint"]`.
+The FLUX art avatar pipeline is complete — GPU orchestration, Ollama-first sequencing, singleton-safe service, style presets with neutral art-direction by default, and opt-in realism via `FLUX_CAPACITOR_REALISM_HINT`.
 
-See [docs/multimodal-features.md](docs/multimodal-features.md) for setup and API details.
+See [docs/flux-art-avatar.md](docs/flux-art-avatar.md) for configuration, style presets, GPU sequencing, and terminal display details. See [docs/multimodal-features.md](docs/multimodal-features.md) for the broader multimodal overview.
 
 ---
 
@@ -174,36 +145,12 @@ This tool handles the repeatable parts:
   - push to Buffer Ideas for review and manual approval (default), or
   - schedule directly as posts to your Buffer queue (using `--type post`)
 
-**Advanced Reporting CLI Flags:**
+**`--learn`** extracts and persists knowledge from curated articles into `extracted_knowledge.json`. Three modes:
+- **Fast** (`--curate --learn`) — bulk-loads knowledge, skips generation and Buffer. No post cap — processes all relevant articles.
+- **Preview** (`--curate --learn --dry-run`) — extracts knowledge and generates posts in dry-run mode.
+- **Live** (`--curate --learn`) — generates posts, pushes to Buffer, and extracts knowledge simultaneously.
 
-- `--classify` — Batch-classify articles via Model2Vec during curation. Automatically attaches primary category and SSI component mapping to each article, which are then used for article ranking and SSI component alignment. Gracefully degrades if model2vec is not installed (install with `pip install model2vec`). Categories are cached and included in dry-run output for inspection before publication. When combined with `--dot-report`, also shows a **category alignment score** comparing the generated post's category against the source article's category.
-
-- `--list-categories` — List all available Model2Vec categories (10 default + any custom) with descriptions and SSI component mapping. No curation run required.
-
-- `--add-category NAME DESCRIPTION SSI_COMPONENT` — Add a custom classification category. The category is immediately available for `--classify` runs. SSI component must be one of: `establish_brand`, `find_right_people`, `engage_with_insights`, `build_relationships`.
-
-  ```bash
-  python main.py --add-category 'Government Tech' 'Public sector AI, digital government, and civic technology' engage_with_insights
-  ```
-
-- `--remove-category NAME [NAME...]` — Remove one or more custom categories. Default categories cannot be removed.
-
-  ```bash
-  python main.py --remove-category 'Government Tech' 'Open Source'
-  ```
-
-- `--dot-report` — Show a Derivative of Truth (truth gradient, evidence, uncertainty) report for every generated post (with `--schedule`) or curated idea (with `--curate`). When combined with `--classify`, also shows a category alignment validation score.
-
-- `--avatar-explain` — Show evidence IDs and grounding summary after each generation.
-
-- `--avatar-learn-report` — Print learning report from captured moderation events and exit.
-
-- `--learn` — Extract and persist knowledge from curated articles into `extracted_knowledge.json`. Three modes:
-  - **Fast learn-only** (`--curate --learn`, no `--dry-run`) — fetches all RSS articles and runs knowledge extraction on each one, skipping generation, confidence scoring, and Buffer entirely. No sleep delays between articles. Use this to bulk-load the knowledge base as fast as possible.
-  - **Preview + learn** (`--curate --learn --dry-run`) — extracts knowledge AND generates posts in dry-run mode (nothing pushed to Buffer). Shows what would be generated.
-  - **Live + learn** (`--curate --learn` with an earlier run that already had `--dry-run` removed) — generates and pushes posts to Buffer while also extracting knowledge from each article.
-
-  When `--learn` is active, the normal 5-post cap is bypassed — every relevant article found across all feeds is processed (e.g. 60+ articles in one pass).
+For the full flag reference (`--classify`, `--dot-report`, `--avatar-explain`, `--avatar-learn-report`, `--add-category`, etc.) see [docs/cli-reference.md](docs/cli-reference.md).
 
 You control whether curated content is reviewed before publishing or scheduled directly. The tool removes the blank-page problem, but you decide what goes live.
 
@@ -227,70 +174,31 @@ The SSI Booster integrates with **Buffer for seamless social scheduling**. All p
 
 ## 🔍 Learning, Grounding, and Explainability Pipeline
 
-**How the system learns and adapts:**
+- **Candidate logging** — every post and article candidate is logged with full metadata for a complete audit trail.
+- **Reconciliation & priors** — Buffer publication outcomes update Beta-smoothed acceptance priors per source/topic/SSI component; well-performing sources float upward over time.
+- **Ranking** — candidates ranked by acceptance priors × BM25 scores, continuously adapting to your preferences.
+- **Signal flow** — truth gate reason codes → confidence scorer (`post`/`idea`/`block`) → Buffer reconciliation → priors update. Sources that reliably produce clean, grounded posts rise; sources that trigger heavy filtering sink.
+- **Deterministic grounding** — BM25Okapi retrieves persona/domain facts for every generation; prompts forbid invented stats, dates, or companies. The four-layer truth gate enforces this post-generation.
 
-- **Candidate logging:** Every generated post and curated article candidate is logged, including source, topic, and all relevant metadata. This creates a full audit trail of what the system considered, not just what was published.
-- **Reconciliation & learning:** When you publish or reject posts (via Buffer or moderation), the system reconciles what actually went live. It updates acceptance rates (priors) for each source, topic, and SSI component, so future curation floats the best-performing sources and topics to the top.
-- **Ranking:** Article and post candidates are ranked using a combination of acceptance priors and BM25 retrieval scores, so the system learns your preferences over time and adapts what it suggests.
-- **Signal flow — truth gate → confidence → selection learning:** Truth gate removal rates and reason codes feed directly into the confidence scorer. The confidence score routes each post to `post` (scheduled directly), `idea` (Buffer Ideas for manual review), or `block`. Those publication outcomes are later reconciled against Buffer — posts that actually go live raise the acceptance prior for their source, topic, and SSI component; posts that stay as ideas or get blocked do not count. Over time, sources that reliably produce clean, well-grounded posts float to the top of article ranking, while sources that consistently trigger heavy truth-gate filtering sink. The truth gate doesn't pre-filter articles — it filters the generated output — but its signal is what teaches the selection layer which articles are worth fetching next run.
-
-**How deterministic grounding and the truth gate work:**
-
-- **Fact retrieval:** For every post or answer, the system retrieves relevant facts from your persona graph (projects, skills, outcomes) using BM25Okapi — a production-grade IR algorithm. This ensures rare, high-signal skills and projects are prioritized.
-- **Prompt balance rules:** Prompts require every factual claim to be grounded in either the article or your persona facts. Personal references are capped, and invented stats/dates/companies are forbidden.
-- **Truth gate:** After generation, a four-layer deterministic filter removes any sentence with unsupported numbers, dates, company names, or project-tech mismatches unless the claim is found in evidence. The layers are: BM25 evidence scoring → per-sentence Derivative of Truth gradient (4-term formula with token overlap) → spaCy semantic similarity floor for specific-claim sentences → spaCy NER org-name validation. ORG validation includes hardening against common technical false positives (for example `S3`, `AI Q&A`, `Java 21`) and is backed by an expanded evidence set from auto-merged `domain_knowledge_*.json` files. Each removed sentence is logged with a reason code (`weak_evidence_bm25`, `weak_dot_gradient`, `low_semantic_similarity`, `unsupported_org`, etc.) that feeds the confidence scoring pipeline.
+See [docs/learning-pipeline.md](docs/learning-pipeline.md) · [docs/selection-learning.md](docs/selection-learning.md) · [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
 
 ---
 
 ## 🧮 Derivative of Truth (DoT) + Probabilistic Logic Networks (PLN)
 
-The SSI Booster now features a full Probabilistic Logic Networks (PLN) inference engine, bringing advanced reasoning and explainability to every truth gradient calculation. With PLN, the system doesn't just check if a claim is supported — it can now model deduction, induction, abduction, and revision, dynamically weighing evidence and tracking the evolution of truth over time.
+Every generated sentence receives a composite truth gradient score across four terms: evidence quality × reasoning strength × source credibility × claim-evidence token overlap (Jaccard). Sentences below `TRUTH_GRADIENT_FLAG_THRESHOLD` (default 0.35) are flagged `weak_dot_gradient` and removed before publication.
 
-**What does this mean for you?**
+PLN brings formal logic reasoning (deduction, induction, abduction, revision) with truth trajectory tracking (`dT/dt`) and dual-mode PLN vs legacy comparison. PLN is active by default. Use `--dot-report` to print the full gradient, evidence, and uncertainty breakdown for any run.
 
-- **Smarter, more nuanced truth scoring:** Each post and fact is evaluated using PLN's formal logic, not just keyword overlap or simple heuristics.
-- **Dynamic evidence weighting:** The system adapts how much weight to give each piece of evidence or reasoning step, based on context and confidence.
-- **Truth trajectory tracking:** See how the credibility of a claim changes as new evidence arrives, with dT/dt (rate of truth change) calculations.
-- **Dual-mode scoring:** Instantly compare PLN-based and legacy scoring for transparency and debugging.
-- **Richer DoT reports:** Every Derivative of Truth report now includes PLN metadata, so you can trace exactly how a claim was supported, revised, or rejected.
-- **PLN is on by default:** All new posts, curation, and learning runs use PLN reasoning automatically — no config required.
-
-Want to see the math and logic? Check out the new [docs/dot-pln-enhancement.md](docs/dot-pln-enhancement.md) and the PLN diagram in `media/pln-dot.png`.
-
-This upgrade makes the SSI Booster's grounding and explainability pipeline even more robust, transparent, and future-proof.
-
-Every generated sentence receives a composite truth gradient score (evidence quality × reasoning strength × source credibility × claim-evidence token overlap). Sentences below `TRUTH_GRADIENT_FLAG_THRESHOLD` (default 0.35) are flagged `weak_dot_gradient` and removed before publication. DoT runs as Part B of the five-layer truth gate, after BM25 and before spaCy semantic checks.
-
-See [docs/derivative-of-truth.md](docs/derivative-of-truth.md) for the full framework: mathematical model, pipeline diagrams, all five truth gate layers, env var reference, and how DoT improves over time.
+See [docs/derivative-of-truth.md](docs/derivative-of-truth.md) · [docs/dot-pln-enhancement.md](docs/dot-pln-enhancement.md).
 
 ---
 
-## 🧩 Knowledge Graph Choice: NetworkX Core, Neo4j for Expansion
+## 🧩 Knowledge Graph: NetworkX Core, Neo4j for Expansion
 
-The core knowledge graph is implemented with NetworkX, an in-memory Python graph library. This choice is intentional:
+The core knowledge graph uses NetworkX — in-memory, pure Python, fast for the sub-1,000 node graphs a single avatar generates. Neo4j is the scale-out path for multi-avatar, enterprise, or bulk-import scenarios requiring persistent disk-backed storage and Cypher queries.
 
-- **Simplicity & Speed:** NetworkX is fast, pure Python, and ideal for small to medium graphs (well under 100k nodes/edges), which covers all core persona, domain, and learning knowledge for a single avatar.
-- **Tight, Local Core:** By keeping the avatar's core knowledge graph tight and local, the system remains fast, debuggable, and easy to extend—no external dependencies or infrastructure required.
-- **Scalability Policy:** If the knowledge graph ever needs to scale to millions of nodes/edges (e.g., for mass knowledge injection, multi-avatar, or enterprise use), the system is designed to support Neo4j as a drop-in backend. Neo4j provides persistent, disk-backed storage and a powerful query language (Cypher) for large-scale or multi-user scenarios.
-- **Best of Both Worlds:** For most users, NetworkX is more than sufficient. Neo4j is reserved for future expansion, bulk import, or advanced analytics—keeping the core avatar experience lightweight and local-first.
-
-**Current graph size:** The combined domain and learning knowledge graphs are well below 1,000 nodes—orders of magnitude under any practical NetworkX limit.
-
-See the chart below for a summary of trade-offs:
-
-| Feature/Constraint    | NetworkX (Current)                               | Neo4j (Future Option)                         |
-| --------------------- | ------------------------------------------------ | --------------------------------------------- |
-| Storage               | In-memory (RAM only)                             | On-disk, persistent                           |
-| Scale                 | Best for small/medium graphs (<100k nodes/edges) | Scales to millions/billions of nodes/edges    |
-| Query Language        | Python API, no query language                    | Cypher query language                         |
-| Performance           | Fast for small graphs, slows with size           | Optimized for large, complex queries          |
-| Persistence           | No built-in persistence                          | Full persistence, ACID compliance             |
-| Integration           | Simple, pure Python                              | Requires running Neo4j server, extra setup    |
-| Learning/Dev Overhead | Minimal, easy to use                             | Higher, requires Cypher and DB management     |
-| Use Case Fit          | Prototyping, research, local automation          | Production, multi-user, large-scale analytics |
-| Cost                  | Free, no infra                                   | Free (Community), but infra/ops required      |
-
-**Bottom line:** The core of the avatar will remain in NetworkX for speed, simplicity, and local-first operation. Neo4j is available for future expansion, mass knowledge injection, or advanced analytics if needed.
+See [docs/knowledge-graph.md](docs/knowledge-graph.md) for graph operations, the hybrid BM25+graph retrieval formula, and the Neo4j expansion path.
 
 ---
 
@@ -323,97 +231,27 @@ flowchart TD
 
 ## 🔄 Continual Learning (NLP-Extracted Knowledge)
 
-> **Inspiration:** This subsystem is inspired by the work of Dr. Ben Goertzel (SingularityNET) and the OpenCog team on AtomSpace and MeTTa, bringing incremental, explainable cognition to practical automation. [Making AI learning AGI-capable: continual learning, transfer learning, lifelong learning - YouTube](https://youtu.be/n10J1OjmgLM) [Hyperon's Atomspace as a Meta-Representational Fabric ... and why this is super valuable for AGI/ASI](https://youtu.be/rpLLM3c-DuQ)
+> Inspired by Ben Goertzel's OpenCog AtomSpace work on incremental, explainable cognition.
 
-The avatar supports fully automatic, incremental continual learning from new content streams (e.g., RSS feeds, curated articles) via an NLP-extracted knowledge graph. As new content is processed, spaCy is used to extract, structure, and normalize new facts, terms, and relationships. The system deduplicates and validates these facts, merging them into the knowledge graph alongside persona and domain knowledge.
+The avatar accumulates domain knowledge automatically from RSS feeds and curated articles. spaCy extracts, normalises, and deduplicates facts before merging them into the knowledge graph and BM25 candidate pool. Extracted facts are stamped with `primary_category` and `primary_ssi_component` for category-filtered retrieval.
 
-- Extracted knowledge is stored in `data/avatar/extracted_knowledge.json` and is automatically merged into the knowledge graph and BM25 candidate pool.
+Use `--learn` during curation to populate the knowledge base. Inside a running console session, `/reload` re-reads all avatar files without restarting — useful when running a `--learn` job concurrently in a second terminal. Console mode supports inline truth scoring with `--verify` (DoT + fact-pool similarity indicator after every AI reply).
 
-- These new facts are used in both retrieval (BM25 and graph) and grounding, so your system's evidence base grows over time with no manual steps.
+A multi-layer noise filter (first-person narration, truncated RSS fragments, navigation blobs, zero-signal sentences, and more) runs before spaCy NLP to keep the knowledge graph clean. Voice synthesis is available via Wyoming Piper (enable with `CONSOLE_USE_VOICE=true`).
 
-- Deduplication and normalization ensure that only novel, high-quality knowledge is added, and all learning is ongoing as new content is ingested.
-
-- Modular, file-based design: easy to extend, debug, and test.
-
-- **Console mode** (`--console`) includes extracted knowledge in the grounding pool alongside persona and domain facts, so the persona can answer questions using anything learned from `--learn` runs. Use `/reload` inside a running console session to re-read `extracted_knowledge.json` (and all other avatar files) without restarting — useful when running a `--learn` job concurrently in a second terminal.
-
-- **Voice synthesis (optional)** — Console mode supports text-to-speech output using [Wyoming Piper](https://github.com/rhasspy/wyoming-piper), a fast local neural voice engine running in Docker. Voice output is **in addition to** text output (not replacing it). Enable by setting `CONSOLE_USE_VOICE=true` in `.env`. The Wyoming Piper service is included in `docker-compose.yml` and automatically downloads the voice model on first start. Configure the voice model in `docker-compose.yml` (default: `en_US-libritts_r-medium`) and optionally set speaker ID with `CONSOLE_VOICE_SPEAKER` for multi-speaker models. Requires only `sounddevice` package for audio playback (included in `requirements.txt`). Voice synthesis runs locally with no cloud API calls. For local (non-Docker) usage, run Wyoming Piper separately: `docker run -p 10200:10200 rhasspy/wyoming-piper --voice en_US-libritts_r-medium`.
-
-- **Inline truth score** — when `--console --verify` flags are used together, console mode prints a minimal 1-line DoT + fact-pool sim indicator after every AI-generated reply:
-
-  ```
-  Sam> [reply text]
-    ● DoT 0.82  fact sim 0.71
-  ```
-
-  The symbol colour reflects the DoT score: `●` green (≥ 0.75 — well-grounded), `◑` yellow (≥ 0.45 — moderate), `○` red (< 0.45 — weakly supported). `fact sim` shows the best spaCy similarity across persona/domain facts for the reply sentences (omitted if no facts matched). Article-based spaCy sim is excluded as there is no article in a conversation. Only AI-generated replies receive the indicator; deterministic grounded replies do not. **By default (console mode without `--verify`), DoT scanning and similarity checks are OFF** — add `--verify` to enable them.
-
-**Noise filtering pipeline** — before a sentence is stored, a multi-layer quality filter rejects low-signal content that would pollute the knowledge base:
-
-| Filter                         | What it catches                                                                                                              |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| First-person narration         | Author asides ("As I write this…", "I sat down with…")                                                                       |
-| Truncated RSS fragments        | Sentences ending in "… Read more" or trailing ellipsis/dash                                                                  |
-| Newsletter/podcast preambles   | Openers like "Welcome to…", "For this episode…", "In last week's…"                                                           |
-| Article boilerplate openers    | "In this post, we show…", "In this tutorial, we walk through…" — preamble, not knowledge                                     |
-| Disclaimer / AI-disclosure     | "This article was created using AI-based writing companions" and similar                                                     |
-| Pure or URL-heavy sentences    | Sentences that are just a URL, or where URLs make up >40% of the character length                                            |
-| "We show / we introduce" leads | "we show how", "we walk you through", "we take a deeper look" — structural preamble openers                                  |
-| Weak-entity sentences          | All detected entities resolve to stopwords ("this gap", "the model", "the goal") with no numeric or proper-noun signal       |
-| Navigation / contributor blobs | Sentences ≥12 words where >45% of tokens start with uppercase (HuggingFace menus, author lists, etc.)                        |
-| Zero-signal sentences          | Sentences with no digit, no 2+-char acronym, and no consecutive title-case words (named entity / product name) — pure filler |
-
-These filters run before spaCy NLP and deduplication, so only genuinely informative domain sentences reach the knowledge graph.
-
-See [docs/features/continual-learning/idea.md](docs/features/continual-learning/idea.md) for technical details and schema.
-
-- **Adaptive Curation Ranking:** The system tracks every generated and published post, learning which sources, topics, and themes you actually approve. Over time, it floats the best-performing sources and topics to the top using Beta-smoothed acceptance priors and theme-based ranking.
-- **Semantic Repetition Detection:** Uses spaCy-powered semantic similarity to detect and penalize repeated or paraphrased content, keeping your feed fresh and non-redundant.
-- **User Feedback Integration:** You can upvote, downvote, or override candidate posts, and this feedback is incorporated into future ranking and selection.
-- **Fact Suggestion for Truth Gate:** When a sentence is dropped for lacking evidence, the system suggests the closest matching facts from your persona graph or extracted knowledge to help you rephrase or ground your claims.
-- **Memory & Narrative Learning:** The system maintains a local memory of recent themes and claims, using this to diversify future outputs and avoid repetition.
-- **Explainability & Learning Reports:** CLI flags like `--avatar-explain` and `--avatar-learn-report` let you see exactly what the system has learned, which facts grounded each post (including those from continual learning), and which sources or topics are most effective.
-
-**Bottom line:** The more you use it, the smarter and more tailored your content pipeline becomes — adapting to your preferences, audience, and SSI goals. All new knowledge is immediately available for both retrieval and grounding, powering the hybrid pipeline.
+See [docs/features/continual-learning/idea.md](docs/features/continual-learning/idea.md) for the full noise filter catalogue, schema, and NLP writing principles.
 
 ---
 
-Core capabilities include:
-
-- Persona-grounded generation using structured profile facts from `data/avatar/persona_graph.json`.
-- Hybrid RAG orchestration with BM25 retrieval, prompt constraints, and deterministic post-processing.
-- Curation learning that updates acceptance priors from what actually gets published.
-- Explainability features such as `--avatar-explain` and `--avatar-learn-report`.
-- Local-first operation using Ollama, with persona and learning data stored on your own machine.
-
-The writing rules draw on **Neuro-Linguistic Programming (NLP)** principles — specifically pattern interrupts (scroll-stopping first lines), presupposition (assuming the reader already cares), and anchoring (pairing your name with specific technical outcomes so readers associate _you_ with the domain). The forbidden-phrases list functions as a negative anchor removal layer: stripping hollow corporate phrases forces the model toward concrete, specific language that builds credibility. For the theoretical underpinning, see [_Monsters and Magical Sticks, There's no Such Thing as Hypnosis?_ by Steven Heller & Terry Steele](https://www.amazon.com/Monsters-Magical-Sticks-Theres-Hypnosis-ebook/dp/B007WMOMXU) — an accessible introduction to how language patterns shape perception.
-
-Notes: https://richardstep.com/downloads/tools/Notes--Monsters-and-Magic-Sticks.pdf
-
-NLP primer in this repo:
-
-- [docs/nlp-basics.md](docs/nlp-basics.md)
-
-The primer covers core NLP concepts, practical communication techniques, technical writing examples, and ethical usage guidelines.
-
 ## Database Integration (PostgreSQL)
 
-> **⚠️ Status:** PostgreSQL dual-write now covers selection-learning candidate logging and published-record reconciliation. File-based storage (JSON/JSONL) remains the recommended default while the broader database rollout continues to harden.
+> **Status:** PostgreSQL dual-write covers selection-learning candidate logging and published-record reconciliation. File-based storage (JSON/JSONL) remains the recommended default.
 
-The system now supports **dual-write mode** with PostgreSQL for improved data integrity, query performance, and concurrent access. Database integration is **optional** — the system continues to work with file-based storage (JSON/JSONL) by default.
-
-Selection-learning now persists candidate and published records through dedicated repositories and writers when `DATABASE_ENABLED=true`, while the file-backed path remains the default fallback. An isolated in-memory SQLite test suite covers candidate creation, selected-state updates, unpublished listing, published writes, and recent-record queries so the ORM mapping stays aligned with the schema.
-
-Recent hardening updates improved database connection lifecycle safety:
-
-- Engine/session singletons in `services/database/session.py` now use lock-protected initialization to prevent race conditions under concurrent startup.
-- SQLAlchemy `checkout` listener registration is now bound to the engine instance (not global Pool scope), preventing duplicate callback registration across reinitialization cycles.
-- Added targeted singleton/concurrency tests: `tests/test_database_session_singleton.py` and `tests/test_flux_service_singleton.py`.
+Database integration is **optional** and **non-breaking** — set `DATABASE_ENABLED=false` to revert at any time.
 
 **Setup (Docker):**
 
 1. Add to `.env`:
-
    ```bash
    DATABASE_ENABLED=true
    POSTGRES_USER=ssi_booster
@@ -421,44 +259,12 @@ Recent hardening updates improved database connection lifecycle safety:
    POSTGRES_DB=linkedin_ssi_booster
    DATABASE_URL=postgresql://ssi_booster:your_password@postgres:5432/linkedin_ssi_booster
    ```
+2. Start PostgreSQL: `docker compose --profile core up -d postgres`
+3. Verify: `docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c "\dt"`
 
-2. Start PostgreSQL container:
+**Migrate existing data:** `docker compose --profile core run --rm app python -m services.database.migrate_data`
 
-   ```bash
-   docker compose --profile core up -d postgres
-   ```
-
-3. Verify tables created:
-
-   ```bash
-   docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c "\dt"
-   ```
-
-**Database Schema:**
-
-The system stores 17 tables across 5 domains:
-
-- **Avatar Intelligence:** `persona_graph`, `projects`, `companies`, `skills`, `claims`, `domains`, `domain_facts`, `domain_relationships`, `extracted_facts`, `narrative_memory`
-- **Selection Learning:** `candidate_records`, `published_records`
-- **Truth Gate Learning:** `moderation_events`, `confidence_decisions`
-- **Derivative of Truth:** `truth_trajectories`, `truth_trajectory_points`
-- **Migrations:** `schema_migrations`
-
-**Migration from JSON/JSONL:**
-
-```bash
-# Migrate all existing data from files to database
-docker compose --profile core run --rm app python -m services.database.migrate_data
-
-# Dry-run mode (preview only)
-docker compose --profile core run --rm app python -m services.database.migrate_data --dry-run
-```
-
-**Rollback Plan:**
-
-Database integration is non-breaking — set `DATABASE_ENABLED=false` in `.env` to revert to file-based storage. All JSON/JSONL files remain untouched during dual-write mode.
-
-See [docs/features/database/idea.md](docs/features/database/idea.md) for full schema design, performance benchmarks, and implementation details.
+The schema covers 17 tables across avatar intelligence, selection learning, truth gate learning, and DoT. Engine/session singletons use thread-safe double-checked locking. See [docs/features/database/idea.md](docs/features/database/idea.md) for full schema and architecture.
 
 ---
 
@@ -488,17 +294,20 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 - [Knowledge graph](docs/knowledge-graph.md) — NetworkX architecture, hybrid BM25+graph retrieval, graph operations, and Neo4j expansion path
 - [Domain Knowledge Graph](docs/domain-knowledge.md) — domain-level expertise that isn't tied to specific projects
 - [Continual Learning (NLP-extracted knowledge)](docs/features/continual-learning/idea.md) — how the avatar accumulates new knowledge from external content
+- [Katzilla integration](docs/katzilla-integration.md) — US government datasets API, truth gate wiring, budget controls, and console `/katzilla` command
 - [Database Integration](docs/features/database/idea.md) — PostgreSQL schema (17 tables), migration strategy, dual-write mode, and performance benchmarks
 
 ### Multimodal Features
 
 - [Multimodal features](docs/multimodal-features.md) — FLUX.1-schnell image generation, Rei Toei AI music avatar (Suno + Strudel), and Buffer MCP agent
+- [FLUX art avatar](docs/flux-art-avatar.md) — configuration, style presets, terminal display, GPU sequencing, and flow integration
 - [Rei Toei Implementation](docs/features/rei-toei/plan.md) — AI music avatar architecture, Suno song generation, Strudel pattern execution, console integration, and CLI flags
 
 ### Strategy & Development
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
+- [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
 - [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (775 collected; 773 passed, 2 skipped, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
