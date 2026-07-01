@@ -8,11 +8,11 @@ for the LinkedIn SSI Booster PostgreSQL backend.
 import logging
 import os
 from contextlib import contextmanager
+from threading import Lock
 from typing import Generator
 
 from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import Pool
 
 from services.database.models import Base
 
@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 # Global engine and session factory
 _engine: Engine | None = None
 _SessionLocal: sessionmaker | None = None
+_engine_lock = Lock()
+_session_factory_lock = Lock()
 
 
 def _get_database_url() -> str:
@@ -53,8 +55,8 @@ def _configure_engine_listeners(engine: Engine) -> None:
     def receive_connect(dbapi_conn, connection_record):
         """Log new database connections."""
         logger.debug("New database connection established")
-    
-    @event.listens_for(Pool, "checkout")
+
+    @event.listens_for(engine, "checkout")
     def receive_checkout(dbapi_conn, connection_record, connection_proxy):
         """Log connection pool checkouts."""
         logger.debug("Connection checked out from pool")
@@ -75,24 +77,26 @@ def get_engine() -> Engine:
     global _engine
     
     if _engine is None:
-        database_url = _get_database_url()
-        
-        # Engine configuration
-        # - pool_size=5: Minimum connections in pool
-        # - max_overflow=15: Additional connections beyond pool_size
-        # - pool_recycle=3600: Recycle connections after 1 hour
-        # - pool_pre_ping=True: Verify connections before using
-        _engine = create_engine(
-            database_url,
-            pool_size=5,
-            max_overflow=15,
-            pool_recycle=3600,
-            pool_pre_ping=True,
-            echo=False,  # Set to True for SQL query logging during development
-        )
-        
-        _configure_engine_listeners(_engine)
-        logger.info("Database engine initialized with connection pooling")
+        with _engine_lock:
+            if _engine is None:
+                database_url = _get_database_url()
+
+                # Engine configuration
+                # - pool_size=5: Minimum connections in pool
+                # - max_overflow=15: Additional connections beyond pool_size
+                # - pool_recycle=3600: Recycle connections after 1 hour
+                # - pool_pre_ping=True: Verify connections before using
+                _engine = create_engine(
+                    database_url,
+                    pool_size=5,
+                    max_overflow=15,
+                    pool_recycle=3600,
+                    pool_pre_ping=True,
+                    echo=False,  # Set to True for SQL query logging during development
+                )
+
+                _configure_engine_listeners(_engine)
+                logger.info("Database engine initialized with connection pooling")
     
     return _engine
 
@@ -107,13 +111,15 @@ def get_session_factory() -> sessionmaker:
     global _SessionLocal
     
     if _SessionLocal is None:
-        engine = get_engine()
-        _SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=engine,
-        )
-        logger.info("Database session factory created")
+        with _session_factory_lock:
+            if _SessionLocal is None:
+                engine = get_engine()
+                _SessionLocal = sessionmaker(
+                    autocommit=False,
+                    autoflush=False,
+                    bind=engine,
+                )
+                logger.info("Database session factory created")
     
     return _SessionLocal
 
@@ -210,8 +216,10 @@ def close_database_connections() -> None:
     """
     global _engine, _SessionLocal
     
-    if _engine is not None:
-        _engine.dispose()
-        logger.info("Database engine disposed, all connections closed")
-        _engine = None
+    with _engine_lock:
+        if _engine is not None:
+            _engine.dispose()
+            logger.info("Database engine disposed, all connections closed")
+            _engine = None
+    with _session_factory_lock:
         _SessionLocal = None
