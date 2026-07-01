@@ -46,6 +46,8 @@ cp content_calendar.example.py content_calendar.py
   - Try factual questions ("What projects did I do with Neo4j?"), career queries, or ask for advice.
   - Use this mode to tune your persona graph and see how changes affect grounding.
   - Console mode never writes to Buffer or posts anything — it's safe for experimentation.
+  - Use `/help` to see the full command list, including `/verify`, `/avatar-explain`, `/dot-report`, `/graph-stats`, `/katzilla`, `/rei`, `/rei-toei`, and `/art`.
+  - `/art` renders FLUX art from the most recent AI reply in the current console session; you can add an optional topic hint to narrow the visual prompt.
 
 ## 4. Curate AI News
 
@@ -66,6 +68,9 @@ cp content_calendar.example.py content_calendar.py
   ```bash
   python main.py --curate --type post --channel linkedin
   ```
+
+  - With the default balanced confidence policy, low-confidence output is routed to Buffer Ideas for review while medium and high confidence output can post directly.
+  - `--type post` requests direct posting, but the confidence policy can still downgrade low-confidence content to Ideas or block it entirely.
 
 ## 5. Learning & Explainability
 
@@ -104,7 +109,7 @@ cp content_calendar.example.py content_calendar.py
 ## 7. Test Everything
 
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 ---
