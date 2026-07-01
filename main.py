@@ -331,8 +331,14 @@ def _render_console_art_avatar(
         return {"art_avatar_status": "failed", "art_avatar_render_error": str(exc)}
 
 
-def _display_art_in_terminal(image_path: str | None, width: int = 60) -> None:
+def _display_art_in_terminal(image_path: str | None, width: int | None = None) -> None:
     """Render a FLUX-generated image inline in the terminal using term-image.
+
+    ``width`` is the number of terminal columns to occupy.  ``None`` (default)
+    lets term-image auto-fit to the full terminal width, which gives the highest
+    possible cell resolution for the active renderer protocol (kitty / iterm2 /
+    sixel / unicode-blocks).  Override with the ``FLUX_DISPLAY_WIDTH`` env var
+    (e.g. ``FLUX_DISPLAY_WIDTH=80``) to cap the width when needed.
 
     Silently skips if the path is missing, the file does not exist, or
     term-image is unavailable / the terminal does not support inline graphics.
@@ -343,8 +349,10 @@ def _display_art_in_terminal(image_path: str | None, width: int = 60) -> None:
         from pathlib import Path as _Path
         if not _Path(image_path).is_file():
             return
+        _env_width = os.getenv("FLUX_DISPLAY_WIDTH", "").strip()
+        _render_width: int | None = int(_env_width) if _env_width.isdigit() else width
         from term_image.image import from_file as _ti_from_file
-        _img = _ti_from_file(image_path, width=width)
+        _img = _ti_from_file(image_path, width=_render_width)
         _img.draw()
     except Exception as _ti_err:  # noqa: BLE001
         logger.debug("term-image display skipped: %s", _ti_err)
