@@ -113,6 +113,8 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 
 The FLUX art avatar pipeline is complete — GPU orchestration, Ollama-first sequencing, singleton-safe service, style presets with neutral art-direction by default, and opt-in realism via `FLUX_CAPACITOR_REALISM_HINT`.
 
+In console mode, `/art` renders from the most recent AI reply in the current session; an optional topic hint narrows the visual prompt.
+
 See [docs/flux-art-avatar.md](docs/flux-art-avatar.md) for configuration, style presets, GPU sequencing, and terminal display details. See [docs/multimodal-features.md](docs/multimodal-features.md) for the broader multimodal overview.
 
 ---
@@ -142,8 +144,8 @@ This tool handles the repeatable parts:
 - **On-brand content** — every post is grounded in your real projects, real numbers, and real technical voice via a detailed persona prompt
 - **All four SSI pillars** — the content calendar and curator rotate across all four components so no single pillar is neglected
 - **Curation pipeline** — fetches today's AI/GovTech news, filters by your niche, and generates commentary that you can either:
-  - push to Buffer Ideas for review and manual approval (default), or
-  - schedule directly as posts to your Buffer queue (using `--type post`)
+  - route to Buffer Ideas for review under the default balanced confidence policy, or
+  - schedule directly as posts to your Buffer queue when confidence is high enough and `--type post` is used
 
 **`--learn`** extracts and persists knowledge from curated articles into `extracted_knowledge.json`. Three modes:
 - **Fast** (`--curate --learn`) — bulk-loads knowledge, skips generation and Buffer. No post cap — processes all relevant articles.

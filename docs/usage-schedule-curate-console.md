@@ -53,7 +53,7 @@ python main.py --schedule --week 1 --avatar-explain
 
 ## Curate mode
 
-`--curate` scans RSS feeds, filters by domain keywords, ranks candidate articles, generates commentary, and by default sends outputs to the Buffer Ideas board for review. Adding `--type post` bypasses the draft-first behavior and schedules curated posts directly to the next available queue slot.
+`--curate` scans RSS feeds, filters by domain keywords, ranks candidate articles, generates commentary, and routes the result using the active confidence policy. With the default `balanced` policy, low-confidence output goes to Buffer Ideas for review while medium and high confidence output is posted directly. Adding `--type post` requests direct posting, but the confidence policy can still downgrade low-confidence content to Ideas or block it entirely.
 
 Examples:
 
@@ -103,7 +103,8 @@ When you run `--console`, the startup screen explains the three query modes and 
     - 10% claim support (facts with more supporting edges rank higher)
   • Use /graph-stats to inspect graph structure (nodes, edges, types)
 
-  Commands: /help, /reset, /reload, /exit, /verify, /avatar-explain, /dot-report, /graph-stats
+  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art
+  Art note: /art uses the most recent AI reply in this session as source text.
 ```
 
 #### Console Commands

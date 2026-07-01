@@ -84,7 +84,10 @@ python main.py --schedule --week 3 --dry-run
 - Applies truth gate validation and confidence scoring
 - Routes to Buffer queue or Ideas board based on confidence policy
 - Uses configured posting slots from `.env` (`SSI_FOCUS_*` weights)
-- **Art avatar:** When `FLUX_CAPACITOR_ENABLED=true`, a FLUX image is rendered for each non-YouTube post after Ollama text generation completes. Art metadata (`art_avatar_status`, `art_avatar_image_path`, `art_avatar_story_path`, etc.) is attached to each post entry.
+
+When `FLUX_CAPACITOR_ENABLED=true`, a FLUX image is rendered for each non-YouTube post after Ollama text generation completes. Art metadata (`art_avatar_status`, `art_avatar_image_path`, `art_avatar_story_path`, etc.) is attached to each post entry.
+
+With the default `balanced` policy, low-confidence curation output is routed to Buffer Ideas for review, while medium and high confidence output is posted directly. `strict` makes Ideas more likely and can block low-confidence output; `draft-first` sends everything to Ideas.
 
 ---
 
@@ -118,6 +121,8 @@ python main.py --curate --classify --learn --type post
 Control where curated content is routed. Options: `idea` (default), `post`
 
 **Default:** `idea` (sends to Buffer Ideas for manual review)
+
+**Important:** The confidence policy still applies. Under the default `balanced` policy, low-confidence content is routed to Ideas even if `--type post` is requested. Medium and high confidence content can be posted directly.
 
 **Example:**
 
@@ -237,7 +242,9 @@ python main.py --console --verify --avatar-explain --dot-report
 | `/graph-stats`     | Show knowledge graph statistics (node/edge counts, node types)                                   |
 | `/katzilla <query>`| Show deterministic external evidence citations for a query                                       |
 | `/rei` or `/rei-toei` | Switch to Rei Toei music avatar mode                                                          |
-| `/art [topic]`     | Render FLUX art avatar from the last AI reply. Optional topic hint narrows the visual prompt.    |
+| `/art [topic]`     | Render FLUX art avatar from the most recent AI reply in this session. Optional topic hint narrows the visual prompt. |
+
+`/art` always uses the previous assistant message in the current console session as source text. If you have not generated an AI reply yet, ask a question or produce a response first, then run `/art` with an optional topic hint.
 
 **Query routing:**
 
