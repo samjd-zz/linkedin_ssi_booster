@@ -25,7 +25,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-740%20total-16A34A.svg" alt="Tests 740 total"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-774%20total-16A34A.svg" alt="Tests 774 total"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -139,6 +139,7 @@ Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex G
 - Fixed `LD_LIBRARY_PATH` in Dockerfile to use real driver libcuda at runtime
 - Added comprehensive error handling and logging
 - Fixed CUDA visibility issues by ensuring runtime uses real libcuda
+- Verified and concurrency-tested `FluxCapacitorService` singleton (`get_flux_service`) to ensure a single shared orchestrator instance under parallel access
 
 See [docs/multimodal-features.md](docs/multimodal-features.md) for setup and API details.
 
@@ -402,6 +403,12 @@ The system now supports **dual-write mode** with PostgreSQL for improved data in
 
 Selection-learning now persists candidate and published records through dedicated repositories and writers when `DATABASE_ENABLED=true`, while the file-backed path remains the default fallback. An isolated in-memory SQLite test suite covers candidate creation, selected-state updates, unpublished listing, published writes, and recent-record queries so the ORM mapping stays aligned with the schema.
 
+Recent hardening updates improved database connection lifecycle safety:
+
+- Engine/session singletons in `services/database/session.py` now use lock-protected initialization to prevent race conditions under concurrent startup.
+- SQLAlchemy `checkout` listener registration is now bound to the engine instance (not global Pool scope), preventing duplicate callback registration across reinitialization cycles.
+- Added targeted singleton/concurrency tests: `tests/test_database_session_singleton.py` and `tests/test_flux_service_singleton.py`.
+
 **Setup (Docker):**
 
 1. Add to `.env`:
@@ -491,7 +498,7 @@ See [docs/features/database/idea.md](docs/features/database/idea.md) for full sc
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (768 collected; latest full run: 766 passed, 2 skipped, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (774 collected; 772 passed, 2 skipped, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

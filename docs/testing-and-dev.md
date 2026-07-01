@@ -43,10 +43,10 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **770**     | **768** | **2**   | **0**  | ✅ **All pass** |
+| **774**     | **772** | **2**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** July 1, 2026
-- **Latest Run Scope:** Focused Rei suite via `python -m pytest -q tests/test_rei_toei_service.py tests/test_rei_cli_flags.py tests/test_rei_console_routing.py`
+- **Latest Run Scope:** Focused singleton verification via `python -m pytest -q tests/test_database_session_singleton.py tests/test_flux_service_singleton.py tests/test_gpu_orchestration_policy.py` (14 passed)
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
 - **Notes:** 2 skipped = `test_get_scheduled_posts` / `test_get_published_posts` — Buffer API key present but lacks `channels` permission in this environment; tests skip cleanly via fixture guard.
 
@@ -71,6 +71,8 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 - **17** MCP agent unit tests (new)
 - _9 Buffer MCP agent tests + 8 Strudel MCP agent tests_
+- **4** Singleton concurrency tests (new)
+- _3 Database engine/session singleton lifecycle + 1 Flux service singleton under concurrent access_
 
 ---
 
@@ -174,3 +176,5 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_gpu_orchestration_policy.py`| Ollama-first queue ordering, TEXT_ONLY timeout fallback, slot acquire/release lifecycle, exception-safe context manager, concurrency safety with multiple FLUX requests.   |
 | `tests/test_flux_capacitor_schedule_integration.py` | Schedule-flow wiring: skips YouTube channel, records rendered metadata, catches and wraps exceptions as failed result. |
 | `tests/test_flux_capacitor_curate_console_integration.py` | Curate-flow wiring: skips youtube/all channels, rendered/deferred/failed paths, SourceMode.CURATE propagation. Console-flow wiring: empty-text guard, rendered/deferred/failed paths, SourceMode.CONSOLE propagation, None topic hint. |
+| `tests/test_database_session_singleton.py` | Thread-safe DB singleton initialization for `get_engine`/`get_session_factory`, and listener-scoping validation to prevent duplicate Pool-level callback registration. |
+| `tests/test_flux_service_singleton.py` | Concurrent `get_flux_service` access validation to ensure a single shared `FluxCapacitorService` instance is constructed process-wide. |
