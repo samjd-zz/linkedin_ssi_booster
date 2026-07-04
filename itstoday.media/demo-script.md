@@ -40,6 +40,32 @@ Say:
 
 "So the system has two different learn modes: a bulk extraction pass with --learn --dry-run, and the normal live curate path where learning happens automatically as part of generation."
 
+Then show the Rei Toei path with a direct theme:
+
+```bash
+source .venv/bin/activate && python main.py --rei-generate --rei-theme async optimization loops
+```
+
+Say:
+
+"This is the bonus multimodal path. I can give it a theme directly, and it will generate a song concept from that theme instead of needing the theme to be discovered first."
+
+"If there is no Suno key, it still generates and saves the local song data, which is enough to prove the workflow."
+
+Then show the no-theme Rei path:
+
+```bash
+source .venv/bin/activate && python main.py --rei-generate
+```
+
+Say:
+
+"This version loads Rei's persona and domain knowledge, then looks at the learned avatar facts to pick a theme automatically."
+
+"If there are no extracted facts yet, the code tells you to run --curate --learn first."
+
+"The Rei service also has an optional Sam-persona inspiration layer behind an env flag, but the direct --rei-generate CLI path does not wire GitHub context into that flow."
+
 If you want to show a published or reviewable output path afterward, then use the schedule flow:
 
 ```bash
