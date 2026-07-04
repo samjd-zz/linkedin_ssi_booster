@@ -1,9 +1,11 @@
 import gc
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 import logging
 import shutil
+from threading import Lock
 
 import torch
 from diffusers import (
@@ -25,43 +27,71 @@ REQUIRED_MODEL_FILES = (
     "t5-v1_1-xxl-encoder-Q4_K_M.gguf",
 )
 
-def generate_flux_image(
-    prompt: str,
-    output_path: str = "data/output.png",
-    model_dir: str = "/app/models/flux",
-    width: int = 1024,
-    height: int = 1024,
-    num_inference_steps: int = 4,
-):
-    """
-    Generates an image using FLUX.1-schnell GGUF on an RTX 3060.
-    """
-    model_root = _resolve_model_root(model_dir)
-    _validate_local_model_files(model_root)
 
+@dataclass
+class _FluxRuntime:
+    """Holds a fully assembled FLUX pipeline for reuse across requests."""
+
+    pipe: FluxPipeline
+
+
+_RUNTIME_LOCK = Lock()
+_RUNTIME_CACHE: _FluxRuntime | None = None
+_RUNTIME_CACHE_ROOT: Path | None = None
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _log_cuda_memory(prefix: str) -> None:
+    if not torch.cuda.is_available():
+        return
+    if not _env_bool("FLUX_LOG_MEMORY", False):
+        return
+    device_index = torch.cuda.current_device()
+    allocated = torch.cuda.memory_allocated(device_index) / (1024**2)
+    reserved = torch.cuda.memory_reserved(device_index) / (1024**2)
+    peak = torch.cuda.max_memory_allocated(device_index) / (1024**2)
+    logger.info(
+        "%s CUDA memory: allocated=%.1fMB reserved=%.1fMB peak=%.1fMB",
+        prefix,
+        allocated,
+        reserved,
+        peak,
+    )
+
+
+def _cleanup_cuda_cache() -> None:
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+    gc.collect()
+
+
+def _build_runtime(model_root: Path) -> _FluxRuntime:
     transformer_path = model_root / "flux1-schnell-Q4_K_S.gguf"
     vae_path = model_root / "ae.safetensors"
     clip_path = model_root / "clip_l.safetensors"
     t5_path = model_root / "t5-v1_1-xxl-encoder-Q4_K_M.gguf"
 
-    # 1. Ensure the exact Schnell structural configuration exists locally
     transformer_config_dir = model_root / "transformer_config"
     _ensure_transformer_config_layout(transformer_config_dir)
 
     logger.info("Loading FLUX transformer from single file...")
     transformer = FluxTransformer2DModel.from_single_file(
         str(transformer_path),
-        config=str(transformer_config_dir),  
-        local_files_only=True,               
+        config=str(transformer_config_dir),
+        local_files_only=True,
         quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
         torch_dtype=torch.bfloat16,
     )
 
-    # The FLUX VAE is an AutoencoderKL with a FLUX-specific architecture
-    # (16 latent channels, no quant/post-quant conv, shift/scaling factors).
-    # Without a local config, from_single_file cannot infer this and falls
-    # back to the stable-diffusion-v1-5 default repo to fetch config.json,
-    # which fails under local_files_only=True. Supply the config locally.
     vae_config_dir = model_root / "vae_config"
     _ensure_vae_config_layout(vae_config_dir)
     vae = AutoencoderKL.from_single_file(
@@ -72,7 +102,9 @@ def generate_flux_image(
     )
 
     text_encoder_dir = model_root / "clip_text_encoder"
-    _ensure_clip_weights_layout(text_encoder_dir=text_encoder_dir, clip_weights_path=clip_path)
+    _ensure_clip_weights_layout(
+        text_encoder_dir=text_encoder_dir, clip_weights_path=clip_path
+    )
     text_encoder = CLIPTextModel.from_pretrained(
         str(text_encoder_dir),
         local_files_only=True,
@@ -84,11 +116,6 @@ def generate_flux_image(
         local_files_only=False,
     )
 
-    # Load the T5-XXL encoder and its tokenizer directly from the GGUF file.
-    # transformers natively de-quantizes GGUF weights and reads the model
-    # config + tokenizer from the file's metadata. Using from_single_file
-    # without a GGUFQuantizationConfig leaves the weights on the meta device
-    # ("Cannot copy out of meta tensor") and breaks cpu offload / inference.
     logger.info("Loading T5 GGUF Text Encoder...")
     text_encoder_2 = T5EncoderModel.from_pretrained(
         str(model_root),
@@ -103,45 +130,129 @@ def generate_flux_image(
 
     scheduler = FlowMatchEulerDiscreteScheduler(
         num_train_timesteps=1000,
-        shift=3.0
+        shift=3.0,
     )
+
+    logger.info("Assembling FLUX pipeline...")
+    pipe = FluxPipeline(
+        scheduler=scheduler,
+        vae=vae,
+        text_encoder=text_encoder,
+        tokenizer=tokenizer,
+        text_encoder_2=text_encoder_2,
+        tokenizer_2=tokenizer_2,
+        transformer=transformer,
+    )
+    pipe.register_to_config(_class_name="FluxPipeline", _diffusers_version="0.30.0")
+
+    # Prioritize memory stability over throughput on 12GB cards.
+    pipe.enable_model_cpu_offload()
+    pipe.enable_attention_slicing("max")
+    pipe.enable_vae_slicing()
+    pipe.enable_vae_tiling()
+
+    return _FluxRuntime(pipe=pipe)
+
+
+def _get_or_create_runtime(model_root: Path) -> _FluxRuntime:
+    global _RUNTIME_CACHE, _RUNTIME_CACHE_ROOT
+
+    if _RUNTIME_CACHE is not None and _RUNTIME_CACHE_ROOT == model_root:
+        return _RUNTIME_CACHE
+
+    if _RUNTIME_CACHE is not None:
+        _release_cached_runtime_locked()
+
+    _RUNTIME_CACHE = _build_runtime(model_root)
+    _RUNTIME_CACHE_ROOT = model_root
+    return _RUNTIME_CACHE
+
+
+def _release_cached_runtime_locked() -> None:
+    global _RUNTIME_CACHE, _RUNTIME_CACHE_ROOT
+    if _RUNTIME_CACHE is None:
+        return
+    del _RUNTIME_CACHE
+    _RUNTIME_CACHE = None
+    _RUNTIME_CACHE_ROOT = None
+    _cleanup_cuda_cache()
+
+
+def unload_flux_runtime() -> None:
+    """Explicitly release cached FLUX runtime memory."""
+    with _RUNTIME_LOCK:
+        _release_cached_runtime_locked()
+
+def generate_flux_image(
+    prompt: str,
+    output_path: str = "data/output.png",
+    model_dir: str = "/app/models/flux",
+    width: int = 1024,
+    height: int = 1024,
+    num_inference_steps: int = 4,
+    keep_loaded: bool | None = None,
+):
+    """
+    Generates an image using FLUX.1-schnell GGUF on an RTX 3060.
+    """
+    model_root = _resolve_model_root(model_dir)
+    _validate_local_model_files(model_root)
 
     if width < 256 or height < 256:
         raise ValueError("FLUX width/height must be at least 256")
     if num_inference_steps < 1:
         raise ValueError("FLUX num_inference_steps must be at least 1")
 
-    pipe = None
+    if keep_loaded is None:
+        keep_loaded = _env_bool("FLUX_KEEP_PIPELINE_LOADED", True)
+
+    runtime: _FluxRuntime | None = None
     try:
-        # 2. Assemble the pipeline matrix natively
-        logger.info("Assembling pipeline matrix...")
-        pipe = FluxPipeline(
-            scheduler=scheduler,
-            vae=vae,
-            text_encoder=text_encoder,
-            tokenizer=tokenizer,
-            text_encoder_2=text_encoder_2,
-            tokenizer_2=tokenizer_2,
-            transformer=transformer,
-        )
+        _log_cuda_memory("FLUX pre-infer")
 
-        # FORCE the pipeline to recognize itself as FLUX
-        # This prevents the library from defaulting to SD v1.5 search logic
-        pipe.register_to_config(
-            _class_name="FluxPipeline",
-            _diffusers_version="0.30.0"
-        )
+        if keep_loaded:
+            with _RUNTIME_LOCK:
+                runtime = _get_or_create_runtime(model_root)
+                pipe = runtime.pipe
 
-        # 3. Bind execution space parameters to GPU
-        pipe.enable_model_cpu_offload()
-        pipe.enable_attention_slicing("max")
-        pipe.enable_vae_slicing()
-        pipe.enable_vae_tiling()
+                max_sequence_length = int(os.getenv("FLUX_MAX_SEQUENCE_LENGTH", "192"))
+
+                logger.info(
+                    "Generating FLUX image for prompt prefix: %s (size=%sx%s, steps=%s, cached=true)",
+                    prompt[:30],
+                    width,
+                    height,
+                    num_inference_steps,
+                )
+
+                with torch.inference_mode():
+                    result: Any = pipe(
+                        prompt=prompt,
+                        width=width,
+                        height=height,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=0.0,
+                        max_sequence_length=max_sequence_length,
+                    )
+                    image = result.images[0]
+
+                output = Path(output_path)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                image.save(str(output))
+                del image
+                del result
+                _cleanup_cuda_cache()
+                _log_cuda_memory("FLUX post-infer cached")
+                logger.info("FLUX image saved to %s", output)
+                return str(output)
+
+        runtime = _build_runtime(model_root)
+        pipe = runtime.pipe
 
         max_sequence_length = int(os.getenv("FLUX_MAX_SEQUENCE_LENGTH", "192"))
 
         logger.info(
-            "Generating FLUX image for prompt prefix: %s (size=%sx%s, steps=%s)",
+            "Generating FLUX image for prompt prefix: %s (size=%sx%s, steps=%s, cached=false)",
             prompt[:30],
             width,
             height,
@@ -162,26 +273,16 @@ def generate_flux_image(
         output = Path(output_path)
         output.parent.mkdir(parents=True, exist_ok=True)
         image.save(str(output))
+        del image
+        del result
         logger.info("FLUX image saved to %s", output)
+        _log_cuda_memory("FLUX post-infer uncached")
         return str(output)
     finally:
-        # Cleanup routines — explicit delete + GC ensures RAM/VRAM is released
-        # before Ollama reclaims the GPU for the next inference job.
-        if pipe is not None:
-            del pipe
-        del transformer
-        del vae
-        del text_encoder
-        del tokenizer
-        del text_encoder_2
-        del tokenizer_2
-        gc.collect()  # flush Python-level ref cycles before CUDA cleanup
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()  # wait for all CUDA kernels to finish
-            torch.cuda.empty_cache()  # return VRAM to the pool
-            torch.cuda.ipc_collect()  # release shared-memory handles
-        gc.collect()  # second pass — clears any pinned-memory CPU tensors
-        logger.info("FLUX cleanup complete — VRAM and CPU buffers released")
+        if not keep_loaded and runtime is not None:
+            del runtime
+            _cleanup_cuda_cache()
+            logger.info("FLUX cleanup complete (uncached mode)")
 
 
 def _resolve_model_root(model_path_or_dir: str) -> Path:
@@ -222,7 +323,8 @@ def _ensure_clip_weights_layout(text_encoder_dir: Path, clip_weights_path: Path)
 
 def _ensure_transformer_config_layout(config_dir: Path) -> None:
     config_file = config_dir / "config.json"
-    # REMOVE the 'if config_file.is_file(): return' line to force overwrite
+    if config_file.is_file():
+        return
     config_dir.mkdir(parents=True, exist_ok=True)
     
     transformer_config = {
@@ -248,6 +350,8 @@ def _ensure_transformer_config_layout(config_dir: Path) -> None:
 def _ensure_vae_config_layout(config_dir: Path) -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     config_file = config_dir / "config.json"
+    if config_file.is_file():
+        return
 
     vae_config = {
         "_class_name": "AutoencoderKL",

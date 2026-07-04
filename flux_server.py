@@ -71,6 +71,7 @@ def generate():
             width=width,
             height=height,
             num_inference_steps=num_inference_steps,
+            keep_loaded=True,
         )
         logger.info("FLUX render complete: %s", output_path)
         return jsonify({"output_path": output_path})

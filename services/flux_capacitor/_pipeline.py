@@ -335,6 +335,7 @@ def run_art_avatar(
                     width=render_width,
                     height=render_height,
                     num_inference_steps=render_steps,
+                    keep_loaded=False,
                     model_dir=str(
                         __import__("pathlib").Path("models/flux")
                     ),

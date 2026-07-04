@@ -453,6 +453,7 @@ class TestPipelineRenderSizing:
         assert kwargs["width"] == 640
         assert kwargs["height"] == 704
         assert kwargs["num_inference_steps"] == 3
+        assert kwargs["keep_loaded"] is False
 
     def test_http_flux_call_includes_dimension_payload(self, tmp_path):
         with patch.dict(

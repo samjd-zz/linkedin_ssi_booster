@@ -694,12 +694,16 @@ FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS=120
 | `FLUX_CAPACITOR_RENDER_HEIGHT` | `768` | Output image height in pixels |
 | `FLUX_CAPACITOR_RENDER_STEPS` | `4` | Diffusion steps (higher = slower but sharper; 4 is schnell-optimal) |
 | `FLUX_MAX_SEQUENCE_LENGTH` | `192` | Max token sequence length for FLUX text encoding (lower reduces memory usage) |
+| `FLUX_KEEP_PIPELINE_LOADED` | `true` | Keep FLUX pipeline loaded between requests (recommended for service mode to avoid per-request memory creep) |
+| `FLUX_LOG_MEMORY` | `false` | Log CUDA allocated/reserved/peak memory before and after FLUX inference |
 
 ```bash
 FLUX_CAPACITOR_RENDER_WIDTH=768
 FLUX_CAPACITOR_RENDER_HEIGHT=768
 FLUX_CAPACITOR_RENDER_STEPS=4
 FLUX_MAX_SEQUENCE_LENGTH=192
+FLUX_KEEP_PIPELINE_LOADED=true
+FLUX_LOG_MEMORY=false
 ```
 
 ### Artifact Storage Variables
