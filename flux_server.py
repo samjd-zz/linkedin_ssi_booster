@@ -32,21 +32,21 @@ def health():
 @app.route("/generate", methods=["POST"])
 def generate():
     """
-        Body: {
-            "prompt": str,
-            "output_path": str,
-            "width": int (optional),
-            "height": int (optional),
-            "num_inference_steps": int (optional)
-        }
+    Body: {
+        "prompt": str,
+        "output_path": str,
+        "width": int (optional),
+        "height": int (optional),
+        "num_inference_steps": int (optional)
+    }
     Response: { "output_path": str } or { "error": str }
     """
     body = request.get_json(force=True, silent=True) or {}
     prompt = body.get("prompt", "").strip()
     output_path = body.get("output_path", "").strip()
-        width = int(body.get("width", os.getenv("FLUX_RENDER_WIDTH", "768")))
-        height = int(body.get("height", os.getenv("FLUX_RENDER_HEIGHT", "768")))
-        num_inference_steps = int(body.get("num_inference_steps", os.getenv("FLUX_RENDER_STEPS", "4")))
+    width = int(body.get("width", os.getenv("FLUX_RENDER_WIDTH", "768")))
+    height = int(body.get("height", os.getenv("FLUX_RENDER_HEIGHT", "768")))
+    num_inference_steps = int(body.get("num_inference_steps", os.getenv("FLUX_RENDER_STEPS", "4")))
 
     if not prompt:
         return jsonify({"error": "prompt is required"}), 400

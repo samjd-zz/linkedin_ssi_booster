@@ -469,22 +469,22 @@ class TestPipelineRenderSizing:
         ):
             cfg = FluxCapacitorConfig()
 
-        policy = GPUPolicy(ollama_first=False)
-        orch = GPUOrchestrator(policy)
-        req = _minimal_request(max_wait_seconds=5)
+            policy = GPUPolicy(ollama_first=False)
+            orch = GPUOrchestrator(policy)
+            req = _minimal_request(max_wait_seconds=5)
 
-        mock_response = MagicMock()
-        mock_response.ok = True
-        mock_response.json.return_value = {"output_path": str(tmp_path / "out.png")}
+            mock_response = MagicMock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"output_path": str(tmp_path / "out.png")}
 
-        with patch(
-            "services.flux_capacitor._storage.get_generated_content_dir",
-            return_value=tmp_path,
-        ), patch(
-            "services.flux_capacitor._pipeline.socket.getaddrinfo",
-            return_value=[(0, 0, 0, "", ("127.0.0.1", 5000))],
-        ), patch("requests.post", return_value=mock_response) as mock_post:
-            result = run_art_avatar(req, cfg, orch)
+            with patch(
+                "services.flux_capacitor._storage.get_generated_content_dir",
+                return_value=tmp_path,
+            ), patch(
+                "services.flux_capacitor._pipeline.socket.getaddrinfo",
+                return_value=[(0, 0, 0, "", ("127.0.0.1", 5000))],
+            ), patch("requests.post", return_value=mock_response) as mock_post:
+                result = run_art_avatar(req, cfg, orch)
 
         assert result.status == RenderStatus.RENDERED
         mock_post.assert_called_once()
