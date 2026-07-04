@@ -45,7 +45,7 @@ Say:
 Then show the Rei Toei path with a direct theme:
 
 ```bash
-source .venv/bin/activate && python main.py --rei-generate --rei-theme async optimization loops
+source .venv/bin/activate && python main.py --rei-generate --rei-theme "async optimization loops"
 ```
 
 Say:
