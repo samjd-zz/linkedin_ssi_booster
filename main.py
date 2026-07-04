@@ -157,6 +157,16 @@ def _run_post_generation_cleanup(ai: OllamaService, source_mode: str) -> None:
 
     # 4) Final Python heap collection pass.
     gc.collect()
+    gc.collect()
+
+    # 5) Linux/glibc heap trim (best-effort) to return freed pages to OS.
+    if sys.platform.startswith("linux"):
+        try:
+            import ctypes
+
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Post-%s malloc_trim skipped: %s", source_mode, exc)
 
 
 def _render_schedule_art_avatar(
@@ -1572,7 +1582,7 @@ def main():
         noun = "posts" if args.type == "post" else "ideas"
 
         if ideas:
-            for _idea in ideas:
+            for _idea_idx, _idea in enumerate(ideas, start=1):
                 if not isinstance(_idea, dict):
                     continue
                 _idea_channel = _idea.get("channel", "linkedin")
@@ -1591,10 +1601,12 @@ def main():
                     theme=_idea.get("title", ""),
                     knowledge_context=(_idea.get("summary") or _idea.get("article_text") or ""),
                 )
+                if _idea_idx % 3 == 0:
+                    gc.collect()
 
         # Step 6: Render art avatars for curated ideas (non-dry-run, non-youtube, non-all-channel)
         if ideas:
-            for _idea in ideas:
+            for _idea_idx, _idea in enumerate(ideas, start=1):
                 if not isinstance(_idea, dict):
                     continue
                 _idea_channel = _idea.get("channel", "linkedin")
@@ -1627,6 +1639,14 @@ def main():
                             + f"⏳  Art avatar deferred: {_art_meta.get('art_avatar_defer_reason', 'GPU busy')}"
                             + str(Style.RESET_ALL)
                         )
+
+                # Drop heavyweight fields after FLUX/render operations to reduce peak RAM.
+                _idea.pop("article_text", None)
+                _idea.pop("content", None)
+                _idea.pop("raw_content", None)
+
+                if _idea_idx % 2 == 0:
+                    gc.collect()
         _run_post_generation_cleanup(ai, "curate")
         return
 
@@ -1658,7 +1678,7 @@ def main():
             if args.avatar_explain:
                 from services.avatar_intelligence import build_explain_output, format_explain_output
 
-            for topic in week_topics:
+            for _topic_idx, topic in enumerate(week_topics, start=1):
                 logger.info("  Generating: %s", topic['title'])
                 grounding_query = f"{topic['title']}. {topic['angle']}. {topic.get('ssi_component', 'establish_brand')}"
                 # Combine both fact types
@@ -1815,6 +1835,13 @@ def main():
                     )
                     print(format_explain_output(_explain))
 
+                # Release large per-topic structures before moving to next topic.
+                del all_facts, relevant, persona_facts, domain_facts, grounding_facts
+                if args.avatar_explain:
+                    del _all_facts, _relevant, _gen_extracted_facts_all, _scored_extracted, _relevant_extracted
+                if _topic_idx % 2 == 0:
+                    gc.collect()
+
             if channel != "youtube":
                 for _scheduled_post in posts:
                     _optimized_story = (_scheduled_post.pop("_flux_optimized_post_text", "") or "").strip()
@@ -1863,6 +1890,10 @@ def main():
                         + "   Connect the channel in Buffer or run with a different --channel value."
                         + str(Style.RESET_ALL)
                     )
+
+            # Channel-level cleanup before processing the next channel.
+            posts.clear()
+            gc.collect()
 
         _run_post_generation_cleanup(ai, "schedule")
 
