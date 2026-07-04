@@ -44,9 +44,33 @@ def generate():
     body = request.get_json(force=True, silent=True) or {}
     prompt = body.get("prompt", "").strip()
     output_path = body.get("output_path", "").strip()
-    width = int(body.get("width", os.getenv("FLUX_RENDER_WIDTH", "768")))
-    height = int(body.get("height", os.getenv("FLUX_RENDER_HEIGHT", "768")))
-    num_inference_steps = int(body.get("num_inference_steps", os.getenv("FLUX_RENDER_STEPS", "4")))
+    width = int(
+        body.get(
+            "width",
+            os.getenv(
+                "FLUX_CAPACITOR_RENDER_WIDTH",
+                os.getenv("FLUX_RENDER_WIDTH", "768"),
+            ),
+        )
+    )
+    height = int(
+        body.get(
+            "height",
+            os.getenv(
+                "FLUX_CAPACITOR_RENDER_HEIGHT",
+                os.getenv("FLUX_RENDER_HEIGHT", "768"),
+            ),
+        )
+    )
+    num_inference_steps = int(
+        body.get(
+            "num_inference_steps",
+            os.getenv(
+                "FLUX_CAPACITOR_RENDER_STEPS",
+                os.getenv("FLUX_RENDER_STEPS", "4"),
+            ),
+        )
+    )
 
     if not prompt:
         return jsonify({"error": "prompt is required"}), 400

@@ -187,8 +187,8 @@ def generate_flux_image(
     prompt: str,
     output_path: str = "data/output.png",
     model_dir: str = "/app/models/flux",
-    width: int = 1024,
-    height: int = 1024,
+    width: int = 768,
+    height: int = 768,
     num_inference_steps: int = 4,
     keep_loaded: bool | None = None,
 ):
