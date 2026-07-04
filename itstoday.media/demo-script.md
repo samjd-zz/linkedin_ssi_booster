@@ -4,7 +4,7 @@
 
 This demo is about one problem: a small media buying team needs to move faster without giving up trust.
 
-SSI Booster helps with that by turning research and persona knowledge into grounded posts, useful ideas, and optional creative assets. It also learns from what gets published, so the next round is smarter.
+SSI Booster helps with that by turning research and persona knowledge into grounded posts, useful ideas, and optional creative assets. It also has a mass-learning pass that ingests RSS feeds and updates the system without posting anything.
 
 ## What to say up front
 
@@ -17,18 +17,30 @@ SSI Booster helps with that by turning research and persona knowledge into groun
 Start with the content and learning flow:
 
 ```bash
-source .venv/bin/activate && python main.py --curate --learn --dry-run --classify --dot-report --avatar-explain --channel linkedin --type idea
+source .venv/bin/activate && python main.py --curate --learn --dry-run --classify
 ```
 
 While it runs, say:
 
-"This is the daily workflow: find something useful, classify it by strategy, score how trustworthy it is, and decide whether it should become a post or just an idea."
+"This is the learning pass: it reads RSS feeds, extracts knowledge, classifies what it finds, and updates the system without posting anything."
 
-"The important part is that the system shows its evidence. It is not guessing in the dark."
+"This pass is extraction-only, so it is about mass learning, not generation or publishing."
 
-Point at the output and call out the trust scoring, the evidence snippets, and the routing decision.
+Point at the output and call out the new knowledge being captured and the fact that nothing is sent to Buffer.
 
-Then show the same workflow turning into a creative asset:
+Then show a normal curate run where learning happens automatically even without `--learn`:
+
+```bash
+source .venv/bin/activate && python main.py --curate --classify --dot-report --avatar-explain
+```
+
+Say:
+
+"This is the live curate path. It generates content, it can show DoT and avatar explain, and the code also learns from the article even without --learn because this is not a dry run."
+
+"So the system has two different learn modes: a bulk extraction pass with --learn --dry-run, and the normal live curate path where learning happens automatically as part of generation."
+
+If you want to show a published or reviewable output path afterward, then use the schedule flow:
 
 ```bash
 source .venv/bin/activate && python main.py --schedule --week 1 --dry-run --dot-report --avatar-explain --channel linkedin
