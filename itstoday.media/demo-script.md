@@ -40,6 +40,8 @@ Say:
 
 "So the system has two different learn modes: a bulk extraction pass with --learn --dry-run, and the normal live curate path where learning happens automatically as part of generation."
 
+"At the end of the live curate path, the code also auto-renders art for eligible channels, so the demo can show a text-to-visual handoff without any extra step."
+
 Then show the Rei Toei path with a direct theme:
 
 ```bash
@@ -75,6 +77,8 @@ source .venv/bin/activate && python main.py --schedule --week 1 --dry-run --dot-
 Say:
 
 "Now the same validated story can become something the team actually uses. The text gets checked first, then the creative path can follow."
+
+"And at the end of the schedule path, art is also rendered automatically for eligible channels, so the workflow finishes with both text and visual output."
 
 If you want a quick visual proof, show the saved artifacts:
 
