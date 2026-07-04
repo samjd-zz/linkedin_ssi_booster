@@ -43,12 +43,12 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **778**     | **776** | **2**   | **0**  | ✅ **All pass** |
+| **778**     | **778** | **0**   | **0**  | ✅ **All pass** |
 
-- **Latest Run Date:** July 1, 2026
-- **Latest Run Scope:** Full suite — confirmed 0 failed after session-management bug fixes and FLUX config env-isolation fix
+- **Latest Run Date:** July 4, 2026
+- **Latest Run Scope:** Full suite — confirmed green after FLUX render-size propagation and memory-usage tuning updates
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
-- **Notes:** 2 skipped = `test_get_scheduled_posts` / `test_get_published_posts` — Buffer API key present but lacks `channels` permission in this environment; tests skip cleanly via fixture guard.
+- **Notes:** 0 skipped in this run.
 
 ### Test Suite Breakdown
 
