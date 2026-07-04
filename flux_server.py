@@ -14,7 +14,7 @@ import os
 
 from flask import Flask, jsonify, request
 
-from services.image_generation import generate_flux_image  # only importable here
+from services.image_generation import generate_flux_image, unload_flux_runtime  # only importable here
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -27,6 +27,18 @@ MODEL_PATH_OR_DIR = os.getenv("FLUX_MODEL_PATH", "/app/models/flux")
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
+
+
+@app.route("/unload", methods=["POST"])
+def unload():
+    """Release cached FLUX pipeline/runtime memory in the flux-app service."""
+    try:
+        unload_flux_runtime()
+        logger.info("FLUX runtime unloaded via /unload")
+        return jsonify({"status": "ok", "message": "flux runtime unloaded"})
+    except Exception as exc:  # noqa: BLE001
+        logger.error("FLUX runtime unload failed: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "error": str(exc)}), 500
 
 
 @app.route("/generate", methods=["POST"])

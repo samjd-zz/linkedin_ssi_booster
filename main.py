@@ -23,6 +23,7 @@ import argparse
 import logging
 import re
 import sys
+import gc
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from dotenv import load_dotenv
@@ -113,6 +114,49 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(_ColourFormatter("%(asctime)s [%(levelname)s] %(message)s"))
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
+
+
+def _run_post_generation_cleanup(ai: OllamaService, source_mode: str) -> None:
+    """Release model/runtime memory after schedule/curate runs.
+
+    This performs best-effort cleanup only and never raises.
+    """
+    logger.info("🧹 Running post-%s memory cleanup...", source_mode)
+
+    # 1) Ask Ollama to evict loaded models from VRAM/RAM.
+    try:
+        ai.unload(wait_seconds=10.0)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Post-%s Ollama unload skipped: %s", source_mode, exc)
+
+    # 2) Ask flux-app service to unload cached FLUX runtime (if service mode is active).
+    flux_service_url = os.getenv("FLUX_SERVICE_URL", "").rstrip("/")
+    if flux_service_url:
+        try:
+            import requests as _requests
+
+            resp = _requests.post(f"{flux_service_url}/unload", timeout=30)
+            if resp.ok:
+                logger.info("FLUX runtime unload requested via %s/unload", flux_service_url)
+            else:
+                logger.warning(
+                    "FLUX runtime unload endpoint returned status=%s body=%s",
+                    resp.status_code,
+                    resp.text,
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Post-%s flux-app unload skipped: %s", source_mode, exc)
+
+    # 3) If in-process FLUX runtime is present (fallback mode), unload it too.
+    try:
+        from services.image_generation import unload_flux_runtime
+
+        unload_flux_runtime()
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Post-%s in-process FLUX unload skipped: %s", source_mode, exc)
+
+    # 4) Final Python heap collection pass.
+    gc.collect()
 
 
 def _render_schedule_art_avatar(
@@ -1505,6 +1549,7 @@ def main():
             ideas = curator.curate_and_create_ideas(dry_run=args.dry_run, channel=args.channel, message_type=args.type, request_delay=5.0, interactive=args.interactive, avatar_explain=args.avatar_explain, dot_report=args.dot_report, learn=args.learn, classify=args.classify)
         except BufferQueueFullError as e:
             print(str(Fore.YELLOW) + f"\n⚠️  Buffer queue is full — no new posts were scheduled.\n   {e}\n   Free up slots at https://publish.buffer.com before running again." + str(Style.RESET_ALL))
+            _run_post_generation_cleanup(ai, "curate")
             return
         except BufferRateLimitError as e:
             print(
@@ -1513,6 +1558,7 @@ def main():
                 + "   Wait for the retry window, then run the command again."
                 + str(Style.RESET_ALL)
             )
+            _run_post_generation_cleanup(ai, "curate")
             return
         except BufferChannelNotConnectedError as e:
             print(
@@ -1521,6 +1567,7 @@ def main():
                 + "   Connect the channel in Buffer or run with a different --channel value."
                 + str(Style.RESET_ALL)
             )
+            _run_post_generation_cleanup(ai, "curate")
             return
         noun = "posts" if args.type == "post" else "ideas"
 
@@ -1580,6 +1627,7 @@ def main():
                             + f"⏳  Art avatar deferred: {_art_meta.get('art_avatar_defer_reason', 'GPU busy')}"
                             + str(Style.RESET_ALL)
                         )
+        _run_post_generation_cleanup(ai, "curate")
         return
 
 
@@ -1587,6 +1635,7 @@ def main():
         week_topics = CONTENT_CALENDAR.get(f"week_{args.week}", [])
         if not week_topics:
             logger.error("No content found for week %d", args.week)
+            _run_post_generation_cleanup(ai, "schedule")
             return
 
         # args.channel is already a list from _parse_channels
@@ -1814,6 +1863,8 @@ def main():
                         + "   Connect the channel in Buffer or run with a different --channel value."
                         + str(Style.RESET_ALL)
                     )
+
+        _run_post_generation_cleanup(ai, "schedule")
 
 
 
