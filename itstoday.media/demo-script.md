@@ -31,7 +31,7 @@ Point at the output and call out the new knowledge being captured and the fact t
 Then show a normal curate run where learning happens automatically even without `--learn`:
 
 ```bash
-source .venv/bin/activate && python main.py --curate --classify --dot-report --avatar-explain
+source .venv/bin/activate && python main.py --profile core --curate --classify --dot-report --avatar-explain
 ```
 
 Say:

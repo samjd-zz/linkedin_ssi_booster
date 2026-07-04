@@ -5,6 +5,7 @@ Author: Shawn Jackson Dyck
 """
 
 import json
+import socket
 import time
 from pathlib import Path
 from threading import Thread
@@ -382,6 +383,40 @@ class TestPipelineDisabledPaths:
         # FLUX unavailable → FAILED with a render_error message
         assert result.status == RenderStatus.FAILED
         assert result.render_error is not None
+
+    def test_unresolvable_flux_service_returns_text_only(self, tmp_path):
+        with patch.dict(
+            "os.environ",
+            {
+                "FLUX_CAPACITOR_ENABLED": "true",
+                "FLUX_CAPACITOR_MINIMAL_MODE": "false",
+            },
+        ):
+            cfg = FluxCapacitorConfig()
+
+        policy = GPUPolicy(ollama_first=False)
+        orch = GPUOrchestrator(policy)
+        req = _minimal_request(max_wait_seconds=5)
+
+        with patch.dict(
+            "os.environ",
+            {"FLUX_SERVICE_URL": "http://flux-app:5000"},
+        ), patch(
+            "services.flux_capacitor._storage.get_generated_content_dir",
+            return_value=tmp_path,
+        ), patch(
+            "services.flux_capacitor._pipeline._generate_flux_image",
+            new=None,
+        ), patch(
+            "services.flux_capacitor._pipeline.socket.getaddrinfo",
+            side_effect=socket.gaierror("dns failure"),
+        ), patch("requests.post") as mock_post:
+            result = run_art_avatar(req, cfg, orch)
+
+        assert result.status == RenderStatus.TEXT_ONLY
+        assert result.defer_reason == "flux_service_unreachable"
+        assert result.story_path is not None
+        mock_post.assert_not_called()
 
 
 # =========================================================================== #

@@ -21,12 +21,14 @@ Version: alpha-v0.0.2.7
 import gc
 import logging
 import os
+import socket
 import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from threading import Lock
 from typing import Generator, Optional
+from urllib.parse import urlparse
 
 from services.flux_capacitor._config import STYLE_PRESETS, DEFAULT_STYLE_PRESET, FluxCapacitorConfig
 from services.flux_capacitor._models import (
@@ -279,6 +281,7 @@ def run_art_avatar(
         )
         render_ok = False
         render_error: Optional[str] = None
+        text_only_defer_reason: Optional[str] = None
 
         # Free the Ollama model from VRAM before FLUX allocates on the same GPU.
         if config.ollama_first:
@@ -288,16 +291,33 @@ def run_art_avatar(
 
         try:
             if flux_service_url:
+                parsed_url = urlparse(flux_service_url)
+                host = parsed_url.hostname
+                if host:
+                    try:
+                        socket.getaddrinfo(host, parsed_url.port or 80)
+                    except socket.gaierror as exc:
+                        text_only_defer_reason = "flux_service_unreachable"
+                        render_error = f"FLUX service host resolution failed for '{host}': {exc}"
+                        logger.warning(
+                            "FLUX service unavailable for request_id=%s: %s. Falling back to TEXT_ONLY.",
+                            request.request_id,
+                            render_error,
+                        )
+
+                if text_only_defer_reason:
+                    pass
+                else:
                 # Call the FLUX HTTP service (full Docker profile).
-                import requests as _requests
-                resp = _requests.post(
-                    f"{flux_service_url}/generate",
-                    json={"prompt": prompt_text, "output_path": str(image_path)},
-                    timeout=300,
-                )
-                if not resp.ok:
-                    raise RuntimeError(resp.json().get("error", resp.text))
-                render_ok = True
+                    import requests as _requests
+                    resp = _requests.post(
+                        f"{flux_service_url}/generate",
+                        json={"prompt": prompt_text, "output_path": str(image_path)},
+                        timeout=300,
+                    )
+                    if not resp.ok:
+                        raise RuntimeError(resp.json().get("error", resp.text))
+                    render_ok = True
             elif _generate_flux_image is not None:
                 # Fallback: direct in-process call (only works in full_build image).
                 _generate_flux_image(
@@ -371,7 +391,13 @@ def run_art_avatar(
     # ------------------------------------------------------------------ #
     # 7. Optional DB dual-write (local files are canonical)
     # ------------------------------------------------------------------ #
-    final_render_status = RenderStatus.RENDERED.value if render_ok else RenderStatus.FAILED.value
+    if render_ok:
+        final_render_status = RenderStatus.RENDERED.value
+    elif text_only_defer_reason:
+        final_render_status = RenderStatus.TEXT_ONLY.value
+    else:
+        final_render_status = RenderStatus.FAILED.value
+
     save_to_db(
         request_id=request.request_id,
         run_id=request.run_id or request.request_id,
@@ -406,6 +432,20 @@ def run_art_avatar(
             telemetry=telemetry,
             image_path=str(image_path),
             metadata_path=meta_path_str,
+            story_path=story_path_str,
+            story_metadata_path=story_meta_str,
+            story_save_status=story_status,
+        )
+
+    if text_only_defer_reason:
+        return ArtAvatarResult(
+            request_id=request.request_id,
+            status=RenderStatus.TEXT_ONLY,
+            prompt_text=prompt_text,
+            telemetry=telemetry,
+            defer_reason=text_only_defer_reason,
+            wait_time_seconds=wait_seconds,
+            fallback_text=request.post_text or request.concept_text,
             story_path=story_path_str,
             story_metadata_path=story_meta_str,
             story_save_status=story_status,

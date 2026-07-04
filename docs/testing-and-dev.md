@@ -43,7 +43,7 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **775**     | **773** | **2**   | **0**  | ✅ **All pass** |
+| **776**     | **774** | **2**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** July 1, 2026
 - **Latest Run Scope:** Full suite — confirmed 0 failed after session-management bug fixes and FLUX config env-isolation fix
@@ -62,8 +62,8 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - **16** Katzilla integration tests (Phases 1-6)
 - _6 Service client | 2 Envelope adapter | 4 Retrieval integration/fallback_
 - _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
-- **44** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
-- _33 Pipeline | 11 GPU Orchestration Policy_
+- **45** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
+- _34 Pipeline | 11 GPU Orchestration Policy_
 - **18** FLUX Capacitor main.py integration tests (Steps 5–7)
 - _3 Schedule flow | 7 Curate flow | 7 Console flow (plus 1 SourceMode assertion)_
   - `tests/test_flux_capacitor_schedule_integration.py`
@@ -184,7 +184,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_model2vec_service.py`       | Evaluates lazy model loads, graceful degradation on missing runtimes, metadata analytics, and item prioritization scoring within selection learning.                       |
 | `tests/test_buffer_mcp_agent.py`        | Verifies Buffer MCP agent health checks, Ollama request generation/parsing, MCP initialize handshake, tool-call payload wrapping, and JSON-RPC passthrough behavior.      |
 | `tests/test_strudel_mcp_agent.py`       | Verifies Strudel MCP agent JSON-RPC stdio flow, health-check tool discovery, tool-envelope parsing, and success/error handling for init/edit/playback tool calls.         |
-| `tests/test_flux_capacitor_pipeline.py` | Config validation, model contracts, style preset clamping, prompt assembly, GPU orchestrator state machine, pipeline disabled/deferred/FAILED paths, story artifact persistence, service singleton. |
+| `tests/test_flux_capacitor_pipeline.py` | Config validation, model contracts, style preset clamping, prompt assembly, GPU orchestrator state machine, pipeline disabled/deferred/FAILED paths, DNS-unreachable FLUX service TEXT_ONLY fallback, story artifact persistence, service singleton. |
 | `tests/test_gpu_orchestration_policy.py`| Ollama-first queue ordering, TEXT_ONLY timeout fallback, slot acquire/release lifecycle, exception-safe context manager, concurrency safety with multiple FLUX requests.   |
 | `tests/test_flux_capacitor_schedule_integration.py` | Schedule-flow wiring: skips YouTube channel, records rendered metadata, catches and wraps exceptions as failed result. |
 | `tests/test_flux_capacitor_curate_console_integration.py` | Curate-flow wiring: skips youtube/all channels, rendered/deferred/failed paths, SourceMode.CURATE propagation. Console-flow wiring: empty-text guard, rendered/deferred/failed paths, SourceMode.CONSOLE propagation, None topic hint. |
