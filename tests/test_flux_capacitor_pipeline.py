@@ -419,6 +419,82 @@ class TestPipelineDisabledPaths:
         mock_post.assert_not_called()
 
 
+class TestPipelineRenderSizing:
+    def test_direct_flux_call_uses_config_dimensions(self, tmp_path):
+        with patch.dict(
+            "os.environ",
+            {
+                "FLUX_CAPACITOR_ENABLED": "true",
+                "FLUX_CAPACITOR_MINIMAL_MODE": "false",
+                "FLUX_CAPACITOR_OLLAMA_FIRST": "false",
+                "FLUX_CAPACITOR_RENDER_WIDTH": "640",
+                "FLUX_CAPACITOR_RENDER_HEIGHT": "704",
+                "FLUX_CAPACITOR_RENDER_STEPS": "3",
+                "FLUX_SERVICE_URL": "",
+            },
+        ):
+            cfg = FluxCapacitorConfig()
+
+        policy = GPUPolicy(ollama_first=False)
+        orch = GPUOrchestrator(policy)
+        req = _minimal_request(max_wait_seconds=5)
+
+        with patch(
+            "services.flux_capacitor._storage.get_generated_content_dir",
+            return_value=tmp_path,
+        ), patch(
+            "services.flux_capacitor._pipeline._generate_flux_image",
+        ) as mock_generate:
+            result = run_art_avatar(req, cfg, orch)
+
+        assert result.status == RenderStatus.RENDERED
+        mock_generate.assert_called_once()
+        _, kwargs = mock_generate.call_args
+        assert kwargs["width"] == 640
+        assert kwargs["height"] == 704
+        assert kwargs["num_inference_steps"] == 3
+
+    def test_http_flux_call_includes_dimension_payload(self, tmp_path):
+        with patch.dict(
+            "os.environ",
+            {
+                "FLUX_CAPACITOR_ENABLED": "true",
+                "FLUX_CAPACITOR_MINIMAL_MODE": "false",
+                "FLUX_CAPACITOR_OLLAMA_FIRST": "false",
+                "FLUX_CAPACITOR_RENDER_WIDTH": "672",
+                "FLUX_CAPACITOR_RENDER_HEIGHT": "736",
+                "FLUX_CAPACITOR_RENDER_STEPS": "2",
+                "FLUX_SERVICE_URL": "http://flux-app:5000",
+            },
+        ):
+            cfg = FluxCapacitorConfig()
+
+        policy = GPUPolicy(ollama_first=False)
+        orch = GPUOrchestrator(policy)
+        req = _minimal_request(max_wait_seconds=5)
+
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.json.return_value = {"output_path": str(tmp_path / "out.png")}
+
+        with patch(
+            "services.flux_capacitor._storage.get_generated_content_dir",
+            return_value=tmp_path,
+        ), patch(
+            "services.flux_capacitor._pipeline.socket.getaddrinfo",
+            return_value=[(0, 0, 0, "", ("127.0.0.1", 5000))],
+        ), patch("requests.post", return_value=mock_response) as mock_post:
+            result = run_art_avatar(req, cfg, orch)
+
+        assert result.status == RenderStatus.RENDERED
+        mock_post.assert_called_once()
+        _, kwargs = mock_post.call_args
+        payload = kwargs["json"]
+        assert payload["width"] == 672
+        assert payload["height"] == 736
+        assert payload["num_inference_steps"] == 2
+
+
 # =========================================================================== #
 # Storage: story artifact
 # =========================================================================== #

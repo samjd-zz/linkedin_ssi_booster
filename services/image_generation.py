@@ -1,4 +1,5 @@
 import gc
+import os
 from pathlib import Path
 from typing import Any
 import logging
@@ -27,7 +28,10 @@ REQUIRED_MODEL_FILES = (
 def generate_flux_image(
     prompt: str,
     output_path: str = "data/output.png",
-    model_dir: str = "/app/models/flux"
+    model_dir: str = "/app/models/flux",
+    width: int = 1024,
+    height: int = 1024,
+    num_inference_steps: int = 4,
 ):
     """
     Generates an image using FLUX.1-schnell GGUF on an RTX 3060.
@@ -102,64 +106,82 @@ def generate_flux_image(
         shift=3.0
     )
 
-    # 2. Assemble the pipeline matrix natively
-    logger.info("Assembling pipeline matrix...")
-    pipe = FluxPipeline(
-        scheduler=scheduler,
-        vae=vae,
-        text_encoder=text_encoder,
-        tokenizer=tokenizer,
-        text_encoder_2=text_encoder_2,
-        tokenizer_2=tokenizer_2,
-        transformer=transformer
-    )
-    
-    # FORCE the pipeline to recognize itself as FLUX
-    # This prevents the library from defaulting to SD v1.5 search logic
-    pipe.register_to_config(
-        _class_name="FluxPipeline",
-        _diffusers_version="0.30.0"
-    )
+    if width < 256 or height < 256:
+        raise ValueError("FLUX width/height must be at least 256")
+    if num_inference_steps < 1:
+        raise ValueError("FLUX num_inference_steps must be at least 1")
 
-    # 3. Bind execution space parameters to GPU
-    pipe.enable_model_cpu_offload()
-
-    logger.info("Generating FLUX image for prompt prefix: %s", prompt[:30])
-
-    with torch.inference_mode():
-        result: Any = pipe(
-            prompt=prompt,
-            width=1024,
-            height=1024,
-            num_inference_steps=4, 
-            guidance_scale=0.0,
-            max_sequence_length=256
+    pipe = None
+    try:
+        # 2. Assemble the pipeline matrix natively
+        logger.info("Assembling pipeline matrix...")
+        pipe = FluxPipeline(
+            scheduler=scheduler,
+            vae=vae,
+            text_encoder=text_encoder,
+            tokenizer=tokenizer,
+            text_encoder_2=text_encoder_2,
+            tokenizer_2=tokenizer_2,
+            transformer=transformer,
         )
-        image = result.images[0]
 
-    output = Path(output_path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    image.save(str(output))
-    logger.info("FLUX image saved to %s", output)
-    
-    # Cleanup routines — explicit delete + GC ensures RAM/VRAM is released
-    # before Ollama reclaims the GPU for the next inference job.
-    del pipe
-    del transformer
-    del vae
-    del text_encoder
-    del tokenizer
-    del text_encoder_2
-    del tokenizer_2
-    gc.collect()  # flush Python-level ref cycles before CUDA cleanup
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()  # wait for all CUDA kernels to finish
-        torch.cuda.empty_cache()  # return VRAM to the pool
-        torch.cuda.ipc_collect()  # release shared-memory handles
-    gc.collect()  # second pass — clears any pinned-memory CPU tensors
-    logger.info("FLUX cleanup complete — VRAM and CPU buffers released")
+        # FORCE the pipeline to recognize itself as FLUX
+        # This prevents the library from defaulting to SD v1.5 search logic
+        pipe.register_to_config(
+            _class_name="FluxPipeline",
+            _diffusers_version="0.30.0"
+        )
 
-    return str(output)
+        # 3. Bind execution space parameters to GPU
+        pipe.enable_model_cpu_offload()
+        pipe.enable_attention_slicing("max")
+        pipe.enable_vae_slicing()
+        pipe.enable_vae_tiling()
+
+        max_sequence_length = int(os.getenv("FLUX_MAX_SEQUENCE_LENGTH", "192"))
+
+        logger.info(
+            "Generating FLUX image for prompt prefix: %s (size=%sx%s, steps=%s)",
+            prompt[:30],
+            width,
+            height,
+            num_inference_steps,
+        )
+
+        with torch.inference_mode():
+            result: Any = pipe(
+                prompt=prompt,
+                width=width,
+                height=height,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=0.0,
+                max_sequence_length=max_sequence_length,
+            )
+            image = result.images[0]
+
+        output = Path(output_path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        image.save(str(output))
+        logger.info("FLUX image saved to %s", output)
+        return str(output)
+    finally:
+        # Cleanup routines — explicit delete + GC ensures RAM/VRAM is released
+        # before Ollama reclaims the GPU for the next inference job.
+        if pipe is not None:
+            del pipe
+        del transformer
+        del vae
+        del text_encoder
+        del tokenizer
+        del text_encoder_2
+        del tokenizer_2
+        gc.collect()  # flush Python-level ref cycles before CUDA cleanup
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()  # wait for all CUDA kernels to finish
+            torch.cuda.empty_cache()  # return VRAM to the pool
+            torch.cuda.ipc_collect()  # release shared-memory handles
+        gc.collect()  # second pass — clears any pinned-memory CPU tensors
+        logger.info("FLUX cleanup complete — VRAM and CPU buffers released")
 
 
 def _resolve_model_root(model_path_or_dir: str) -> Path:

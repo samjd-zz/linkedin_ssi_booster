@@ -32,17 +32,30 @@ def health():
 @app.route("/generate", methods=["POST"])
 def generate():
     """
-    Body: { "prompt": str, "output_path": str }
+        Body: {
+            "prompt": str,
+            "output_path": str,
+            "width": int (optional),
+            "height": int (optional),
+            "num_inference_steps": int (optional)
+        }
     Response: { "output_path": str } or { "error": str }
     """
     body = request.get_json(force=True, silent=True) or {}
     prompt = body.get("prompt", "").strip()
     output_path = body.get("output_path", "").strip()
+        width = int(body.get("width", os.getenv("FLUX_RENDER_WIDTH", "768")))
+        height = int(body.get("height", os.getenv("FLUX_RENDER_HEIGHT", "768")))
+        num_inference_steps = int(body.get("num_inference_steps", os.getenv("FLUX_RENDER_STEPS", "4")))
 
     if not prompt:
         return jsonify({"error": "prompt is required"}), 400
     if not output_path:
         return jsonify({"error": "output_path is required"}), 400
+    if width < 256 or height < 256:
+        return jsonify({"error": "width and height must be >= 256"}), 400
+    if num_inference_steps < 1:
+        return jsonify({"error": "num_inference_steps must be >= 1"}), 400
 
     # Restrict writes to the shared yt-vid-data directory for security.
     allowed_prefix = "/app/yt-vid-data"
@@ -51,7 +64,14 @@ def generate():
 
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        generate_flux_image(prompt=prompt, output_path=output_path, model_dir=MODEL_PATH_OR_DIR)
+        generate_flux_image(
+            prompt=prompt,
+            output_path=output_path,
+            model_dir=MODEL_PATH_OR_DIR,
+            width=width,
+            height=height,
+            num_inference_steps=num_inference_steps,
+        )
         logger.info("FLUX render complete: %s", output_path)
         return jsonify({"output_path": output_path})
     except Exception as exc:

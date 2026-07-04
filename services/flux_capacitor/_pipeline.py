@@ -279,6 +279,9 @@ def run_art_avatar(
         image_path = build_image_path(
             request.request_id, request.source_channel, config
         )
+        render_width = request.target_width or config.render_width
+        render_height = request.target_height or config.render_height
+        render_steps = config.render_steps
         render_ok = False
         render_error: Optional[str] = None
         text_only_defer_reason: Optional[str] = None
@@ -312,7 +315,13 @@ def run_art_avatar(
                     import requests as _requests
                     resp = _requests.post(
                         f"{flux_service_url}/generate",
-                        json={"prompt": prompt_text, "output_path": str(image_path)},
+                        json={
+                            "prompt": prompt_text,
+                            "output_path": str(image_path),
+                            "width": render_width,
+                            "height": render_height,
+                            "num_inference_steps": render_steps,
+                        },
                         timeout=300,
                     )
                     if not resp.ok:
@@ -323,6 +332,9 @@ def run_art_avatar(
                 _generate_flux_image(
                     prompt=prompt_text,
                     output_path=str(image_path),
+                    width=render_width,
+                    height=render_height,
+                    num_inference_steps=render_steps,
                     model_dir=str(
                         __import__("pathlib").Path("models/flux")
                     ),
