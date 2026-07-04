@@ -1,10 +1,10 @@
 # Contest Submission: LinkedIn SSI Booster
 
-LinkedIn SSI Booster is an AI-first marketing automation platform that curates, generates, validates, and schedules LinkedIn content to improve performance across all four SSI pillars: Establish Brand, Find Right People, Engage with Insights, and Build Relationships.
+LinkedIn SSI Booster is an AI-first content automation system for marketing execution. It curates, generates, validates, and schedules content so the media buying team can move faster, keep claims grounded in real facts, and maintain a consistent posting cadence across all four SSI pillars: Establish Brand, Find Right People, Engage with Insights, and Build Relationships.
 
 ## Submission Videos (Watch First)
 
-These demos are organized to quickly show product depth, reliability, and real-world usefulness for a media buying team.
+These demos are organized to show how the system helps a media buying team research, validate, learn, and ship content with less manual effort.
 
 | Demo | What it demonstrates | Command | Video |
 |---|---|---|---|
@@ -24,47 +24,55 @@ Recommended watch order:
 
 ## What does this tool do?
 
-LinkedIn SSI Booster solves a practical growth and execution problem: creating high-quality, on-brand, factually grounded LinkedIn content at consistent cadence without burning team bandwidth.
+LinkedIn SSI Booster solves a practical execution problem: turning content creation from a manual, error-prone workflow into a repeatable system that can research, draft, validate, and schedule posts with less human effort.
+
+### The Problems It Solves
+
+- Teams spend too much time drafting similar posts from scratch.
+- AI-generated content often sounds generic or makes unsupported claims.
+- Manual review slows down publishing and makes consistency harder to maintain.
+- It is difficult to keep learning from what gets published and what performs well.
+- Scheduling and review should be part of one workflow, not separate tools.
 
 ### Business Problem It Solves
 
-- Content output is often inconsistent and hard to sustain.
-- Generic AI copy reduces trust, voice quality, and conversion potential.
-- Teams need measurable, repeatable systems that connect content effort to business outcomes.
-- Manual workflows for research, drafting, validation, and scheduling are too slow.
+- Content output becomes inconsistent when drafting is manual.
+- Generic AI copy reduces trust and makes posts easier to ignore.
+- Unsupported claims create avoidable quality and credibility risk.
+- Manual research and scheduling slow down the publishing loop.
 
 ### Core Capabilities
 
-- Persona-grounded post generation via local Ollama models.
+- Persona-grounded post generation via local Ollama models, using real project and domain facts.
 - Four-layer truth gate: BM25 retrieval, derivative-of-truth scoring, semantic similarity checks, and NER validation.
 - RSS-based curation and ranking with relevance, freshness, and feedback priors.
-- Confidence-based routing for safer publishing decisions.
-- Explainability outputs to show exactly why content is considered grounded.
-- Continual learning pipeline that improves future selection and generation.
+- Confidence-based routing that can send content to post, idea, or block.
+- Explainability outputs that show what evidence supported a post.
+- Continual learning pipeline that updates ranking behavior from published outcomes.
 
 ### End-to-End Workflow
 
-1. Curate high-signal industry content.
-2. Rank and select content using retrieval + learning signals.
-3. Generate persona-consistent drafts.
-4. Validate factual grounding and confidence.
-5. Route to ideas or scheduled publishing workflows.
-6. Learn from outcomes to improve future runs.
+1. Curate high-signal industry content from RSS sources.
+2. Rank and select content using retrieval and learning signals.
+3. Generate persona-consistent drafts from grounded source material.
+4. Validate factual grounding and confidence before publishing.
+5. Route content to Buffer Ideas or scheduled posts based on confidence.
+6. Learn from published outcomes so future selection improves.
 
 ### Technical Architecture Highlights
 
 - Local-first AI stack for privacy, control, and cost efficiency.
 - Hybrid retrieval and knowledge graph support for grounded content decisions.
 - Optional PostgreSQL persistence for production-grade data operations.
+- Buffer integration for review queues and scheduling execution.
 - Multi-modal extensibility through image, voice, and music integrations.
-- Buffer integration for practical scheduling execution.
 
 ### Why This Matters for a Media Buying Team
 
-- Converts content from ad hoc effort into repeatable operational infrastructure.
-- Increases throughput while preserving message quality and credibility.
-- Supports thought-leadership and trust-building that strengthens paid acquisition outcomes.
-- Reduces time spent on repetitive workflows so the team can focus on strategy and scale.
+- Converts content creation from ad hoc effort into a repeatable workflow.
+- Reduces the chance of unsupported claims making it into scheduled posts.
+- Keeps review and scheduling inside one system instead of across disconnected tools.
+- Frees time for strategy, testing, and campaign execution.
 
 ---
 
@@ -118,33 +126,33 @@ That outcome reflects how I operate: identify inflection points early, execute f
 
 ## What would you build next if this were your full-time job?
 
-I would evolve this into a full content intelligence and campaign enablement platform for media buying operations.
+I would evolve this into a media-buying operations platform that improves ROI by speeding up creative production, ad deployment, and landing page iteration.
 
 ### First 90 Days
 
-1. Add performance feedback ingestion from paid channels and landing page outcomes.
-2. Build campaign-level content planning with objective-based draft generation.
+1. Add performance feedback ingestion from paid channels, landing pages, and email/SMS list growth.
+2. Build an end-to-end video creative generator for marketing assets.
 3. Expand explainability into operator dashboards for faster review decisions.
 4. Implement role-aware workflows for team collaboration and approvals.
 
 ### Months 4-12
 
-1. Launch multi-channel orchestration beyond LinkedIn.
-2. Add predictive topic and timing recommendations from historical performance.
-3. Integrate creative testing loops for copy variants tied to business KPIs.
-4. Introduce account and persona segmentation for scaled personalization.
+1. Build an automated ad creation and upload workflow through an MCP server.
+2. Add predictive creative and timing recommendations from historical performance.
+3. Integrate creative testing loops for copy, video, and landing page variants tied to business KPIs.
+4. Introduce account and audience segmentation for scaled personalization.
 
 ### Year 2 Vision
 
 1. Build an autonomous optimization layer with guardrails and human override.
-2. Create vertical-specific playbooks for faster deployment by market type.
-3. Deliver full-funnel intelligence linking content, lead quality, and revenue impact.
+2. Create a landing page generator and CMS workflow for faster campaign launches.
+3. Deliver full-funnel intelligence linking creative, lead quality, and revenue impact.
 
 ### Why This Roadmap Is High-Value
 
-- It moves from content automation to measurable growth infrastructure.
-- It compounds operational advantage through learning loops.
-- It directly supports the business objective: better execution that drives more profit.
+- It moves from content automation to media-buying execution infrastructure.
+- It compounds operational advantage through faster creative, ad, and page iteration loops.
+- It directly supports the business objective: higher ROI from paid media.
 
 ---
 
