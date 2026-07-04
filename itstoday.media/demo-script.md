@@ -68,7 +68,7 @@ Say:
 
 "The Rei service also has an optional Sam-persona inspiration layer behind an env flag, but the direct --rei-generate CLI path does not wire GitHub context into that flow."
 
-If you want to show a published or reviewable output path afterward, then use the schedule flow:
+If you want to show the reviewable schedule output path afterward, then use the schedule flow:
 
 ```bash
 source .venv/bin/activate && python main.py --schedule --week 1 --dry-run --dot-report --avatar-explain --channel linkedin
