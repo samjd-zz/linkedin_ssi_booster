@@ -693,11 +693,13 @@ FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS=120
 | `FLUX_CAPACITOR_RENDER_WIDTH` | `768` | Output image width in pixels |
 | `FLUX_CAPACITOR_RENDER_HEIGHT` | `768` | Output image height in pixels |
 | `FLUX_CAPACITOR_RENDER_STEPS` | `4` | Diffusion steps (higher = slower but sharper; 4 is schnell-optimal) |
+| `FLUX_MAX_SEQUENCE_LENGTH` | `192` | Max token sequence length for FLUX text encoding (lower reduces memory usage) |
 
 ```bash
 FLUX_CAPACITOR_RENDER_WIDTH=768
 FLUX_CAPACITOR_RENDER_HEIGHT=768
 FLUX_CAPACITOR_RENDER_STEPS=4
+FLUX_MAX_SEQUENCE_LENGTH=192
 ```
 
 ### Artifact Storage Variables

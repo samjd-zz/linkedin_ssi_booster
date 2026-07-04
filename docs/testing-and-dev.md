@@ -43,7 +43,7 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **776**     | **774** | **2**   | **0**  | ✅ **All pass** |
+| **778**     | **776** | **2**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** July 1, 2026
 - **Latest Run Scope:** Full suite — confirmed 0 failed after session-management bug fixes and FLUX config env-isolation fix
@@ -62,8 +62,8 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 - **16** Katzilla integration tests (Phases 1-6)
 - _6 Service client | 2 Envelope adapter | 4 Retrieval integration/fallback_
 - _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
-- **45** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
-- _34 Pipeline | 11 GPU Orchestration Policy_
+- **47** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
+- _36 Pipeline | 11 GPU Orchestration Policy_
 - **18** FLUX Capacitor main.py integration tests (Steps 5–7)
 - _3 Schedule flow | 7 Curate flow | 7 Console flow (plus 1 SourceMode assertion)_
   - `tests/test_flux_capacitor_schedule_integration.py`
