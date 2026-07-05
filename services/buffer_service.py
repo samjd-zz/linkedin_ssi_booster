@@ -7,11 +7,13 @@ Docs: https://developers.buffer.com
 
 import requests
 import logging
+import re
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 BUFFER_API = "https://api.buffer.com"
+_URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
 
 class BufferQueueFullError(RuntimeError):
@@ -229,11 +231,22 @@ class BufferService:
         }
         """
         # Per-platform character limits — truncate before sending to avoid API rejection.
+        # X/Twitter URLs count as a fixed length and should not be cut mid-link.
         _CHAR_LIMITS: dict[str, int] = {"x": 280, "twitter": 280, "bluesky": 300}
         limit = _CHAR_LIMITS.get(channel)
-        if limit and len(text) > limit:
-            text = text[: limit - 1] + "…"
-            logger.warning("Post truncated to %d chars for channel '%s'.", limit, channel)
+        if limit:
+            if channel in {"x", "twitter"}:
+                original_effective_len = self._x_effective_length(text)
+                if original_effective_len > limit:
+                    text = self._truncate_x_preserving_urls(text, limit=limit)
+                    logger.warning(
+                        "X post truncated using URL-aware logic: effective_len=%d -> %d.",
+                        original_effective_len,
+                        self._x_effective_length(text),
+                    )
+            elif len(text) > limit:
+                text = text[: limit - 1] + "…"
+                logger.warning("Post truncated to %d chars for channel '%s'.", limit, channel)
 
         post_input: dict = {
             "channelId": channel_id,
@@ -254,6 +267,77 @@ class BufferService:
         post = result.get("post", {})
         logger.info(f"Scheduled post: id={post.get('id')} status={post.get('status')}")
         return post
+
+    @staticmethod
+    def _x_effective_length(text: str, url_chars: int = 23) -> int:
+        """Return X/Twitter effective character length with fixed URL counting."""
+        url_matches = list(_URL_RE.finditer(text))
+        if not url_matches:
+            return len(text)
+
+        raw_url_chars = sum(m.end() - m.start() for m in url_matches)
+        return len(text) - raw_url_chars + (len(url_matches) * url_chars)
+
+    @staticmethod
+    def _truncate_x_preserving_urls(text: str, limit: int = 280, url_chars: int = 23) -> str:
+        """Trim non-URL content to fit X limits while preserving complete URLs."""
+        matches = list(_URL_RE.finditer(text))
+        if not matches:
+            return text[: limit - 1] + "…" if len(text) > limit else text
+
+        token_count = len(matches)
+        non_url_budget = limit - (token_count * url_chars)
+
+        # Degenerate case: too many URLs to fit. Keep as many complete URLs as possible.
+        if non_url_budget < 0:
+            kept: list[str] = []
+            remaining = limit
+            for match in matches:
+                if remaining >= url_chars:
+                    kept.append(match.group(0))
+                    remaining -= url_chars
+                else:
+                    break
+            return " ".join(kept)
+
+        out: list[str] = []
+        cursor = 0
+        remaining_non_url = non_url_budget
+        truncated = False
+
+        for match in matches:
+            segment = text[cursor:match.start()]
+            if segment:
+                if remaining_non_url >= len(segment):
+                    out.append(segment)
+                    remaining_non_url -= len(segment)
+                elif remaining_non_url > 0:
+                    clipped = segment[: max(0, remaining_non_url - 1)].rstrip()
+                    out.append((clipped + "…") if clipped else "…")
+                    remaining_non_url = 0
+                    truncated = True
+                else:
+                    truncated = True
+
+            out.append(match.group(0))
+            cursor = match.end()
+
+        tail = text[cursor:]
+        if tail:
+            if remaining_non_url >= len(tail):
+                out.append(tail)
+            elif remaining_non_url > 0:
+                clipped = tail[: max(0, remaining_non_url - 1)].rstrip()
+                out.append((clipped + "…") if clipped else "…")
+                truncated = True
+            else:
+                truncated = True
+
+        result = "".join(out)
+        if truncated:
+            result = re.sub(r"[ \t]{2,}", " ", result)
+            result = re.sub(r"\n{3,}", "\n\n", result).strip()
+        return result
 
     def create_idea(self, text: str, title: str = "") -> dict:
         """

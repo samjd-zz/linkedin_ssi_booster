@@ -66,3 +66,30 @@ def test_get_threads_channel_id_raises_when_missing(monkeypatch):
 
     with pytest.raises(BufferChannelNotConnectedError):
         service.get_threads_channel_id()
+
+
+def test_create_scheduled_post_x_preserves_full_url(monkeypatch):
+    service = BufferService("test-token")
+    captured: dict = {}
+
+    def fake_query(_query, variables=None):
+        captured["text"] = variables["input"]["text"]
+        return {"createPost": {"post": {"id": "1", "text": captured["text"], "status": "scheduled"}}}
+
+    monkeypatch.setattr(service, "_query", fake_query)
+
+    url = "https://example.com/this/is/a/very/long/path/that/should/not/be/clipped"
+    text = ("A" * 275) + "\n\n" + url
+
+    service.create_scheduled_post("chan-1", text, channel="x")
+
+    sent_text = captured["text"]
+    assert url in sent_text
+    assert BufferService._x_effective_length(sent_text) <= 280
+
+
+def test_x_effective_length_counts_url_as_fixed_length():
+    url = "https://example.com/some/very/long/url/that/would/otherwise/be/large"
+    text = f"hello {url} world"
+    expected = len("hello ") + 23 + len(" world")
+    assert BufferService._x_effective_length(text) == expected
