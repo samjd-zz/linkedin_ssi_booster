@@ -8,12 +8,12 @@ These demos are organized to show how the system helps a media buying team resea
 
 ### Overview and Story Media
 
-| Demo | What it demonstrates | Command | Video |
-|---|---|---|---|
-| Project Explainer Video | High-level overview of the system, problem, and approach | N/A | https://youtu.be/ff6vDI2_Wdw |
-| Factual AI Automation ROI | ROI-focused walkthrough of factual AI automation workflow | N/A | https://youtu.be/3hOuJhm9EZ4 |
-| SSI Booster Teardown | End-to-end teardown of system design and implementation decisions | N/A | https://youtu.be/wkS8ANhXWcs |
-| Suno Track - Story Behind Derivative of Truth | Music story about how Derivative of Truth was created | N/A | https://suno.com/s/usKAreKRjO1oy4oj |
+| Demo | What it demonstrates | Video |
+|---|---|---|
+| Project Explainer Video | High-level overview of the system, problem, and approach | https://youtu.be/ff6vDI2_Wdw |
+| Factual AI Automation ROI | ROI-focused walkthrough of factual AI automation workflow | https://youtu.be/3hOuJhm9EZ4 |
+| SSI Booster Teardown | End-to-end teardown of system design and implementation decisions | https://youtu.be/wkS8ANhXWcs |
+| Suno Track - Story Behind Derivative of Truth | Music story about how Derivative of Truth was created | https://suno.com/s/usKAreKRjO1oy4oj |
 
 ### CLI Demo Videos
 
