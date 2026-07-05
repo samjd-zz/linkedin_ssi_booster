@@ -14,6 +14,7 @@ These demos are organized to show how the system helps a media buying team resea
 | Factual AI Automation ROI | ROI-focused walkthrough of factual AI automation workflow | https://youtu.be/3hOuJhm9EZ4 |
 | SSI Booster Teardown | End-to-end teardown of system design and implementation decisions | https://youtu.be/wkS8ANhXWcs |
 | Suno Track - Story Behind Derivative of Truth | Music story about how Derivative of Truth was created | https://suno.com/s/usKAreKRjO1oy4oj |
+| Derivative of Truth PDF | Mathematical framework paper for the Derivative of Truth system | [docs/The Derivative of Truth_ A New Mathematical Framework for AI Truthfulness.pdf](../docs/The%20Derivative%20of%20Truth_%20A%20New%20Mathematical%20Framework%20for%20AI%20Truthfulness.pdf) |
 
 ### CLI Demo Videos
 
