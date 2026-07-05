@@ -1,49 +1,50 @@
 services:
 
-  # strudel-mcp-agent:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     target: core_base
-  #   container_name: ssi_booster_strudel_agent
-  #   profiles: [ "core", "full" ]
-  #   depends_on:
-  #     ollama:
-  #       condition: service_healthy
-  #   env_file: .env
-  #   environment:
-  #     - OLLAMA_HOST=http://ollama:11434
-  #     - OLLAMA_MODEL=gemma4:e4b
-  #     - STRUDEL_MCP_COMMAND=npx -y @williamzujkowski/live-coding-music-mcp
-  #     - STRUDEL_PROMPT=algorithmic music generation for AI content
-  #   volumes:
-  #     - ./agents:/app/agents:ro
-  #   command: [ "python", "agents/strudel_mcp_agent.py" ]
-  #   restart: on-failure:3
+  # ── Strudel MCP Agent ──────────────────────────────────────────────────────
+  strudel-mcp-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: core_base
+    container_name: ssi_booster_strudel_agent
+    profiles: [ "core", "full" ]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=gemma4:e4b
+      - STRUDEL_MCP_COMMAND=npx -y @williamzujkowski/live-coding-music-mcp
+      - STRUDEL_PROMPT=algorithmic music generation for AI content
+    volumes:
+      - ./agents:/app/agents:ro
+    command: [ "python", "agents/strudel_mcp_agent.py" ]
+    restart: on-failure:3
 
   # ── Buffer MCP Agent ──────────────────────────────────────────────────────
-  #  Python agent that generates Buffer API requests via Ollama and sends to Buffer MCP
-  # buffer-mcp-agent:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     target: core_base
-  #   container_name: ssi_booster_buffer_mcp_agent
-  #   profiles: [ "core", "full" ]
-  #   depends_on:
-  #     ollama:
-  #       condition: service_healthy
-  #   env_file: .env
-  #   environment:
-  #     - OLLAMA_HOST=http://ollama:11434
-  #     - OLLAMA_MODEL=gemma4:e4b
-  #     - BUFFER_MCP_URL=https://mcp.buffer.com/mcp
-  #     - BUFFER_API_KEY=${BUFFER_API_KEY}
-  #     - BUFFER_PROMPT=List all my connected Buffer channels
-  #   volumes:
-  #     - ./agents:/app/agents:ro
-  #   command: [ "python", "agents/buffer_mcp_agent.py" ]
-  #   restart: on-failure:3
+  #   Python agent that generates Buffer API requests via Ollama and sends to Buffer MCP
+  buffer-mcp-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: core_base
+    container_name: ssi_booster_buffer_mcp_agent
+    profiles: [ "core", "full" ]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=gemma4:e4b
+      - BUFFER_MCP_URL=https://mcp.buffer.com/mcp
+      - BUFFER_API_KEY=${BUFFER_API_KEY}
+      - BUFFER_PROMPT=List all my connected Buffer channels
+    volumes:
+      - ./agents:/app/agents:ro
+    command: [ "python", "agents/buffer_mcp_agent.py" ]
+    restart: on-failure:3
 
   # ── FLUX.1-schnell model downloader ───────────────────────────────────────
   # One-shot: downloads the GGUF weights from Civitai into ./models/flux/
@@ -101,26 +102,26 @@ services:
     restart: unless-stopped
 
   # ── PostgreSQL Database ────────────────────────────────────────────────────
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: ssi_booster_postgres
-  #   profiles: [ "core", "full" ]
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     POSTGRES_USER: ${POSTGRES_USER:-ssi_booster}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #     POSTGRES_DB: ${POSTGRES_DB:-linkedin_ssi_booster}
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
-  #   healthcheck:
-  #     test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-ssi_booster} -d $${POSTGRES_DB:-linkedin_ssi_booster}" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
+  postgres:
+    image: postgres:16-alpine
+    container_name: ssi_booster_postgres
+    profiles: [ "core", "full" ]
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ssi_booster}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-linkedin_ssi_booster}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-ssi_booster} -d $${POSTGRES_DB:-linkedin_ssi_booster}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ── Ollama LLM server ──────────────────────────────────────────────────────
   ollama:
@@ -182,24 +183,24 @@ services:
     restart: "no"
 
   # ── Wyoming Piper TTS server ──────────────────────────────────────────────
-  # piper:
-  #   image: rhasspy/wyoming-piper:latest
-  #   container_name: ssi_booster_piper
-  #   profiles: [ "core", "full" ]
-  #   restart: unless-stopped
-  #   ports:
-  #     - "10200:10200"
-  #   volumes:
-  #     - ./models/piper:/data
-  #   command: --voice en_US-libritts_r-medium
-  #   healthcheck:
-  #     # The 'printf' check is the most reliable for this slim image
-  #     test: [ "CMD-SHELL", "printf '' > /dev/tcp/127.0.0.1/10200 || exit 1" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     # 120s gives plenty of time for that first-run voice download
-  #     start_period: 120s
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: ssi_booster_piper
+    profiles: [ "core", "full" ]
+    restart: unless-stopped
+    ports:
+      - "10200:10200"
+    volumes:
+      - ./models/piper:/data
+    command: --voice en_US-libritts_r-medium
+    healthcheck:
+      # The 'printf' check is the most reliable for this slim image
+      test: [ "CMD-SHELL", "printf '' > /dev/tcp/127.0.0.1/10200 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # 120s gives plenty of time for that first-run voice download
+      start_period: 120s
 
   # ── LinkedIn SSI Booster application ──────────────────────────────────────
   app:
@@ -210,12 +211,12 @@ services:
     container_name: ssi_booster_app
     profiles: [ "core", "full" ]
     depends_on:
-      # postgres:
-      #   condition: service_healthy
+      postgres:
+        condition: service_healthy
       ollama:
         condition: service_healthy
-      # piper:
-      #   condition: service_started
+      piper:
+        condition: service_started
       flux-app:
         condition: service_started
         required: false # only present under --profile full; ignored under --profile core
