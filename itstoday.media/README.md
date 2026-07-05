@@ -11,6 +11,7 @@ These demos are organized to show how the system helps a media buying team resea
 | Project Explainer Video | High-level overview of the system, problem, and approach | N/A | https://youtu.be/ff6vDI2_Wdw |
 | Factual AI Automation ROI | ROI-focused walkthrough of factual AI automation workflow | N/A | https://youtu.be/3hOuJhm9EZ4 |
 | SSI Booster Teardown | End-to-end teardown of system design and implementation decisions | N/A | https://youtu.be/wkS8ANhXWcs |
+| Suno Track - Story Behind Derivative of Truth | Music story about how Derivative of Truth was created | N/A | https://suno.com/s/usKAreKRjO1oy4oj |
 | Dot Report + Avatar Explain (Dry Run) | Grounded generation, truth validation, explainability | `docker compose --profile core run --rm app python main.py --curate --dry-run --dot-report --avatar-explain` | https://youtu.be/tpnn5z4Qwi0?si=HVMCG0gqNmLwKo8T |
 | Console Mode (Sam, Rei, Art) | Interactive multi-persona workflow and full-stack capability | `docker compose --profile full run --rm app python main.py --console` | https://youtu.be/OaD43sqqElc?si=STckjiNa9H9ASCmf |
 | Curation + Learning Loop | Continual learning pipeline and knowledge extraction | `docker compose --profile core run --rm app python main.py --curate --dry-run --learn` | https://youtu.be/cIpYByIWzvM?si=iLqZUrAAe9QuQHIs |
@@ -24,6 +25,7 @@ Recommended watch order:
 4. Console Mode
 5. Project Explainer Video
 6. SSI Booster Teardown
+7. Suno Track - Story Behind Derivative of Truth
 
 ---
 
