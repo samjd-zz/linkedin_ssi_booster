@@ -86,7 +86,9 @@ class TestFluxCapacitorConfig:
     def test_defaults_valid(self):
         # Explicitly clear the feature flag so the test validates the code default,
         # not whatever the local .env happens to contain.
-        with patch.dict("os.environ", {"FLUX_CAPACITOR_ENABLED": "false"}):
+        with patch.dict(
+            "os.environ", {"FLUX_CAPACITOR_ENABLED": "false"}, clear=True
+        ):
             cfg = FluxCapacitorConfig()
         assert cfg.enabled is False  # default off
         assert cfg.saturation_cap == 0.55

@@ -44,7 +44,7 @@ class FluxCapacitorConfig:
         # Active style preset name (resolves against STYLE_PRESETS dict)
         # ------------------------------------------------------------------ #
         self.style_preset: str = os.getenv(
-            "FLUX_CAPACITOR_STYLE_PRESET", "marketing_editorial"
+            "FLUX_CAPACITOR_STYLE_PRESET", "corporate_minimal"
         )
 
         # ------------------------------------------------------------------ #
@@ -186,4 +186,4 @@ STYLE_PRESETS: dict[str, dict] = {
     },
 }
 
-DEFAULT_STYLE_PRESET: str = "marketing_editorial"
+DEFAULT_STYLE_PRESET: str = "corporate_minimal"
