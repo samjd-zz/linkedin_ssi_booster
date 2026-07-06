@@ -38,10 +38,154 @@ from ._suno_client import generate_music_api, query_status_api
 
 logger = logging.getLogger(__name__)
 
+_SUNO_STYLE_TAG_CHAR_LIMIT = 240
+_SUNO_STYLE_TAG_MAX_ITEMS = 16
+
 
 def _normalize_title(value: str) -> str:
     """Normalize a title string for uniqueness comparisons."""
     return re.sub(r"\W+", " ", value.lower()).strip()
+
+
+def _split_csv_descriptors(value: str) -> List[str]:
+    """Split a comma-separated descriptor string into normalized phrases."""
+    return [part.strip() for part in value.split(",") if part and part.strip()]
+
+
+def _dedupe_keep_order(items: List[str]) -> List[str]:
+    """Deduplicate strings while preserving first-seen order."""
+    seen: set[str] = set()
+    out: List[str] = []
+    for item in items:
+        key = re.sub(r"\s+", " ", item).strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(item.strip())
+    return out
+
+
+def _extract_string_phrases(value: Any, max_items: int = 4) -> List[str]:
+    """Recursively collect short string phrases from nested dict/list payloads."""
+    phrases: List[str] = []
+
+    def walk(node: Any) -> None:
+        if len(phrases) >= max_items:
+            return
+        if isinstance(node, str):
+            cleaned = re.sub(r"\s+", " ", node).strip(" .")
+            if cleaned:
+                phrases.append(cleaned)
+            return
+        if isinstance(node, dict):
+            for child in node.values():
+                walk(child)
+                if len(phrases) >= max_items:
+                    return
+            return
+        if isinstance(node, list):
+            for child in node:
+                walk(child)
+                if len(phrases) >= max_items:
+                    return
+
+    walk(value)
+    return phrases[:max_items]
+
+
+def _select_genre_techniques(concept: SongConcept, domain_knowledge: ReiDomainKnowledge) -> List[str]:
+    """Select production descriptors from matching genre production profiles."""
+    profiles = domain_knowledge.genre_production_techniques or {}
+    if not profiles:
+        return []
+
+    matched_phrases: List[str] = []
+    joined_tags = " ".join(concept.genre_tags).lower()
+
+    for profile_name, profile_data in profiles.items():
+        profile_tokens = profile_name.replace("_", " ").lower().split()
+        if not profile_tokens:
+            continue
+        # Match when most profile tokens appear in the concept tag set.
+        token_hits = sum(1 for tok in profile_tokens if tok in joined_tags)
+        if token_hits == 0:
+            continue
+        matched_phrases.extend(_extract_string_phrases(profile_data, max_items=4))
+
+    return matched_phrases[:6]
+
+
+def _build_rich_suno_tags(
+    concept: SongConcept,
+    domain_knowledge: ReiDomainKnowledge,
+    template_key: str,
+) -> str:
+    """Build richer, bounded Suno style tags from templates + concept + production hints."""
+    templates = domain_knowledge.suno_prompt_templates or {}
+    template_value = templates.get(template_key, templates.get("industrial_techno_template", ""))
+    try:
+        rendered_template = str(template_value).format(bpm=concept.bpm, mood=concept.mood)
+    except (KeyError, ValueError):
+        rendered_template = str(template_value)
+
+    descriptors: List[str] = []
+    descriptors.extend(_split_csv_descriptors(rendered_template))
+    descriptors.append(f"{concept.bpm} bpm")
+    descriptors.append(concept.mood.replace("_", " "))
+    descriptors.extend(concept.genre_tags[:4])
+
+    if concept.bpm >= 150:
+        descriptors.append("relentless peak-energy drive")
+    elif concept.bpm >= 142:
+        descriptors.append("high-velocity club propulsion")
+    else:
+        descriptors.append("brooding cinematic groove")
+
+    descriptors.extend(_select_genre_techniques(concept, domain_knowledge))
+
+    # Pull compact metaphor descriptors from theme keywords.
+    metaphor_hits: List[str] = []
+    theme_terms = set(re.findall(r"[a-z0-9]+", concept.theme.lower()))
+    for term, metaphors in (domain_knowledge.technical_metaphor_library or {}).items():
+        key = term.lower()
+        if key in theme_terms or any(key in tag.lower() for tag in concept.genre_tags):
+            for item in metaphors[:2]:
+                cleaned = re.sub(r"\s+", " ", str(item)).strip(" .")
+                if cleaned:
+                    metaphor_hits.append(cleaned)
+        if len(metaphor_hits) >= 4:
+            break
+    descriptors.extend(metaphor_hits[:4])
+
+    deduped = _dedupe_keep_order(descriptors)
+
+    selected: List[str] = []
+    char_count = 0
+    for phrase in deduped:
+        if len(selected) >= _SUNO_STYLE_TAG_MAX_ITEMS:
+            break
+        token = phrase.strip()
+        if not token:
+            continue
+        projected = char_count + len(token) + (2 if selected else 0)
+        if projected > _SUNO_STYLE_TAG_CHAR_LIMIT:
+            continue
+        selected.append(token)
+        char_count = projected
+
+    return ", ".join(selected)
+
+
+def _build_suno_description_prompt(concept: SongConcept) -> str:
+    """Build a richer narrative prompt for Suno's prompt field."""
+    genre_blend = ", ".join(concept.genre_tags[:3]) if concept.genre_tags else "industrial electronic"
+    base = (
+        f"A {concept.bpm} bpm {genre_blend} track about {concept.theme}, "
+        f"with a {concept.mood.replace('_', ' ')} arc that moves from tension to release. "
+        f"Narrative arc: {concept.narrative_arc}"
+    )
+    # Keep prompt concise for API portability.
+    return base[:420].strip()
 
 
 def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
@@ -823,9 +967,6 @@ def assemble_suno_prompt(
     """
     logger.info(f"Assembling Suno prompt for: '{concept.title}'")
     
-    # Get appropriate Suno prompt template based on genre tags
-    templates = domain_knowledge.suno_prompt_templates
-    
     # Determine which template to use based on genre tags
     template_key = "industrial_techno_template"  # Default
     if any("cyberpunk" in tag.lower() for tag in concept.genre_tags):
@@ -835,14 +976,11 @@ def assemble_suno_prompt(
     elif any("glitch" in tag.lower() for tag in concept.genre_tags):
         template_key = "glitch_industrial_template"
     
-    # Build Suno tags string (genre, BPM, vocal style, mood descriptors)
-    template = templates.get(template_key, templates.get("industrial_techno_template", ""))
+    # Build richer Suno tags string (genre, BPM, texture, production hints)
+    suno_tags = _build_rich_suno_tags(concept, domain_knowledge, template_key)
     
-    # Replace placeholders in template
-    suno_tags = template.format(bpm=concept.bpm, mood=concept.mood)
-    
-    # Check style tag character boundaries (~120-150 character limit safety warn)
-    if len(suno_tags) > 150:
+    # Check style tag character boundaries (Suno style tags can truncate if overlong)
+    if len(suno_tags) > 220:
         logger.warning(f"Suno style tags string length ({len(suno_tags)}) is high. Potential truncation risk.")
 
     # Dynamically compile lyric blocks without creating nested tag collisions
@@ -949,12 +1087,14 @@ def assemble_suno_prompt(
         "bpm": concept.bpm,
         "genre_tags": concept.genre_tags,
         "narrative_arc": concept.narrative_arc,
+        "suno_description_prompt": _build_suno_description_prompt(concept),
         "template_used": template_key,
         "has_intro": lyrics.intro is not None,
         "has_pre_chorus": lyrics.pre_chorus is not None,
         "has_drop": lyrics.drop is not None,
         "has_solo": lyrics.solo is not None,
         "has_outro": lyrics.outro is not None,
+        "style_tag_count": len(_split_csv_descriptors(suno_tags)),
         "style_tags_length": len(suno_tags),
         "lyrics_char_count": len(formatted_lyrics)
     }
@@ -1008,7 +1148,7 @@ async def submit_to_suno(
     response = await generate_music_api(
         title=suno_prompt.title,
         tags=suno_prompt.suno_prompt,
-        prompt=suno_prompt.metadata.get("narrative_arc", ""),
+        prompt=suno_prompt.metadata.get("suno_description_prompt", suno_prompt.metadata.get("narrative_arc", "")),
         lyrics=suno_prompt.lyrics,
         api_key=api_key
     )

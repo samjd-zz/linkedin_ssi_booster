@@ -1071,6 +1071,8 @@ def test_assemble_suno_prompt_basic(mock_domain_knowledge_data):
     assert "[Breakdown]" in suno_prompt.lyrics
     assert "[Outro]" in suno_prompt.lyrics
     assert len(suno_prompt.evidence_ids) > 0
+    assert "suno_description_prompt" in suno_prompt.metadata
+    assert suno_prompt.metadata["style_tag_count"] >= 1
 
 
 def test_assemble_suno_prompt_template_selection(mock_domain_knowledge_data):
@@ -1104,6 +1106,46 @@ def test_assemble_suno_prompt_template_selection(mock_domain_knowledge_data):
     prompt_techno = assemble_suno_prompt(concept_techno, lyrics, domain_knowledge)
     
     assert prompt_techno.metadata["template_used"] == "industrial_techno_template"
+
+
+def test_assemble_suno_prompt_injects_actual_bpm(mock_domain_knowledge_data):
+    """Suno style tags should include the concept BPM even if template text omits it."""
+    concept = SongConcept(
+        song_id="song_bpm_001",
+        title="BPM Reality Check",
+        theme="Concurrency",
+        mood="relentless_driving",
+        bpm=147,
+        genre_tags=["industrial techno", "cyberpunk"],
+        narrative_arc="Build from thread contention to stable throughput.",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+
+    lyrics = Lyrics(
+        verse_1="v1",
+        chorus="hook",
+        verse_2="v2",
+        bridge="bridge",
+        breakdown=None,
+        evidence_ids=[],
+        outro=None
+    )
+
+    # Simulate a template that does not include a BPM placeholder.
+    data = dict(mock_domain_knowledge_data)
+    data["suno_prompt_templates"] = {
+        "industrial_techno_template": "dark techno, female ai vocaloid"
+    }
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "147 bpm" in suno_prompt.suno_prompt.lower()
+    assert suno_prompt.metadata["style_tags_length"] <= 240
 
 
 def test_suno_api_generate_music_success():
