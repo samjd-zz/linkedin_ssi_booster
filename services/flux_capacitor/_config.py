@@ -33,10 +33,10 @@ class FluxCapacitorConfig:
         self.style_system_prompt: str = os.getenv(
             "FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT",
             (
-                "Minimalist corporate-art hybrid aesthetic. "
-                "Muted palette, shallow sacred-geometry hints, restrained symmetry. "
-                "Polished but corporate-safe composition. "
-                "No excessive saturation, no disturbing imagery."
+                "Professional B2B marketing illustration style. "
+                "Editorial-clean composition, clear focal hierarchy, premium lighting, "
+                "brand-safe color discipline, conversion-oriented visual storytelling. "
+                "No surreal motifs, no clutter, no gimmicky effects."
             ),
         )
 
@@ -44,7 +44,7 @@ class FluxCapacitorConfig:
         # Active style preset name (resolves against STYLE_PRESETS dict)
         # ------------------------------------------------------------------ #
         self.style_preset: str = os.getenv(
-            "FLUX_CAPACITOR_STYLE_PRESET", "corporate_minimal"
+            "FLUX_CAPACITOR_STYLE_PRESET", "marketing_editorial"
         )
 
         # ------------------------------------------------------------------ #
@@ -139,6 +139,18 @@ class FluxCapacitorConfig:
 # --------------------------------------------------------------------------- #
 
 STYLE_PRESETS: dict[str, dict] = {
+    "marketing_editorial": {
+        "name": "marketing_editorial",
+        "palette": "brand-safe navy, slate, cool neutrals, controlled accent cyan",
+        "geometry_density": 0.15,
+        "saturation_cap": 0.42,
+        "surreal_intensity_cap": 0.10,
+        "prompt_suffix": (
+            "Professional campaign-ready composition, hero subject with clean negative space, "
+            "editorial-grade lighting, modern business context, premium product-marketing polish, "
+            "minimal distractions, strong visual hierarchy suitable for LinkedIn creatives."
+        ),
+    },
     "corporate_minimal": {
         "name": "corporate_minimal",
         "palette": "muted blues, greys, and warm whites",
@@ -146,8 +158,8 @@ STYLE_PRESETS: dict[str, dict] = {
         "saturation_cap": 0.45,
         "surreal_intensity_cap": 0.20,
         "prompt_suffix": (
-            "Clean lines, subtle geometric accents, professional depth-of-field, "
-            "soft gradient background, minimalist corporate design language."
+            "Clean lines, restrained geometric accents, professional depth-of-field, "
+            "soft gradient background, executive-facing corporate design language."
         ),
     },
     "sacred_geometry_light": {
@@ -174,4 +186,4 @@ STYLE_PRESETS: dict[str, dict] = {
     },
 }
 
-DEFAULT_STYLE_PRESET: str = "corporate_minimal"
+DEFAULT_STYLE_PRESET: str = "marketing_editorial"
