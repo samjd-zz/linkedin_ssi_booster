@@ -150,9 +150,9 @@ This tool handles the repeatable parts:
   - schedule directly as posts to your Buffer queue when confidence is high enough and `--type post` is used
 
 **`--learn`** extracts and persists knowledge from curated articles into `extracted_knowledge.json`. Three modes:
-- **Fast** (`--curate --learn`) — bulk-loads knowledge, skips generation and Buffer. No post cap — processes all relevant articles.
-- **Preview** (`--curate --learn --dry-run`) — extracts knowledge and generates posts in dry-run mode.
-- **Live** (`--curate --learn`) — generates posts, pushes to Buffer, and extracts knowledge simultaneously.
+- **Knowledge-only** (`--curate --learn`) — bulk-loads knowledge, skips generation and Buffer. No post cap — processes all relevant articles.
+- **Generation preview** (`--curate --dry-run`) — generates posts in dry-run mode (no Buffer writes).
+- **Live generation** (`--curate`) — generates posts and routes to Buffer according to `--type` and confidence policy.
 
 For the full flag reference (`--classify`, `--dot-report`, `--avatar-explain`, `--avatar-learn-report`, `--add-category`, etc.) see [docs/cli-reference.md](docs/cli-reference.md).
 
