@@ -61,6 +61,7 @@ Examples:
 python main.py --curate
 python main.py --curate --type post --channel linkedin
 python main.py --curate --type post --channel x
+python main.py --curate --type post --channel linkedin,bluesky,x
 python main.py --curate --confidence-policy strict
 python main.py --curate --avatar-explain
 ```
@@ -210,9 +211,15 @@ The README documents channel-specific output rules across LinkedIn, X, Bluesky, 
 | `youtube`  | Generates a spoken script, prints it, and saves it to `<GENERATED_CONTENT_DIR>/<YOUTUBE_SCRIPTS_SUBDIR>/`; not pushed to Buffer. |
 | `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together, with YouTube handled as a local script artifact. |
 
+You can target any combination of channels in a single run by passing a comma-separated list to `--channel`. Each article is processed once per listed channel — the `max_ideas` cap counts **articles**, not channel-posts, so `--channel linkedin,bluesky,x` with the default `max_ideas=3` will produce posts for 3 distinct articles (up to 9 Buffer posts total, 3 per channel).
+
 ## Curation pipeline
 
-On each `--curate` run, the project fetches RSS entries, filters them by keyword match, ranks them by relevance, freshness, and acceptance priors, deduplicates against local caches, generates commentary, logs candidates, appends article links, and routes the result to Buffer Ideas or scheduled posts depending on flags. This makes curation both content-generation and data-collection infrastructure for later reconciliation.
+On each `--curate` run, the project fetches RSS entries, filters them by keyword match, ranks them by relevance, freshness, and acceptance priors, deduplicates against the local ideas cache, generates commentary, logs candidates, appends article links, and routes the result to Buffer Ideas or scheduled posts depending on flags. This makes curation both content-generation and data-collection infrastructure for later reconciliation.
+
+### Dedup cache
+
+Published article titles are stored in `data/published_ideas_cache.json` (configurable via `IDEAS_CACHE_PATH`). The file lives inside the `data/` directory, which is bind-mounted into the Docker container, so it persists correctly across `docker compose run --rm` runs. Each entry is timestamped and entries older than `IDEAS_CACHE_TTL_DAYS` (default 30) are pruned automatically on each write — this prevents the cache from growing indefinitely and ensures articles can re-enter the pool after the TTL lapses.
 
 ## Reconcile mode
 

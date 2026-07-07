@@ -906,6 +906,32 @@ CURATOR_KEYWORDS=artificial intelligence,machine learning,llm,retrieval,rag,vect
 
 ---
 
+## Curation dedup cache
+
+### `IDEAS_CACHE_PATH`
+
+Path to the published-ideas dedup cache file. Titles of articles already pushed to Buffer are stored here so the same article is never generated twice.
+
+**Default:** `data/published_ideas_cache.json`
+
+The default lives inside `data/`, which is bind-mounted into the Docker container (`./data:/app/data`). This means the cache persists correctly across `docker compose run --rm` invocations. If you change this path, make sure it resolves to a directory that is also mounted.
+
+```bash
+IDEAS_CACHE_PATH=data/published_ideas_cache.json
+```
+
+### `IDEAS_CACHE_TTL_DAYS`
+
+Number of days before a cache entry is considered expired and pruned. Pruning happens automatically on each write so the cache never grows unboundedly and old articles can re-enter the pool after the TTL lapses.
+
+**Default:** `30`
+
+```bash
+IDEAS_CACHE_TTL_DAYS=30
+```
+
+---
+
 ## Complete Example `.env` File
 
 ```bash
