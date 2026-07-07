@@ -216,7 +216,11 @@ def fetch_relevant_articles(
     published_titles = set()
     if IDEAS_CACHE_PATH.exists():
         try:
-            published_titles = set(json.loads(IDEAS_CACHE_PATH.read_text()))
+            raw_cache = json.loads(IDEAS_CACHE_PATH.read_text())
+            if raw_cache and isinstance(raw_cache[0], str):
+                published_titles = set(raw_cache)
+            else:
+                published_titles = {title for title, _timestamp in raw_cache}
             logger.debug("📚 Loaded %d published titles from cache for filtering", len(published_titles))
         except Exception as exc:
             logger.warning("Failed to load published titles cache (continuing): %s", exc)
