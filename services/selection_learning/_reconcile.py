@@ -133,20 +133,33 @@ class ReconcileService:
                                 published_titles.add(article_title)
                             break
             
-            # Update IDEAS_CACHE_PATH with only articles that are actually published
+            # Update IDEAS_CACHE_PATH with only articles that are actually published.
+            # Supports both legacy string-list format and new [[title, timestamp], ...] format.
+            import time as _time
+            raw_cache: list = []
             if IDEAS_CACHE_PATH.exists():
-                existing_titles = set(json.loads(IDEAS_CACHE_PATH.read_text()))
-            else:
-                existing_titles = set()
-            
-            # Merge with new published titles
-            all_published = existing_titles | published_titles
-            IDEAS_CACHE_PATH.write_text(json.dumps(sorted(all_published), indent=2))
-            
-            stats["ideas_cache_synced"] = len(all_published)
+                try:
+                    raw_cache = json.loads(IDEAS_CACHE_PATH.read_text())
+                except Exception:
+                    raw_cache = []
+            # Normalise to [[title, timestamp], ...]
+            if raw_cache and isinstance(raw_cache[0], str):
+                raw_cache = [[t, 0] for t in raw_cache]
+            existing_titles = {t for t, _ts in raw_cache}
+
+            # Merge — add any newly published titles not already in the cache
+            _now = _time.time()
+            merged = {t: ts for t, ts in raw_cache}
+            for title in published_titles - existing_titles:
+                merged[title] = _now
+            raw_cache = sorted(merged.items())  # deterministic order
+            IDEAS_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            IDEAS_CACHE_PATH.write_text(json.dumps([[t, ts] for t, ts in raw_cache], indent=2))
+
+            stats["ideas_cache_synced"] = len(raw_cache)
             logger.info(
                 "selection_learning reconcile: synced IDEAS_CACHE_PATH with %d article titles",
-                len(all_published),
+                len(raw_cache),
             )
         except Exception as exc:
             logger.warning("Failed to sync IDEAS_CACHE_PATH (continuing): %s", exc)
