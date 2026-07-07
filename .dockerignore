@@ -65,6 +65,7 @@ ssi_history.json
 github_repos_cache.json
 github_readmes_cache.json
 published_ideas_cache.json
+data/published_ideas_cache.json
 
 # Ignore the large AI models
 models/

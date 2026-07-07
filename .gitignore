@@ -52,6 +52,7 @@ ssi_data.json
 github_repos_cache.json
 github_readmes_cache.json
 published_ideas_cache.json
+data/published_ideas_cache.json
 ssi_history.json
 
 # Personal content — gitignored, copy from content_calendar.example.py

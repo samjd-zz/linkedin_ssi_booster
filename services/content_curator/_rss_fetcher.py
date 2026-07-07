@@ -14,7 +14,7 @@ try:
 except ImportError:  # pragma: no cover
     _TRAFILATURA_AVAILABLE = False
 
-from services.content_curator._config import CURATOR_MAX_PER_FEED, RSS_FEEDS, KEYWORDS
+from services.content_curator._config import CURATOR_MAX_PER_FEED, RSS_FEEDS, KEYWORDS, IDEAS_CACHE_PATH
 
 # Model2Vec classification is optional — imported lazily to avoid hard dependency
 _classify_articles_fn = None
@@ -210,11 +210,9 @@ def fetch_relevant_articles(
     """
     import os
     import json
-    from pathlib import Path
     _classify = classify or os.getenv("CURATE_CLASSIFY", "false").lower() == "true"
 
     # Load published titles cache early to filter out already-published articles
-    IDEAS_CACHE_PATH = Path(os.getenv("IDEAS_CACHE_PATH", "published_ideas_cache.json"))
     published_titles = set()
     if IDEAS_CACHE_PATH.exists():
         try:

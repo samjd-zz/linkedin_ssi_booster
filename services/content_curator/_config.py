@@ -13,7 +13,7 @@ from pathlib import Path
 
 CURATOR_MAX_PER_FEED: int = int(os.getenv("CURATOR_MAX_PER_FEED", "10"))
 
-IDEAS_CACHE_PATH = Path(os.getenv("IDEAS_CACHE_PATH", "published_ideas_cache.json"))
+IDEAS_CACHE_PATH = Path(os.getenv("IDEAS_CACHE_PATH", "data/published_ideas_cache.json"))
 
 # ---------------------------------------------------------------------------
 # RSS feeds — override via CURATOR_RSS_FEEDS in .env as a JSON array

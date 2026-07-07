@@ -206,15 +206,39 @@ class ContentCurator:
         return [], [], []
 
     def _load_published_titles(self) -> set:
-        if IDEAS_CACHE_PATH.exists():
-            return set(json.loads(IDEAS_CACHE_PATH.read_text()))
-        return set()
+        if not IDEAS_CACHE_PATH.exists():
+            return set()
+        try:
+            raw: list = json.loads(IDEAS_CACHE_PATH.read_text())
+        except Exception:
+            return set()
+        # Support both old plain-list format and new [[title, ts], ...] format
+        if raw and isinstance(raw[0], str):
+            return set(raw)
+        return {t for t, _ts in raw}
 
     def _save_published_title(self, title: str) -> None:
-        """Save title to cache and update in-memory published set."""
-        titles = self._load_published_titles()
-        titles.add(title)
-        IDEAS_CACHE_PATH.write_text(json.dumps(sorted(titles), indent=2))
+        """Save title to cache (with 30-day TTL rollover) and update in-memory set."""
+        import time
+        _TTL_DAYS = int(os.getenv("IDEAS_CACHE_TTL_DAYS", "30"))
+        _cutoff = time.time() - _TTL_DAYS * 86400
+        # Load as list-of-[title, timestamp]; fall back gracefully from old plain-list format
+        raw: list = []
+        if IDEAS_CACHE_PATH.exists():
+            try:
+                raw = json.loads(IDEAS_CACHE_PATH.read_text())
+            except Exception:
+                raw = []
+        # Migrate old plain-list format → [[title, timestamp], ...]
+        if raw and isinstance(raw[0], str):
+            raw = [[t, 0] for t in raw]  # 0 → treated as epoch, immediately prunable next cycle
+        # Prune expired entries
+        raw = [[t, ts] for t, ts in raw if ts >= _cutoff]
+        # Upsert this title
+        raw = [[t, ts] for t, ts in raw if t != title]
+        raw.append([title, time.time()])
+        IDEAS_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        IDEAS_CACHE_PATH.write_text(json.dumps(raw, indent=2))
 
     def _fetch_article_text_with_summary(self, url: str, max_chars: int = 3000) -> str:
         """Fetch and optionally spaCy-summarize article text."""
@@ -490,8 +514,9 @@ class ContentCurator:
         if learn_only:
             logger.info("🧠 --learn mode: extracting knowledge only — skipping generation%s", " (dry run)" if dry_run else "")
 
+        articles_processed = 0
         for article in articles:
-            if created_ideas is not None and not learn and len(created_ideas) >= max_ideas:
+            if created_ideas is not None and not learn and articles_processed >= max_ideas:
                 break
             if article["title"] in published:
                 logger.info("Skipping already-published idea: %s", article["title"][:60])
@@ -613,6 +638,7 @@ class ContentCurator:
                 )
                 if created_ideas is None:  # buffer full — stop
                     break
+                articles_processed += 1
             elif len(channel_list) > 1:
                 for ch in channel_list:
                     result = self._process_single_channel(
@@ -634,6 +660,8 @@ class ContentCurator:
                     if result is None:  # buffer full — stop
                         created_ideas = None
                         break
+                if created_ideas is not None:
+                    articles_processed += 1
             else:
                 result = self._process_single_channel(
                     article=article,
@@ -654,6 +682,7 @@ class ContentCurator:
                 if result is None:  # buffer full — stop
                     created_ideas = None
                     break
+                articles_processed += 1
         return created_ideas
 
     # ------------------------------------------------------------------
@@ -1070,7 +1099,7 @@ class ContentCurator:
                     _upd(candidate_id, post.get("id", ""))
                 except Exception as _upd_exc:
                     logger.warning("selection_learning: buffer_id update failed (continuing): %s", _upd_exc)
-                created_ideas.append({**(post if isinstance(post, dict) else {}), "generated_text": post_text, "grounding_facts": grounding_facts})
+                created_ideas.append({**(post if isinstance(post, dict) else {}), "generated_text": post_text, "grounding_facts": grounding_facts, "channel": channel, "title": article.get("title", ""), "ssi_component": ssi_component})
             except BufferQueueFullError as exc:
                 logger.warning(
                     str(Fore.YELLOW) + f"⚠️  Buffer queue full — stopping early. ({exc})" + str(Style.RESET_ALL)
@@ -1087,6 +1116,6 @@ class ContentCurator:
                 _upd(candidate_id, idea.get("id", ""))
             except Exception as _upd_exc:
                 logger.warning("selection_learning: buffer_id update failed (continuing): %s", _upd_exc)
-            created_ideas.append({**(idea if isinstance(idea, dict) else {}), "generated_text": post_text, "grounding_facts": grounding_facts})
+            created_ideas.append({**(idea if isinstance(idea, dict) else {}), "generated_text": post_text, "grounding_facts": grounding_facts, "channel": channel, "title": article.get("title", ""), "ssi_component": ssi_component})
 
         return created_ideas
