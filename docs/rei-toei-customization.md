@@ -391,9 +391,10 @@ REI_TOEI_DOT_VALIDATION_ENABLED=true
 # Minimum truth gradient for lyrical claims (0.0 - 1.0)
 REI_TOEI_DOT_MIN_TRUTH_GRADIENT=0.60
 
-# Suno API integration
+# Suno API integration (sunoapi.org — third-party proxy)
 SUNO_API_KEY=your_key_here
-SUNO_API_BASE_URL=https://api.suno.ai/v1
+SUNO_API_BASE_URL=https://api.sunoapi.org
+SUNO_MODEL=V4_5
 
 # Strudel MCP command (stdio)
 STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"

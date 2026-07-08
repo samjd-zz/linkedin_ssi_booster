@@ -736,12 +736,32 @@ yt-vid-data/
 
 ### `SUNO_API_KEY` (required for Suno integration)
 
-Suno AI music generation API key. Get your API key from https://api.sunoapi.org/ or similar Suno API provider.
+Suno API key from [sunoapi.org](https://sunoapi.org/api-key) — a third-party proxy for Suno AI with a stable v1 REST interface.
 
 **Note:** Suno API integration enables full music generation with vocal synthesis. Without this key, Rei Toei will only generate prompts (no actual audio).
 
 ```bash
 SUNO_API_KEY=your_suno_api_key_here
+```
+
+### `SUNO_API_BASE_URL` (optional)
+
+Base URL for the sunoapi.org proxy. Do **not** change this to `api.suno.ai` — that is a different provider and your sunoapi.org key will be rejected with a 503.
+
+**Default:** `https://api.sunoapi.org`
+
+```bash
+SUNO_API_BASE_URL=https://api.sunoapi.org
+```
+
+### `SUNO_MODEL` (optional)
+
+Model version passed to sunoapi.org. Available options: `V4`, `V4_5`, `V4_5PLUS`, `V4_5ALL`, `V5`, `V5_5`.
+
+**Default:** `V4_5`
+
+```bash
+SUNO_MODEL=V4_5
 ```
 
 ### `REI_TOEI_USE_SAM_PERSONA`
