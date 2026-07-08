@@ -1,19 +1,28 @@
 """
 Suno HTTP Client Functions
 
-This module provides async HTTP client functions for interacting with the Suno API.
+This module provides async HTTP client functions for interacting with the Suno API
+via sunoapi.org (third-party proxy with stable v1 REST interface).
+
+API docs: https://docs.sunoapi.org/suno-api/generate-music
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.3
 """
 
 import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from ._models import SunoGenerateRequest, SunoTask
+from ._models import SunoTask
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_BASE_URL = "https://api.sunoapi.org"
+_DEFAULT_MODEL = "V4_5"
+# Required by sunoapi.org schema; we poll instead of using callbacks, so a
+# placeholder URL is fine here.
+_CALLBACK_PLACEHOLDER = "https://example.com/suno-callback"
 
 
 async def generate_music_api(
@@ -21,138 +30,173 @@ async def generate_music_api(
     tags: str,
     prompt: str,
     lyrics: Optional[str] = None,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Call Suno /v2/ai-music/generate endpoint to create a new music generation task
-    
+    Submit a music generation task via sunoapi.org POST /api/v1/generate.
+
+    In custom mode (customMode=True, instrumental=False) the `lyrics` argument
+    is sent as the `prompt` field — that is how sunoapi.org handles exact lyrics.
+    The `tags` argument maps to the `style` field (genre, BPM, vocal style).
+
     Args:
-        title: Song title
-        tags: Genre, BPM, vocal style (e.g., "industrial techno, 142 bpm, female ai vocaloid")
-        prompt: Song description/theme
-        lyrics: Optional custom lyrics (if not provided, Suno generates them)
-        api_key: Suno API key (defaults to SUNO_API_KEY env var)
-        
+        title:   Song title (max 100 chars for V4_5+).
+        tags:    Style/genre string sent as the `style` field.
+        prompt:  Narrative description — used only when no lyrics are provided.
+        lyrics:  Full formatted lyrics sent as the `prompt` field in custom mode.
+        api_key: Suno API key (defaults to SUNO_API_KEY env var).
+
     Returns:
-        Dict containing API response with task IDs and status
-        
+        Dict wrapping the task ID for compatibility with submit_to_suno:
+        ``{"data": [{"id": "<taskId>"}]}``
+
     Raises:
-        ValueError: If API key is missing
-        Exception: If API call fails
+        ValueError: If API key is missing.
+        Exception:  If the HTTP call fails or the API returns a non-200 code.
     """
     import aiohttp
-    
+
     if api_key is None:
         api_key = os.getenv("SUNO_API_KEY")
-    
+
     if not api_key:
         raise ValueError("SUNO_API_KEY environment variable is required for Suno API integration")
-    
-    # Build request payload
-    request = SunoGenerateRequest(
-        custom_mode=True,
-        mv="chirp-v4-5",  # V4.5: richer conversational style prompts, better vocal control
-        title=title,
-        tags=tags,
-        prompt=prompt
-    )
-    
-    payload = {
-        "custom_mode": request.custom_mode,
-        "mv": request.mv,
-        "title": request.title,
-        "tags": request.tags,
-        "prompt": request.prompt
+
+    base_url = os.getenv("SUNO_API_BASE_URL", _DEFAULT_BASE_URL).rstrip("/")
+    model = os.getenv("SUNO_MODEL", _DEFAULT_MODEL)
+
+    payload: Dict[str, Any] = {
+        "customMode": True,
+        "instrumental": False,
+        "model": model,
+        "style": tags,
+        "title": title[:100],
+        "callBackUrl": _CALLBACK_PLACEHOLDER,
+        # In custom mode, `prompt` is used as the exact lyrics.
+        "prompt": lyrics if lyrics else prompt,
     }
-    
-    # Add lyrics if provided
-    if lyrics:
-        payload["lyrics"] = lyrics
-    
-    logger.info(f"Calling Suno API: generate_music (title: {title})")
-    
-    # Call Suno API - use correct endpoint from tutorial
-    api_url = "https://api.suno.ai/api/v2/ai-music/generate"
+
+    logger.info(f"Calling sunoapi.org: generate_music title={title!r} model={model}")
+    logger.debug(f"Style tags ({len(tags)} chars): {tags[:120]}")
+
+    api_url = f"{base_url}/api/v1/generate"
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
-    
+
     async with aiohttp.ClientSession() as session:
         async with session.post(api_url, json=payload, headers=headers) as response:
             if response.status != 200:
                 error_text = await response.text()
                 raise Exception(f"Suno API error ({response.status}): {error_text}")
-            
+
             result = await response.json()
-            logger.info(f"Suno API returned {len(result.get('data', []))} tasks")
-            return result
+            code = result.get("code", 0)
+            if code != 200:
+                raise Exception(
+                    f"Suno API returned code {code}: {result.get('msg', 'unknown error')}"
+                )
+
+            task_id: str = result["data"]["taskId"]
+            logger.info(f"Suno task submitted: {task_id}")
+            # Wrap in list form so submit_to_suno's existing extraction works unchanged.
+            return {"data": [{"id": task_id}]}
 
 
 async def query_status_api(
     task_ids: List[str],
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
 ) -> List[SunoTask]:
     """
-    Poll Suno /v2/ai-music/query endpoint for task status
-    
+    Poll sunoapi.org GET /api/v1/generate/record-info for task status.
+
+    sunoapi.org issues one task ID per generate call, so only the first entry
+    in `task_ids` is queried.
+
+    Status mapping from sunoapi.org → internal:
+        SUCCESS                                    → "complete"
+        CREATE_TASK_FAILED / GENERATE_AUDIO_FAILED
+        / CALLBACK_EXCEPTION / SENSITIVE_WORD_ERROR → "error"
+        PENDING / TEXT_SUCCESS / FIRST_SUCCESS     → "pending"
+
     Args:
-        task_ids: List of task IDs to query
-        api_key: Suno API key (defaults to SUNO_API_KEY env var)
-        
+        task_ids: List of task IDs (only the first is used).
+        api_key:  Suno API key (defaults to SUNO_API_KEY env var).
+
     Returns:
-        List[SunoTask]: Task objects with current status and results
-        
+        List containing a single SunoTask with current status and audio URL.
+
     Raises:
-        ValueError: If API key is missing
-        Exception: If API call fails
+        ValueError: If API key is missing.
+        Exception:  If the HTTP call fails or the API returns a non-200 code.
     """
     import aiohttp
-    
+
     if api_key is None:
         api_key = os.getenv("SUNO_API_KEY")
-    
+
     if not api_key:
         raise ValueError("SUNO_API_KEY environment variable is required for Suno API integration")
-    
-    logger.info(f"Querying Suno API status for {len(task_ids)} tasks")
-    
-    # Call Suno API - use correct endpoint from tutorial
-    api_url = "https://api.suno.ai/api/v2/ai-music/query"
+
+    if not task_ids:
+        return []
+
+    base_url = os.getenv("SUNO_API_BASE_URL", _DEFAULT_BASE_URL).rstrip("/")
+    task_id = task_ids[0]
+
+    logger.info(f"Querying sunoapi.org status for task {task_id}")
+
+    api_url = f"{base_url}/api/v1/generate/record-info"
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
-    
-    payload = {"ids": ",".join(task_ids)}
-    
+
     async with aiohttp.ClientSession() as session:
-        async with session.get(api_url, params=payload, headers=headers) as response:
+        async with session.get(api_url, params={"taskId": task_id}, headers=headers) as response:
             if response.status != 200:
                 error_text = await response.text()
                 raise Exception(f"Suno API query error ({response.status}): {error_text}")
-            
+
             result = await response.json()
-            
-            # Parse response into SunoTask objects
-            tasks = []
-            for task_data in result.get("data", []):
-                task = SunoTask(
-                    id=task_data["id"],
-                    title=task_data.get("title", ""),
-                    status=task_data.get("status", "unknown"),
-                    image_url=task_data.get("image_url"),
-                    lyric=task_data.get("lyric"),
-                    audio_url=task_data.get("audio_url"),
-                    video_url=task_data.get("video_url"),
-                    created_at=task_data.get("created_at", ""),
-                    model_name=task_data.get("model_name", ""),
-                    gpt_description_prompt=task_data.get("gpt_description_prompt"),
-                    prompt=task_data.get("prompt"),
-                    type=task_data.get("type", "gen"),
-                    tags=task_data.get("tags", "")
+            code = result.get("code", 0)
+            if code != 200:
+                raise Exception(
+                    f"Suno API query returned code {code}: {result.get('msg', 'unknown error')}"
                 )
-                tasks.append(task)
-            
-            logger.info(f"Retrieved status for {len(tasks)} tasks")
-            return tasks
+
+            data = result.get("data", {})
+            raw_status: str = data.get("status", "PENDING")
+
+            _ERROR_STATUSES = {
+                "CREATE_TASK_FAILED",
+                "GENERATE_AUDIO_FAILED",
+                "CALLBACK_EXCEPTION",
+                "SENSITIVE_WORD_ERROR",
+            }
+            if raw_status == "SUCCESS":
+                mapped_status = "complete"
+            elif raw_status in _ERROR_STATUSES:
+                mapped_status = "error"
+            else:
+                mapped_status = "pending"
+
+            suno_data: list = data.get("response", {}).get("sunoData", [])
+            first_track: dict = suno_data[0] if suno_data else {}
+
+            task = SunoTask(
+                id=task_id,
+                title=first_track.get("title", ""),
+                status=mapped_status,
+                image_url=first_track.get("imageUrl"),
+                lyric=first_track.get("prompt"),
+                audio_url=first_track.get("audioUrl"),
+                video_url=first_track.get("videoUrl"),
+                created_at=first_track.get("createTime", ""),
+                model_name=first_track.get("modelName", ""),
+                tags=first_track.get("tags", ""),
+            )
+            logger.info(f"Task {task_id}: raw_status={raw_status!r} → {mapped_status!r}")
+            return [task]
+

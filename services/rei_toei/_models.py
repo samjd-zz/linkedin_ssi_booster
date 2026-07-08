@@ -58,14 +58,13 @@ class StrudelPatternTemplate:
 
 @dataclass
 class SunoGenerateRequest:
-    """Request payload for Suno /v2/ai-music/generate endpoint"""
+    """Request payload for sunoapi.org /api/v1/generate endpoint (custom mode)."""
     custom_mode: bool = True
-    mv: str = "chirp-v4-5"  # Model version — V4.5 supports richer style prompts and better vocal control
+    instrumental: bool = False
+    model: str = "V4_5"   # Options: V4, V4_5, V4_5PLUS, V4_5ALL, V5, V5_5
+    style: str = ""        # Genre/BPM/vocal style tags → maps to sunoapi.org `style`
     title: str = ""
-    tags: str = ""  # Genre, BPM, vocal style
-    prompt: str = ""  # Song description/theme
-    continue_clip_id: Optional[str] = None
-    continue_at: Optional[int] = None
+    prompt: str = ""       # Exact lyrics in custom mode → maps to sunoapi.org `prompt`
 
 
 @dataclass
