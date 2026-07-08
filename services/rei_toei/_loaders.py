@@ -42,7 +42,7 @@ def load_rei_persona() -> ReiPersonaGraph:
     if not persona_path.exists():
         raise FileNotFoundError(f"Rei persona graph not found at {persona_path}")
     
-    logger.info(f"Loading Rei persona from {persona_path}")
+    logger.debug(f"Loading Rei persona from {persona_path}")
     
     with open(persona_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -60,7 +60,7 @@ def load_rei_persona() -> ReiPersonaGraph:
         comparison_to_sam=data.get("comparison_to_sam", {})
     )
     
-    logger.info(f"Loaded Rei persona: {persona.identity.get('name', 'Unknown')}")
+    logger.debug(f"Loaded Rei persona: {persona.identity.get('name', 'Unknown')}")
     return persona
 
 
@@ -81,7 +81,7 @@ def load_rei_domain_knowledge() -> ReiDomainKnowledge:
     if not knowledge_path.exists():
         raise FileNotFoundError(f"Rei domain knowledge not found at {knowledge_path}")
     
-    logger.info(f"Loading Rei domain knowledge from {knowledge_path}")
+    logger.debug(f"Loading Rei domain knowledge from {knowledge_path}")
     
     with open(knowledge_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -99,7 +99,7 @@ def load_rei_domain_knowledge() -> ReiDomainKnowledge:
         production_notes=data.get("production_notes", {})
     )
     
-    logger.info(f"Loaded Rei domain knowledge (schema: {knowledge.schema_version})")
+    logger.debug(f"Loaded Rei domain knowledge (schema: {knowledge.schema_version})")
     return knowledge
 
 
@@ -120,7 +120,7 @@ def load_strudel_patterns() -> StrudelPatternLibrary:
     if not patterns_path.exists():
         raise FileNotFoundError(f"Strudel patterns not found at {patterns_path}")
     
-    logger.info(f"Loading Strudel patterns from {patterns_path}")
+    logger.debug(f"Loading Strudel patterns from {patterns_path}")
     
     with open(patterns_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -148,5 +148,5 @@ def load_strudel_patterns() -> StrudelPatternLibrary:
         usage_guidelines=data.get("usage_guidelines", {})
     )
     
-    logger.info(f"Loaded {len(templates)} Strudel pattern templates")
+    logger.debug(f"Loaded {len(templates)} Strudel pattern templates")
     return library

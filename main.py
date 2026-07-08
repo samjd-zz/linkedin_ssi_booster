@@ -113,6 +113,8 @@ class _ColourFormatter(logging.Formatter):
 _handler = logging.StreamHandler()
 _handler.setFormatter(_ColourFormatter("%(asctime)s [%(levelname)s] %(message)s"))
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
+logging.getLogger("httpx").setLevel(logging.WARNING)   # suppress "HTTP Request: POST ..." at INFO
+logging.getLogger("httpcore").setLevel(logging.WARNING) # suppress underlying transport logs
 logger = logging.getLogger(__name__)
 
 
