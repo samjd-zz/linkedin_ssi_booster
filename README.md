@@ -25,7 +25,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-775%20total-16A34A.svg" alt="Tests 775 total"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-795%20total-16A34A.svg" alt="Tests 795 total"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -88,9 +88,12 @@ The SSI Booster is actively maintained with periodic development cycles. See **[
 python main.py --console
 Sam> /rei-toei                    # Switch to Rei's persona
 Rei> What concept should we sonify today?
-Sam> Generate a song about async programming
+You> Generate a song about async programming
 Rei> [Generates song with Suno prompt and evidence IDs]
+You> /sam                         # Switch back to Sam when you're done
 ```
+
+After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console.
 
 ---
 
@@ -312,7 +315,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (775 collected; 773 passed, 2 skipped, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (795 collected; 795 passed, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

@@ -43,18 +43,18 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **778**     | **778** | **0**   | **0**  | ✅ **All pass** |
+| **795**     | **795** | **0**   | **0**  | ✅ **All pass** |
 
-- **Latest Run Date:** July 4, 2026
-- **Latest Run Scope:** Full suite — confirmed green after FLUX render-size propagation and memory-usage tuning updates
+- **Latest Run Date:** July 8, 2026
+- **Latest Run Scope:** Full suite — confirmed green after Rei Toei console mode overhaul: sticky Rei mode, `_build_rei_system_prompt` (bypasses Sam's `PERSONA_SYSTEM_PROMPT`), `_handle_llm_song_generation` fallback when no extracted knowledge, `_handle_conversation` song re-routing, and 3 pre-existing `test_rei_toei_service` mock fixes (`test_config_defaults` genre string, Suno API mock payloads aligned to actual `_suno_client.py` API shapes)
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3
-- **Notes:** 0 skipped in this run.
+- **Notes:** 0 skipped, 0 failed in this run.
 
 ### Test Suite Breakdown
 
 - **565** Original core logic assertions
-- **91** Rei Toei validation tests (Phases 1A–1E)
-- _27 Foundation | 25 Suno | 20 Strudel | 9 Console Mode | 8 CLI Integration Flags_
+- **100** Rei Toei validation tests (Phases 1A–1E + console LLM behavior)
+- _27 Foundation | 25 Suno | 20 Strudel | 18 Console Mode | 8 CLI Integration Flags + 2 fallback paths_
 
 - **6** Continuous knowledge extraction quality assertions
 - **5** Selection Learning database integration tests (Phase 5)
@@ -168,6 +168,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 
 | Targeted Test File Vector               | Detailed Functional Coverage Matrix                                                                                                                                        |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/test_rei_console_routing.py`     | Rei Toei console routing: command parsing, sticky Rei mode (`should_handle_rei_turn`), song/pattern heuristics, `_build_rei_system_prompt` identity and music-generation directive, Suno fallback to LLM when no extracted knowledge, `_handle_conversation` song re-routing, no Sam persona leakage. |
 | `tests/test_avatar_state_loader.py`     | Confirms graph structural configurations, narrative memory loading, malformed input recovery routines, and multi-file asset joining (`domain_knowledge_*.json`).           |
 | `tests/test_buffer_service.py`          | Exercises the GraphQL API wrapper connectivity layers, buffer item queues, and content idea generation.                                                                    |
 | `tests/test_piper_service.py`           | Verifies Wyoming Piper TTS protocol behaviors, header parsing, byte payload streaming, and sound device mapping.                                                           |

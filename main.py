@@ -523,7 +523,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     print()
     print(
         str(Fore.WHITE)
-        + "  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art"
+        + "  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /sam, /art"
         + str(Style.RESET_ALL)
     )
     print(str(Fore.WHITE) + "  Art command note: /art uses the most recent AI reply in this session as source text." + str(Style.RESET_ALL))
@@ -532,7 +532,31 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
 
 
     history: list[dict[str, str]] = []
+    active_console_avatar = "sam"
     max_turns = 24
+
+    def _print_console_reply(avatar: str, reply: str) -> None:
+        if avatar == "rei":
+            print(str(Fore.MAGENTA) + f"Rei> {reply}" + str(Style.RESET_ALL))
+            return
+        print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+
+    def _print_console_error(avatar: str, error: str) -> None:
+        speaker = "Rei" if avatar == "rei" else "Sam"
+        print(str(Fore.RED) + f"{speaker}> Error: {error}" + str(Style.RESET_ALL))
+
+    def _show_console_thinking(avatar: str) -> int:
+        if avatar == "rei":
+            label = "🎛️ Rei is composing..."
+            color = Fore.MAGENTA
+        else:
+            label = "🤔 Thinking..."
+            color = Fore.CYAN
+        print(str(color) + label + str(Style.RESET_ALL), end="", flush=True)
+        return len(label)
+
+    def _clear_console_status(width: int = 24) -> None:
+        print("\r" + " " * width + "\r", end="", flush=True)
 
     # Load persona graph for deterministic grounding and persona chat context
     from services.avatar_intelligence import (
@@ -719,14 +743,15 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("Exiting console.")
             return
         if cmd == "/help":
-            print("Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art")
+            print("Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /sam, /art")
             print("  /reload — re-read persona graph, domain packs, and extracted_knowledge.json")
             print("  /verify — toggle DoT + similarity verification on/off")
             print("  /avatar-explain — toggle avatar-explain report on/off")
             print("  /dot-report — toggle DoT report on/off")
             print("  /graph-stats — show knowledge graph statistics")
             print("  /katzilla <query> — show deterministic external evidence citations")
-            print("  /rei or /rei-toei — switch to Rei Toei music avatar mode")
+            print("  /rei or /rei-toei — switch to persistent Rei Toei music avatar mode")
+            print("  /sam — switch back to Sam's main console voice")
             print("  /art [topic] — render FLUX art avatar from the most recent AI reply in this session")
             print("    If no AI reply exists yet, generate a reply first. Optional topic hint narrows visual direction.")
             continue
@@ -734,6 +759,14 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             history.clear()
             print("Conversation history cleared.")
             continue
+        if cmd.startswith("/sam"):
+            active_console_avatar = "sam"
+            sam_input = user_input[len("/sam"):].strip()
+            if not sam_input:
+                print(str(Fore.GREEN) + "Sam> Back on the main console voice." + str(Style.RESET_ALL))
+                continue
+            user_input = sam_input
+            cmd = user_input.lower()
         if cmd == "/reload":
             _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
             print(
@@ -769,24 +802,33 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 print_graph_statistics(summary)
             continue
         
-        # Rei Toei routing: /rei or /rei-toei commands
-        if cmd.startswith("/rei-toei") or cmd.startswith("/rei"):
-            from services.console_grounding._rei_console import handle_rei_console
+        # Rei Toei routing: explicit /rei command or sticky Rei mode turns
+        from services.console_grounding._rei_console import (
+            REI_DEFAULT_PROMPT,
+            extract_rei_input,
+            handle_rei_console,
+            is_rei_command,
+            should_handle_rei_turn,
+        )
+
+        if should_handle_rei_turn(user_input, active_console_avatar):
             import asyncio
-            
-            # Extract message after command (if any)
-            rei_input = user_input[len("/rei-toei"):].strip() if user_input.lower().startswith("/rei-toei") else user_input[len("/rei"):].strip()
-            
-            # If no input, provide welcome message
+
+            active_console_avatar = "rei"
+            rei_input = extract_rei_input(user_input) if is_rei_command(user_input) else user_input.strip()
+
             if not rei_input:
-                rei_input = "Hello! Tell me about yourself."
+                rei_input = REI_DEFAULT_PROMPT
             
             try:
+                _status_width = _show_console_thinking("rei")
                 reply, history = asyncio.run(handle_rei_console(rei_input, ai, history, max_tokens=600))
-                print(str(Fore.MAGENTA) + f"Rei> {reply}" + str(Style.RESET_ALL))
+                _clear_console_status(_status_width + 2)
+                _print_console_reply("rei", reply)
                 speak_text(reply)
             except Exception as rei_err:
                 logger.error(f"Rei console error: {rei_err}")
+                _clear_console_status(32)
                 print(str(Fore.RED) + f"⚠️ Rei error: {rei_err}" + str(Style.RESET_ALL))
             continue
 
@@ -829,7 +871,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 history.append({"role": "assistant", "content": reply})
                 if len(history) > max_turns * 2:
                     history = history[-max_turns * 2 :]
-                print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+                _print_console_reply("sam", reply)
             except Exception as exc:
                 print(str(Fore.RED) + f"⚠️ Katzilla request failed: {exc}" + str(Style.RESET_ALL))
             continue
@@ -845,7 +887,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             history.append({"role": "assistant", "content": reply})
             if len(history) > max_turns * 2:
                 history = history[-max_turns * 2 :]
-            print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+            _print_console_reply("sam", reply)
             speak_text(reply)
             continue
 
@@ -867,15 +909,15 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 # Use learned knowledge as PRIMARY context (put it first and emphasize it)
                 # The learned knowledge should be the focus, with persona context as background
                 enhanced_context = f"{learned_context}\n\n{_grounding_context}" if _grounding_context else learned_context
-                print(str(Fore.CYAN) + "🤔 Thinking..." + str(Style.RESET_ALL), end="", flush=True)
+                _status_width = _show_console_thinking("sam")
                 reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
-                print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
+                _clear_console_status(_status_width + 2)
             except Exception as e:
-                print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
-                print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
+                _clear_console_status(24)
+                _print_console_error("sam", str(e))
                 continue
             history.append({"role": "assistant", "content": reply})
-            print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+            _print_console_reply("sam", reply)
             speak_text(reply)
             
             if verify:
@@ -961,15 +1003,15 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             enhanced_context = f"{_grounding_context}\n\n{facts_context}" if _grounding_context else facts_context
             if external_context:
                 enhanced_context = f"{enhanced_context}\n\n{external_context}".strip()
-            print(str(Fore.CYAN) + "🤔 Thinking..." + str(Style.RESET_ALL), end="", flush=True)
+            _status_width = _show_console_thinking("sam")
             reply = ai.chat_as_persona(history, grounding_context=enhanced_context, max_tokens=600)
-            print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
+            _clear_console_status(_status_width + 2)
         except Exception as e:
-            print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Thinking..." line
-            print(str(Fore.RED) + f"Sam> Error: {e}" + str(Style.RESET_ALL))
+            _clear_console_status(24)
+            _print_console_error("sam", str(e))
             continue
         history.append({"role": "assistant", "content": reply})
-        print(str(Fore.GREEN) + f"Sam> {reply}" + str(Style.RESET_ALL))
+        _print_console_reply("sam", reply)
         speak_text(reply)
         
         if verify:

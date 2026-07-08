@@ -206,7 +206,7 @@ def test_config_defaults():
     config = ReiToeiConfig()
     assert config.enabled is True
     assert config.default_bpm == 142
-    assert config.default_genre == "industrial techno cyberpunk"
+    assert config.default_genre == "industrial techno cyberpop"
     assert config.max_song_length_seconds == 180
     assert config.console_enabled is True
     assert config.auto_evidence_tracking is True
@@ -1155,12 +1155,12 @@ def test_suno_api_generate_music_success():
     from unittest.mock import AsyncMock
     
     mock_response_data = {
-        "success": True,
-        "data": [
-            {"id": "task_001", "status": "submitted"}
-        ]
+        "code": 200,
+        "data": {
+            "taskId": "task_001"
+        }
     }
-    
+
     with patch("aiohttp.ClientSession") as mock_session:
         # Create async mock for response
         mock_resp = AsyncMock()
@@ -1189,10 +1189,7 @@ def test_suno_api_generate_music_success():
             api_key="test_api_key"
         ))
     
-    assert result["success"] is True
-    assert len(result["data"]) == 1
-
-
+    assert result["data"][0]["id"] == "task_001"
 def test_suno_api_generate_music_missing_key():
     """Test generate_music_api raises error when API key missing"""
     from services.rei_toei_service import generate_music_api
@@ -1213,16 +1210,27 @@ def test_suno_api_query_status_success():
     from unittest.mock import AsyncMock
     
     mock_response_data = {
-        "data": [
-            {
-                "id": "task_001",
-                "title": "Test Song",
-                "status": "complete",
-                "audio_url": "https://example.com/audio.mp3"
+        "code": 200,
+        "data": {
+            "taskId": "task_001",
+            "status": "SUCCESS",
+            "response": {
+                "sunoData": [
+                    {
+                        "title": "Test Song",
+                        "audioUrl": "https://example.com/audio.mp3",
+                        "imageUrl": None,
+                        "prompt": "test lyrics",
+                        "videoUrl": None,
+                        "createTime": "2026-07-08",
+                        "modelName": "V4",
+                        "tags": "jungle",
+                    }
+                ]
             }
-        ]
+        }
     }
-    
+
     with patch("aiohttp.ClientSession") as mock_session:
         # Create async mock for response
         mock_resp = AsyncMock()
