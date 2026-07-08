@@ -551,10 +551,10 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
 
     def _show_console_thinking(avatar: str) -> int:
         if avatar == "rei":
-            label = "🎚️ Loading..."
+            label = "🎚️ Rei Composing..."
             color = Fore.MAGENTA
         else:
-            label = "🤔 Thinking..."
+            label = "🤔 Sam Thinking..."
             color = Fore.CYAN
         print(str(color) + label + str(Style.RESET_ALL), end="", flush=True)
         return len(label)

@@ -89,3 +89,18 @@ def append_url_and_hashtags(text: str, url: str) -> str:
     if hashtags:
         result += f"\n\n{hashtags} #BufferAPI"
     return result
+
+
+def build_source_article_block(title: str, url: str) -> str:
+    """Build a clear source-reference block for social posts.
+
+    Keeps source metadata visually separated from commentary so readers can
+    quickly distinguish your take from the original article reference.
+    """
+    _title = (title or "").strip()
+    _url = (url or "").strip()
+    if not _title and not _url:
+        return ""
+    if _title and _url:
+        return f"Source Article:\n{_title}\n{_url}"
+    return f"Source Article:\n{_title or _url}"

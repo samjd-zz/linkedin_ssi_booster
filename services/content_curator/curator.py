@@ -29,6 +29,7 @@ from services.content_curator._config import (
 from services.content_curator._text_utils import (
     truncate_at_sentence,
     append_url_and_hashtags,
+    build_source_article_block,
 )
 from services.content_curator._rss_fetcher import fetch_relevant_articles
 from services.content_curator._evidence_paths import (
@@ -733,7 +734,8 @@ class ContentCurator:
             article_ref=article.get("link", article["title"]),
             requested_mode=message_type,
         )
-        li_text = append_url_and_hashtags(li_text, article["link"])
+        _li_source_ref = build_source_article_block(article.get("title", ""), article.get("link", ""))
+        li_text = append_url_and_hashtags(li_text, _li_source_ref)
         # print_validation_reports(
         #     post_text=li_text,
         #     context_text=article["summary"],
@@ -970,9 +972,11 @@ class ContentCurator:
             logger.warning("Narrative memory update failed (continuing): %s", _mem_exc)
 
         if channel == "linkedin":
-            post_text = append_url_and_hashtags(post_text, article["title"] + ": " + article["link"])
+            _source_ref = build_source_article_block(article.get("title", ""), article.get("link", ""))
+            post_text = append_url_and_hashtags(post_text, _source_ref)
         elif channel == "facebook":
-            post_text = append_url_and_hashtags(post_text, article["title"] + ": " + article["link"])
+            _source_ref = build_source_article_block(article.get("title", ""), article.get("link", ""))
+            post_text = append_url_and_hashtags(post_text, _source_ref)
         elif channel == "youtube":
             post_text = truncate_at_sentence(post_text, 500)
         elif channel == "x":
