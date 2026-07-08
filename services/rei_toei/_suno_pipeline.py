@@ -38,7 +38,7 @@ from ._suno_client import generate_music_api, query_status_api
 
 logger = logging.getLogger(__name__)
 
-_SUNO_STYLE_TAG_CHAR_LIMIT = 240
+_SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balances richness vs safety
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
 _BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
 _SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
@@ -231,15 +231,23 @@ def _build_rich_suno_tags(
 
 
 def _build_suno_description_prompt(concept: SongConcept) -> str:
-    """Build a richer narrative prompt for Suno's prompt field."""
+    """Build a richer conversational style prompt for Suno V4.5+ style field.
+
+    Suno V4.5+ accepts conversational narrative descriptions rather than bare tag lists.
+    Example: "Create a melodic ... track. Begin with ... Build gradually with ..."
+    """
     genre_blend = ", ".join(concept.genre_tags[:3]) if concept.genre_tags else "industrial electronic"
+    mood_readable = concept.mood.replace("_", " ")
     base = (
-        f"A {concept.bpm} bpm {genre_blend} track about {concept.theme}, "
-        f"with a {concept.mood.replace('_', ' ')} arc that moves from tension to release. "
+        f"Create a {concept.bpm} bpm {genre_blend} track about {concept.theme}. "
+        f"The mood should be {mood_readable}, building from tension to full release. "
+        f"Begin with an atmospheric instrumental build and glitchy digital layers. "
+        f"Develop into a driving rhythm with distorted bass and algorithmic percussion. "
+        f"Explode into a high-energy drop with raw data noise, bitcrushed synths, and aggressive sequences. "
         f"Narrative arc: {concept.narrative_arc}"
     )
-    # Keep prompt concise for API portability.
-    return base[:420].strip()
+    # V4.5+ style field supports up to 1000 chars — use richer conversational form.
+    return base[:800].strip()
 
 
 def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
@@ -642,11 +650,13 @@ Communication style: {persona.communication_style['tone']}
 Suno Formatting Rules:
 1. Use section labels: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Drop], [Solo], [Outro]
 2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields
-3. ABSOLUTELY NO parenthetical instructions like '(Stanza 1)' or '(More chaos)'
+3. DO NOT use editorial parenthetical instructions like '(Stanza 1)', '(this is the hook)', or '(More chaos)'.
+   DO use Suno vocalization/sound-cue hints in parentheses: '(Ahh ahh ahh)', '(Oh oh oh)', '(bass drop)', '(silence)', '(glitch noise)', '(chaos)' — these are how Suno models vocal and instrumental energy shifts.
 4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity
 5. Keep intros simple: [Instrumental Build] (not [Intro Drums], [Intro Bass], etc.)
-6. Start with vocalization: (Ahh ahh ahh) to encourage Suno to prioritize lyrics
-7. Follow character caps per section for API parsing compliance"""
+6. Start every Intro with a vocalization like (Ahh ahh ahh) on its own line right after the section label — this primes Suno to prioritize lyric rendering
+7. Use sound-cue parentheticals at high-energy transitions: '(bass drop)' before a Drop, '(silence)' for a breakdown pause, '(chaos)' before a chaotic breakdown
+8. Follow character caps per section for API parsing compliance"""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -689,12 +699,12 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown outs
 Each field should contain the complete lyrics for that section, including any section markers:
 
 {{
-  "intro": "[Instrumental Build] followed by atmospheric build-up text (4-6 lines total). (Character Cap: 400 chars)",
+  "intro": "[Instrumental Build] then a blank line, then '(Ahh ahh ahh)' on its own line as a vocalization primer, then 4-5 lines of atmospheric build-up text. (Character Cap: 400 chars)",
   "verse_1": "[Verse 1] Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
   "chorus": "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
   "verse_2": "[Verse 2] Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
-  "drop": "[Drop] followed by 4-6 lines of high-energy electronic phrases (total). (Character Cap: 400 chars)",
+  "drop": "[Drop] then '(bass drop)' on its own line as a Suno energy-shift cue, then 4-5 lines of high-energy electronic phrases. Optionally use '(silence)' or '(chaos)' for further energy shifts. (Character Cap: 400 chars)",
   "bridge": "[Bridge] A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
   "solo": "[Solo] followed by 3-4 lines describing the instrumental solo moment (total). (Character Cap: 300 chars)",
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
@@ -783,7 +793,8 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
             ),
             evidence_ids=concept.evidence_ids,
             intro=(
-                "[Instrumental Intro]\n\n"
+                "[Instrumental Build]\n\n"
+                "(Ahh ahh ahh)\n"
                 "Digital signal initializing...\n"
                 "System boot sequence engaged.\n"
                 "Frequency analyzers online.\n"
@@ -797,7 +808,9 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
             ),
             drop=(
                 "[Drop]\n\n"
+                "(bass drop)\n"
                 "SYSTEM OVERLOAD. TEMP LOAD SHIFT ACTIVE.\n"
+                "(silence)\n"
                 "BUFFER BLEED DETECTED. MUTATE SYSTEM STATE.\n"
                 "JITTER ARTIFACT FLOODING THE BUS.\n"
                 "REBOOT SEQUENCE MANDATED NOW.\n"

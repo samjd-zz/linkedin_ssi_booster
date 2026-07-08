@@ -51,7 +51,7 @@ async def generate_music_api(
     # Build request payload
     request = SunoGenerateRequest(
         custom_mode=True,
-        mv="chirp-v3-5",
+        mv="chirp-v4-5",  # V4.5: richer conversational style prompts, better vocal control
         title=title,
         tags=tags,
         prompt=prompt
