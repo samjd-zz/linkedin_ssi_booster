@@ -97,6 +97,12 @@ REI_RETRY_KEYWORDS = (
 )
 
 
+def _contains_retry_signal(user_input: str) -> bool:
+    """Return True when user message clearly asks for regeneration/retry."""
+    lowered = (user_input or "").lower()
+    return any(re.search(rf"\b{re.escape(k)}\b", lowered) for k in REI_RETRY_KEYWORDS)
+
+
 def is_rei_command(user_input: str) -> bool:
     """Return True when input explicitly targets Rei mode."""
     normalized = user_input.strip().lower()
@@ -184,6 +190,29 @@ def _find_last_song_topic_in_history(history: list[dict[str, str]]) -> str | Non
         if topic:
             return topic
     return None
+
+
+def _has_song_context_in_history(history: list[dict[str, str]]) -> bool:
+    """Return True if history indicates the session is in a song iteration loop."""
+    for item in reversed(history):
+        role = item.get("role")
+        content = (item.get("content") or "").strip()
+        if not content:
+            continue
+        if role == "user" and is_rei_song_request(content):
+            return True
+        if role == "assistant" and (
+            content.startswith("🎵")
+            or ("Style tags:" in content and "[Verse 1]" in content)
+            or ("Suno Prompt:" in content and "[Chorus]" in content)
+        ):
+            return True
+    return False
+
+
+def is_rei_song_retry_request(user_input: str, history: list[dict[str, str]]) -> bool:
+    """Retry requests should regenerate songs when there is prior song context."""
+    return _contains_retry_signal(user_input) and _has_song_context_in_history(history)
 
 
 # ---------------------------------------------------------------------------
@@ -300,7 +329,7 @@ async def handle_rei_console(
         return await _handle_strudel_request(user_input, rei_persona, rei_domain, strudel_patterns, history)
     
     # Command: generate Suno song
-    if is_rei_song_request(user_input):
+    if is_rei_song_request(user_input) or is_rei_song_retry_request(user_input, history):
         return await _handle_suno_request(user_input, ai, rei_persona, rei_domain, history)
     
     # Default: conversational response using Rei's persona
@@ -446,8 +475,7 @@ async def _handle_suno_request(
         # If the user gives no topic ("just give me a song"), Rei should choose
         # her own theme from extracted knowledge as before.
         user_topic = _extract_song_topic(user_input)
-        lowered_input = (user_input or "").lower()
-        if not user_topic and any(k in lowered_input for k in REI_RETRY_KEYWORDS):
+        if not user_topic and _contains_retry_signal(user_input):
             user_topic = _find_last_song_topic_in_history(history)
 
         # Load extracted knowledge graph
@@ -556,7 +584,7 @@ async def _handle_conversation(
         Tuple of (reply_text, updated_history)
     """
     # Belt-and-suspenders: route song requests even if they slipped past the top-level check
-    if is_rei_song_request(user_input):
+    if is_rei_song_request(user_input) or is_rei_song_retry_request(user_input, history):
         return await _handle_suno_request(user_input, ai, rei_persona, rei_domain, history)
 
     system_prompt = _build_rei_system_prompt(rei_persona, rei_domain)

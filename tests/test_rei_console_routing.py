@@ -13,6 +13,7 @@ from services.console_grounding._rei_console import (
     _extract_song_topic,
     extract_rei_input,
     handle_rei_console,
+    is_rei_song_retry_request,
     is_rei_song_request,
     should_handle_rei_turn,
 )
@@ -124,6 +125,17 @@ class TestReiConsoleRouting:
         assert _extract_song_topic("just give me a song") is None
         assert _extract_song_topic("make me a track") is None
 
+    def test_retry_request_detected_when_song_context_exists(self):
+        history = [
+            {"role": "user", "content": "create me a song about competition"},
+            {"role": "assistant", "content": "🎵  Test Song\n[Verse 1]\n...\nStyle tags:\n..."},
+        ]
+        assert is_rei_song_retry_request("that was not about the competition, try again", history) is True
+
+    def test_retry_request_not_detected_without_song_context(self):
+        history = [{"role": "user", "content": "what is your aesthetic?"}]
+        assert is_rei_song_retry_request("try again", history) is False
+
 
 def test_handle_rei_console_routes_plain_song_request_to_suno():
     with (
@@ -142,6 +154,30 @@ def test_handle_rei_console_routes_plain_song_request_to_suno():
         )
 
     assert reply == "song"
+    mock_suno.assert_awaited_once()
+    mock_chat.assert_not_called()
+
+
+def test_handle_rei_console_routes_retry_to_suno_when_song_context_exists():
+    with (
+        patch("services.console_grounding._rei_console.load_rei_persona", return_value=MagicMock()),
+        patch("services.console_grounding._rei_console.load_rei_domain_knowledge", return_value=MagicMock()),
+        patch("services.console_grounding._rei_console.load_strudel_patterns", return_value=MagicMock()),
+        patch("services.console_grounding._rei_console._handle_suno_request", new=AsyncMock(return_value=("song_retry", []))) as mock_suno,
+        patch("services.console_grounding._rei_console._handle_conversation", new=AsyncMock(return_value=("chat", []))) as mock_chat,
+    ):
+        reply, _history = asyncio.run(
+            handle_rei_console(
+                "that was not about the competition, try again",
+                MagicMock(),
+                [
+                    {"role": "user", "content": "create me a song about competition"},
+                    {"role": "assistant", "content": "🎵  Previous Song\n[Verse 1]\n...\nStyle tags:\n..."},
+                ],
+            )
+        )
+
+    assert reply == "song_retry"
     mock_suno.assert_awaited_once()
     mock_chat.assert_not_called()
 
@@ -316,6 +352,49 @@ class TestSunoRequestFallback:
 
         mock_choose.assert_called_once()
         assert mock_gen.call_args[0][0] is chosen_theme
+
+    def test_suno_retry_reuses_last_explicit_topic(self):
+        mock_ai = MagicMock()
+        p, d = self._persona_and_domain()
+        fake_facts = [MagicMock()]
+        fake_theme = MagicMock(name="theme")
+        fake_concept = MagicMock(
+            title="T",
+            theme="Competition",
+            mood="intense",
+            bpm=150,
+            genre_tags=["Hard Techno"],
+        )
+        fake_lyrics = MagicMock()
+        fake_suno = MagicMock(lyrics="[Verse 1]\nA", suno_prompt="hardtechno, 150 bpm")
+
+        with (
+            patch("services.console_grounding._rei_console._lav_rei_console", return_value=MagicMock()),
+            patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
+            patch("services.console_grounding._rei_console.extract_themes", return_value=[fake_theme]),
+            patch("services.console_grounding._rei_console.load_recent_rei_titles", return_value=[]),
+            patch("services.console_grounding._rei_console.choose_diverse_theme") as mock_choose,
+            patch("services.console_grounding._rei_console.generate_song_concept", return_value=fake_concept) as mock_gen,
+            patch("services.console_grounding._rei_console.compose_lyrics", return_value=fake_lyrics),
+            patch("services.console_grounding._rei_console.assemble_suno_prompt", return_value=fake_suno),
+        ):
+            asyncio.run(
+                _handle_suno_request(
+                    "try again",
+                    mock_ai,
+                    p,
+                    d,
+                    [
+                        {"role": "user", "content": "create me a song about competition and ROI pressure"},
+                        {"role": "assistant", "content": "🎵  Previous Song\n[Verse 1]\n...\nStyle tags:\n..."},
+                    ],
+                )
+            )
+
+        mock_choose.assert_not_called()
+        passed_theme = mock_gen.call_args[0][0]
+        assert "competition" in passed_theme.name.lower()
+        assert "roi" in passed_theme.name.lower()
 
 
 class TestConversationHandlerRouting:
