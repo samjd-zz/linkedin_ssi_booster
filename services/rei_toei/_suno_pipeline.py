@@ -40,6 +40,8 @@ logger = logging.getLogger(__name__)
 
 _SUNO_STYLE_TAG_CHAR_LIMIT = 240
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
+_BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
+_SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
 
 
 def _normalize_title(value: str) -> str:
@@ -63,6 +65,40 @@ def _dedupe_keep_order(items: List[str]) -> List[str]:
         seen.add(key)
         out.append(item.strip())
     return out
+
+
+def _clean_style_descriptor(value: str) -> str:
+    """Normalize style descriptor tokens for cleaner Suno tag payloads."""
+    cleaned = re.sub(r"[_/]+", " ", value)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip(" ,.-")
+
+
+def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: bool = False) -> str:
+    """Normalize a lyric section into deterministic Suno-friendly section format."""
+    body = (text or "").strip()
+    body = _SECTION_HEADER_RE.sub("", body, count=1)
+
+    lines = [line.rstrip() for line in body.splitlines()]
+    normalized_lines: List[str] = []
+    previous_blank = True
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if not previous_blank:
+                normalized_lines.append("")
+            previous_blank = True
+            continue
+        normalized_lines.append(stripped)
+        previous_blank = False
+
+    normalized_body = "\n".join(normalized_lines).strip()
+    if uppercase_body:
+        normalized_body = normalized_body.upper()
+
+    if not normalized_body:
+        return ""
+    return f"[{label}]\n{normalized_body}"
 
 
 def _extract_string_phrases(value: Any, max_items: int = 4) -> List[str]:
@@ -157,7 +193,25 @@ def _build_rich_suno_tags(
             break
     descriptors.extend(metaphor_hits[:4])
 
-    deduped = _dedupe_keep_order(descriptors)
+    canonical_bpm_tag = f"{concept.bpm} bpm"
+    deduped_clean = _dedupe_keep_order(
+        [_clean_style_descriptor(d) for d in descriptors if _clean_style_descriptor(d)]
+    )
+
+    # Keep a single canonical BPM tag and drop conflicting BPM phrases.
+    normalized_descriptors: List[str] = []
+    for phrase in deduped_clean:
+        bpm_match = _BPM_TAG_RE.search(phrase)
+        if bpm_match:
+            if int(bpm_match.group(1)) != concept.bpm:
+                continue
+            normalized_descriptors.append(canonical_bpm_tag)
+            continue
+        normalized_descriptors.append(phrase)
+
+    deduped = _dedupe_keep_order(normalized_descriptors)
+    if canonical_bpm_tag not in {d.lower() for d in deduped}:
+        deduped.insert(0, canonical_bpm_tag)
 
     selected: List[str] = []
     char_count = 0
@@ -983,99 +1037,56 @@ def assemble_suno_prompt(
     if len(suno_tags) > 220:
         logger.warning(f"Suno style tags string length ({len(suno_tags)}) is high. Potential truncation risk.")
 
-    # Dynamically compile lyric blocks without creating nested tag collisions
-    lyric_blocks = []
-    
-    # 1. Intro (Optional)
-    if lyrics.intro:
-        intro_clean = lyrics.intro.strip()
-        if intro_clean.startswith("["):
-            lyric_blocks.append(intro_clean)
-        else:
-            lyric_blocks.append(f"[Intro]\n{intro_clean}")
-    
-    # 2. Verse 1
-    v1_clean = lyrics.verse_1.strip()
-    if v1_clean.startswith("["):
-        lyric_blocks.append(v1_clean)
-    else:
-        lyric_blocks.append(f"[Verse 1]\n{v1_clean}")
-    
-    # 3. Pre-Chorus (Optional)
-    if lyrics.pre_chorus:
-        pre_chorus_clean = lyrics.pre_chorus.strip()
-        if pre_chorus_clean.startswith("["):
-            lyric_blocks.append(pre_chorus_clean)
-        else:
-            lyric_blocks.append(f"[Pre-Chorus]\n{pre_chorus_clean}")
-        
-    # 4. Chorus 
-    chorus_clean = lyrics.chorus.strip()
-    if chorus_clean.startswith("["):
-        lyric_blocks.append(chorus_clean)
-    else:
-        lyric_blocks.append(f"[Chorus]\n{chorus_clean}")
-        
-    # 5. Verse 2
-    v2_clean = lyrics.verse_2.strip()
-    if v2_clean.startswith("["):
-        lyric_blocks.append(v2_clean)
-    else:
-        lyric_blocks.append(f"[Verse 2]\n{v2_clean}")
-    
-    # 6. Pre-Chorus (repeat - Optional)
-    if lyrics.pre_chorus:
-        pre_chorus_clean = lyrics.pre_chorus.strip()
-        if pre_chorus_clean.startswith("["):
-            lyric_blocks.append(pre_chorus_clean)
-        else:
-            lyric_blocks.append(f"[Pre-Chorus]\n{pre_chorus_clean}")
-    
-    # 7. Chorus (repeat)
-    lyric_blocks.append(chorus_clean if chorus_clean.startswith("[") else f"[Chorus]\n{chorus_clean}")
-    
-    # 8. Drop (Optional)
-    if lyrics.drop:
-        drop_clean = lyrics.drop.strip()
-        if drop_clean.startswith("["):
-            lyric_blocks.append(drop_clean)
-        else:
-            lyric_blocks.append(f"[Drop]\n{drop_clean}")
-        
-    # 9. Bridge (Optional check)
-    if lyrics.bridge:
-        bridge_clean = lyrics.bridge.strip()
-        if bridge_clean.startswith("["):
-            lyric_blocks.append(bridge_clean)
-        else:
-            lyric_blocks.append(f"[Bridge]\n{bridge_clean}")
-    
-    # 10. Solo (Optional)
-    if lyrics.solo:
-        solo_clean = lyrics.solo.strip()
-        if solo_clean.startswith("["):
-            lyric_blocks.append(solo_clean)
-        else:
-            lyric_blocks.append(f"[Solo]\n{solo_clean}")
-    
-    # 10.5. Breakdown (Optional)
-    if lyrics.breakdown:
-        breakdown_clean = lyrics.breakdown.strip()
-        if breakdown_clean.startswith("["):
-            lyric_blocks.append(breakdown_clean)
-        else:
-            lyric_blocks.append(f"[Breakdown]\n{breakdown_clean}")
+    # Compile normalized lyric blocks with deterministic section labels.
+    lyric_blocks: List[str] = []
 
-    # 11. Chorus (final)
-    lyric_blocks.append(chorus_clean if chorus_clean.startswith("[") else f"[Chorus]\n{chorus_clean}")
-            
-    # 12. Outro (Optional check)
-    if lyrics.outro:
-        outro_clean = lyrics.outro.strip()
-        if outro_clean.startswith("["):
-            lyric_blocks.append(outro_clean)
-        else:
-            lyric_blocks.append(f"[Outro]\n{outro_clean}")
+    intro_block = _normalize_suno_section(lyrics.intro, "Instrumental Build")
+    if intro_block:
+        lyric_blocks.append(intro_block)
+
+    verse_1_block = _normalize_suno_section(lyrics.verse_1, "Verse 1")
+    if verse_1_block:
+        lyric_blocks.append(verse_1_block)
+
+    pre_chorus_block = _normalize_suno_section(lyrics.pre_chorus, "Pre-Chorus")
+    if pre_chorus_block:
+        lyric_blocks.append(pre_chorus_block)
+
+    chorus_block = _normalize_suno_section(lyrics.chorus, "Chorus", uppercase_body=True)
+    if chorus_block:
+        lyric_blocks.append(chorus_block)
+
+    verse_2_block = _normalize_suno_section(lyrics.verse_2, "Verse 2")
+    if verse_2_block:
+        lyric_blocks.append(verse_2_block)
+
+    if pre_chorus_block:
+        lyric_blocks.append(pre_chorus_block)
+    if chorus_block:
+        lyric_blocks.append(chorus_block)
+
+    drop_block = _normalize_suno_section(lyrics.drop, "Drop")
+    if drop_block:
+        lyric_blocks.append(drop_block)
+
+    bridge_block = _normalize_suno_section(lyrics.bridge, "Bridge")
+    if bridge_block:
+        lyric_blocks.append(bridge_block)
+
+    solo_block = _normalize_suno_section(lyrics.solo, "Solo")
+    if solo_block:
+        lyric_blocks.append(solo_block)
+
+    breakdown_block = _normalize_suno_section(lyrics.breakdown, "Breakdown")
+    if breakdown_block:
+        lyric_blocks.append(breakdown_block)
+
+    if chorus_block:
+        lyric_blocks.append(chorus_block)
+
+    outro_block = _normalize_suno_section(lyrics.outro, "Outro")
+    if outro_block:
+        lyric_blocks.append(outro_block)
             
     # Join structural blocks cleanly with double line breaks
     formatted_lyrics = "\n\n".join(lyric_blocks)
