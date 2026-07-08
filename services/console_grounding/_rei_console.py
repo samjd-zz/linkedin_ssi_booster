@@ -424,22 +424,23 @@ async def _handle_suno_request(
         # Assemble Suno prompt
         suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
         
-        # Format response
+        # Format response.
+        # suno_prompt.lyrics is already normalized by assemble_suno_prompt →
+        # _normalize_suno_section: section labels are clean, chorus is uppercase,
+        # no duplicate headers, no markdown — exactly what Suno expects.
+        # Use it directly rather than re-assembling from raw Lyrics fields.
+        hr = "─" * 62
         reply = (
-            f"🎵 Song Concept: {concept.title}\n"
-            f"Theme: {concept.theme}\n"
-            f"Mood: {concept.mood} | BPM: {concept.bpm} | Genre: {', '.join(concept.genre_tags)}\n\n"
-            f"**Lyrics:**\n"
-            f"[Verse 1]\n{lyrics.verse_1}\n\n"
-            f"[Chorus]\n{lyrics.chorus}\n\n"
-            f"[Verse 2]\n{lyrics.verse_2}\n\n"
-            f"[Bridge]\n{lyrics.bridge}\n\n"
+            f"🎵  {concept.title}\n"
+            f"    Theme : {concept.theme}\n"
+            f"    Mood  : {concept.mood}  |  BPM: {concept.bpm}\n"
+            f"    Genre : {', '.join(concept.genre_tags)}\n"
+            f"\n{hr}\n\n"
+            f"{suno_prompt.lyrics}\n"
+            f"\n{hr}\n"
+            f"Style tags:\n{suno_prompt.suno_prompt}\n"
+            f"{hr}"
         )
-        
-        if lyrics.breakdown:
-            reply += f"[Breakdown]\n{lyrics.breakdown}\n\n"
-        
-        reply += f"\n**Suno Prompt:**\n{suno_prompt.suno_prompt}"
         
         history.append({"role": "user", "content": user_input})
         history.append({"role": "assistant", "content": reply})
