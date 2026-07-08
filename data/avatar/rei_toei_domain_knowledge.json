@@ -60,7 +60,7 @@
         ],
         "note": "Minimalist state loops. Structural repetition prioritizing raw timbral degradation over harmonic shift."
       },
-      "cyberpunk_electro": {
+      "cyberpop_electro": {
         "common_progressions": [
           "i - bVII - bVI - bVII",
           "i - iv - bVII - bVI",
@@ -207,16 +207,32 @@
       }
     },
     "common_synths": {
-      "bass": ["sub_core", "drone_808", "dark_analog"],
-      "leads": ["hologram_pluck", "saw_carrier", "laser_vane"],
-      "pads": ["rei_cloud", "ether_strings", "neon_haze"],
+      "bass": [
+        "sub_core",
+        "drone_808",
+        "dark_analog"
+      ],
+      "leads": [
+        "hologram_pluck",
+        "saw_carrier",
+        "laser_vane"
+      ],
+      "pads": [
+        "rei_cloud",
+        "ether_strings",
+        "neon_haze"
+      ],
       "percussion": [
         "kick_pulse",
         "metallic_rim",
         "white_noise_hh",
         "machinery"
       ],
-      "effects": ["glitch_stutter", "data_leak", "circuit_bend"]
+      "effects": [
+        "glitch_stutter",
+        "data_leak",
+        "circuit_bend"
+      ]
     },
     "pattern_examples": {
       "basic_kick": "s(\"bd bd ~ bd ~ bd ~ bd\")",
@@ -247,22 +263,22 @@
       },
       "arrangement": "Hypnotic, incremental morphing, structural tension builds"
     },
-    "cyberpunk_electro": {
+    "cyberpop_electro": {
       "tempo": "138-144 BPM",
       "drums": {
-        "type": "Classic 808/909 textures smashed with modern glitch arrays",
-        "processing": "Controlled bitcrushing, subtle downsampling"
+        "type": "Classic 808/909 textures with catchy pop bounce and glitch sparkle",
+        "processing": "Controlled bitcrushing, subtle downsampling, punchy transients"
       },
       "synths": {
-        "leads": "Aggressive FM plucks, wide wavetable matrices",
-        "pads": "Luminous holographic walls, cinematic textures",
-        "processing": "Vivid chorus, sweeping phasers"
+        "leads": "Bright FM plucks, wide wavetable matrices, catchy melodic hooks",
+        "pads": "Luminous holographic walls, warm cinematic textures",
+        "processing": "Vivid chorus, sweeping phasers, sparkling high-end shimmer"
       },
       "vocals": {
-        "type": "Emergent AI vocaloid duet, ethereal and crisp",
-        "processing": "Formant tracking, crystal-clear pitch adjustments, delay matrices"
+        "type": "Bright AI vocaloid, charming and crisp with pop energy",
+        "processing": "Formant tracking, clear pitch adjustments, delay matrices, light autotune shimmer"
       },
-      "fx": "White noise drops, code execution risers, datastream artifacts"
+      "fx": "White noise drops, code execution risers, datastream artifacts, pop-bright synth fills"
     },
     "hard_techno": {
       "tempo": "145-155 BPM",
@@ -293,20 +309,56 @@
       "155-180": "Digital breakcore chaos, broken system frameworks"
     },
     "mood_to_bpm": {
-      "dark_brooding": [130, 136],
-      "hypnotic_industrial": [134, 140],
-      "relentless_driving": [140, 145],
-      "aggressive_technical": [144, 150],
-      "peak_energy": [148, 155],
-      "chaotic_glitch": [155, 174]
+      "dark_brooding": [
+        130,
+        136
+      ],
+      "hypnotic_industrial": [
+        134,
+        140
+      ],
+      "relentless_driving": [
+        140,
+        145
+      ],
+      "aggressive_technical": [
+        144,
+        150
+      ],
+      "peak_energy": [
+        148,
+        155
+      ],
+      "chaotic_glitch": [
+        155,
+        174
+      ]
     },
     "concept_to_bpm": {
-      "low_level_systems": [146, 152],
-      "high_level_architecture": [132, 138],
-      "concurrency": [140, 144],
-      "real_time_processing": [148, 154],
-      "async_patterns": [136, 142],
-      "data_structures": [134, 140]
+      "low_level_systems": [
+        146,
+        152
+      ],
+      "high_level_architecture": [
+        132,
+        138
+      ],
+      "concurrency": [
+        140,
+        144
+      ],
+      "real_time_processing": [
+        148,
+        154
+      ],
+      "async_patterns": [
+        136,
+        142
+      ],
+      "data_structures": [
+        134,
+        140
+      ]
     }
   },
   "synth_selection_guidelines": {
@@ -322,18 +374,38 @@
         "cloud_strings",
         "ambient_carrier"
       ],
-      "data_flow": ["matrix_arp", "crisp_pluck", "sequenced_lead"],
+      "data_flow": [
+        "matrix_arp",
+        "crisp_pluck",
+        "sequenced_lead"
+      ],
       "system_errors": [
         "glitch_stutter",
         "bitcrushed_artifact",
         "distorted_line"
       ],
-      "network_communication": ["fm_bell", "metallic_strike", "digital_ping"]
+      "network_communication": [
+        "fm_bell",
+        "metallic_strike",
+        "digital_ping"
+      ]
     },
     "by_intensity": {
-      "aggressive": ["tearing_saw", "overdriven_square", "industrial_impact"],
-      "moderate": ["precision_pluck", "focused_lead", "modulated_bass"],
-      "subtle": ["vapor_pad", "whispering_ambient", "sine_drift"]
+      "aggressive": [
+        "tearing_saw",
+        "overdriven_square",
+        "industrial_impact"
+      ],
+      "moderate": [
+        "precision_pluck",
+        "focused_lead",
+        "modulated_bass"
+      ],
+      "subtle": [
+        "vapor_pad",
+        "whispering_ambient",
+        "sine_drift"
+      ]
     }
   },
   "lyrical_structure": {
@@ -411,7 +483,7 @@
   },
   "suno_prompt_templates": {
     "industrial_techno_template": "138 bpm, dark techno hyperpop, {mood} cute female vocaloid, heavy bass, glitch pop energy",
-    "cyberpunk_electro_template": "144 bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks",
+    "cyberpunk_electro_template": "144 bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks, bright pop energy",
     "dark_synthwave_template": "126 bpm, dark synthpop, {mood} dreamy vocaloid, analog synths, ethereal atmosphere",
     "glitch_industrial_template": "150 bpm, glitch pop industrial, {mood} playful vocaloid, hyper energy, kawaii bass"
   },
@@ -452,7 +524,7 @@
         "Jazmin Bean - Playful darkness with hyperpop twist",
         "Dorian Electra - Genre-bending fun with experimental edge"
       ],
-      "cyberpunk_charm": [
+      "cyberpop_charm": [
         "Hatsune Miku - Original vocaloid charm and playfulness",
         "Porter Robinson - Emotional playful electronic storytelling",
         "Madeon - Joyful energetic electronic production",
@@ -480,7 +552,7 @@
         "I Disagree - Poppy (fun chaotic industrial pop)",
         "Concrete Angel - Gareth Emery (emotional industrial energy)",
         "Oblivion - Grimes (playful dreamy industrial)",
-        "violence - Grimes (cute meets dark cyberpunk)"
+        "violence - Grimes (cute meets dark cyberpop)"
       ]
     },
     "vocal_style_influences": {

@@ -22,7 +22,7 @@ class ReiToeiConfig:
     def __init__(self):
         self.enabled = os.getenv("REI_TOEI_ENABLED", "true").lower() == "true"
         self.default_bpm = int(os.getenv("REI_TOEI_DEFAULT_BPM", "142"))
-        self.default_genre = os.getenv("REI_TOEI_DEFAULT_GENRE", "industrial techno cyberpunk")
+        self.default_genre = os.getenv("REI_TOEI_DEFAULT_GENRE", "industrial techno cyberpop")
         self.max_song_length_seconds = int(os.getenv("REI_TOEI_MAX_SONG_LENGTH_SECONDS", "180"))
         self.console_enabled = os.getenv("REI_TOEI_CONSOLE_ENABLED", "true").lower() == "true"
         self.auto_evidence_tracking = os.getenv("REI_TOEI_AUTO_EVIDENCE_TRACKING", "true").lower() == "true"

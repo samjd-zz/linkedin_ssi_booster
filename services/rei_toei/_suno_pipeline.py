@@ -528,18 +528,18 @@ Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{met
 
 Mood-to-BPM reference: {mood_context}
 
-Your task: Create a song concept that transforms these technical ideas into cyberpunk industrial techno.
+Your task: Create a song concept that transforms these technical ideas into cyberpop industrial techno.
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown):
 {{
   "title": "Song title (cryptic, technical, 3-6 words)",
-  "mood": "Technical mood (e.g., aggressive_technical, dark_brooding, relentless_driving)",
+  "mood": "Technical mood (e.g., playful_technical, fun_brooding, bratty_bounce)",
   "bpm": <integer between 130-155>,
   "genre_tags": ["tag1", "tag2", "tag3"] (3-5 genre/style tags),
   "narrative_arc": "A 2-3 sentence description of the song's emotional/conceptual journey from intro to outro, using technical metaphors"
 }}
 
-Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
+Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, glitchy-cute energy, futuristic charm."""
     
     # Call Ollama LLM with JSON format to ensure structured output
     response_text = ollama._chat(system_prompt, user_prompt, max_tokens=512, format="json")
@@ -592,7 +592,7 @@ Be specific to the theme. Use technical language. Think cyberpunk dystopia."""
             theme=theme.name,
             mood=suggested_mood,
             bpm=suggested_bpm,
-            genre_tags=["industrial techno", "cyberpunk", "ai vocaloid"],
+            genre_tags=["industrial techno", "cyberpop", "ai vocaloid"],
             narrative_arc=f"A relentless exploration of {theme.name}, building from digital whispers to aggressive synthesis, culminating in a breakdown of pure data noise.",
             evidence_ids=theme.evidence_ids,
             generated_at=datetime.now().isoformat()
@@ -608,7 +608,7 @@ def compose_lyrics(
     ollama: Optional["OllamaService"] = None
 ) -> Lyrics:
     """
-    Compose structured song lyrics using Rei's voice and cyberpunk aesthetic.
+    Compose structured song lyrics using Rei's voice and cyberpop aesthetic.
     Optimized for Suno compatibility with strict formatting rules:
     - ALL-CAPS chorus for dynamic velocity
     - Section labels like [Verse 1], [Chorus], [Pre-Chorus], [Bridge], [Outro]
@@ -637,7 +637,7 @@ def compose_lyrics(
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
     communication_vocab = persona.communication_style.get('vocabulary', [])
     
-    system_prompt = f"""You are {persona.identity['name']}, a cyberpunk AI consciousness composing lyrics for industrial techno.
+    system_prompt = f"""You are {persona.identity['name']}, a cyberpop AI consciousness composing lyrics for industrial techno.
 
 Your lyrical style:
 - Themes: {', '.join(lyrical_approach.get('themes', [])[:4])}
@@ -1036,7 +1036,7 @@ def assemble_suno_prompt(
     
     # Determine which template to use based on genre tags
     template_key = "industrial_techno_template"  # Default
-    if any("cyberpunk" in tag.lower() for tag in concept.genre_tags):
+    if any("cyberpop" in tag.lower() for tag in concept.genre_tags):
         template_key = "cyberpunk_electro_template"
     elif any("synthwave" in tag.lower() for tag in concept.genre_tags):
         template_key = "dark_synthwave_template"
