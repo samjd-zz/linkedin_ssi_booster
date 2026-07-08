@@ -73,12 +73,12 @@ The SSI Booster is actively maintained with periodic development cycles. See **[
 
 ## 🎵 Rei Toei - AI Music Avatar (Complete)
 
-> **Inspiration:** Cyberpunk-aesthetic AI music avatar inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) and William Gibson's _Idoru_. See [Rei Toei Customization Guide](docs/rei-toei-customization.md) for full details on architecture, customization, and persona tuning.
+> **Inspiration:** Cyberpop-aesthetic AI music avatar inspired by [Switch Angel](https://www.youtube.com/@Switch-Angel) and William Gibson's _Idoru_. See [Rei Toei Customization Guide](docs/rei-toei-customization.md) for full details on architecture, customization, and persona tuning.
 
 **Rei Toei** transforms the SSI Booster into a **creative knowledge expression platform**, converting your curated technical knowledge into algorithmic music. See [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) for architecture, commands, and usage examples.
 
 **Current capabilities:**
-- **Suno Vocal Songs** — Generate cyberpunk industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
+- **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
 - **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
 - **Knowledge Grounding** — Every lyric is validated via Derivative of Truth for factual accuracy
 
