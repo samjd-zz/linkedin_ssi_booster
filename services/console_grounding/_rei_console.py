@@ -87,6 +87,15 @@ REI_GENRE_KEYWORDS = (
     "cyberpop",
 )
 
+REI_RETRY_KEYWORDS = (
+    "try again",
+    "again",
+    "redo",
+    "regenerate",
+    "another",
+    "not about",
+)
+
 
 def is_rei_command(user_input: str) -> bool:
     """Return True when input explicitly targets Rei mode."""
@@ -127,6 +136,54 @@ def is_rei_song_request(user_input: str) -> bool:
     has_genre = any(keyword in user_lower for keyword in REI_GENRE_KEYWORDS)
     has_song_shape = any(token in user_lower for token in ("style", "mood", "bpm", "melody"))
     return has_song_keyword or (has_action_verb and (has_genre or has_song_shape))
+
+
+def _extract_song_topic(user_input: str) -> str | None:
+    """Extract an explicit song topic from user input when present.
+
+    Returns None for generic requests such as "give me a song" so Rei can
+    choose a theme herself.
+    """
+    text = (user_input or "").strip()
+    if not text:
+        return None
+
+    lowered = text.lower()
+
+    # Strong signal: "about ..."
+    about_match = re.search(r"\babout\b\s+(.+)$", text, flags=re.IGNORECASE)
+    if about_match:
+        topic = about_match.group(1).strip(" .,!?:;\"'")
+        return topic or None
+
+    # Generic song requests should not force a topic.
+    generic_patterns = (
+        r"^\s*(please\s+)?(just\s+)?(give|make|create|write|generate|compose)\s+me\s+(a\s+)?(new\s+)?(song|track|music)(\s+today)?\s*$",
+        r"^\s*(song|track|music)\s+please\s*$",
+    )
+    if any(re.search(pat, lowered) for pat in generic_patterns):
+        return None
+
+    # If this is not clearly generic and is song-shaped, use the whole request
+    # as topic guidance.
+    if is_rei_song_request(text):
+        return text
+
+    return None
+
+
+def _find_last_song_topic_in_history(history: list[dict[str, str]]) -> str | None:
+    """Best-effort lookup of the most recent explicit song topic from user turns."""
+    for item in reversed(history):
+        if item.get("role") != "user":
+            continue
+        content = (item.get("content") or "").strip()
+        if not content:
+            continue
+        topic = _extract_song_topic(content)
+        if topic:
+            return topic
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +442,14 @@ async def _handle_suno_request(
     generation via Rei's own system prompt when extracted knowledge is absent.
     """
     try:
+        # Prefer user-directed topics when provided (e.g. "song about X").
+        # If the user gives no topic ("just give me a song"), Rei should choose
+        # her own theme from extracted knowledge as before.
+        user_topic = _extract_song_topic(user_input)
+        lowered_input = (user_input or "").lower()
+        if not user_topic and any(k in lowered_input for k in REI_RETRY_KEYWORDS):
+            user_topic = _find_last_song_topic_in_history(history)
+
         # Load extracted knowledge graph
         _avatar_state = _lav_rei_console()
         extracted_facts = _normalize_extracted_rei(_avatar_state)
@@ -403,12 +468,24 @@ async def _handle_suno_request(
             get_rei_toei_dir(create=False),
             limit=REI_CONFIG.recent_title_window,
         )
-        theme = choose_diverse_theme(
-            themes,
-            recent_theme_names=recent_titles,
-            repeat_penalty=REI_CONFIG.theme_repeat_penalty,
-            jitter_ratio=REI_CONFIG.theme_jitter_ratio,
-        )
+
+        if user_topic:
+            logger.info("Using user-directed song topic: %s", user_topic[:120])
+            theme = Theme(
+                id="user_directed_topic",
+                name=user_topic[:120],
+                technical_concepts=[user_topic],
+                evidence_ids=[],
+                frequency=1,
+                recency_score=1.0,
+            )
+        else:
+            theme = choose_diverse_theme(
+                themes,
+                recent_theme_names=recent_titles,
+                repeat_penalty=REI_CONFIG.theme_repeat_penalty,
+                jitter_ratio=REI_CONFIG.theme_jitter_ratio,
+            )
         
         # Generate song concept
         concept = generate_song_concept(

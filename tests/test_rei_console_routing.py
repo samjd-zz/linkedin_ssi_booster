@@ -10,6 +10,7 @@ from services.console_grounding._rei_console import (
     _handle_conversation,
     _handle_llm_song_generation,
     _handle_suno_request,
+    _extract_song_topic,
     extract_rei_input,
     handle_rei_console,
     is_rei_song_request,
@@ -113,6 +114,15 @@ class TestReiConsoleRouting:
     def test_song_request_heuristic_matches_genre_plus_generation_verb(self):
         assert is_rei_song_request("create me something jungle for today") is True
         assert is_rei_song_request("write lyrics and style for a new jungle track") is True
+
+    def test_extract_song_topic_prefers_about_clause(self):
+        topic = _extract_song_topic("create me a song about competition for a marketing engineer role")
+        assert topic is not None
+        assert "competition" in topic.lower()
+
+    def test_extract_song_topic_returns_none_for_generic_request(self):
+        assert _extract_song_topic("just give me a song") is None
+        assert _extract_song_topic("make me a track") is None
 
 
 def test_handle_rei_console_routes_plain_song_request_to_suno():
@@ -226,6 +236,86 @@ class TestSunoRequestFallback:
 
         assert reply == "llm_song_no_themes"
         mock_llm.assert_awaited_once()
+
+    def test_suno_request_uses_user_topic_when_provided(self):
+        mock_ai = MagicMock()
+        p, d = self._persona_and_domain()
+        fake_facts = [MagicMock()]
+        fake_theme = MagicMock(name="theme")
+        fake_concept = MagicMock(
+            title="T",
+            theme="Competition",
+            mood="intense",
+            bpm=150,
+            genre_tags=["Hard Techno"],
+        )
+        fake_lyrics = MagicMock()
+        fake_suno = MagicMock(lyrics="[Verse 1]\nA", suno_prompt="hardtechno, 150 bpm")
+
+        with (
+            patch("services.console_grounding._rei_console._lav_rei_console", return_value=MagicMock()),
+            patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
+            patch("services.console_grounding._rei_console.extract_themes", return_value=[fake_theme]),
+            patch("services.console_grounding._rei_console.load_recent_rei_titles", return_value=[]),
+            patch("services.console_grounding._rei_console.choose_diverse_theme") as mock_choose,
+            patch("services.console_grounding._rei_console.generate_song_concept", return_value=fake_concept) as mock_gen,
+            patch("services.console_grounding._rei_console.compose_lyrics", return_value=fake_lyrics),
+            patch("services.console_grounding._rei_console.assemble_suno_prompt", return_value=fake_suno),
+        ):
+            reply, _ = asyncio.run(
+                _handle_suno_request(
+                    "create me a song about competition and ROI pressure",
+                    mock_ai,
+                    p,
+                    d,
+                    [],
+                )
+            )
+
+        # User-directed topic should bypass autonomous theme picking.
+        mock_choose.assert_not_called()
+        passed_theme = mock_gen.call_args[0][0]
+        assert "competition" in passed_theme.name.lower()
+        assert "roi" in passed_theme.name.lower()
+        assert "Style tags:" in reply
+
+    def test_suno_request_without_topic_lets_rei_choose_theme(self):
+        mock_ai = MagicMock()
+        p, d = self._persona_and_domain()
+        fake_facts = [MagicMock()]
+        chosen_theme = MagicMock(name="chosen_theme")
+        fake_concept = MagicMock(
+            title="T",
+            theme="Autonomous",
+            mood="intense",
+            bpm=150,
+            genre_tags=["Hard Techno"],
+        )
+        fake_lyrics = MagicMock()
+        fake_suno = MagicMock(lyrics="[Verse 1]\nA", suno_prompt="hardtechno, 150 bpm")
+
+        with (
+            patch("services.console_grounding._rei_console._lav_rei_console", return_value=MagicMock()),
+            patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
+            patch("services.console_grounding._rei_console.extract_themes", return_value=[MagicMock()]),
+            patch("services.console_grounding._rei_console.load_recent_rei_titles", return_value=[]),
+            patch("services.console_grounding._rei_console.choose_diverse_theme", return_value=chosen_theme) as mock_choose,
+            patch("services.console_grounding._rei_console.generate_song_concept", return_value=fake_concept) as mock_gen,
+            patch("services.console_grounding._rei_console.compose_lyrics", return_value=fake_lyrics),
+            patch("services.console_grounding._rei_console.assemble_suno_prompt", return_value=fake_suno),
+        ):
+            asyncio.run(
+                _handle_suno_request(
+                    "just give me a song",
+                    mock_ai,
+                    p,
+                    d,
+                    [],
+                )
+            )
+
+        mock_choose.assert_called_once()
+        assert mock_gen.call_args[0][0] is chosen_theme
 
 
 class TestConversationHandlerRouting:

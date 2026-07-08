@@ -551,7 +551,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
 
     def _show_console_thinking(avatar: str) -> int:
         if avatar == "rei":
-            label = "🎚️ Rei is composing the track..."
+            label = "🎚️ Loading..."
             color = Fore.MAGENTA
         else:
             label = "🤔 Thinking..."
