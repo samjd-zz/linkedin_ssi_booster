@@ -1486,24 +1486,38 @@ def main():
                     except Exception as _upd_err:
                         logger.warning(f"Could not update saved artifact with task result: {_upd_err}")
 
-                    if task.status == "complete" and task.audio_url:
-                        print(str(Fore.GREEN) + f"   \U0001f3b5 Audio URL: {task.audio_url}" + str(Style.RESET_ALL))
-                        # Download the audio file alongside the JSON artifact
-                        audio_path = output_path.with_suffix(".mp3")
-                        print(str(Fore.CYAN) + f"   \u2b07\ufe0f  Downloading audio \u2192 {audio_path.name} ..." + str(Style.RESET_ALL))
-                        try:
+                    if task.status == "complete":
+                        async def _download_media(url: str, dest: "Path", label: str) -> bool:
+                            """Download a single media URL to dest; returns True on success."""
                             import aiohttp as _aiohttp
-                            async with _aiohttp.ClientSession() as _dl_session:
-                                async with _dl_session.get(task.audio_url) as _dl_resp:
-                                    if _dl_resp.status == 200:
-                                        audio_path.write_bytes(await _dl_resp.read())
-                                        print(str(Fore.GREEN) + f"   \u2705  Audio saved: {audio_path}" + str(Style.RESET_ALL))
-                                    else:
-                                        print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  Download failed (HTTP {_dl_resp.status})" + str(Style.RESET_ALL))
-                                        print(f"         Download manually: {task.audio_url}")
-                        except Exception as _dl_err:
-                            print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  Audio download error: {_dl_err}" + str(Style.RESET_ALL))
-                            print(f"         Download manually: {task.audio_url}")
+                            print(str(Fore.CYAN) + f"   \u2b07\ufe0f  Downloading {label} \u2192 {dest.name} ..." + str(Style.RESET_ALL))
+                            try:
+                                async with _aiohttp.ClientSession() as _dl_session:
+                                    async with _dl_session.get(url) as _dl_resp:
+                                        if _dl_resp.status == 200:
+                                            dest.write_bytes(await _dl_resp.read())
+                                            print(str(Fore.GREEN) + f"   \u2705  {label} saved: {dest}" + str(Style.RESET_ALL))
+                                            return True
+                                        else:
+                                            print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  {label} download failed (HTTP {_dl_resp.status})" + str(Style.RESET_ALL))
+                                            print(f"         Download manually: {url}")
+                                            return False
+                            except Exception as _dl_err:
+                                print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  {label} download error: {_dl_err}" + str(Style.RESET_ALL))
+                                print(f"         Download manually: {url}")
+                                return False
+
+                        # Download MP4 (video — primary target for Instagram)
+                        if task.video_url:
+                            print(str(Fore.GREEN) + f"   \U0001f3ac Video URL: {task.video_url}" + str(Style.RESET_ALL))
+                            await _download_media(task.video_url, output_path.with_suffix(".mp4"), "MP4 video")
+                        else:
+                            print(str(Fore.YELLOW) + "   \u26a0\ufe0f  No video URL yet (Suno may still be rendering). Check back shortly." + str(Style.RESET_ALL))
+
+                        # Download MP3 (audio — always useful as a standalone track)
+                        if task.audio_url:
+                            print(str(Fore.GREEN) + f"   \U0001f3b5 Audio URL: {task.audio_url}" + str(Style.RESET_ALL))
+                            await _download_media(task.audio_url, output_path.with_suffix(".mp3"), "MP3 audio")
                     elif task.status == "error":
                         print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  Suno generation failed for task {task.id}" + str(Style.RESET_ALL))
 
