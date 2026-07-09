@@ -1460,11 +1460,56 @@ def main():
             if suno_api_key:
                 print(str(Fore.CYAN) + "\U0001f680 Submitting to Suno API..." + str(Style.RESET_ALL))
                 try:
-                    task = await submit_to_suno(suno_prompt, wait_for_completion=False, api_key=suno_api_key)
+                    task = await submit_to_suno(
+                        suno_prompt,
+                        wait_for_completion=True,
+                        api_key=suno_api_key,
+                        poll_interval_seconds=10,
+                        max_wait_seconds=600,
+                    )
                     print(str(Fore.GREEN) + f"\u2705  Suno task submitted: {task.id}" + str(Style.RESET_ALL))
                     print(f"   Status: {task.status}")
-                    if task.audio_url:
-                        print(f"   Audio: {task.audio_url}")
+
+                    # Persist task result back into the saved JSON artifact
+                    try:
+                        with open(output_path, "r", encoding="utf-8") as _rf:
+                            _saved = json.load(_rf)
+                        _saved["suno_task_id"] = task.id
+                        _saved["suno_status"] = task.status
+                        if task.audio_url:
+                            _saved["suno_audio_url"] = task.audio_url
+                        if task.video_url:
+                            _saved["suno_video_url"] = task.video_url
+                        with open(output_path, "w", encoding="utf-8") as _wf:
+                            json.dump(_saved, _wf, indent=2)
+                        logger.info("Updated saved artifact with Suno task result")
+                    except Exception as _upd_err:
+                        logger.warning(f"Could not update saved artifact with task result: {_upd_err}")
+
+                    if task.status == "complete" and task.audio_url:
+                        print(str(Fore.GREEN) + f"   \U0001f3b5 Audio URL: {task.audio_url}" + str(Style.RESET_ALL))
+                        # Download the audio file alongside the JSON artifact
+                        audio_path = output_path.with_suffix(".mp3")
+                        print(str(Fore.CYAN) + f"   \u2b07\ufe0f  Downloading audio \u2192 {audio_path.name} ..." + str(Style.RESET_ALL))
+                        try:
+                            import aiohttp as _aiohttp
+                            async with _aiohttp.ClientSession() as _dl_session:
+                                async with _dl_session.get(task.audio_url) as _dl_resp:
+                                    if _dl_resp.status == 200:
+                                        audio_path.write_bytes(await _dl_resp.read())
+                                        print(str(Fore.GREEN) + f"   \u2705  Audio saved: {audio_path}" + str(Style.RESET_ALL))
+                                    else:
+                                        print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  Download failed (HTTP {_dl_resp.status})" + str(Style.RESET_ALL))
+                                        print(f"         Download manually: {task.audio_url}")
+                        except Exception as _dl_err:
+                            print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  Audio download error: {_dl_err}" + str(Style.RESET_ALL))
+                            print(f"         Download manually: {task.audio_url}")
+                    elif task.status == "error":
+                        print(str(Fore.YELLOW) + f"   \u26a0\ufe0f  Suno generation failed for task {task.id}" + str(Style.RESET_ALL))
+
+                except TimeoutError as _timeout_err:
+                    print(str(Fore.YELLOW) + f"\u26a0\ufe0f  {_timeout_err}" + str(Style.RESET_ALL))
+                    print("   Poll the status endpoint manually with the task ID above.")
                 except Exception as _suno_err:
                     print(str(Fore.YELLOW) + f"\u26a0\ufe0f  Suno submission failed: {_suno_err}" + str(Style.RESET_ALL))
             else:

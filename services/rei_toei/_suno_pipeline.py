@@ -1201,6 +1201,7 @@ async def submit_to_suno(
     
     start_time = datetime.now()
     elapsed = 0
+    poll_count = 0
     
     while elapsed < max_wait_seconds:
         # Poll status
@@ -1211,8 +1212,12 @@ async def submit_to_suno(
         
         # Check primary task (first one)
         primary_task = tasks[0]
-        
-        logger.debug(f"Task {primary_task.id} status: {primary_task.status}")
+        poll_count += 1
+
+        logger.info(
+            f"[Poll #{poll_count}] Task {primary_task.id}: status={primary_task.status!r}"
+            f" (elapsed {int(elapsed)}s / {max_wait_seconds}s)"
+        )
         
         # Check if complete or failed
         if primary_task.status == "complete":
