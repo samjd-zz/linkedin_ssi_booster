@@ -44,6 +44,128 @@ _BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
 _SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
 
 
+def _strip_markdown_fences(value: str) -> str:
+    """Strip markdown fences and return inner content when present."""
+    text = value.strip()
+    if "```" not in text:
+        return text
+
+    fenced_blocks = re.findall(r"```(?:json)?\s*([\s\S]*?)```", text, flags=re.IGNORECASE)
+    if fenced_blocks:
+        merged = "\n".join(block.strip() for block in fenced_blocks if block.strip())
+        if merged:
+            return merged.strip()
+
+    return text.replace("```json", "").replace("```", "").strip()
+
+
+def _extract_balanced_json_fragment(value: str) -> Optional[str]:
+    """Extract the first balanced JSON object/array fragment from free text."""
+    start_index = -1
+    opening_char = ""
+    for i, ch in enumerate(value):
+        if ch in "[{":
+            start_index = i
+            opening_char = ch
+            break
+    if start_index < 0:
+        return None
+
+    closing_char = "}" if opening_char == "{" else "]"
+    depth = 0
+    in_string = False
+    escaped = False
+
+    for i in range(start_index, len(value)):
+        ch = value[i]
+
+        if in_string:
+            if escaped:
+                escaped = False
+                continue
+            if ch == "\\":
+                escaped = True
+                continue
+            if ch == '"':
+                in_string = False
+            continue
+
+        if ch == '"':
+            in_string = True
+            continue
+
+        if ch == opening_char:
+            depth += 1
+            continue
+
+        if ch == closing_char:
+            depth -= 1
+            if depth == 0:
+                return value[start_index : i + 1]
+
+    return None
+
+
+def _json_normalization_variants(value: str) -> List[str]:
+    """Build progressively relaxed JSON candidates for robust parsing."""
+    cleaned = value.strip()
+    variants: List[str] = [cleaned]
+
+    normalized_quotes = (
+        cleaned.replace("\u201c", '"')
+        .replace("\u201d", '"')
+        .replace("\u2018", "'")
+        .replace("\u2019", "'")
+    )
+    if normalized_quotes != cleaned:
+        variants.append(normalized_quotes)
+
+    no_comment_lines = re.sub(r"(?m)^\s*//.*$", "", normalized_quotes)
+    if no_comment_lines != normalized_quotes:
+        variants.append(no_comment_lines.strip())
+
+    no_trailing_commas = re.sub(r",(\s*[}\]])", r"\1", no_comment_lines)
+    if no_trailing_commas != no_comment_lines:
+        variants.append(no_trailing_commas.strip())
+
+    deduped: List[str] = []
+    seen: set[str] = set()
+    for item in variants:
+        candidate = item.strip()
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        deduped.append(candidate)
+    return deduped
+
+
+def _parse_llm_json_payload(response_text: str) -> Dict[str, Any]:
+    """Parse LLM JSON output with fence stripping and lightweight repair attempts."""
+    stripped = _strip_markdown_fences(response_text)
+    candidates: List[str] = [stripped]
+
+    fragment = _extract_balanced_json_fragment(stripped)
+    if fragment and fragment != stripped:
+        candidates.append(fragment)
+
+    last_error: Optional[Exception] = None
+    for candidate in candidates:
+        for variant in _json_normalization_variants(candidate):
+            try:
+                parsed = json.loads(variant)
+            except json.JSONDecodeError as exc:
+                last_error = exc
+                continue
+
+            if not isinstance(parsed, dict):
+                raise ValueError("Expected JSON object payload from LLM response")
+            return cast(Dict[str, Any], parsed)
+
+    if last_error is not None:
+        raise last_error
+    raise ValueError("Unable to parse JSON payload from LLM response")
+
+
 def _normalize_title(value: str) -> str:
     """Normalize a title string for uniqueness comparisons."""
     return re.sub(r"\W+", " ", value.lower()).strip()
@@ -548,13 +670,7 @@ Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, 
     
     # Parse JSON response
     try:
-        # Clean markdown code fences if present
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        response_data = json.loads(response_text)
+        response_data = _parse_llm_json_payload(response_text)
         
         # Validate required fields
         required_fields = ["title", "mood", "bpm", "genre_tags", "narrative_arc"]
@@ -719,12 +835,7 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
     
     # Parse JSON response
     try:
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        response_data = json.loads(response_text)
+        response_data = _parse_llm_json_payload(response_text)
         
         # Validate required fields
         required_fields = ["verse_1", "chorus", "verse_2", "bridge"]

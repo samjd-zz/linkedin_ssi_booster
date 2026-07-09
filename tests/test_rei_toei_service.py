@@ -908,6 +908,58 @@ def test_compose_lyrics_with_ollama(mock_domain_knowledge_data):
     assert lyrics.outro is not None
 
 
+def test_compose_lyrics_parses_fenced_json_with_trailing_comma(mock_domain_knowledge_data):
+    """Test compose_lyrics can recover JSON from fenced payloads with minor formatting issues."""
+    from services.ollama_service import OllamaService
+
+    concept = SongConcept(
+        song_id="song_002",
+        title="Overflow Recovery Test",
+        theme="Queue Drain",
+        mood="aggressive_technical",
+        bpm=146,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={}
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    mock_lyrics_response = """```json
+{
+  "verse_1": "Queue depth rising in neon lanes",
+  "chorus": "Drain the pipeline now",
+  "verse_2": "Backpressure melts into signal rain",
+  "bridge": "State machine pivots on the break",
+  // optional debug note
+}
+```"""
+
+    with patch.object(OllamaService, "_chat", return_value=mock_lyrics_response):
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    # Parsed payload should be used (not fallback block).
+    assert lyrics.verse_1.startswith("Queue depth rising")
+    assert "DRAIN THE PIPELINE NOW" in lyrics.chorus
+    assert "Backpressure melts" in lyrics.verse_2
+
+
 def test_compose_lyrics_fallback_on_error(mock_domain_knowledge_data):
     """Test compose_lyrics uses fallback when Ollama fails"""
     from services.ollama_service import OllamaService
