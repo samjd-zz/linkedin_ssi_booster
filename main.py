@@ -643,6 +643,45 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         _kg = None
         _hybrid_retriever = None
 
+    _console_cleanup_done = False
+    _original_excepthook = sys.excepthook
+
+    def _run_console_exit_cleanup() -> None:
+        """Best-effort memory cleanup for console shutdown."""
+        nonlocal _console_cleanup_done
+        if _console_cleanup_done:
+            return
+        _console_cleanup_done = True
+
+        logger.info("🧹 Running console shutdown cleanup...")
+
+        # Drop large in-memory console state before forcing collection.
+        history.clear()
+        _profile_facts.clear()
+        _raw_evidence_facts.clear()
+        _raw_domain_facts.clear()
+        _raw_extracted_facts.clear()
+
+        # Restore the process-level exception hook after console shutdown.
+        try:
+            sys.excepthook = _original_excepthook
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Console excepthook restore skipped: %s", exc)
+
+        # Reuse the existing post-run cleanup for Ollama/FLUX/Python heap trim.
+        _run_post_generation_cleanup(ai, source_mode="console")
+
+    def _console_excepthook(exc_type, exc_value, exc_traceback) -> None:
+        """Ensure cleanup runs if console mode terminates on an unhandled exception."""
+        try:
+            logger.error("Unhandled exception in console mode", exc_info=(exc_type, exc_value, exc_traceback))
+            _run_console_exit_cleanup()
+        finally:
+            _original_excepthook(exc_type, exc_value, exc_traceback)
+
+    # Protect console-mode exits not covered by explicit /exit or EOF handlers.
+    sys.excepthook = _console_excepthook
+
     from services.console_grounding import truth_gate_result as _tg_result
 
     def _print_truth_score(reply: str) -> None:
@@ -737,6 +776,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             user_input = input("\nYou> ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nExiting console.")
+            _run_console_exit_cleanup()
             return
 
         if not user_input:
@@ -745,6 +785,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         cmd = user_input.lower()
         if cmd in {"/exit", "/quit"}:
             print("Exiting console.")
+            _run_console_exit_cleanup()
             return
         if cmd == "/help":
             _hr = "─" * 63
