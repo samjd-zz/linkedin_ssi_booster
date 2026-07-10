@@ -700,8 +700,6 @@ python main.py --rei-generate-strudel --rei-execute
 - `--rei-preview` skips save/execute
 - Without `--rei-preview`, persists generated pattern to `data/avatar/rei_toei_generated_patterns.jsonl`
 
-**Known anomaly:** Current template loader expects top-level `templates`, but repository data file uses `pattern_library`; if unresolved, runtime may find zero templates.
-
 ### `--rei-theme <theme>`
 
 Specify a custom theme for music generation (works with both `--rei-generate` and `--rei-generate-strudel`).
@@ -746,9 +744,9 @@ python main.py --rei-generate-strudel --rei-execute
 python main.py --rei-generate-strudel --rei-theme "neural networks" --rei-execute
 ```
 
-**Note:** Current execution function in `services/rei_toei/_strudel_pipeline.py` uses WebSocket (`STRUDEL_WS_URL`, default `ws://localhost:4321`). The bundled `agents/strudel_mcp_agent.py` uses stdio MCP calls and does not expose a WebSocket server.
+**Note:** Execution uses WebSocket first (`STRUDEL_WS_URL`, default `ws://localhost:4321`) and falls back to stdio MCP execution when WebSocket is unavailable.
 
-This means `--rei-execute` may fail unless you provide a WebSocket bridge or refactor execution transport.
+For deeper implementation notes, see the troubleshooting section in `docs/rei-toei-customization.md`.
 
 ### Console Mode Alternative
 

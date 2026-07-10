@@ -689,33 +689,11 @@ Example target shape (requires code changes):
 
 ## Troubleshooting
 
-### Issue: `--rei-generate-strudel` says no templates available
+### Strudel Implementation Notes
 
-**Likely cause:** The loader expects `templates`, but `data/avatar/rei_toei_strudel_patterns.json` currently uses `pattern_library`.
-
-**Workarounds:**
-
-- Data workaround: migrate the file root key from `pattern_library` to `templates` and keep required template fields.
-- Code workaround: update `services/rei_toei/_loaders.py` to read `pattern_library` as a backward-compatible fallback.
-
-### Issue: `--rei-execute` fails to reach Strudel backend
-
-**Likely cause:** Runtime execution currently uses WebSocket (`STRUDEL_WS_URL`, default `ws://localhost:4321`) in `services/rei_toei/_strudel_pipeline.py`, while `agents/strudel_mcp_agent.py` is a stdio JSON-RPC client and does not expose a WebSocket server.
-
-**Workarounds:**
-
-- Use `--rei-preview` for generation-only workflow.
-- Add/launch a WebSocket bridge that accepts `eval` payloads at `STRUDEL_WS_URL`.
-- Or refactor `execute_strudel_pattern()` to call the stdio MCP flow directly (matching `agents/strudel_mcp_agent.py`).
-
-### Issue: Strudel prompt expertise fields seem empty or generic
-
-**Likely cause:** `_strudel_pipeline.py` reads `tidal_cycles_syntax.core_functions` and `tidal_cycles_syntax.transformations`, but the current domain file uses `basic_functions` and `pattern_transformations`.
-
-**Workarounds:**
-
-- Add key mapping in code (`basic_functions -> core_functions`, `pattern_transformations -> transformations`), or
-- Align the domain JSON keys to what `_strudel_pipeline.py` expects.
+- Loader compatibility: `load_strudel_patterns()` supports both top-level `templates` and legacy `pattern_library`.
+- Execution transport: `execute_strudel_pattern()` attempts WebSocket first, then falls back to stdio MCP execution.
+- Domain key compatibility: Strudel prompt assembly accepts either `core_functions`/`transformations` or `basic_functions`/`pattern_transformations`.
 
 ### Issue: Generated lyrics don't match persona
 
