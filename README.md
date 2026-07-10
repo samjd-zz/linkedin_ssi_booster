@@ -63,6 +63,7 @@ The SSI Booster is feature-complete for its core workflows and is now focused on
 
 - Ongoing platform polish (persona aesthetic tuning, UX and docs cleanup)
 - MCP workflow hardening and integration refinement
+- Planned comic storyboard module for 3-panel grounded visual narratives
 - Research track: RIA Canadian law knowledge integration (regulatory grounding)
 
 **Have ideas?** [Open a GitHub issue](https://github.com/samjd-zz/linkedin_ssi_booster/issues) with the `enhancement` label.

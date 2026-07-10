@@ -144,6 +144,35 @@ The FLUX.1 art-avatar infrastructure is complete (GPU orchestration, flow integr
 
 ---
 
+## 🧩 Persona-Grounded Comic Storyboard Generator — Planning Complete
+
+**Status:** Planning complete ✅ (idea + PRD + design + implementation plan drafted).
+
+This feature will add a new multimodal output mode that converts grounded source content into deterministic **3-panel comic storyboard artifacts**. The target is a CLI/console-first flow with FLUX rendering and text-only fallback when rendering is unavailable.
+
+### What It Will Add
+
+- 3-panel storyboard generation from `schedule`, `curate`, and `console` sources
+- Panel caption grounding with truth metadata and evidence IDs
+- Similarity-based dedupe gate to skip near-duplicate storyboard outputs
+- Local-first artifact persistence under `GENERATED_CONTENT_DIR/comic_storyboards/`
+- Sequential FLUX rendering through existing single-GPU orchestration
+
+### Implementation Direction
+
+- New package: `services/comic_storyboard/`
+- Integrates with `services/ollama_service.py`, `services/flux_capacitor/`, `services/console_grounding/`, and `services/derivative_of_truth/`
+- Keeps v1 scope intentionally narrow (fixed 3 panels, no web UI/SSE subsystem)
+
+### Planning Docs
+
+- Idea: [docs/features/comic-storyboard-generator/idea.md](docs/features/comic-storyboard-generator/idea.md)
+- PRD: [docs/features/comic-storyboard-generator/prd.md](docs/features/comic-storyboard-generator/prd.md)
+- Design: [docs/features/comic-storyboard-generator/design.md](docs/features/comic-storyboard-generator/design.md)
+- Plan: [docs/features/comic-storyboard-generator/plan.md](docs/features/comic-storyboard-generator/plan.md)
+
+---
+
 ## 🤖 Ollama Buffer MCP Agent — In Progress
 
 **Status:** Code complete ✅, retry safety fixed ✅, Docker service re-enabled ✅, unit tests added ✅
@@ -211,4 +240,4 @@ Have a feature request or integration idea? Open an issue on [GitHub](https://gi
 
 ---
 
-**Last Updated:** July 2026 (feature status cleanup; FLUX Phase 2 + Rei Toei marked complete)
+**Last Updated:** July 2026 (feature status cleanup; FLUX Phase 2 + Rei Toei marked complete; comic storyboard planning added)
