@@ -4,7 +4,7 @@
 
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
-> **⚙️ Project Status:** Active development with periodic maintenance cycles. Core features are stable and production-ready. New capabilities (image generation, music avatar, database integration) are being refined. See [ROADMAP.md](ROADMAP.md) for upcoming features and research directions.
+> **⚙️ Project Status:** Stable and actively maintained. Core features are production-ready, with ongoing refinement in image styling, music workflows, and research integrations. See [ROADMAP.md](ROADMAP.md) for longer-term directions.
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
@@ -25,21 +25,21 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-795%20total-16A34A.svg" alt="Tests 795 total"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-806%20total-16A34A.svg" alt="Tests 806 total"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="left">
 
-**SSI Booster** isn't just a prompt wrapper — it's an adaptive continual learning automation system for content, curation, and persona growth. It combines spaCy-based NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX-powered knowledge graph, and local memory to generate, curate, rank, and route posts.
+**SSI Booster** is more than a prompt wrapper. It is an adaptive, continual-learning automation system for content, curation, and persona growth. It combines spaCy NLP, a persona graph, BM25 retrieval, a truth gate, confidence scoring, a NetworkX knowledge graph, and local memory to generate, curate, rank, and route posts.
 
-Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — to start scheduling, publishing, and analyzing your social posts in one place while supporting my work.
+Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — to schedule, publish, and analyze your social posts in one place while supporting this project.
 
 ---
 
 ## 🧠 Intelligence Stack
 
-##### _<ul><u>— Why This Is Smarter Than Just 'AI Writes Posts'</u></ul>_
+##### Why this is smarter than "AI writes posts"
 
 - **Advanced NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and preprocessing that filters boilerplate before fact storage. See [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
 - **Model2Vec static embedding classification** — ultra-fast article categorisation (`minishlab/potion-base-8M`, 30MB, zero API deps) mapped to 10 SSI categories; results boost selection-learning rankings and stamp extracted facts with `primary_category` and `primary_ssi_component`.
@@ -53,25 +53,23 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
 - **No cloud AI keys required** — all generation runs locally via Ollama.
 
-**Result:** A self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and grows your SSI — with full transparency and explainability.
+**Result:** A self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
 
 ---
 
 ## 📋 Status & Roadmap
 
-The SSI Booster is actively maintained with periodic development cycles. See **[ROADMAP.md](ROADMAP.md)** for:
+The SSI Booster is feature-complete for its core workflows and is now focused on refinement and research. See **[ROADMAP.md](ROADMAP.md)** for:
 
-- ✅ **Complete:** Katzilla.dev government data integration (6 phases, 23 files, 16 tests)
-- ✅ **Complete:** Alex Grey Avatar Enhancement — FLUX.1 art avatar subsystem (GPU orchestration ✅, Ollama-first sequencing ✅, schedule/curate/console integration ✅, 72 tests ✅)
-- ✅ **Fixed & Re-enabled:** Ollama Buffer MCP Agent (retry safety ✅, health checks ✅, Docker service live ✅, unit tests added ✅)
-- ✅ **Complete:** Rei Toei AI Music Avatar — Strudel MCP Agent (retry safety ✅, health checks ✅, MCP stdio flow active ✅, unit tests added ✅, Suno integration ✅)
-- 🏛️ **Research:** RIA Canadian Law Knowledge integration (regulatory grounding for policy-aware content)
+- Ongoing platform polish (persona aesthetic tuning, UX and docs cleanup)
+- MCP workflow hardening and integration refinement
+- Research track: RIA Canadian law knowledge integration (regulatory grounding)
 
 **Have ideas?** [Open a GitHub issue](https://github.com/samjd-zz/linkedin_ssi_booster/issues) with the `enhancement` label.
 
 ---
 
-## 🎵 Rei Toei - AI Music Avatar (Complete)
+## 🎵 Rei Toei - AI Music Avatar
 
 <p align="center">
   <img src="media/rei-selfie1.jpg" alt="Rei Toei Selfie" width="320">
@@ -103,11 +101,13 @@ After you enter Rei mode, plain follow-up messages stay with Rei until you switc
 
 ---
 
-## 🖼️ Image Generation with FLUX.1 (Alex Grey Enhancement)
+## 🖼️ Image Generation with FLUX.1
 
-Generate persona-aligned visual content using FLUX.1-schnell locally. The Alex Grey Avatar Enhancement is the style layer that keeps generated images aligned with the project's visual identity.
+> **Inspiration:** Visual style direction is Alex Grey-inspired, tuned for persona-aligned, symbolic technical storytelling.
 
-**Current status:** FLUX.1 integration complete; persona aesthetic tuning in progress (see [ROADMAP.md](ROADMAP.md)).
+Generate persona-aligned visual content using FLUX.1-schnell locally.
+
+**Current status:** FLUX.1 integration is stable; persona aesthetic tuning remains in progress (see [ROADMAP.md](ROADMAP.md)).
 
 **Requirements:**
 - GPU with 12GB+ VRAM (tested on RTX 3060)
@@ -132,7 +132,7 @@ See [docs/flux-art-avatar.md](docs/flux-art-avatar.md) for configuration, style 
 
 ## 🏆 What is the Social Selling Index (SSI)?
 
-The [LinkedIn specifically uses the Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0–100 score LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships — the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced to others.
+The [LinkedIn Social Selling Index](https://www.linkedin.com/sales/ssi) is a 0-100 score that LinkedIn updates daily. It measures how effectively you build your personal brand, find the right people, engage with insights, and build relationships - the four pillars LinkedIn's algorithm uses to determine how widely your content and profile are surfaced.
 
 A higher SSI directly correlates with more profile views, post reach, and inbound connection requests. LinkedIn's own data shows that professionals with an SSI above 70 get 45% more opportunities than those below 30.
 
@@ -181,7 +181,7 @@ The SSI Booster integrates with **Buffer for seamless social scheduling**. All p
 
 **Support the project:** Use our [Buffer partner link](https://join.buffer.com/samjd42) to help fund development while getting started with Buffer scheduling!
 
-**In Development:** See [ROADMAP.md](ROADMAP.md) for details on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service active, unit tests added; live endpoint validation and consumer wiring pending).
+**Roadmap Focus:** See [ROADMAP.md](ROADMAP.md) for next steps on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service active, unit tests added; live endpoint validation and consumer wiring pending).
 
 ---
 
