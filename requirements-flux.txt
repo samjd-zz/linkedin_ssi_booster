@@ -8,6 +8,5 @@ transformers
 sentencepiece
 tiktoken
 gguf
-Pillow
 flask
 protobuf

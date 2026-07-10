@@ -418,16 +418,50 @@ def _display_art_in_terminal(image_path: str | None, width: int | None = None) -
         # Clamp to the active terminal pane so fixed values do not crash rendering.
         _render_width = max(10, min(_render_width, max(10, _terminal_columns - 2)))
 
+    _render_image_path = image_path
+    _temp_upsampled_path: str | None = None
+    _upsample_factor_raw = os.getenv("FLUX_DISPLAY_UPSCALE_FACTOR", "2").strip()
+    _upsample_factor = int(_upsample_factor_raw) if _upsample_factor_raw.isdigit() else 2
+    _upsample_factor = max(1, min(_upsample_factor, 6))
+
+    # Upsample with nearest-neighbor so terminal downscaling keeps edge contrast.
+    if _upsample_factor > 1:
+        try:
+            from PIL import Image as _PILImage
+            import tempfile as _tempfile
+
+            _resampling = getattr(_PILImage, "Resampling", _PILImage)
+            _nearest = getattr(_resampling, "NEAREST")
+
+            with _PILImage.open(image_path) as _source_img:
+                _upsampled_img = _source_img.resize(
+                    (_source_img.width * _upsample_factor, _source_img.height * _upsample_factor),
+                    _nearest,
+                )
+
+                with _tempfile.NamedTemporaryFile(
+                    mode="wb",
+                    prefix="flux-term-upsample-",
+                    suffix=".png",
+                    delete=False,
+                ) as _tmp:
+                    _temp_upsampled_path = _tmp.name
+
+                _upsampled_img.save(_temp_upsampled_path, format="PNG")
+                _render_image_path = _temp_upsampled_path
+        except Exception as _upsample_err:  # noqa: BLE001
+            logger.warning("terminal upsampling skipped: %s", _upsample_err)
+
     try:
         from term_image.image import from_file as _ti_from_file
-        _img = _ti_from_file(image_path, width=_render_width)
+        _img = _ti_from_file(_render_image_path, width=_render_width)
         _img.draw()
     except Exception as _ti_err:  # noqa: BLE001
         if _render_width is not None:
             # Fallback to auto-fit if fixed-width rendering fails in the current pane.
             try:
                 from term_image.image import from_file as _ti_from_file
-                _img = _ti_from_file(image_path, width=None)
+                _img = _ti_from_file(_render_image_path, width=None)
                 _img.draw()
                 logger.warning(
                     "term-image fixed-width render failed (requested=%s, clamped=%s, cols=%s); fell back to auto-fit: %s",
@@ -445,6 +479,12 @@ def _display_art_in_terminal(image_path: str | None, width: int | None = None) -
                 return
 
         logger.warning("term-image display skipped: %s", _ti_err)
+    finally:
+        if _temp_upsampled_path:
+            try:
+                _Path(_temp_upsampled_path).unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def _optimize_flux_story_for_render(
