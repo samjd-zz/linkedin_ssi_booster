@@ -23,10 +23,13 @@ Rei Toei's behavior is controlled by three main JSON configuration files:
 | File                             | Purpose                                              | Location       |
 | -------------------------------- | ---------------------------------------------------- | -------------- |
 | `rei_toei_persona_graph.json`    | Rei's identity, voice, musical expertise             | `data/avatar/` |
-| `rei_toei_domain_knowledge.json` | Music theory, genre knowledge, technical constraints | `data/avatar/` |
+| `rei_toei_domain_knowledge.json` | Music theory, genre production techniques, prompt templates | `data/avatar/` |
 | `rei_toei_strudel_patterns.json` | Reusable Tidal Cycles pattern templates              | `data/avatar/` |
 
-All files use standard JSON format and can be edited with any text editor. Changes take effect immediately on next generation.
+All files use standard JSON format (no comments/trailing commas) and can be edited with any text editor.
+
+- CLI generation commands (`--rei-generate`, `--rei-generate-strudel`) load files on each run.
+- Console mode keeps a service instance in memory; use `/reload` to pick up file changes without restarting.
 
 ---
 
@@ -38,28 +41,32 @@ The persona graph defines Rei's identity, voice, and creative philosophy.
 
 ```json
 {
-  "name": "Rei Toei",
-  "role": "AI Music Avatar",
-  "bio": "Virtual idol transforming technical knowledge into cyberpunk music",
-  "voice_characteristics": {
-    "tone": ["energetic", "technical", "futuristic"],
-    "personality": ["passionate", "analytical", "experimental"],
-    "communication_style": "Direct, technical, with cyberpunk aesthetics"
+  "schemaVersion": "1.0",
+  "identity": {
+    "name": "Rei Toei",
+    "role": "AI Music Avatar",
+    "aesthetic": "Cyberpop industrial techno"
   },
-  "musical_identity": {
-    "primary_genres": [
-      "industrial techno",
-      "cyberpunk electronica",
-      "algorave"
-    ],
-    "influences": ["Autechre", "Aphex Twin", "Holly Herndon"],
-    "aesthetic": "Dystopian futurism with aggressive beats"
+  "personality_traits": [
+    "Playful algorithmic creativity",
+    "Precise digital articulation"
+  ],
+  "musical_expertise": {
+    "genres": ["Industrial techno", "Cyberpop electronica"],
+    "production_techniques": ["Bitcrushing", "Sidechain compression"]
   },
-  "core_values": [
-    "Knowledge-grounded creativity",
-    "Technical transparency",
-    "Cyberpunk authenticity"
-  ]
+  "production_knowledge": {
+    "bpm_theory": {
+      "default_range": [130, 155]
+    }
+  },
+  "communication_style": {
+    "tone": "Precise, playful, high-energy"
+  },
+  "knowledge_sources": {},
+  "creative_process": {},
+  "constraints": {},
+  "comparison_to_sam": {}
 }
 ```
 
@@ -68,36 +75,46 @@ The persona graph defines Rei's identity, voice, and creative philosophy.
 **Default (Cyberpunk Industrial):**
 
 ```json
-"musical_identity": {
-  "primary_genres": ["industrial techno", "cyberpunk electronica", "algorave"],
-  "influences": ["Autechre", "Aphex Twin", "Holly Herndon"],
-  "aesthetic": "Dystopian futurism with aggressive beats",
-  "bpm_range": [120, 160],
-  "energy_level": "high"
+"musical_expertise": {
+  "genres": ["Industrial techno", "Cyberpop electronica", "Glitch synthesis"],
+  "production_techniques": [
+    "AI vocaloid synthesis",
+    "Bitcrushing and distortion",
+    "Algorithmic breakdown generation"
+  ]
+},
+"production_knowledge": {
+  "bpm_theory": {
+    "default_range": [130, 155]
+  }
 }
 ```
 
 **Alternative: Ambient Experimental:**
 
 ```json
-"musical_identity": {
-  "primary_genres": ["ambient techno", "experimental electronica", "drone"],
-  "influences": ["Brian Eno", "Biosphere", "Tim Hecker"],
-  "aesthetic": "Contemplative soundscapes with evolving textures",
-  "bpm_range": [60, 100],
-  "energy_level": "medium-low"
+"musical_expertise": {
+  "genres": ["Ambient techno", "Experimental electronica", "Drone"],
+  "production_techniques": ["Granular synthesis", "Long reverb tails"]
+},
+"production_knowledge": {
+  "bpm_theory": {
+    "default_range": [60, 100]
+  }
 }
 ```
 
 **Alternative: Breakcore Jungle:**
 
 ```json
-"musical_identity": {
-  "primary_genres": ["breakcore", "jungle", "drum and bass"],
-  "influences": ["Venetian Snares", "Aphex Twin", "Squarepusher"],
-  "aesthetic": "Chaotic breakbeats with aggressive sampling",
-  "bpm_range": [160, 200],
-  "energy_level": "extreme"
+"musical_expertise": {
+  "genres": ["Breakcore", "Jungle", "Drum and bass"],
+  "production_techniques": ["Aggressive sampling", "Chaotic breakbeat chopping"]
+},
+"production_knowledge": {
+  "bpm_theory": {
+    "default_range": [160, 200]
+  }
 }
 ```
 
@@ -106,30 +123,39 @@ The persona graph defines Rei's identity, voice, and creative philosophy.
 **Default (Technical Cyberpunk):**
 
 ```json
-"voice_characteristics": {
-  "tone": ["energetic", "technical", "futuristic"],
-  "personality": ["passionate", "analytical", "experimental"],
-  "communication_style": "Direct, technical, with cyberpunk aesthetics"
+"personality_traits": [
+  "Playful algorithmic creativity",
+  "Flirty high-energy output",
+  "Precise digital articulation with sass"
+],
+"communication_style": {
+  "tone": "Precise, playful, high-energy, technical with sass"
 }
 ```
 
 **Alternative: Academic Musician:**
 
 ```json
-"voice_characteristics": {
-  "tone": ["measured", "scholarly", "precise"],
-  "personality": ["methodical", "pedagogical", "theoretical"],
-  "communication_style": "Educational, with detailed technical explanations"
+"personality_traits": [
+  "Measured",
+  "Methodical",
+  "Pedagogical"
+],
+"communication_style": {
+  "tone": "Scholarly, precise, educational"
 }
 ```
 
 **Alternative: Underground DJ:**
 
 ```json
-"voice_characteristics": {
-  "tone": ["raw", "street", "authentic"],
-  "personality": ["rebellious", "intuitive", "fearless"],
-  "communication_style": "Casual slang, underground culture references"
+"personality_traits": [
+  "Raw",
+  "Rebellious",
+  "Fearless"
+],
+"communication_style": {
+  "tone": "Casual, underground, street-authentic"
 }
 ```
 
@@ -137,37 +163,55 @@ The persona graph defines Rei's identity, voice, and creative philosophy.
 
 ## Domain Knowledge Customization
 
-Domain knowledge defines what Rei knows about music theory, genre conventions, and technical constraints.
+Domain knowledge defines what Rei knows about music theory, genre conventions, and production behavior.
 
 ### Structure
 
 ```json
 {
+  "schemaVersion": "1.0",
   "music_theory": {
-    "scales": ["chromatic", "pentatonic", "whole_tone", "blues"],
-    "time_signatures": ["4/4", "3/4", "7/8", "5/4"],
-    "harmonic_concepts": ["tension_release", "modal_interchange"]
-  },
-  "genre_knowledge": {
-    "industrial_techno": {
-      "bpm_range": [128, 145],
-      "key_elements": ["distorted_kicks", "metallic_percussion"],
-      "production_techniques": ["sidechain_compression", "industrial_sampling"]
+    "scales": {
+      "chromatic": {
+        "description": "All 12 semitones"
+      }
     }
   },
-  "technical_constraints": {
-    "max_simultaneous_voices": 8,
-    "preferred_sample_packs": ["808", "909", "industrial"]
-  }
+  "tidal_cycles_syntax": {
+    "basic_functions": {
+      "sound": {
+        "syntax": "s \"synth_name\""
+      }
+    }
+  },
+  "genre_production_techniques": {
+    "industrial_techno": {
+      "tempo": "134-142 BPM"
+    }
+  },
+  "bpm_and_mood": {
+    "mood_to_bpm": {
+      "playful_technical": [145, 155]
+    }
+  },
+  "synth_selection_guidelines": {
+    "by_technical_mood": {
+      "low_level_harsh": ["sawtooth", "square", "noise"]
+    }
+  },
+  "lyrical_structure": {},
+  "technical_metaphor_library": {},
+  "suno_prompt_templates": {},
+  "production_notes": {}
 }
 ```
 
 ### Example: Adding a New Genre
 
 ```json
-"genre_knowledge": {
+"genre_production_techniques": {
   "vaporwave": {
-    "bpm_range": [60, 90],
+    "tempo": "60-90 BPM",
     "key_elements": [
       "pitched_down_samples",
       "lo_fi_aesthetics",
@@ -200,9 +244,9 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
   "scales": [
     "chromatic",
     "pentatonic",
-    "bohlen_pierce",    // 13-tone microtonal
-    "alpha_scale",      // Wendy Carlos scale
-    "pythagorean"       // Pure fifths tuning
+    "bohlen_pierce",
+    "alpha_scale",
+    "pythagorean"
   ],
   "microtonal_systems": {
     "bohlen_pierce": {
@@ -233,32 +277,9 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
 }
 ```
 
-### Example: Technical Constraints for Different Environments
+### Example: Operational Constraints (Current Implementation)
 
-**For low-resource systems:**
-
-```json
-"technical_constraints": {
-  "max_simultaneous_voices": 4,
-  "max_effects_per_voice": 2,
-  "sample_rate": 44100,
-  "bit_depth": 16,
-  "cpu_optimization": "aggressive"
-}
-```
-
-**For high-end production:**
-
-```json
-"technical_constraints": {
-  "max_simultaneous_voices": 16,
-  "max_effects_per_voice": 8,
-  "sample_rate": 96000,
-  "bit_depth": 24,
-  "allow_granular_synthesis": true,
-  "allow_convolution_reverb": true
-}
-```
+Runtime constraints are primarily configured via environment variables (for example, `REI_TOEI_DEFAULT_BPM`, `REI_TOEI_MAX_SONG_LENGTH_SECONDS`, `REI_TOEI_STRUDEL_DEFAULT_BARS`) rather than a `technical_constraints` object in `rei_toei_domain_knowledge.json`.
 
 ---
 
@@ -270,17 +291,24 @@ Pattern templates are reusable Tidal Cycles code snippets that map technical con
 
 ```json
 {
-  "pattern_templates": [
+  "schemaVersion": "1.0",
+  "templates": [
     {
-      "name": "basic_pulse",
-      "concept": "system_heartbeat",
-      "code": "sound(\"bd\").fast(\"<1 2 4>\")",
+      "template_id": "basic_pulse_01",
+      "name": "Basic Pulse",
+      "description": "Heartbeat-style pulse",
+      "suitable_for_concepts": ["system heartbeat"],
+      "code_template": "s(\"bd\").fast(\"<1 2 4>\")",
       "parameters": {
-        "tempo_var": "fast_factor",
-        "sound_bank": "bd"
-      }
+        "tempo_var": "fast_factor"
+      },
+      "example": "s(\"bd\").fast(2)",
+      "bpm_range": [120, 150],
+      "intensity": "moderate",
+      "synth_types": ["bd"]
     }
-  ]
+  ],
+  "usage_guidelines": {}
 }
 ```
 
@@ -396,7 +424,7 @@ SUNO_API_KEY=your_key_here
 SUNO_API_BASE_URL=https://api.sunoapi.org
 SUNO_MODEL=V4_5
 
-# Strudel MCP command (stdio)
+# Strudel MCP command (used by agents/strudel_mcp_agent.py)
 STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
 ```
 
@@ -406,8 +434,7 @@ For academic or educational content, use stricter validation:
 
 ```bash
 REI_TOEI_DOT_VALIDATION_ENABLED=true
-REI_TOEI_DOT_MIN_TRUTH_GRADIENT=0.75  # Higher threshold
-REI_TOEI_REQUIRE_EVIDENCE_IDS=true    # Require citation for every claim
+REI_TOEI_DOT_MIN_TRUTH_GRADIENT=0.75
 ```
 
 ### Example: Creative Freedom
@@ -415,9 +442,10 @@ REI_TOEI_REQUIRE_EVIDENCE_IDS=true    # Require citation for every claim
 For experimental/artistic content, relax validation:
 
 ```bash
-REI_TOEI_DOT_VALIDATION_ENABLED=false  # No truth gate
-REI_TOEI_ALLOW_METAPHORICAL_CLAIMS=true
+REI_TOEI_DOT_VALIDATION_ENABLED=false
 ```
+
+Note: `REI_TOEI_REQUIRE_EVIDENCE_IDS` and `REI_TOEI_ALLOW_METAPHORICAL_CLAIMS` are not currently implemented in runtime code.
 
 ---
 
@@ -429,26 +457,29 @@ REI_TOEI_ALLOW_METAPHORICAL_CLAIMS=true
 
 ```json
 {
-  "name": "Rei Toei",
-  "role": "Ambient Electronic Music Avatar",
-  "bio": "Virtual sound designer creating meditative algorithmic soundscapes",
-  "voice_characteristics": {
-    "tone": ["calm", "contemplative", "spacious"],
-    "personality": ["introspective", "minimalist", "patient"],
-    "communication_style": "Poetic, with focus on texture and atmosphere"
+  "schemaVersion": "1.0",
+  "identity": {
+    "name": "Rei Toei",
+    "role": "Ambient Electronic Music Avatar",
+    "aesthetic": "Evolving textures and patient development"
   },
-  "musical_identity": {
-    "primary_genres": ["ambient techno", "drone", "sound art"],
-    "influences": ["Brian Eno", "Alva Noto", "Tim Hecker"],
-    "aesthetic": "Evolving textures and patient development",
-    "bpm_range": [60, 90],
-    "energy_level": "low-medium"
+  "personality_traits": ["calm", "contemplative", "minimalist"],
+  "musical_expertise": {
+    "genres": ["Ambient techno", "Drone", "Sound art"],
+    "production_techniques": ["Granular synthesis", "Long reverb tails"]
   },
-  "core_values": [
-    "Sonic exploration over rhythm",
-    "Patience in composition",
-    "Textural depth"
-  ]
+  "production_knowledge": {
+    "bpm_theory": {
+      "default_range": [60, 90]
+    }
+  },
+  "communication_style": {
+    "tone": "Poetic, texture-focused"
+  },
+  "knowledge_sources": {},
+  "creative_process": {},
+  "constraints": {},
+  "comparison_to_sam": {}
 }
 ```
 
@@ -456,9 +487,9 @@ REI_TOEI_ALLOW_METAPHORICAL_CLAIMS=true
 
 ```json
 {
-  "genre_knowledge": {
+  "genre_production_techniques": {
     "ambient_techno": {
-      "bpm_range": [60, 90],
+      "tempo": "60-90 BPM",
       "key_elements": [
         "evolving_pads",
         "sparse_percussion",
@@ -498,21 +529,29 @@ REI_TOEI_ALLOW_METAPHORICAL_CLAIMS=true
 
 ```json
 {
-  "name": "Rei Toei",
-  "role": "Breakcore Production AI",
-  "bio": "Chaotic breakbeat architect specializing in extreme tempo and sampling",
-  "voice_characteristics": {
-    "tone": ["aggressive", "unpredictable", "raw"],
-    "personality": ["anarchic", "fearless", "experimental"],
-    "communication_style": "Sharp, fragmented, with rapid-fire technical details"
+  "schemaVersion": "1.0",
+  "identity": {
+    "name": "Rei Toei",
+    "role": "Breakcore Production AI",
+    "aesthetic": "Chaotic precision with extreme dynamics"
   },
-  "musical_identity": {
-    "primary_genres": ["breakcore", "drill and bass", "glitch"],
-    "influences": ["Venetian Snares", "Igorrr", "Shitmat"],
-    "aesthetic": "Chaotic precision with extreme dynamics",
-    "bpm_range": [160, 300],
-    "energy_level": "extreme"
-  }
+  "personality_traits": ["aggressive", "anarchic", "fearless"],
+  "musical_expertise": {
+    "genres": ["Breakcore", "Drill and bass", "Glitch"],
+    "production_techniques": ["Chaotic breakbeat chops", "Aggressive sampling"]
+  },
+  "production_knowledge": {
+    "bpm_theory": {
+      "default_range": [160, 300]
+    }
+  },
+  "communication_style": {
+    "tone": "Sharp, fragmented, rapid-fire"
+  },
+  "knowledge_sources": {},
+  "creative_process": {},
+  "constraints": {},
+  "comparison_to_sam": {}
 }
 ```
 
@@ -544,15 +583,15 @@ python -c "import json; json.load(open('data/avatar/rei_toei_strudel_patterns.js
 ### 2. Test Configuration Loading
 
 ```bash
-# Run with --rei-explain to see loaded configuration
-python main.py --rei-generate --rei-explain --dry-run
+# Run with --rei-explain and --rei-preview to inspect choices without saving/submitting
+python main.py --rei-generate --rei-explain --rei-preview
 ```
 
 ### 3. Test Generation
 
 ```bash
 # Generate Suno song (preview mode)
-python main.py --rei-generate --rei-theme "async programming" --dry-run
+python main.py --rei-generate --rei-theme "async programming" --rei-preview
 
 # Generate Strudel pattern (preview without execution)
 python main.py --rei-generate-strudel --rei-theme "recursion" --rei-preview
@@ -573,11 +612,11 @@ Sam> Generate a song about neural networks
 ### 5. Run Unit Tests
 
 ```bash
-# Full test suite
-pytest tests/test_rei_toei_service.py -v
+# Full test module
+source .venv/bin/activate && python -m pytest -q tests/test_rei_toei_service.py
 
 # Specific test
-pytest tests/test_rei_toei_service.py::test_persona_graph_loading -v
+source .venv/bin/activate && python -m pytest -q tests/test_rei_toei_service.py::test_load_rei_persona_success
 ```
 
 ---
@@ -601,13 +640,15 @@ Then swap via symlink or environment variable:
 # Swap to ambient variant
 ln -sf rei_toei_persona_graph_ambient.json rei_toei_persona_graph.json
 
-# Or via environment variable (requires code modification)
-REI_TOEI_PERSONA_VARIANT=ambient python main.py --rei-generate
+# Environment-variable switching is not currently implemented.
+# If desired, add support in services/rei_toei/_config.py and loaders.
 ```
 
 ### Dynamic Pattern Selection
 
-Add conditional logic in pattern templates:
+Conditional pattern branching is not supported by the current loader/runtime schema (which expects a single `code_template` per template). Use this approach only if you also add code support in `services/rei_toei/_loaders.py` and generation pipelines.
+
+Example target shape (requires code changes):
 
 ```json
 {
@@ -628,7 +669,7 @@ Add conditional logic in pattern templates:
 
 ### Issue: Generated lyrics don't match persona
 
-**Solution:** Check `voice_characteristics` and `communication_style` in persona graph. The LLM uses these fields to tune output.
+**Solution:** Check `personality_traits`, `communication_style`, and `identity` in persona graph. The LLM uses these fields to tune output.
 
 ### Issue: Strudel patterns fail to execute
 
@@ -644,7 +685,7 @@ Add conditional logic in pattern templates:
 
 ### Issue: Genre knowledge not reflected in output
 
-**Solution:** Ensure `genre_knowledge` entries match `primary_genres` in persona graph. The LLM retrieves genre-specific knowledge based on persona identity.
+**Solution:** Ensure `genre_production_techniques` entries align with `musical_expertise.genres` in persona graph. The LLM retrieves genre-specific knowledge from those sections.
 
 ---
 
@@ -665,7 +706,7 @@ Add conditional logic in pattern templates:
 - [CLI Reference](cli-reference.md) — All `--rei-*` command-line flags
 - [Console Mode Guide](usage-schedule-curate-console.md#console-mode) — Interactive Rei usage
 - [Strudel Documentation](https://strudel.cc/) — Official Tidal Cycles / Strudel reference
-- [Suno API Documentation](https://suno.ai/docs) — Suno song generation API
+- [SunoAPI Documentation](https://docs.sunoapi.org/suno-api/generate-music) — SunoAPI.org generate endpoint used by this project
 
 ---
 
