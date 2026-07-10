@@ -72,6 +72,14 @@ FLUX_DISPLAY_WIDTH=80   # cap to 80 columns
 
 For true pixel-level rendering, use a kitty-compatible terminal (Kitty, WezTerm) which supports the kitty graphics protocol. Sixel and unicode-block fallbacks are lower quality.
 
+## Freeing Memory
+
+When you’re done generating images, unload the FLUX service to release GPU memory:
+
+```bash
+docker compose --profile full exec flux-app curl -X POST http://flux-app:5000/unload
+```
+
 ---
 
 ## Requirements

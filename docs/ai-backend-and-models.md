@@ -1,17 +1,25 @@
 # AI Backend and Models
 
-All generation in the project uses Ollama as a locally running LLM server, which means no cloud AI keys are required for the main writing workflow. The README presents Ollama as the foundation for local post generation and recommends tuning model choice and context window based on quality and available memory.
+All generation in the project uses Ollama through Docker Compose, which means no cloud AI keys are required for the main writing workflow. The README presents Ollama as the foundation for local post generation and recommends tuning model choice and context window based on quality and available memory.
 
-## Install Ollama
+## Run Ollama in Docker
 
 ```bash
-curl -fsSL https://ollama.com/install.sh | sh
-ollama serve &
-ollama pull gemma4:26b
-ollama oull 
+docker compose --profile core up -d ollama
+docker compose --profile core exec ollama ollama pull gemma4:26b
 ```
 
-The documented setup also mentions macOS and Windows installers from `https://ollama.com/download`, followed by `.env` configuration through `OLLAMA_MODEL` and `OLLAMA_NUM_CTX`.
+The compose stack already wires `OLLAMA_BASE_URL` to `http://ollama:11434`, so there is no need to run `ollama serve` manually. Use the `ollama` service inside Docker for pulls, stops, and model management.
+
+## Freeing Memory
+
+When you’re done with a model and want to release VRAM, stop it explicitly from the Ollama container:
+
+```bash
+docker compose --profile core exec ollama ollama stop "$OLLAMA_MODEL"
+```
+
+Use the same command with whichever model name you loaded in your Ollama instance.
 
 ## Recommended models
 
@@ -43,8 +51,8 @@ The README recommends `OLLAMA_NUM_CTX=16384` as the baseline for persona-heavy g
 
 ## One-off override
 
-The active model can also be overridden for a single run by prefixing the command with an `OLLAMA_MODEL` environment override. This is useful when comparing speed or quality without editing `.env`.
+The active model can also be overridden for a single run by prefixing the command with an `OLLAMA_MODEL` environment override. In Docker, pass the override to the app container so the compose stack stays consistent. This is useful when comparing speed or quality without editing `.env`.
 
 ```bash
-OLLAMA_MODEL=llama3.2 python main.py --curate --dry-run
+docker compose --profile core run --rm -e OLLAMA_MODEL=llama3.2 app python main.py --curate --dry-run
 ```
