@@ -139,16 +139,40 @@ def generate_strudel_code(
     config = ReiToeiConfig()
     final_bpm = bpm or theme.suggested_bpm or config.default_bpm
     
-    # Build system prompt with Rei's production knowledge
+    # Build system prompt with Rei's production knowledge.
+    # Support both current and legacy key shapes in domain knowledge.
     tidal_syntax = domain_knowledge.tidal_cycles_syntax
-    synth_guidelines = domain_knowledge.synth_selection_guidelines
+
+    raw_core_functions = tidal_syntax.get("core_functions", [])
+    if isinstance(raw_core_functions, list):
+        core_functions = raw_core_functions
+    else:
+        core_functions = []
+    if not core_functions:
+        basic_functions = tidal_syntax.get("basic_functions", {})
+        if isinstance(basic_functions, dict):
+            core_functions = list(basic_functions.keys())
+
+    raw_transformations = tidal_syntax.get("transformations", [])
+    if isinstance(raw_transformations, list):
+        transformations = raw_transformations
+    else:
+        transformations = []
+    if not transformations:
+        pattern_transformations = tidal_syntax.get("pattern_transformations", {})
+        if isinstance(pattern_transformations, dict):
+            transformations = list(pattern_transformations.keys())
+
+    production_style = persona.production_knowledge.get("production_techniques", [])
+    if not production_style:
+        production_style = persona.musical_expertise.get("production_techniques", [])
     
     system_prompt = f"""You are {persona.identity['name']}, expert in Tidal Cycles algorithmic music composition.
 
 Your expertise:
-- Tidal Cycles patterns: {', '.join(tidal_syntax.get('core_functions', [])[:8])}
-- Pattern transformations: {', '.join(tidal_syntax.get('transformations', [])[:6])}
-- Production style: {', '.join(persona.production_knowledge.get('production_techniques', [])[:5])}
+- Tidal Cycles patterns: {', '.join(core_functions[:8])}
+- Pattern transformations: {', '.join(transformations[:6])}
+- Production style: {', '.join(production_style[:5])}
 
 You generate precise Tidal Cycles code that transforms technical concepts into algorithmic music patterns.
 
@@ -368,10 +392,11 @@ async def execute_strudel_pattern(
     websocket_url: Optional[str] = None
 ) -> "ExecutionResult":
     """
-    Execute a Strudel pattern by sending it to the Strudel MCP agent via WebSocket
-    
-    This function establishes a WebSocket connection to the Strudel bridge server
-    (agents/strudel_mcp_agent.py) and sends the pattern code for live execution.
+    Execute a Strudel pattern.
+
+    Execution strategy:
+    1) Try WebSocket bridge at STRUDEL_WS_URL (default ws://localhost:4321)
+    2) Fallback to stdio MCP flow via agents/strudel_mcp_agent.py helper
     
     Args:
         pattern: The StrudelPattern to execute
@@ -381,7 +406,7 @@ async def execute_strudel_pattern(
         ExecutionResult: Execution result with success status and timing
         
     Raises:
-        Exception: If WebSocket connection fails
+        Exception: Raised internally and converted into ExecutionResult failure
     """
     import asyncio
     from services.rei_toei._models import ExecutionResult
@@ -392,7 +417,7 @@ async def execute_strudel_pattern(
     if websocket_url is None:
         websocket_url = os.getenv("STRUDEL_WS_URL", "ws://localhost:4321")
     
-    logger.debug(f"Connecting to Strudel MCP agent at {websocket_url}")
+    logger.debug(f"Connecting to Strudel WebSocket bridge at {websocket_url}")
     
     # Build WebSocket payload
     payload = {
@@ -410,6 +435,8 @@ async def execute_strudel_pattern(
     
     start_time = time.time()
     
+    websocket_error: Optional[str] = None
+
     try:
         # Import websockets for WebSocket connection
         import websockets
@@ -418,7 +445,7 @@ async def execute_strudel_pattern(
         async with websockets.connect(websocket_url, timeout=10) as websocket:
             # Send payload
             await websocket.send(json.dumps(payload))
-            logger.debug("Sent pattern code to Strudel MCP agent")
+            logger.debug("Sent pattern code to Strudel WebSocket bridge")
             
             # Wait for acknowledgment (optional, with timeout)
             try:
@@ -434,7 +461,7 @@ async def execute_strudel_pattern(
         result = ExecutionResult(
             success=True,
             pattern_id=pattern.pattern_id,
-            message=f"Pattern executed successfully on Strudel MCP agent ({elapsed_ms}ms)",
+            message=f"Pattern executed successfully via WebSocket bridge ({elapsed_ms}ms)",
             error=None,
             execution_time_ms=elapsed_ms
         )
@@ -443,20 +470,50 @@ async def execute_strudel_pattern(
         return result
         
     except Exception as e:
+        websocket_error = str(e)
+        logger.warning("WebSocket execution failed, attempting stdio MCP fallback: %s", websocket_error)
+
+    # Fallback path: call Strudel MCP over stdio helper.
+    try:
+        from agents.strudel_mcp_agent import send_to_strudel_mcp
+
+        stdio_ok = await asyncio.to_thread(send_to_strudel_mcp, pattern.strudel_code)
         elapsed_ms = int((time.time() - start_time) * 1000)
-        
-        error_msg = f"Failed to execute pattern: {str(e)}"
-        logger.error(error_msg)
-        
-        result = ExecutionResult(
+
+        if stdio_ok:
+            return ExecutionResult(
+                success=True,
+                pattern_id=pattern.pattern_id,
+                message=f"Pattern executed successfully via stdio MCP fallback ({elapsed_ms}ms)",
+                error=None,
+                execution_time_ms=elapsed_ms,
+            )
+
+        error_msg = "Failed to execute pattern via stdio MCP fallback"
+        if websocket_error:
+            error_msg = f"WebSocket failed ({websocket_error}); {error_msg}"
+
+        return ExecutionResult(
             success=False,
             pattern_id=pattern.pattern_id,
             message="Pattern execution failed",
             error=error_msg,
-            execution_time_ms=elapsed_ms
+            execution_time_ms=elapsed_ms,
         )
-        
-        return result
+    except Exception as stdio_error:
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        error_msg = f"Stdio MCP fallback error: {stdio_error}"
+        if websocket_error:
+            error_msg = f"WebSocket failed ({websocket_error}); {error_msg}"
+
+        logger.error(error_msg)
+        return ExecutionResult(
+            success=False,
+            pattern_id=pattern.pattern_id,
+            message="Pattern execution failed",
+            error=error_msg,
+            execution_time_ms=elapsed_ms,
+        )
 
 
 def save_pattern_to_library(

@@ -310,6 +310,35 @@ def test_load_strudel_patterns_success(mock_pattern_library_data):
             assert template1.intensity == "moderate"
 
 
+def test_load_strudel_patterns_pattern_library_compatibility():
+    """Test load_strudel_patterns supports legacy top-level pattern_library key."""
+    legacy_data = {
+        "schemaVersion": "1.0",
+        "pattern_library": [
+            {
+                "template_id": "legacy_001",
+                "name": "Legacy Pattern",
+                "description": "Legacy schema pattern",
+                "suitable_for_concepts": ["legacy"],
+                "code_template": 's("bd")',
+                "parameters": {"synth": "bd"},
+                "example": 's("bd")',
+            }
+        ],
+        "usage_guidelines": {"note": "legacy"},
+    }
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(legacy_data))):
+            library = load_strudel_patterns()
+
+    assert isinstance(library, StrudelPatternLibrary)
+    assert len(library.templates) == 1
+    assert library.templates[0].template_id == "legacy_001"
+    assert library.templates[0].bpm_range == [120, 160]
+    assert library.templates[0].intensity == "moderate"
+
+
 def test_load_strudel_patterns_file_not_found():
     """Test load_strudel_patterns raises FileNotFoundError when file missing"""
     with patch("pathlib.Path.exists", return_value=False):
@@ -1744,18 +1773,46 @@ def test_execute_strudel_pattern_connection_failure():
         generated_at="2026-05-19T12:00:00Z"
     )
     
-    # Mock websockets to raise connection error
+    # Mock websockets to raise connection error and stdio fallback to fail
     with patch("websockets.connect") as mock_connect:
         mock_connect.side_effect = Exception("Connection refused")
-        
-        import asyncio
-        result = asyncio.run(execute_strudel_pattern(pattern))
+
+        with patch("agents.strudel_mcp_agent.send_to_strudel_mcp", return_value=False):
+            import asyncio
+            result = asyncio.run(execute_strudel_pattern(pattern))
     
     assert isinstance(result, ExecutionResult)
     assert result.success is False
     assert result.pattern_id == "pat_002"
     assert result.error is not None
     assert "connection refused" in result.error.lower()
+
+
+def test_execute_strudel_pattern_stdio_fallback_success():
+    """Test execute_strudel_pattern falls back to stdio MCP when WebSocket fails."""
+    pattern = StrudelPattern(
+        pattern_id="pat_002b",
+        title="Fallback Pattern",
+        theme="Async",
+        strudel_code='note("c3").s("pluck")',
+        bpm=140,
+        duration_bars=8,
+        synths=["pluck"],
+        evidence_ids=["ev_002"],
+        generated_at="2026-05-19T12:00:00Z"
+    )
+
+    with patch("websockets.connect") as mock_connect:
+        mock_connect.side_effect = Exception("Connection refused")
+        with patch("agents.strudel_mcp_agent.send_to_strudel_mcp", return_value=True):
+            import asyncio
+            result = asyncio.run(execute_strudel_pattern(pattern))
+
+    assert isinstance(result, ExecutionResult)
+    assert result.success is True
+    assert result.pattern_id == "pat_002b"
+    assert result.error is None
+    assert "fallback" in result.message.lower()
 
 
 def test_save_pattern_to_library_success():

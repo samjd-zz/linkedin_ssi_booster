@@ -10,10 +10,10 @@ To set up your environment and execute tests, use the following standard command
 
 ```bash
 # Install test dependencies
-pip install pytest
+source .venv/bin/activate && pip install pytest
 
 # Run full test suite with verbose output
-pytest tests/ -v
+source .venv/bin/activate && python -m pytest tests/ -v
 
 ```
 
@@ -22,7 +22,7 @@ pytest tests/ -v
 For tests that depend on environment variables (such as `BUFFER_API_KEY`), load your `.env` configuration using `python-dotenv`:
 
 ```bash
-python -m dotenv run -- python -m pytest tests/test_buffer_service.py -v
+source .venv/bin/activate && python -m dotenv run -- python -m pytest tests/test_buffer_service.py -v
 
 ```
 
@@ -31,7 +31,7 @@ python -m dotenv run -- python -m pytest tests/test_buffer_service.py -v
 To execute a rapid full-suite run while intentionally bypassing the external Buffer service suites, use the following isolation command:
 
 ```bash
-python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
+source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 ```
 
@@ -43,11 +43,11 @@ python -m pytest -q tests/ --ignore=tests/test_buffer_service.py
 
 | Total Tests | Passed  | Skipped | Failed | Status        |
 | ----------- | ------- | ------- | ------ | ------------- |
-| **795**     | **795** | **0**   | **0**  | ✅ **All pass** |
+| **806**     | **806** | **0**   | **0**  | ✅ **All pass** |
 
-- **Latest Run Date:** July 8, 2026
-- **Latest Run Scope:** Full suite — confirmed green after Rei Toei console mode overhaul: sticky Rei mode, `_build_rei_system_prompt` (bypasses Sam's `PERSONA_SYSTEM_PROMPT`), `_handle_llm_song_generation` fallback when no extracted knowledge, `_handle_conversation` song re-routing, and 3 pre-existing `test_rei_toei_service` mock fixes (`test_config_defaults` genre string, Suno API mock payloads aligned to actual `_suno_client.py` API shapes)
-- **Environment Specs:** Python 3.12.3, pytest 9.0.3
+- **Latest Run Date:** July 10, 2026
+- **Latest Run Scope:** Full suite — confirmed green after Strudel loader compatibility and execution fallback fixes.
+- **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Notes:** 0 skipped, 0 failed in this run.
 
 ### Test Suite Breakdown

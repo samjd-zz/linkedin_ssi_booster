@@ -125,20 +125,58 @@ def load_strudel_patterns() -> StrudelPatternLibrary:
     with open(patterns_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     
-    # Parse templates
+    # Parse templates.
+    # Backward compatibility: older files use "pattern_library" instead of "templates".
+    raw_templates = data.get("templates")
+    if raw_templates is None:
+        raw_templates = data.get("pattern_library", [])
+
     templates = []
-    for template_data in data.get("templates", []):
+    for idx, template_data in enumerate(raw_templates):
+        template_id = template_data.get("template_id") or f"template_{idx + 1:03d}"
+        name = template_data.get("name", template_id)
+        description = template_data.get("description", "")
+
+        suitable_for_concepts = template_data.get("suitable_for_concepts")
+        if not isinstance(suitable_for_concepts, list):
+            concept = template_data.get("concept")
+            suitable_for_concepts = [concept] if concept else []
+
+        code_template = template_data.get("code_template") or template_data.get("code", "")
+        if not code_template:
+            logger.warning("Skipping template '%s' with no code_template/code", template_id)
+            continue
+
+        parameters = template_data.get("parameters", {})
+        example = template_data.get("example", code_template)
+
+        bpm_range = template_data.get("bpm_range", [120, 160])
+        if not isinstance(bpm_range, list) or len(bpm_range) != 2:
+            bpm_range = [120, 160]
+
+        intensity = template_data.get("intensity", "moderate")
+        synth_types = template_data.get("synth_types", [])
+        if not isinstance(synth_types, list):
+            synth_types = []
+        if not synth_types and isinstance(parameters, dict):
+            inferred = [
+                str(v)
+                for k, v in parameters.items()
+                if k.startswith("synth") and isinstance(v, str)
+            ]
+            synth_types = inferred or ["sawtooth"]
+
         template = StrudelPatternTemplate(
-            template_id=template_data["template_id"],
-            name=template_data["name"],
-            description=template_data["description"],
-            suitable_for_concepts=template_data["suitable_for_concepts"],
-            code_template=template_data["code_template"],
-            parameters=template_data["parameters"],
-            example=template_data["example"],
-            bpm_range=template_data["bpm_range"],
-            intensity=template_data["intensity"],
-            synth_types=template_data["synth_types"]
+            template_id=template_id,
+            name=name,
+            description=description,
+            suitable_for_concepts=suitable_for_concepts,
+            code_template=code_template,
+            parameters=parameters,
+            example=example,
+            bpm_range=bpm_range,
+            intensity=intensity,
+            synth_types=synth_types,
         )
         templates.append(template)
     
