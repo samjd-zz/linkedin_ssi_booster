@@ -401,17 +401,50 @@ def _display_art_in_terminal(image_path: str | None, width: int | None = None) -
     """
     if not image_path:
         return
+
+    from pathlib import Path as _Path
+    import shutil as _shutil
+
+    if not _Path(image_path).is_file():
+        return
+
+    _env_width_raw = os.getenv("FLUX_DISPLAY_WIDTH", "").strip()
+    _env_width: int | None = int(_env_width_raw) if _env_width_raw.isdigit() else None
+    _requested_width = width if width is not None else _env_width
+
+    _terminal_columns = _shutil.get_terminal_size(fallback=(120, 40)).columns
+    _render_width: int | None = _requested_width
+    if _render_width is not None:
+        # Clamp to the active terminal pane so fixed values do not crash rendering.
+        _render_width = max(10, min(_render_width, max(10, _terminal_columns - 2)))
+
     try:
-        from pathlib import Path as _Path
-        if not _Path(image_path).is_file():
-            return
-        _env_width = os.getenv("FLUX_DISPLAY_WIDTH", "").strip()
-        _render_width: int | None = int(_env_width) if _env_width.isdigit() else width
         from term_image.image import from_file as _ti_from_file
         _img = _ti_from_file(image_path, width=_render_width)
         _img.draw()
     except Exception as _ti_err:  # noqa: BLE001
-        logger.debug("term-image display skipped: %s", _ti_err)
+        if _render_width is not None:
+            # Fallback to auto-fit if fixed-width rendering fails in the current pane.
+            try:
+                from term_image.image import from_file as _ti_from_file
+                _img = _ti_from_file(image_path, width=None)
+                _img.draw()
+                logger.warning(
+                    "term-image fixed-width render failed (requested=%s, clamped=%s, cols=%s); fell back to auto-fit: %s",
+                    _requested_width,
+                    _render_width,
+                    _terminal_columns,
+                    _ti_err,
+                )
+                return
+            except Exception as _fallback_err:  # noqa: BLE001
+                logger.warning(
+                    "term-image display skipped after fixed-width and auto-fit failures: %s",
+                    _fallback_err,
+                )
+                return
+
+        logger.warning("term-image display skipped: %s", _ti_err)
 
 
 def _optimize_flux_story_for_render(
