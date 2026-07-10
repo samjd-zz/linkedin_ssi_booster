@@ -105,6 +105,8 @@ After you enter Rei mode, plain follow-up messages stay with Rei until you switc
 
 > **Inspiration:** Visual style direction is Alex Grey-inspired, tuned for persona-aligned, symbolic technical storytelling.
 
+> **Marketing focus:** The FLUX prompt stack is tuned for professional B2B outcomes by default, using a corporate-minimal preset plus a marketing-oriented style system prompt (clean hierarchy, brand-safe color discipline, conversion-oriented storytelling), with a dedicated `marketing_editorial` preset for campaign-ready LinkedIn creatives.
+
 Generate persona-aligned visual content using FLUX.1-schnell locally.
 
 **Current status:** FLUX.1 integration is stable; persona aesthetic tuning remains in progress (see [ROADMAP.md](ROADMAP.md)).
