@@ -81,6 +81,8 @@ The SSI Booster is actively maintained with periodic development cycles. See **[
 
 **Rei Toei** transforms the SSI Booster into a **creative knowledge expression platform**, converting your curated technical knowledge into algorithmic music. See [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) for architecture, commands, and usage examples.
 
+Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd42)
+
 **Current capabilities:**
 - **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
 - **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
