@@ -56,3 +56,10 @@ The active model can also be overridden for a single run by prefixing the comman
 ```bash
 docker compose --profile core run --rm -e OLLAMA_MODEL=llama3.2 app python main.py --curate --dry-run
 ```
+
+## Other useful commands:
+
+```bash
+docker exec -it ssi_booster_ollama ollama list
+docker exec -it ssi_booster_ollama ollama rm llama3.2:latest
+```
