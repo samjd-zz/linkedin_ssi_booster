@@ -103,6 +103,10 @@ After you enter Rei mode, plain follow-up messages stay with Rei until you switc
 
 ## 🖼️ Image Generation with FLUX.1
 
+<p align="center">
+  <img src="media/alex-grey.jpg" alt="Alex Grey style visual" width="320">
+</p>
+
 > **Inspiration:** Visual style direction is Alex Grey-inspired, tuned for persona-aligned, symbolic technical storytelling.
 
 > **Marketing focus:** The FLUX prompt stack is tuned for professional B2B outcomes by default, using a corporate-minimal preset plus a marketing-oriented style system prompt (clean hierarchy, brand-safe color discipline, conversion-oriented storytelling), with a dedicated `marketing_editorial` preset for campaign-ready LinkedIn creatives.
