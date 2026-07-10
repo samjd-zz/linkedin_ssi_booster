@@ -664,7 +664,7 @@ Rei Toei is the AI music avatar that transforms curated technical knowledge into
 
 Generate a Suno song prompt from recent extracted knowledge.
 
-**Status:** ⚠️ In development — currently shows placeholder message
+**Status:** ✅ Implemented (generates, can save, can submit to Suno when `SUNO_API_KEY` is set)
 
 **Example:**
 
@@ -674,13 +674,17 @@ python main.py --rei-generate --rei-theme "microservices architecture"
 python main.py --rei-generate --rei-explain
 ```
 
-**Current behavior:** Displays message directing users to console mode (`/rei-toei` or `/rei` commands)
+**Current behavior:**
+
+- Uses `--rei-theme` if provided, otherwise derives themes from extracted knowledge
+- `--rei-preview` skips save/submit
+- Without `--rei-preview`, saves artifact to `yt-vid-data/rei-toei/` and submits to Suno when configured
 
 ### `--rei-generate-strudel`
 
 Generate a Strudel/Tidal Cycles algorithmic pattern instead of a Suno song.
 
-**Status:** ⚠️ In development — currently shows placeholder message
+**Status:** ✅ Implemented (generation path active)
 
 **Example:**
 
@@ -690,7 +694,13 @@ python main.py --rei-generate-strudel --rei-theme "async programming"
 python main.py --rei-generate-strudel --rei-execute
 ```
 
-**Current behavior:** Displays message directing users to console mode (`/rei-toei` or `/rei` commands)
+**Current behavior:**
+
+- Generates pattern from selected/matched template
+- `--rei-preview` skips save/execute
+- Without `--rei-preview`, persists generated pattern to `data/avatar/rei_toei_generated_patterns.jsonl`
+
+**Known anomaly:** Current template loader expects top-level `templates`, but repository data file uses `pattern_library`; if unresolved, runtime may find zero templates.
 
 ### `--rei-theme <theme>`
 
@@ -736,7 +746,9 @@ python main.py --rei-generate-strudel --rei-execute
 python main.py --rei-generate-strudel --rei-theme "neural networks" --rei-execute
 ```
 
-**Note:** Requires the Strudel MCP agent to be runnable with `STRUDEL_MCP_COMMAND` (default: `npx -y @williamzujkowski/live-coding-music-mcp`).
+**Note:** Current execution function in `services/rei_toei/_strudel_pipeline.py` uses WebSocket (`STRUDEL_WS_URL`, default `ws://localhost:4321`). The bundled `agents/strudel_mcp_agent.py` uses stdio MCP calls and does not expose a WebSocket server.
+
+This means `--rei-execute` may fail unless you provide a WebSocket bridge or refactor execution transport.
 
 ### Console Mode Alternative
 

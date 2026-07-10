@@ -287,6 +287,15 @@ Runtime constraints are primarily configured via environment variables (for exam
 
 Pattern templates are reusable Tidal Cycles code snippets that map technical concepts to musical structures.
 
+### Current Implementation Note (Important)
+
+The current loader in `services/rei_toei/_loaders.py` expects templates under a top-level `templates` key.
+
+- Loader expectation: `{"templates": [...]}`
+- Current repository file shape: `data/avatar/rei_toei_strudel_patterns.json` uses `{"pattern_library": [...]}`
+
+If not corrected in code or data, `--rei-generate-strudel` may report no available templates.
+
 ### Structure
 
 ```json
@@ -595,6 +604,9 @@ python main.py --rei-generate --rei-theme "async programming" --rei-preview
 
 # Generate Strudel pattern (preview without execution)
 python main.py --rei-generate-strudel --rei-theme "recursion" --rei-preview
+
+# Generate + attempt execution (requires a compatible execution backend)
+python main.py --rei-generate-strudel --rei-theme "recursion" --rei-execute
 ```
 
 ### 4. Test Console Integration
@@ -615,8 +627,18 @@ Sam> Generate a song about neural networks
 # Full test module
 source .venv/bin/activate && python -m pytest -q tests/test_rei_toei_service.py
 
+# Strudel MCP agent unit tests
+source .venv/bin/activate && python -m pytest -q tests/test_strudel_mcp_agent.py
+
 # Specific test
 source .venv/bin/activate && python -m pytest -q tests/test_rei_toei_service.py::test_load_rei_persona_success
+```
+
+### 6. Strudel MCP Health Check
+
+```bash
+# Validate MCP toolchain (initialize + tools/list) in Docker
+bash run.sh --profile core run --rm strudel-mcp-agent --health-check
 ```
 
 ---
@@ -667,6 +689,34 @@ Example target shape (requires code changes):
 
 ## Troubleshooting
 
+### Issue: `--rei-generate-strudel` says no templates available
+
+**Likely cause:** The loader expects `templates`, but `data/avatar/rei_toei_strudel_patterns.json` currently uses `pattern_library`.
+
+**Workarounds:**
+
+- Data workaround: migrate the file root key from `pattern_library` to `templates` and keep required template fields.
+- Code workaround: update `services/rei_toei/_loaders.py` to read `pattern_library` as a backward-compatible fallback.
+
+### Issue: `--rei-execute` fails to reach Strudel backend
+
+**Likely cause:** Runtime execution currently uses WebSocket (`STRUDEL_WS_URL`, default `ws://localhost:4321`) in `services/rei_toei/_strudel_pipeline.py`, while `agents/strudel_mcp_agent.py` is a stdio JSON-RPC client and does not expose a WebSocket server.
+
+**Workarounds:**
+
+- Use `--rei-preview` for generation-only workflow.
+- Add/launch a WebSocket bridge that accepts `eval` payloads at `STRUDEL_WS_URL`.
+- Or refactor `execute_strudel_pattern()` to call the stdio MCP flow directly (matching `agents/strudel_mcp_agent.py`).
+
+### Issue: Strudel prompt expertise fields seem empty or generic
+
+**Likely cause:** `_strudel_pipeline.py` reads `tidal_cycles_syntax.core_functions` and `tidal_cycles_syntax.transformations`, but the current domain file uses `basic_functions` and `pattern_transformations`.
+
+**Workarounds:**
+
+- Add key mapping in code (`basic_functions -> core_functions`, `pattern_transformations -> transformations`), or
+- Align the domain JSON keys to what `_strudel_pipeline.py` expects.
+
 ### Issue: Generated lyrics don't match persona
 
 **Solution:** Check `personality_traits`, `communication_style`, and `identity` in persona graph. The LLM uses these fields to tune output.
@@ -678,6 +728,8 @@ Example target shape (requires code changes):
 - Missing parentheses: `s("bd").fast(2)` not `s "bd" fast 2`
 - Invalid sound banks: check available samples in Strudel environment
 - Syntax incompatibility: some Haskell Tidal syntax doesn't work in JavaScript Strudel
+
+**Additional note:** `validate_strudel_syntax()` is heuristic (regex/structure checks), not a full parser. A "valid" result is a preflight signal, not a guarantee of live execution.
 
 ### Issue: DoT validation blocks all lyrics
 
