@@ -803,11 +803,78 @@ OLLAMA_HOST=http://ollama:11434
 
 Command used by the Strudel agent to launch the MCP server over stdio.
 
-**Default:** `npx -y @williamzujkowski/live-coding-music-mcp`
+**Default (Docker recommended):** `bash /app/scripts/strudel_mcp_patched.sh`
+
+The wrapper preloads the MCP package and patches a known upstream runtime issue where media resources are blocked by Playwright routing, which can cause silent playback.
+
+**Alternative (upstream direct):** `npx -y @williamzujkowski/live-coding-music-mcp`
 
 ```bash
-# Docker / local (same by default)
-STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
+# Docker recommended
+STRUDEL_MCP_COMMAND="bash /app/scripts/strudel_mcp_patched.sh"
+
+# Upstream direct command (without local patch)
+# STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
+```
+
+### `STRUDEL_PLAYBACK_HOLD_SECONDS`
+
+How long the MCP subprocess stays alive after `playback` is triggered, so audio has time to become audible before teardown.
+
+**Default:** `8`
+
+```bash
+STRUDEL_PLAYBACK_HOLD_SECONDS=8
+```
+
+### `STRUDEL_SAFE_FALLBACK_PATTERN`
+
+Safe Strudel code used when known runtime-invalid constructs are detected (for example `.wrap(...)`).
+
+The runtime is strict about workshop-style syntax:
+- Use `sound(...)` and `.sound(...)`
+- Do not use legacy aliases `s(...)` or `.s(...)`
+
+**Default:** `sound('bd*2,hh*3').gain(1).fast(1)`
+
+```bash
+STRUDEL_SAFE_FALLBACK_PATTERN="sound('bd*2,hh*3').gain(1).fast(1)"
+```
+
+Known-good smoke test pattern:
+
+```bash
+sound("bd*2,hh*3")
+```
+
+### `STRUDEL_SHOW_BROWSER_WINDOW`
+
+When `true`, the MCP flow calls `browser_window` with `action=show` after `init` and before writing/playing a pattern. This helps establish first-run audio context gesture in some Linux/Playwright environments.
+
+**Default:** `true`
+
+```bash
+STRUDEL_SHOW_BROWSER_WINDOW=true
+```
+
+### `STRUDEL_WRITE_AUTO_PLAY`
+
+Controls whether `edit_pattern` includes `auto_play=true` when writing code.
+
+**Default:** `true`
+
+```bash
+STRUDEL_WRITE_AUTO_PLAY=true
+```
+
+### `STRUDEL_CALL_PLAYBACK_AFTER_WRITE`
+
+Controls whether the agent sends an additional `playback(action=play)` call after writing a pattern. In some sessions this can interrupt/toggle playback when `auto_play` is already enabled.
+
+**Default:** `false`
+
+```bash
+STRUDEL_CALL_PLAYBACK_AFTER_WRITE=false
 ```
 
 ---
@@ -1022,7 +1089,7 @@ FLUX_CAPACITOR_STORIES_SUBDIR=stories
 
 # Strudel Music Generation (Docker)
 OLLAMA_HOST=http://ollama:11434
-STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
+STRUDEL_MCP_COMMAND="bash /app/scripts/strudel_mcp_patched.sh"
 
 # Database Integration (optional)
 DATABASE_ENABLED=false

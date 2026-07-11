@@ -20,6 +20,8 @@ import sys
 import shlex
 import select
 import subprocess
+import time
+import re
 from typing import Optional, Dict, Any
 from ollama import AsyncClient
 
@@ -45,6 +47,10 @@ INITIAL_BACKOFF = 2.0  # seconds
 MAX_BACKOFF = 30.0  # seconds
 MCP_PROTOCOL_VERSION = "2024-11-05"
 REQUIRED_MCP_TOOLS = {"init", "edit_pattern", "playback"}
+PLAYBACK_HOLD_SECONDS = float(os.getenv("STRUDEL_PLAYBACK_HOLD_SECONDS", "8"))
+SHOW_BROWSER_WINDOW = os.getenv("STRUDEL_SHOW_BROWSER_WINDOW", "true").strip().lower() in {"1", "true", "yes", "on"}
+WRITE_AUTO_PLAY = os.getenv("STRUDEL_WRITE_AUTO_PLAY", "true").strip().lower() in {"1", "true", "yes", "on"}
+CALL_PLAYBACK_AFTER_WRITE = os.getenv("STRUDEL_CALL_PLAYBACK_AFTER_WRITE", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 async def check_ollama_health(retries: int = MAX_HEALTH_CHECK_RETRIES) -> bool:
@@ -106,7 +112,7 @@ async def generate_strudel_code(user_prompt: str) -> Optional[str]:
         "You are an expert live-coding music generator that writes 'strudel.js' code. "
         "Respond ONLY with valid, raw executable Strudel code. "
         "Do NOT include markdown code blocks. "
-        "Example output: s('bd sd [sn:2 cp] bd').jux(rev)"
+        "Example output: sound('bd sd hh sd')"
     )
 
     # Note: Adding the Gemma 4 '<|think|>' token at the start of the system prompt
@@ -186,6 +192,11 @@ def _extract_tool_envelope(response: Dict[str, Any]) -> Optional[Dict[str, Any]]
         return None
 
 
+def _contains_legacy_alias_syntax(strudel_code: str) -> bool:
+    """Return True when deprecated legacy aliases are present."""
+    return bool(re.search(r"(^|\n)\s*s\(", strudel_code) or ".s(" in strudel_code)
+
+
 def run_strudel_mcp_health_check() -> bool:
     """Run a fast MCP diagnostic: initialize -> tools/list -> required tools check."""
     logger.info("🏥 Running Strudel MCP health check (initialize + tools/list)...")
@@ -199,7 +210,7 @@ def run_strudel_mcp_health_check() -> bool:
         cmd,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=None,
         text=True,
         bufsize=1,
     )
@@ -255,7 +266,12 @@ def run_strudel_mcp_health_check() -> bool:
 
 def send_to_strudel_mcp(strudel_code: str) -> bool:
     """Launch Strudel MCP server via stdio and call tools over JSON-RPC."""
-    logger.info("🚀 Sending code to Strudel MCP via JSON-RPC stdio (%d chars)...", len(strudel_code))
+    code = strudel_code.strip()
+    if _contains_legacy_alias_syntax(code):
+        logger.error("❌ Legacy Strudel aliases are not supported. Use sound(...) and .sound(...), not s(...) or .s(...)")
+        return False
+
+    logger.info("🚀 Sending code to Strudel MCP via JSON-RPC stdio (%d chars)...", len(code))
 
     cmd = shlex.split(STRUDEL_MCP_COMMAND)
     if not cmd:
@@ -266,7 +282,7 @@ def send_to_strudel_mcp(strudel_code: str) -> bool:
         cmd,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=None,
         text=True,
         bufsize=1,
     )
@@ -300,6 +316,27 @@ def send_to_strudel_mcp(strudel_code: str) -> bool:
             logger.error("❌ tools/call init failed: %s", tool_init_resp)
             return False
 
+        init_envelope = _extract_tool_envelope(tool_init_resp)
+        if init_envelope and init_envelope.get("isError"):
+            logger.error("❌ init returned tool error: %s", init_envelope)
+            return False
+
+        # Some Linux/Playwright environments need the browser window foregrounded
+        # once so the first audio context gesture is established reliably.
+        if SHOW_BROWSER_WINDOW:
+            show_payload = {
+                "jsonrpc": "2.0",
+                "id": 21,
+                "method": "tools/call",
+                "params": {
+                    "name": "browser_window",
+                    "arguments": {"action": "show"},
+                },
+            }
+            show_resp = _mcp_send(proc, show_payload, timeout=20.0)
+            if not show_resp or "error" in show_resp:
+                logger.warning("⚠️ browser_window show unavailable or failed: %s", show_resp)
+
         # 3) Write generated pattern into editor
         write_payload = {
             "jsonrpc": "2.0",
@@ -307,9 +344,10 @@ def send_to_strudel_mcp(strudel_code: str) -> bool:
             "method": "tools/call",
             "params": {
                 "name": "edit_pattern",
-                "arguments": {"mode": "write", "pattern": strudel_code},
+                "arguments": {"mode": "write", "pattern": code},
             },
         }
+        write_payload["params"]["arguments"]["auto_play"] = WRITE_AUTO_PLAY
         write_resp = _mcp_send(proc, write_payload, timeout=60.0)
         if not write_resp or "error" in write_resp:
             logger.error("❌ tools/call edit_pattern failed: %s", write_resp)
@@ -320,22 +358,31 @@ def send_to_strudel_mcp(strudel_code: str) -> bool:
             logger.error("❌ edit_pattern returned tool error: %s", envelope)
             return False
 
-        # 4) Start playback
-        play_payload = {
-            "jsonrpc": "2.0",
-            "id": 4,
-            "method": "tools/call",
-            "params": {"name": "playback", "arguments": {"action": "play"}},
-        }
-        play_resp = _mcp_send(proc, play_payload, timeout=60.0)
-        if not play_resp or "error" in play_resp:
-            logger.error("❌ tools/call playback failed: %s", play_resp)
-            return False
+        # 4) Optionally call transport play after write.
+        # Some Strudel sessions can toggle/interrupt when both auto_play and explicit play are used.
+        if CALL_PLAYBACK_AFTER_WRITE:
+            play_payload = {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {"name": "playback", "arguments": {"action": "play"}},
+            }
+            play_resp = _mcp_send(proc, play_payload, timeout=60.0)
+            if not play_resp or "error" in play_resp:
+                logger.error("❌ tools/call playback failed: %s", play_resp)
+                return False
 
-        play_envelope = _extract_tool_envelope(play_resp)
-        if play_envelope and play_envelope.get("isError"):
-            logger.error("❌ playback returned tool error: %s", play_envelope)
-            return False
+            play_envelope = _extract_tool_envelope(play_resp)
+            if play_envelope and play_envelope.get("isError"):
+                logger.error("❌ playback returned tool error: %s", play_envelope)
+                return False
+        else:
+            logger.info("▶️ Skipping explicit playback call; relying on edit_pattern(auto_play=%s)", WRITE_AUTO_PLAY)
+
+        # Keep process alive briefly so container audio output is actually audible.
+        if PLAYBACK_HOLD_SECONDS > 0:
+            logger.info("🔊 Holding playback for %.1fs before teardown", PLAYBACK_HOLD_SECONDS)
+            time.sleep(PLAYBACK_HOLD_SECONDS)
 
         logger.info("✨ Code sent successfully to Strudel MCP")
         return True

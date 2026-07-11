@@ -154,10 +154,12 @@ def test_send_to_strudel_mcp_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(strudel_mcp_agent, "_mcp_send", _fake_send)
 
-    ok = strudel_mcp_agent.send_to_strudel_mcp("s('bd sd').fast(2)")
+    ok = strudel_mcp_agent.send_to_strudel_mcp("sound('bd*2,hh*3').gain(1)")
     assert ok is True
-    assert [p["id"] for p in seen_payloads] == [1, 2, 3, 4]
-    assert seen_payloads[2]["params"]["name"] == "edit_pattern"
+    method_names = [p.get("method") for p in seen_payloads]
+    assert method_names == ["initialize", "tools/call", "tools/call", "tools/call"]
+    tool_names = [p.get("params", {}).get("name") for p in seen_payloads if p.get("method") == "tools/call"]
+    assert "edit_pattern" in tool_names
     assert fake_proc.terminated is True
 
 
@@ -185,7 +187,7 @@ def test_send_to_strudel_mcp_edit_pattern_tool_error(monkeypatch: pytest.MonkeyP
 
 def test_send_to_strudel_mcp_empty_command_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(strudel_mcp_agent, "STRUDEL_MCP_COMMAND", "")
-    assert strudel_mcp_agent.send_to_strudel_mcp("s('bd')") is False
+    assert strudel_mcp_agent.send_to_strudel_mcp("sound('bd')") is False
 
 
 def test_generate_strudel_code_sanitizes_markdown(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -195,9 +197,9 @@ def test_generate_strudel_code_sanitizes_markdown(monkeypatch: pytest.MonkeyPatc
             self.timeout = timeout
 
         async def chat(self, model, messages, options):
-            return {"message": {"content": "```javascript\ns('bd sd')\n```"}}
+            return {"message": {"content": "```javascript\nsound('bd*2,hh*3').gain(1)\n```"}}
 
     monkeypatch.setattr(strudel_mcp_agent, "AsyncClient", _Client)
 
     code = asyncio.run(strudel_mcp_agent.generate_strudel_code("beat"))
-    assert code == "s('bd sd')"
+    assert code == "sound('bd*2,hh*3').gain(1)"

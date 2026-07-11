@@ -29,6 +29,34 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+KNOWN_RUNTIME_INVALID_CONSTRUCTS: List[tuple[str, str]] = [
+    (r"\.wrap\(", "wrap() is not a supported Strudel function"),
+    (r"(^|\n)\s*s\(", "legacy s(...) alias is not supported; use sound(...)"),
+    (r"\.s\(", "legacy .s(...) alias is not supported; use .sound(...)"),
+]
+SAFE_AUDIBLE_FALLBACK_PATTERN = os.getenv(
+    "STRUDEL_SAFE_FALLBACK_PATTERN",
+    "sound('bd*2,hh*3').gain(1).fast(1)",
+)
+
+
+def _find_runtime_invalid_constructs(strudel_code: str) -> List[str]:
+    """Return human-readable runtime-invalid construct reasons for a pattern."""
+    issues: List[str] = []
+    for pattern, message in KNOWN_RUNTIME_INVALID_CONSTRUCTS:
+        if re.search(pattern, strudel_code):
+            issues.append(message)
+    return issues
+
+
+def _get_safe_audible_fallback_pattern() -> str:
+    """Get non-empty safe fallback pattern from env or default."""
+    fallback = SAFE_AUDIBLE_FALLBACK_PATTERN.strip()
+    if fallback:
+        return fallback
+    return "sound('bd*2,hh*3').gain(1).fast(1)"
+
+
 def map_concept_to_pattern(
     theme: "Theme",
     pattern_library: "StrudelPatternLibrary"
@@ -246,6 +274,15 @@ Output the complete pattern code (no markdown, no explanations):"""
     
     # Generate pattern ID
     pattern_id = f"rei_strudel_{datetime.now().strftime('%Y_%m_%d_%H%M%S')}"
+
+    runtime_issues = _find_runtime_invalid_constructs(clean_code)
+    if runtime_issues:
+        clean_code = _get_safe_audible_fallback_pattern()
+        logger.warning(
+            "Generated pattern contained runtime-invalid constructs (%s); "
+            "replacing with safe audible fallback pattern",
+            "; ".join(runtime_issues),
+        )
     
     # Create StrudelPattern object
     pattern = StrudelPattern(
@@ -318,7 +355,7 @@ def validate_strudel_syntax(strudel_code: str) -> "ValidationResult":
     
     # Check for common Tidal functions (warnings if none found)
     common_functions = [
-        r'\bs\(',           # s() - sample player
+        r'\bsound\(',       # sound() - sample player
         r'\bnote\(',       # note() - note patterns
         r'\bstack\(',      # stack() - layering
         r'\.fast\(',       # .fast() - speed up
@@ -349,6 +386,11 @@ def validate_strudel_syntax(strudel_code: str) -> "ValidationResult":
     for pattern, error_msg in forbidden_patterns:
         if re.search(pattern, strudel_code):
             errors.append(error_msg)
+
+    # Runtime-invalid constructs that frequently pass syntax checks but fail in Strudel runtime.
+    runtime_issues = _find_runtime_invalid_constructs(strudel_code)
+    for issue in runtime_issues:
+        errors.append(f"Runtime-invalid construct: {issue}")
     
     # Line-by-line checks
     lines = strudel_code.split("\n")
@@ -368,6 +410,11 @@ def validate_strudel_syntax(strudel_code: str) -> "ValidationResult":
         if re.search(r'[^\x00-\x7F]', line_stripped):
             warnings.append(f"Line {i}: Contains non-ASCII characters")
             line_numbers.append(i)
+
+        for pattern, message in KNOWN_RUNTIME_INVALID_CONSTRUCTS:
+            if re.search(pattern, line_stripped):
+                line_numbers.append(i)
+                logger.debug("Runtime-invalid construct detected on line %d: %s", i, message)
     
     # Overall validation
     valid = len(errors) == 0
@@ -413,16 +460,36 @@ async def execute_strudel_pattern(
     
     logger.info(f"Executing Strudel pattern: {pattern.pattern_id}")
     
-    # Get WebSocket URL from env or use default
+    # Get WebSocket URL from env or use default.
+    # Set STRUDEL_WS_URL to empty/off/none/disabled to skip WS and use MCP stdio directly.
     if websocket_url is None:
         websocket_url = os.getenv("STRUDEL_WS_URL", "ws://localhost:4321")
+
+    ws_disabled = str(websocket_url).strip().lower() in {"", "off", "none", "disabled"}
+
+    if ws_disabled:
+        websocket_error = "WebSocket execution disabled by STRUDEL_WS_URL"
+        logger.info("%s; using stdio MCP execution", websocket_error)
+    else:
+        logger.debug(f"Connecting to Strudel WebSocket bridge at {websocket_url}")
     
-    logger.debug(f"Connecting to Strudel WebSocket bridge at {websocket_url}")
-    
+    exec_code = pattern.strudel_code
+    runtime_issues = _find_runtime_invalid_constructs(exec_code)
+    used_safe_fallback = False
+    if runtime_issues:
+        exec_code = _get_safe_audible_fallback_pattern()
+        used_safe_fallback = True
+        logger.warning(
+            "Pattern %s contains runtime-invalid constructs (%s); "
+            "executing safe audible fallback pattern instead",
+            pattern.pattern_id,
+            "; ".join(runtime_issues),
+        )
+
     # Build WebSocket payload
     payload = {
         "type": "eval",
-        "code": pattern.strudel_code,
+        "code": exec_code,
         "metadata": {
             "pattern_id": pattern.pattern_id,
             "title": pattern.title,
@@ -437,54 +504,67 @@ async def execute_strudel_pattern(
     
     websocket_error: Optional[str] = None
 
-    try:
-        # Import websockets for WebSocket connection
-        import websockets
-        
-        # Connect to WebSocket server
-        async with websockets.connect(websocket_url, timeout=10) as websocket:
-            # Send payload
-            await websocket.send(json.dumps(payload))
-            logger.debug("Sent pattern code to Strudel WebSocket bridge")
+    if not ws_disabled:
+        try:
+            # Import websockets for WebSocket connection
+            import websockets
             
-            # Wait for acknowledgment (optional, with timeout)
-            try:
-                response = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-                response_data = json.loads(response)
-                logger.debug(f"Received response: {response_data}")
-            except asyncio.TimeoutError:
-                logger.debug("No response from Strudel server (expected for one-way eval)")
-                response_data = {"status": "sent"}
-        
-        elapsed_ms = int((time.time() - start_time) * 1000)
-        
-        result = ExecutionResult(
-            success=True,
-            pattern_id=pattern.pattern_id,
-            message=f"Pattern executed successfully via WebSocket bridge ({elapsed_ms}ms)",
-            error=None,
-            execution_time_ms=elapsed_ms
-        )
-        
-        logger.info(f"Pattern execution successful: {pattern.pattern_id} ({elapsed_ms}ms)")
-        return result
-        
-    except Exception as e:
-        websocket_error = str(e)
-        logger.warning("WebSocket execution failed, attempting stdio MCP fallback: %s", websocket_error)
+            # websockets>=12 uses open_timeout/close_timeout (not timeout).
+            async with websockets.connect(
+                websocket_url,
+                open_timeout=10,
+                close_timeout=5,
+            ) as websocket:
+                # Send payload
+                await websocket.send(json.dumps(payload))
+                logger.debug("Sent pattern code to Strudel WebSocket bridge")
+                
+                # Wait for acknowledgment (optional, with timeout)
+                try:
+                    response = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+                    response_data = json.loads(response)
+                    logger.debug(f"Received response: {response_data}")
+                except asyncio.TimeoutError:
+                    logger.debug("No response from Strudel server (expected for one-way eval)")
+                    response_data = {"status": "sent"}
+            
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            
+            result = ExecutionResult(
+                success=True,
+                pattern_id=pattern.pattern_id,
+                message=(
+                    f"Pattern executed successfully via WebSocket bridge ({elapsed_ms}ms)"
+                    if not used_safe_fallback
+                    else f"Pattern executed via safe fallback through WebSocket bridge ({elapsed_ms}ms)"
+                ),
+                error=None,
+                execution_time_ms=elapsed_ms
+            )
+            
+            logger.info(f"Pattern execution successful: {pattern.pattern_id} ({elapsed_ms}ms)")
+            return result
+            
+        except Exception as e:
+            websocket_error = str(e)
+            logger.warning("WebSocket execution failed, attempting stdio MCP fallback: %s", websocket_error)
 
     # Fallback path: call Strudel MCP over stdio helper.
     try:
         from agents.strudel_mcp_agent import send_to_strudel_mcp
 
-        stdio_ok = await asyncio.to_thread(send_to_strudel_mcp, pattern.strudel_code)
+        stdio_ok = await asyncio.to_thread(send_to_strudel_mcp, exec_code)
         elapsed_ms = int((time.time() - start_time) * 1000)
 
         if stdio_ok:
             return ExecutionResult(
                 success=True,
                 pattern_id=pattern.pattern_id,
-                message=f"Pattern executed successfully via stdio MCP fallback ({elapsed_ms}ms)",
+                message=(
+                    f"Pattern executed successfully via stdio MCP fallback ({elapsed_ms}ms)"
+                    if not used_safe_fallback
+                    else f"Pattern executed via safe fallback through stdio MCP ({elapsed_ms}ms)"
+                ),
                 error=None,
                 execution_time_ms=elapsed_ms,
             )

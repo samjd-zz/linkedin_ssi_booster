@@ -746,6 +746,8 @@ python main.py --rei-generate-strudel --rei-theme "neural networks" --rei-execut
 
 **Note:** Execution uses WebSocket first (`STRUDEL_WS_URL`, default `ws://localhost:4321`) and falls back to stdio MCP execution when WebSocket is unavailable.
 
+Strudel syntax note: use workshop-style `sound(...)` / `.sound(...)` forms. Legacy aliases `s(...)` and `.s(...)` are rejected by runtime guardrails.
+
 For deeper implementation notes, see the troubleshooting section in `docs/rei-toei-customization.md`.
 
 ### Console Mode Alternative

@@ -85,6 +85,8 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 **Current capabilities:**
 - **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
 - **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
+- **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
+- **Docker Audio Patch Path** — Default Docker command uses `scripts/strudel_mcp_patched.sh` to patch an upstream media-routing issue that can cause silent browser playback
 - **Knowledge Grounding** — Every lyric is validated via Derivative of Truth for factual accuracy
 
 **Access in console:**

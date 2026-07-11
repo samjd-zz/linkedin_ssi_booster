@@ -307,11 +307,11 @@ If not corrected in code or data, `--rei-generate-strudel` may report no availab
       "name": "Basic Pulse",
       "description": "Heartbeat-style pulse",
       "suitable_for_concepts": ["system heartbeat"],
-      "code_template": "s(\"bd\").fast(\"<1 2 4>\")",
+      "code_template": "sound(\"bd\").fast(\"<1 2 4>\")",
       "parameters": {
         "tempo_var": "fast_factor"
       },
-      "example": "s(\"bd\").fast(2)",
+      "example": "sound(\"bd\").fast(2)",
       "bpm_range": [120, 150],
       "intensity": "moderate",
       "synth_types": ["bd"]
@@ -328,7 +328,7 @@ If not corrected in code or data, `--rei-generate-strudel` may report no availab
   "name": "recursive_subdivision",
   "concept": "recursive_algorithms",
   "description": "Nested pattern subdivision representing recursive function calls",
-  "code": "s(\"hh\").fast(\"<1 2 4 8>\").sometimes(x => x.fast(2))",
+  "code": "sound(\"hh\").fast(\"<1 2 4 8>\").sometimes(x => x.fast(2))",
   "parameters": {
     "depth": "fast_factor",
     "recursive_trigger": "sometimes probability"
@@ -353,7 +353,7 @@ If not corrected in code or data, `--rei-generate-strudel` may report no availab
   "name": "async_interleave",
   "concept": "asynchronous_programming",
   "description": "Multiple independent voices running concurrently",
-  "code": "stack(\n  s(\"bd\").fast(1),\n  s(\"cp\").fast(0.5).late(0.25),\n  s(\"hh\").fast(4).late(0.125)\n)",
+  "code": "stack(\n  sound(\"bd\").fast(1),\n  sound(\"cp\").fast(0.5).late(0.25),\n  sound(\"hh\").fast(4).late(0.125)\n)",
   "parameters": {
     "thread_count": "voice_count",
     "timing_offset": "late_values"
@@ -378,7 +378,7 @@ If not corrected in code or data, `--rei-generate-strudel` may report no availab
   "name": "data_transformation_pipeline",
   "concept": "functional_pipelines",
   "description": "Sound transformation chain representing data flow",
-  "code": "s(\"808bd\").lpf(sine.range(200,2000)).gain(0.8).room(0.3)",
+  "code": "sound(\"808bd\").lpf(sine.range(200,2000)).gain(0.8).room(0.3)",
   "parameters": {
     "pipeline_stages": "effect_chain_length",
     "transformation_type": "effect_selection"
@@ -399,7 +399,7 @@ If not corrected in code or data, `--rei-generate-strudel` may report no availab
   "name": "state_machine_progression",
   "concept": "finite_state_machines",
   "description": "Pattern that transitions through distinct states",
-  "code": "s(\"<bd cp sd hh>\").fast(\"<1 2 1 4>\").gain(\"<0.9 0.7 0.8 0.6>\")",
+  "code": "sound(\"<bd cp sd hh>\").fast(\"<1 2 1 4>\").gain(\"<0.9 0.7 0.8 0.6>\")",
   "parameters": {
     "state_count": "pattern_length",
     "transition_speed": "fast_modulation"
@@ -523,7 +523,7 @@ Note: `REI_TOEI_REQUIRE_EVIDENCE_IDS` and `REI_TOEI_ALLOW_METAPHORICAL_CLAIMS` a
   "name": "evolving_drone",
   "concept": "continuous_processes",
   "description": "Slowly evolving texture representing long-running background tasks",
-  "code": "s(\"sawtooth\").note(\"<c2 eb2 g2>\").lpf(sine.slow(16).range(100,800)).room(0.8).gain(0.3)",
+  "code": "sound(\"sawtooth\").note(\"<c2 eb2 g2>\").lpf(sine.slow(16).range(100,800)).room(0.8).gain(0.3)",
   "use_cases": [
     "background_services",
     "daemon_processes",
@@ -571,7 +571,7 @@ Note: `REI_TOEI_REQUIRE_EVIDENCE_IDS` and `REI_TOEI_ALLOW_METAPHORICAL_CLAIMS` a
   "name": "break_destruction",
   "concept": "race_conditions",
   "description": "Overlapping breakbeats creating timing chaos",
-  "code": "stack(\n  s(\"breaks165\").chop(16).fast(\"<1 2 3 4>\").sometimes(rev),\n  s(\"breaks165\").chop(32).fast(\"<2 4 8>\").late(0.03),\n  s(\"reese\").note(\"<a1 c2 d2>\").cutoff(sine.range(100,4000))\n)",
+  "code": "stack(\n  sound(\"breaks165\").chop(16).fast(\"<1 2 3 4>\").sometimes(rev),\n  sound(\"breaks165\").chop(32).fast(\"<2 4 8>\").late(0.03),\n  sound(\"reese\").note(\"<a1 c2 d2>\").cutoff(sine.range(100,4000))\n)",
   "use_cases": ["thread_collision", "deadlock_scenarios", "timing_attacks"]
 }
 ```
@@ -677,9 +677,9 @@ Example target shape (requires code changes):
   "name": "adaptive_rhythm",
   "concept": "load_balancing",
   "code_variants": {
-    "low_load": "s(\"bd\").fast(1)",
-    "medium_load": "s(\"bd\").fast(2)",
-    "high_load": "s(\"bd\").fast(4).sometimes(x => x.fast(2))"
+    "low_load": "sound(\"bd\").fast(1)",
+    "medium_load": "sound(\"bd\").fast(2)",
+    "high_load": "sound(\"bd\").fast(4).sometimes(x => x.fast(2))"
   },
   "selection_criteria": "knowledge_complexity"
 }
@@ -703,7 +703,7 @@ Example target shape (requires code changes):
 
 **Solution:** Validate Tidal Cycles syntax. Common errors:
 
-- Missing parentheses: `s("bd").fast(2)` not `s "bd" fast 2`
+- Missing parentheses: `sound("bd").fast(2)` not `sound "bd" fast 2`
 - Invalid sound banks: check available samples in Strudel environment
 - Syntax incompatibility: some Haskell Tidal syntax doesn't work in JavaScript Strudel
 
