@@ -1,5 +1,5 @@
 # --- STAGE 1: CORE (Lightweight) ---
-FROM nvidia/cuda:13.0.1-runtime-ubuntu22.04 AS core_base
+FROM nvidia/cuda:13.2.0-runtime-ubuntu22.04 AS core_base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -39,7 +39,7 @@ RUN mkdir -p data/avatar data/selection yt-vid-data
 CMD ["python", "main.py", "--console"]
 
 # --- STAGE 2: FULL (The CPU Slammer) ---
-FROM nvidia/cuda:13.0.1-devel-ubuntu22.04 AS full_build
+FROM nvidia/cuda:13.2.0-devel-ubuntu22.04 AS full_build
 WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
