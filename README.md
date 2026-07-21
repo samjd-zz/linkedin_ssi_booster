@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-alpha--v0.0.3.3-F97316.svg" alt="Version alpha-v0.0.3.3"></a>
-  <a href="https://developer.nvidia.com/cuda-toolkit"><img src="https://img.shields.io/badge/CUDA-13.0.1-76B900.svg?logo=nvidia" alt="CUDA 13.2.0"></a>
+  <a href="https://developer.nvidia.com/cuda-toolkit"><img src="https://img.shields.io/badge/CUDA-13.2.0-76B900.svg?logo=nvidia" alt="CUDA 13.2.0"></a>
   <a href="https://spacy.io/"><img src="https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white" alt="spaCy"></a>
   <a href="https://github.com/black-forest-labs/flux"><img src="https://img.shields.io/badge/FLUX.1-Image%20Gen-E85D75.svg" alt="FLUX.1"></a>
 </p>
