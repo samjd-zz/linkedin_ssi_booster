@@ -4,6 +4,33 @@
 
 # SSI Booster - :muscle: POWERED by Buffer.com!
 
+<details>
+<summary>🇯🇵 <b>日本語の概要はこちら (Click to expand Japanese summary)</b></summary>
+
+<br />
+
+### 概要 (Overview)
+本ポートフォリオは、高い信頼性と決定論的な設計（Deterministic Engineering）に基づいた、実践的なAI/知能システムの構築原則を示しています。単なるプロンプト生成にとどまらず、検証可能なロジック、耐障害性マルチエージェント、および高精度なハイブリッド検索（BM25 + kNN）を備えたシステムを開発・運用しています。
+
+### 主要プロジェクト (Featured Architectures)
+* **LinkedIn SSI Booster**: 真偽検証ゲート（Truth-Gated）と継続的学習機能を備えた自動化エージェント。BM25、NetworkX、spaCyを統合し、ハルシネーション（幻覚）を防止。
+* **Regulatory Intelligence Assistant (RIA)**: G7 GovAI Grand Challenge向け多層検索アーキテクチャ。Elasticsearch、Neo4jグラフトラバーサル、ベクトル検索により、カナダ連邦法データを高精度に解析。
+* **Answer42**: 学術研究分析のための9エージェントパイプライン。Spring Batchによるフォールバック処理とサーキットブレーカーを備え、クラウドAPIからローカルOllamaへ自動切り替え。
+
+### コア技術 (Key Technical Pillars)
+1. **ハイブリッドRAG & 応答検証**: BM25によるキーワードスコアリング、NetworkXの構造解析、spaCyの意味検証を融合した多段階検証レイヤー（Truth Gate）。
+2. **マルチエージェントオーケストレーション**: Spring管理の耐障害性、MCP/FastMCPプロトコルによるサービス間連携、ハードウェア制約に配慮したローカルルーティング。
+3. **ディープインデキシング & 検索**: Elasticsearch, Neo4j, ベクトル検索 (kNN) を組み合わせた多層フォールバックにより、サブ500msの低遅延検索を実現。
+4. **エンタープライズ & イベントストリーミング**: Java/JMSを用いた高スループットなエンタープライズシステム構築実績。
+
+### クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
+AIシステム設計に加え、ウィリアム・ギブスンのSF小説『アイドル（Idoru）』にインスパイアされたバーチャルペルソナ・アバター**「Rei Toei（東江麗）」**を通じて、VocaloidやSuno等を活用したサイバーポップ／インダストリアル音響のAI音声・音楽制作を行っています。
+
+* 👤 **LinkedIn:** [Shawn Jackson-Dyck](https://linkedin.com/in/shawn-jackson-dyck-52aa74358/)
+* 🎶 **Suno (Rei Toei):** [@samjd42](https://suno.com/@samjd42)
+
+</details>
+
 > **⚙️ Project Status:** Stable and actively maintained. Core features are production-ready, with ongoing refinement in image styling, music workflows, and research integrations. See [ROADMAP.md](ROADMAP.md) for longer-term directions.
 
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
