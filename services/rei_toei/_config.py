@@ -39,6 +39,21 @@ class ReiToeiConfig:
         # Sam's persona graph integration
         self.use_sam_persona = os.getenv("REI_TOEI_USE_SAM_PERSONA", "true").lower() == "true"
 
+        # Lyric language policy. In bilingual mode, Rei selects Japanese or English
+        # once per song using the configured probability.
+        lyric_language = os.getenv("REI_LYRIC_LANGUAGE", "bilingual").strip().lower()
+        if lyric_language not in {"english", "japanese", "bilingual"}:
+            raise ValueError(
+                "REI_LYRIC_LANGUAGE must be one of: english, japanese, bilingual"
+            )
+        self.lyric_language = lyric_language
+        japanese_probability = float(
+            os.getenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.25")
+        )
+        if not 0.0 <= japanese_probability <= 1.0:
+            raise ValueError("REI_JAPANESE_LYRIC_PROBABILITY must be between 0.0 and 1.0")
+        self.japanese_lyric_probability = japanese_probability
+
         # Theme diversity and title uniqueness tuning
         self.theme_pool_size = max(1, int(os.getenv("REI_TOEI_THEME_POOL_SIZE", "20")))
         self.recent_title_window = max(1, int(os.getenv("REI_TOEI_RECENT_TITLE_WINDOW", "20")))

@@ -94,6 +94,7 @@ def load_rei_domain_knowledge() -> ReiDomainKnowledge:
         bpm_and_mood=data.get("bpm_and_mood", {}),
         synth_selection_guidelines=data.get("synth_selection_guidelines", {}),
         lyrical_structure=data.get("lyrical_structure", {}),
+        japanese_lyric_production=data.get("japanese_lyric_production", {}),
         technical_metaphor_library=data.get("technical_metaphor_library", {}),
         suno_prompt_templates=data.get("suno_prompt_templates", {}),
         production_notes=data.get("production_notes", {})

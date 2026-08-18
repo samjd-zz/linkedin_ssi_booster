@@ -612,6 +612,7 @@ Active style preset name. Controls visual tone and composition language injected
 **Default:** `corporate_minimal`
 
 **Available presets:**
+
 - `corporate_minimal` — Muted palette, shallow geometry, polished corporate-safe composition
 - `sacred_geometry_light` — Subtle sacred geometry with soft light accents, still restrained
 - `tech_dark` — Dark background, cyan/purple accent tones, grid-inspired tech aesthetic
@@ -656,11 +657,11 @@ Can also be set per-request as `style_overrides["realism_hint"]` in code without
 
 Hard limits enforced at render time — cannot be overridden by individual caller requests.
 
-| Variable | Default | Range | Description |
-|---|---|---|---|
-| `FLUX_CAPACITOR_SATURATION_CAP` | `0.55` | `0.0–1.0` | Maximum colour saturation allowed in the prompt |
-| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP` | `0.40` | `0.0–1.0` | Maximum geometric complexity in the scene |
-| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP` | `0.30` | `0.0–1.0` | Maximum surrealism / abstract distortion |
+| Variable                               | Default | Range     | Description                                     |
+| -------------------------------------- | ------- | --------- | ----------------------------------------------- |
+| `FLUX_CAPACITOR_SATURATION_CAP`        | `0.55`  | `0.0–1.0` | Maximum colour saturation allowed in the prompt |
+| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP`  | `0.40`  | `0.0–1.0` | Maximum geometric complexity in the scene       |
+| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP` | `0.30`  | `0.0–1.0` | Maximum surrealism / abstract distortion        |
 
 ```bash
 FLUX_CAPACITOR_SATURATION_CAP=0.55
@@ -672,12 +673,12 @@ FLUX_CAPACITOR_SURREAL_INTENSITY_CAP=0.30
 
 Control single-GPU sequencing on RTX 3060.
 
-| Variable | Default | Description |
-|---|---|---|
-| `FLUX_CAPACITOR_OLLAMA_FIRST` | `true` | Ollama jobs always take priority over FLUX jobs |
-| `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA` | `true` | FLUX rendering only starts after Ollama work drains |
-| `FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS` | `1` | Hard cap on simultaneous GPU jobs (FLUX + Ollama combined) |
-| `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS` | `120` | Seconds to wait for a free GPU slot before deferring to text-only |
+| Variable                                    | Default | Description                                                       |
+| ------------------------------------------- | ------- | ----------------------------------------------------------------- |
+| `FLUX_CAPACITOR_OLLAMA_FIRST`               | `true`  | Ollama jobs always take priority over FLUX jobs                   |
+| `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA`          | `true`  | FLUX rendering only starts after Ollama work drains               |
+| `FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS`    | `1`     | Hard cap on simultaneous GPU jobs (FLUX + Ollama combined)        |
+| `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS` | `120`   | Seconds to wait for a free GPU slot before deferring to text-only |
 
 ```bash
 FLUX_CAPACITOR_OLLAMA_FIRST=true
@@ -688,14 +689,14 @@ FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS=120
 
 ### Render Dimension Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `FLUX_CAPACITOR_RENDER_WIDTH` | `768` | Output image width in pixels |
-| `FLUX_CAPACITOR_RENDER_HEIGHT` | `768` | Output image height in pixels |
-| `FLUX_CAPACITOR_RENDER_STEPS` | `4` | Diffusion steps (higher = slower but sharper; 4 is schnell-optimal) |
-| `FLUX_MAX_SEQUENCE_LENGTH` | `192` | Max token sequence length for FLUX text encoding (lower reduces memory usage) |
-| `FLUX_KEEP_PIPELINE_LOADED` | `true` | Keep FLUX pipeline loaded between requests (recommended for service mode to avoid per-request memory creep) |
-| `FLUX_LOG_MEMORY` | `false` | Log CUDA allocated/reserved/peak memory before and after FLUX inference |
+| Variable                       | Default | Description                                                                                                 |
+| ------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------- |
+| `FLUX_CAPACITOR_RENDER_WIDTH`  | `768`   | Output image width in pixels                                                                                |
+| `FLUX_CAPACITOR_RENDER_HEIGHT` | `768`   | Output image height in pixels                                                                               |
+| `FLUX_CAPACITOR_RENDER_STEPS`  | `4`     | Diffusion steps (higher = slower but sharper; 4 is schnell-optimal)                                         |
+| `FLUX_MAX_SEQUENCE_LENGTH`     | `192`   | Max token sequence length for FLUX text encoding (lower reduces memory usage)                               |
+| `FLUX_KEEP_PIPELINE_LOADED`    | `true`  | Keep FLUX pipeline loaded between requests (recommended for service mode to avoid per-request memory creep) |
+| `FLUX_LOG_MEMORY`              | `false` | Log CUDA allocated/reserved/peak memory before and after FLUX inference                                     |
 
 ```bash
 FLUX_CAPACITOR_RENDER_WIDTH=768
@@ -708,10 +709,10 @@ FLUX_LOG_MEMORY=false
 
 ### Artifact Storage Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `FLUX_CAPACITOR_SUBDIR` | `flux_capacitor` | Subdirectory under `GENERATED_CONTENT_DIR` for art-avatar images and metadata |
-| `FLUX_CAPACITOR_STORIES_SUBDIR` | `stories` | Subdirectory under `FLUX_CAPACITOR_SUBDIR` for story text artifacts |
+| Variable                        | Default          | Description                                                                   |
+| ------------------------------- | ---------------- | ----------------------------------------------------------------------------- |
+| `FLUX_CAPACITOR_SUBDIR`         | `flux_capacitor` | Subdirectory under `GENERATED_CONTENT_DIR` for art-avatar images and metadata |
+| `FLUX_CAPACITOR_STORIES_SUBDIR` | `stories`        | Subdirectory under `FLUX_CAPACITOR_SUBDIR` for story text artifacts           |
 
 ```bash
 FLUX_CAPACITOR_SUBDIR=flux_capacitor
@@ -733,6 +734,38 @@ yt-vid-data/
 ---
 
 ## Rei Toei Music Generation
+
+### `REI_LYRIC_LANGUAGE`
+
+Controls the language policy for Rei's generated lyrics.
+
+**Default:** `bilingual`
+
+**Options:**
+
+- `bilingual` — Rei chooses Japanese or English once per song using `REI_JAPANESE_LYRIC_PROBABILITY`.
+- `japanese` — Always generate Japanese lyrics; the probability setting is ignored.
+- `english` — Always generate English lyrics; the probability setting is ignored.
+
+The resolved language is selected once during song-concept generation and carried through lyric composition, so a song does not switch languages between sections because of a second random decision.
+
+```bash
+REI_LYRIC_LANGUAGE=bilingual
+```
+
+### `REI_JAPANESE_LYRIC_PROBABILITY`
+
+Probability that Rei selects Japanese lyrics when `REI_LYRIC_LANGUAGE=bilingual`.
+
+**Default:** `0.25` (25%)
+
+**Range:** `0.0` to `1.0`
+
+This setting is ignored when `REI_LYRIC_LANGUAGE=japanese` or `REI_LYRIC_LANGUAGE=english`.
+
+```bash
+REI_JAPANESE_LYRIC_PROBABILITY=0.25
+```
 
 ### `SUNO_API_KEY` (required for Suno integration)
 
@@ -832,6 +865,7 @@ STRUDEL_PLAYBACK_HOLD_SECONDS=8
 Safe Strudel code used when known runtime-invalid constructs are detected (for example `.wrap(...)`).
 
 The runtime is strict about workshop-style syntax:
+
 - Use `sound(...)` and `.sound(...)`
 - Do not use legacy aliases `s(...)` or `.s(...)`
 

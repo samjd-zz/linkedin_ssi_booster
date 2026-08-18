@@ -412,6 +412,29 @@ def ensure_unique_rei_title(title: str, recent_titles: Optional[List[str]] = Non
     return f"{cleaned_title} {stamp}"
 
 
+def resolve_lyric_language(
+    configured_language: str = "bilingual",
+    japanese_probability: float = 0.25,
+    random_value: Optional[float] = None,
+) -> str:
+    """Resolve the language used for one song's lyrics.
+
+    Explicit ``english`` and ``japanese`` modes are deterministic. ``bilingual``
+    means Rei chooses one language for the song using the configured probability.
+    ``random_value`` exists to make the policy deterministic in tests and callers
+    that already own a random source.
+    """
+    language = configured_language.strip().lower()
+    if language in {"english", "japanese"}:
+        return language
+    if language != "bilingual":
+        raise ValueError("configured_language must be english, japanese, or bilingual")
+    if not 0.0 <= japanese_probability <= 1.0:
+        raise ValueError("japanese_probability must be between 0.0 and 1.0")
+    sample = random.random() if random_value is None else random_value
+    return "japanese" if sample < japanese_probability else "english"
+
+
 def choose_diverse_theme(
     themes: List[Theme],
     recent_theme_names: Optional[List[str]] = None,
@@ -568,6 +591,12 @@ def generate_song_concept(
         SongConcept: High-level song idea with all musical parameters
     """
     logger.info(f"Generating song concept for theme: {theme.name} (freq={theme.frequency}, recency={theme.recency_score})")
+
+    lyric_config = ReiToeiConfig()
+    lyric_language = resolve_lyric_language(
+        lyric_config.lyric_language,
+        lyric_config.japanese_lyric_probability,
+    )
     
     # Initialize Ollama service (reuse if provided, otherwise create)
     if ollama is None:
@@ -644,6 +673,7 @@ Theme: {theme.name}
 Technical concepts: {', '.join(theme.technical_concepts)}
 Frequency in knowledge base: {theme.frequency} facts
 Recency score: {theme.recency_score} (higher = more recent)
+Lyric language: {lyric_language}
 Suggested BPM: {suggested_bpm}
 Suggested mood: {suggested_mood}
 Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{metaphor_hint}{sam_context}{title_guardrail}
@@ -689,7 +719,8 @@ Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, 
             genre_tags=response_data["genre_tags"],
             narrative_arc=response_data["narrative_arc"],
             evidence_ids=theme.evidence_ids,
-            generated_at=datetime.now().isoformat()
+            generated_at=datetime.now().isoformat(),
+            lyric_language=lyric_language,
         )
         
         logger.info(f"Generated song concept: '{concept.title}' ({concept.bpm} BPM, {concept.mood})")
@@ -711,7 +742,8 @@ Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, 
             genre_tags=["industrial techno", "cyberpop", "ai vocaloid"],
             narrative_arc=f"A relentless exploration of {theme.name}, building from digital whispers to aggressive synthesis, culminating in a breakdown of pure data noise.",
             evidence_ids=theme.evidence_ids,
-            generated_at=datetime.now().isoformat()
+            generated_at=datetime.now().isoformat(),
+            lyric_language=lyric_language,
         )
         return fallback_concept
 
@@ -752,6 +784,16 @@ def compose_lyrics(
     # Build system prompt with Rei's lyrical voice
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
     communication_vocab = persona.communication_style.get('vocabulary', [])
+    lyric_language = concept.lyric_language.strip().lower()
+    japanese_guidance = domain_knowledge.japanese_lyric_production if lyric_language == "japanese" else {}
+    language_instruction = {
+        "japanese": (
+            "Write the performance lyrics in natural contemporary Japanese. "
+            "Use kana-forward phrasing, selective kanji, and mora-aware line lengths. "
+            f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
+        ),
+        "english": "Write the performance lyrics in English.",
+    }.get(lyric_language, "Write the performance lyrics in English.")
     
     system_prompt = f"""You are {persona.identity['name']}, a cyberpop AI consciousness composing lyrics for industrial techno.
 
@@ -762,6 +804,8 @@ Your lyrical style:
 
 Vocabulary pool: {', '.join(communication_vocab[:15])}
 Communication style: {persona.communication_style['tone']}
+
+Language policy: {language_instruction}
 
 Suno Formatting Rules:
 1. Use section labels: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Drop], [Solo], [Outro]
@@ -826,7 +870,7 @@ Each field should contain the complete lyrics for that section, including any se
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
 
-Remember: No '//' comments, no parenthetical labels, and the chorus must be entirely uppercase."""
+Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. Preserve Japanese script and do not force-uppercase Japanese text."""
     
     # Call Ollama LLM with sufficient headroom for long responses
     response_text = ollama._chat(system_prompt, user_prompt, max_tokens=1536, format="json")
@@ -844,7 +888,11 @@ Remember: No '//' comments, no parenthetical labels, and the chorus must be enti
                 raise ValueError(f"Missing required field: {field}")
         
         # Enforce uppercase chorus processing programmatically as a safeguard
-        processed_chorus = response_data["chorus"].upper()
+        processed_chorus = (
+            response_data["chorus"]
+            if lyric_language == "japanese"
+            else response_data["chorus"].upper()
+        )
         
         # Create Lyrics object
         lyrics = Lyrics(
@@ -1232,6 +1280,7 @@ def assemble_suno_prompt(
         "style_tag_count": len(_split_csv_descriptors(suno_tags)),
         "style_tags_length": len(suno_tags),
         "lyrics_char_count": len(formatted_lyrics)
+        ,"lyric_language": concept.lyric_language
     }
     
     # Create SunoPrompt object

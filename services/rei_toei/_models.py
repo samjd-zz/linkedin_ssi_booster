@@ -39,6 +39,7 @@ class ReiDomainKnowledge:
     technical_metaphor_library: Dict[str, Any]
     suno_prompt_templates: Dict[str, Any]
     production_notes: Dict[str, Any]
+    japanese_lyric_production: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -118,6 +119,7 @@ class SongConcept:
     narrative_arc: str
     evidence_ids: List[str]
     generated_at: str
+    lyric_language: str = "english"
 
 
 @dataclass
