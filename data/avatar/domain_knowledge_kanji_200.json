@@ -1,0 +1,1725 @@
+{
+  "schemaVersion": "1.0",
+  "description": "A focused high-frequency Japanese kanji knowledge pack containing 200 core characters selected for broad utility across beginner and intermediate reading. The set is an instructional core, not a universal corpus ranking: exact frequency order varies by corpus, genre, and register. Each character must still be taught through verified vocabulary, readings, and sentence context.",
+  "domains": [
+    {
+      "id": "kanji-200-core",
+      "name": "200-Character High-Frequency Kanji Core",
+      "description": "A practical core of 200 frequently encountered and highly useful kanji for Japanese literacy instruction."
+    },
+    {
+      "id": "kanji-200-study-method",
+      "name": "200-Kanji Study Method",
+      "description": "Progression, retrieval, vocabulary, and verification rules for teaching the core character set."
+    }
+  ],
+  "facts": [
+    {
+      "id": "k200-001",
+      "domainId": "kanji-200-core",
+      "statement": "一 is a core high-frequency kanji meaning one; teach it through verified words such as 一つ and 一年, with readings confirmed in context.",
+      "tags": ["一", "one", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-002",
+      "domainId": "kanji-200-core",
+      "statement": "二 is a core high-frequency kanji meaning two; teach it through verified words such as 二つ and 二月, with readings confirmed in context.",
+      "tags": ["二", "two", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-003",
+      "domainId": "kanji-200-core",
+      "statement": "三 is a core high-frequency kanji meaning three; teach it through verified words such as 三つ and 三月, with readings confirmed in context.",
+      "tags": ["三", "three", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-004",
+      "domainId": "kanji-200-core",
+      "statement": "四 is a core high-frequency kanji meaning four; teach it through verified words such as 四つ and 四月, with readings confirmed in context.",
+      "tags": ["四", "four", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-005",
+      "domainId": "kanji-200-core",
+      "statement": "五 is a core high-frequency kanji meaning five; teach it through verified words such as 五つ and 五月, with readings confirmed in context.",
+      "tags": ["五", "five", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-006",
+      "domainId": "kanji-200-core",
+      "statement": "六 is a core high-frequency kanji meaning six; teach it through verified words such as 六つ and 六月, with readings confirmed in context.",
+      "tags": ["六", "six", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-007",
+      "domainId": "kanji-200-core",
+      "statement": "七 is a core high-frequency kanji meaning seven; teach it through verified words such as 七つ and 七月, with readings confirmed in context.",
+      "tags": ["七", "seven", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-008",
+      "domainId": "kanji-200-core",
+      "statement": "八 is a core high-frequency kanji meaning eight; teach it through verified words such as 八つ and 八月, with readings confirmed in context.",
+      "tags": ["八", "eight", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-009",
+      "domainId": "kanji-200-core",
+      "statement": "九 is a core high-frequency kanji meaning nine; teach it through verified words such as 九つ and 九月, with readings confirmed in context.",
+      "tags": ["九", "nine", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-010",
+      "domainId": "kanji-200-core",
+      "statement": "十 is a core high-frequency kanji meaning ten; teach it through verified words such as 十 and 十月, with readings confirmed in context.",
+      "tags": ["十", "ten", "core kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-011",
+      "domainId": "kanji-200-core",
+      "statement": "百 is a core high-frequency kanji meaning hundred; teach it through verified numerical vocabulary, with readings confirmed in context.",
+      "tags": ["百", "hundred", "numbers"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-012",
+      "domainId": "kanji-200-core",
+      "statement": "千 is a core high-frequency kanji meaning thousand; teach it through verified numerical vocabulary, with readings confirmed in context.",
+      "tags": ["千", "thousand", "numbers"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-013",
+      "domainId": "kanji-200-core",
+      "statement": "万 is a core high-frequency kanji meaning ten thousand or a large number; teach it through verified numerical vocabulary, with readings confirmed in context.",
+      "tags": ["万", "ten thousand", "numbers"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-014",
+      "domainId": "kanji-200-core",
+      "statement": "円 is a core high-frequency kanji meaning yen or circle; teach it through verified money and shape vocabulary, with readings confirmed in context.",
+      "tags": ["円", "yen", "circle"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-015",
+      "domainId": "kanji-200-core",
+      "statement": "年 is a core high-frequency kanji meaning year; teach it through verified calendar and time vocabulary, with readings confirmed in context.",
+      "tags": ["年", "year", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-016",
+      "domainId": "kanji-200-core",
+      "statement": "月 is a core high-frequency kanji meaning moon or month; teach it through verified calendar and nature vocabulary, with readings confirmed in context.",
+      "tags": ["月", "month", "moon", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-017",
+      "domainId": "kanji-200-core",
+      "statement": "日 is a core high-frequency kanji meaning day or sun; teach it through verified calendar and daily-life vocabulary, with readings confirmed in context.",
+      "tags": ["日", "day", "sun", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-018",
+      "domainId": "kanji-200-core",
+      "statement": "時 is a core high-frequency kanji meaning time or hour; teach it through verified time expressions, with readings confirmed in context.",
+      "tags": ["時", "time", "hour"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-019",
+      "domainId": "kanji-200-core",
+      "statement": "分 is a core high-frequency kanji associated with minute, part, and understanding; teach each sense through verified words and context.",
+      "tags": ["分", "minute", "part", "understand"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-020",
+      "domainId": "kanji-200-core",
+      "statement": "今 is a core high-frequency kanji meaning now or current; teach it through verified time expressions, with readings confirmed in context.",
+      "tags": ["今", "now", "current", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-021",
+      "domainId": "kanji-200-core",
+      "statement": "前 is a core high-frequency kanji meaning before, front, or previous; teach its temporal and spatial senses separately.",
+      "tags": ["前", "before", "front", "previous"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-022",
+      "domainId": "kanji-200-core",
+      "statement": "後 is a core high-frequency kanji meaning after, behind, or later; teach its temporal and spatial senses separately.",
+      "tags": ["後", "after", "behind", "later"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-023",
+      "domainId": "kanji-200-core",
+      "statement": "午 is a core high-frequency kanji used in time expressions such as 午前 and 午後; teach it as part of calendar vocabulary.",
+      "tags": ["午", "午前", "午後", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-024",
+      "domainId": "kanji-200-core",
+      "statement": "上 is a core high-frequency kanji meaning up, above, or superior; teach its spatial, social, and verb-related uses in context.",
+      "tags": ["上", "up", "above", "upper"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-025",
+      "domainId": "kanji-200-core",
+      "statement": "下 is a core high-frequency kanji meaning down, below, or lower; teach its spatial and verb-related uses in context.",
+      "tags": ["下", "down", "below", "lower"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-026",
+      "domainId": "kanji-200-core",
+      "statement": "中 is a core high-frequency kanji meaning middle, inside, or during; teach its spatial and temporal uses in context.",
+      "tags": ["中", "middle", "inside", "during"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-027",
+      "domainId": "kanji-200-core",
+      "statement": "外 is a core high-frequency kanji meaning outside or external; teach it through spatial and social-context vocabulary.",
+      "tags": ["外", "outside", "external"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-028",
+      "domainId": "kanji-200-core",
+      "statement": "左 is a core high-frequency kanji meaning left; teach it with directional vocabulary and verified readings.",
+      "tags": ["左", "left", "direction"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-029",
+      "domainId": "kanji-200-core",
+      "statement": "右 is a core high-frequency kanji meaning right; teach it with directional vocabulary and verified readings.",
+      "tags": ["右", "right", "direction"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-030",
+      "domainId": "kanji-200-core",
+      "statement": "東 is a core high-frequency kanji meaning east; teach it with geographic and directional vocabulary.",
+      "tags": ["東", "east", "direction"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-031",
+      "domainId": "kanji-200-core",
+      "statement": "西 is a core high-frequency kanji meaning west; teach it with geographic and directional vocabulary.",
+      "tags": ["西", "west", "direction"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-032",
+      "domainId": "kanji-200-core",
+      "statement": "南 is a core high-frequency kanji meaning south; teach it with geographic and directional vocabulary.",
+      "tags": ["南", "south", "direction"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-033",
+      "domainId": "kanji-200-core",
+      "statement": "北 is a core high-frequency kanji meaning north; teach it with geographic and directional vocabulary.",
+      "tags": ["北", "north", "direction"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-034",
+      "domainId": "kanji-200-core",
+      "statement": "大 is a core high-frequency kanji meaning big or great; teach its adjective and compound uses in context.",
+      "tags": ["大", "big", "great", "adjective"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-035",
+      "domainId": "kanji-200-core",
+      "statement": "小 is a core high-frequency kanji meaning small or little; teach its adjective and compound uses in context.",
+      "tags": ["小", "small", "little", "adjective"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-036",
+      "domainId": "kanji-200-core",
+      "statement": "高 is a core high-frequency kanji meaning high, tall, or expensive; teach these senses through separate examples.",
+      "tags": ["高", "high", "tall", "expensive"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-037",
+      "domainId": "kanji-200-core",
+      "statement": "安 is a core high-frequency kanji meaning inexpensive, safe, or peaceful; teach each sense through context.",
+      "tags": ["安", "cheap", "safe", "peaceful"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-038",
+      "domainId": "kanji-200-core",
+      "statement": "新 is a core high-frequency kanji meaning new; teach it through time, change, and descriptive vocabulary.",
+      "tags": ["新", "new", "change"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-039",
+      "domainId": "kanji-200-core",
+      "statement": "古 is a core high-frequency kanji meaning old or ancient; teach it as a contrast with 新.",
+      "tags": ["古", "old", "ancient", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-040",
+      "domainId": "kanji-200-core",
+      "statement": "長 is a core high-frequency kanji meaning long or leader; teach spatial and role-related meanings separately.",
+      "tags": ["長", "long", "leader"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-041",
+      "domainId": "kanji-200-core",
+      "statement": "短 is a core high-frequency kanji meaning short; teach it as a useful contrast with 長.",
+      "tags": ["短", "short", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-042",
+      "domainId": "kanji-200-core",
+      "statement": "多 is a core high-frequency kanji meaning many or much; teach it with quantity expressions.",
+      "tags": ["多", "many", "much", "quantity"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-043",
+      "domainId": "kanji-200-core",
+      "statement": "少 is a core high-frequency kanji meaning few or little; teach it as a quantity contrast with 多.",
+      "tags": ["少", "few", "little", "quantity"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-044",
+      "domainId": "kanji-200-core",
+      "statement": "明 is a core high-frequency kanji meaning bright, clear, or next in 明日; teach literal and lexicalized uses separately.",
+      "tags": ["明", "bright", "clear", "明日"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-045",
+      "domainId": "kanji-200-core",
+      "statement": "暗 is a core high-frequency kanji meaning dark or unclear; teach it as a contrast with 明.",
+      "tags": ["暗", "dark", "unclear", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-046",
+      "domainId": "kanji-200-core",
+      "statement": "白 is a core high-frequency kanji meaning white or blank; teach color and descriptive uses in context.",
+      "tags": ["白", "white", "blank", "color"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-047",
+      "domainId": "kanji-200-core",
+      "statement": "黒 is a core high-frequency kanji meaning black; teach it with color and descriptive vocabulary.",
+      "tags": ["黒", "black", "color"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-048",
+      "domainId": "kanji-200-core",
+      "statement": "赤 is a core high-frequency kanji meaning red; teach it with color and descriptive vocabulary.",
+      "tags": ["赤", "red", "color"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-049",
+      "domainId": "kanji-200-core",
+      "statement": "青 is a core high-frequency kanji meaning blue or green in selected conventional expressions; teach color vocabulary with dictionary examples.",
+      "tags": ["青", "blue", "green", "color"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-050",
+      "domainId": "kanji-200-core",
+      "statement": "色 is a core high-frequency kanji meaning color or appearance; teach it through visual and descriptive vocabulary.",
+      "tags": ["色", "color", "appearance"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-051",
+      "domainId": "kanji-200-core",
+      "statement": "天 is a core high-frequency kanji meaning sky or heaven; teach it through weather and natural-world vocabulary.",
+      "tags": ["天", "sky", "heaven", "nature"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-052",
+      "domainId": "kanji-200-core",
+      "statement": "気 is a core high-frequency kanji associated with air, energy, mood, and attention in compounds; teach each word as a lexical unit.",
+      "tags": ["気", "air", "energy", "mood", "attention"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-053",
+      "domainId": "kanji-200-core",
+      "statement": "雨 is a core high-frequency kanji meaning rain; teach it with weather vocabulary.",
+      "tags": ["雨", "rain", "weather"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-054",
+      "domainId": "kanji-200-core",
+      "statement": "雪 is a core high-frequency kanji meaning snow; teach it with weather and seasonal vocabulary.",
+      "tags": ["雪", "snow", "weather", "season"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-055",
+      "domainId": "kanji-200-core",
+      "statement": "空 is a core high-frequency kanji meaning sky, empty, or emptiness; teach literal and abstract uses separately.",
+      "tags": ["空", "sky", "empty", "emptiness"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-056",
+      "domainId": "kanji-200-core",
+      "statement": "山 is a core high-frequency kanji meaning mountain; teach it with geography and nature vocabulary.",
+      "tags": ["山", "mountain", "geography"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-057",
+      "domainId": "kanji-200-core",
+      "statement": "川 is a core high-frequency kanji meaning river; teach it with geography and nature vocabulary.",
+      "tags": ["川", "river", "geography"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-058",
+      "domainId": "kanji-200-core",
+      "statement": "海 is a core high-frequency kanji meaning sea or ocean; teach it with geography and nature vocabulary.",
+      "tags": ["海", "sea", "ocean", "geography"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-059",
+      "domainId": "kanji-200-core",
+      "statement": "田 is a core high-frequency kanji meaning rice field; teach it with rural and place-name vocabulary.",
+      "tags": ["田", "rice field", "agriculture"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-060",
+      "domainId": "kanji-200-core",
+      "statement": "土 is a core high-frequency kanji meaning earth or soil; teach it with material and weekday vocabulary.",
+      "tags": ["土", "earth", "soil", "material"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-061",
+      "domainId": "kanji-200-core",
+      "statement": "石 is a core high-frequency kanji meaning stone; teach it with material and nature vocabulary.",
+      "tags": ["石", "stone", "material"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-062",
+      "domainId": "kanji-200-core",
+      "statement": "花 is a core high-frequency kanji meaning flower; teach it with nature and seasonal vocabulary.",
+      "tags": ["花", "flower", "nature", "season"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-063",
+      "domainId": "kanji-200-core",
+      "statement": "林 is a core high-frequency kanji meaning woods or grove; teach it with nature vocabulary and the component 木.",
+      "tags": ["林", "woods", "grove", "木"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-064",
+      "domainId": "kanji-200-core",
+      "statement": "森 is a core high-frequency kanji meaning forest; teach its visual relation to repeated 木 components.",
+      "tags": ["森", "forest", "木", "component"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-065",
+      "domainId": "kanji-200-core",
+      "statement": "火 is a core high-frequency kanji meaning fire; teach it with nature, cooking, and weekday vocabulary.",
+      "tags": ["火", "fire", "cooking", "weekday"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-066",
+      "domainId": "kanji-200-core",
+      "statement": "水 is a core high-frequency kanji meaning water; teach it with nature, daily-life, and weekday vocabulary.",
+      "tags": ["水", "water", "daily life", "weekday"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-067",
+      "domainId": "kanji-200-core",
+      "statement": "木 is a core high-frequency kanji meaning tree or wood; teach its literal meaning and recurring component role.",
+      "tags": ["木", "tree", "wood", "component"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-068",
+      "domainId": "kanji-200-core",
+      "statement": "金 is a core high-frequency kanji meaning gold or money; teach its material, financial, and weekday uses separately.",
+      "tags": ["金", "gold", "money", "weekday"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-069",
+      "domainId": "kanji-200-core",
+      "statement": "人 is a core high-frequency kanji meaning person or people; teach its standalone and compound uses.",
+      "tags": ["人", "person", "people"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-070",
+      "domainId": "kanji-200-core",
+      "statement": "子 is a core high-frequency kanji meaning child or small element; teach family and compound vocabulary.",
+      "tags": ["子", "child", "family"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-071",
+      "domainId": "kanji-200-core",
+      "statement": "女 is a core high-frequency kanji meaning woman or female; teach it with people and social vocabulary.",
+      "tags": ["女", "woman", "female", "people"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-072",
+      "domainId": "kanji-200-core",
+      "statement": "男 is a core high-frequency kanji meaning man or male; teach it with people and social vocabulary.",
+      "tags": ["男", "man", "male", "people"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-073",
+      "domainId": "kanji-200-core",
+      "statement": "父 is a core high-frequency kanji meaning father; teach it with family vocabulary and honorific context.",
+      "tags": ["父", "father", "family"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-074",
+      "domainId": "kanji-200-core",
+      "statement": "母 is a core high-frequency kanji meaning mother; teach it with family vocabulary and honorific context.",
+      "tags": ["母", "mother", "family"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-075",
+      "domainId": "kanji-200-core",
+      "statement": "友 is a core high-frequency kanji meaning friend; teach it with relationship vocabulary.",
+      "tags": ["友", "friend", "relationships"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-076",
+      "domainId": "kanji-200-core",
+      "statement": "名 is a core high-frequency kanji meaning name or reputation; teach personal and abstract uses separately.",
+      "tags": ["名", "name", "reputation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-077",
+      "domainId": "kanji-200-core",
+      "statement": "先 is a core high-frequency kanji meaning ahead, previous, or先 in school and work vocabulary; teach context-specific compounds.",
+      "tags": ["先", "ahead", "previous", "school"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-078",
+      "domainId": "kanji-200-core",
+      "statement": "生 is a core high-frequency kanji with senses including life, birth, raw, and student; teach each word as a context-bound unit.",
+      "tags": ["生", "life", "birth", "raw", "student"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-079",
+      "domainId": "kanji-200-core",
+      "statement": "学 is a core high-frequency kanji meaning study or learning; teach it with school and education vocabulary.",
+      "tags": ["学", "study", "learning", "school"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-080",
+      "domainId": "kanji-200-core",
+      "statement": "校 is a core high-frequency kanji used in school-related words; teach it through verified education vocabulary.",
+      "tags": ["校", "school", "education"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-081",
+      "domainId": "kanji-200-core",
+      "statement": "本 is a core high-frequency kanji meaning book, origin, or main; teach each sense through separate compounds.",
+      "tags": ["本", "book", "origin", "main"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-082",
+      "domainId": "kanji-200-core",
+      "statement": "文 is a core high-frequency kanji meaning writing, sentence, or culture; teach it with literacy vocabulary.",
+      "tags": ["文", "writing", "sentence", "culture"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-083",
+      "domainId": "kanji-200-core",
+      "statement": "字 is a core high-frequency kanji meaning character or letter; teach it with writing-system vocabulary.",
+      "tags": ["字", "character", "letter", "writing"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-084",
+      "domainId": "kanji-200-core",
+      "statement": "語 is a core high-frequency kanji meaning language or word; teach it with language-learning vocabulary.",
+      "tags": ["語", "language", "word", "learning"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-085",
+      "domainId": "kanji-200-core",
+      "statement": "話 is a core high-frequency kanji meaning talk or story; teach it with communication vocabulary and okurigana.",
+      "tags": ["話", "talk", "story", "communication"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-086",
+      "domainId": "kanji-200-core",
+      "statement": "読 is a core high-frequency kanji meaning read; teach it as an inflected verb with okurigana and reading vocabulary.",
+      "tags": ["読", "read", "reading", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-087",
+      "domainId": "kanji-200-core",
+      "statement": "書 is a core high-frequency kanji meaning write or書く; teach it as a verb with okurigana and writing vocabulary.",
+      "tags": ["書", "write", "writing", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-088",
+      "domainId": "kanji-200-core",
+      "statement": "聞 is a core high-frequency kanji meaning hear, listen, or ask; teach these senses through context.",
+      "tags": ["聞", "hear", "listen", "ask"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-089",
+      "domainId": "kanji-200-core",
+      "statement": "見 is a core high-frequency kanji meaning see or look; teach it as a verb with okurigana.",
+      "tags": ["見", "see", "look", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-090",
+      "domainId": "kanji-200-core",
+      "statement": "行 is a core high-frequency kanji associated with go, conduct, and行く; teach its multiple readings through vocabulary.",
+      "tags": ["行", "go", "conduct", "multiple readings"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-091",
+      "domainId": "kanji-200-core",
+      "statement": "来 is a core high-frequency kanji meaning come or next; teach it with movement and time vocabulary.",
+      "tags": ["来", "come", "next", "movement"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-092",
+      "domainId": "kanji-200-core",
+      "statement": "帰 is a core high-frequency kanji meaning return; teach it as a movement verb with okurigana.",
+      "tags": ["帰", "return", "movement", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-093",
+      "domainId": "kanji-200-core",
+      "statement": "入 is a core high-frequency kanji meaning enter or put in; teach its transitive and intransitive contexts carefully.",
+      "tags": ["入", "enter", "put in", "transitivity"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-094",
+      "domainId": "kanji-200-core",
+      "statement": "出 is a core high-frequency kanji meaning exit, go out, or take out; teach its movement and causative contexts.",
+      "tags": ["出", "exit", "go out", "take out"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-095",
+      "domainId": "kanji-200-core",
+      "statement": "立 is a core high-frequency kanji meaning stand or establish; teach literal and abstract uses with okurigana.",
+      "tags": ["立", "stand", "establish", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-096",
+      "domainId": "kanji-200-core",
+      "statement": "休 is a core high-frequency kanji meaning rest; teach its visual component relation to 人 and 木 as a mnemonic, not as literal etymology.",
+      "tags": ["休", "rest", "mnemonic", "人", "木"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-097",
+      "domainId": "kanji-200-core",
+      "statement": "食 is a core high-frequency kanji meaning eat or food; teach noun and verb vocabulary separately.",
+      "tags": ["食", "eat", "food"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-098",
+      "domainId": "kanji-200-core",
+      "statement": "飲 is a core high-frequency kanji meaning drink; teach it as an inflected verb with okurigana.",
+      "tags": ["飲", "drink", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-099",
+      "domainId": "kanji-200-core",
+      "statement": "買 is a core high-frequency kanji meaning buy; teach it as a daily-life verb with okurigana.",
+      "tags": ["買", "buy", "shopping", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-100",
+      "domainId": "kanji-200-core",
+      "statement": "売 is a core high-frequency kanji meaning sell; teach it as a daily-life verb and contrast it with 買.",
+      "tags": ["売", "sell", "shopping", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-101",
+      "domainId": "kanji-200-core",
+      "statement": "作 is a core high-frequency kanji meaning make or create; teach it through production and work vocabulary.",
+      "tags": ["作", "make", "create", "work"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-102",
+      "domainId": "kanji-200-core",
+      "statement": "使 is a core high-frequency kanji meaning use; teach it as a verb with okurigana and practical examples.",
+      "tags": ["使", "use", "practical", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-103",
+      "domainId": "kanji-200-core",
+      "statement": "働 is a core high-frequency kanji meaning work; teach it as an activity verb with okurigana.",
+      "tags": ["働", "work", "activity", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-104",
+      "domainId": "kanji-200-core",
+      "statement": "思 is a core high-frequency kanji meaning think or feel; teach it through cognition and opinion vocabulary.",
+      "tags": ["思", "think", "feel", "opinion"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-105",
+      "domainId": "kanji-200-core",
+      "statement": "知 is a core high-frequency kanji meaning know; teach it with cognition vocabulary and the contrast 知る and 分かる.",
+      "tags": ["知", "know", "cognition", "分かる"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-106",
+      "domainId": "kanji-200-core",
+      "statement": "週 is a core high-frequency kanji meaning week; teach it through calendar expressions and recurring time vocabulary.",
+      "tags": ["週", "week", "calendar", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-107",
+      "domainId": "kanji-200-core",
+      "statement": "言 is a core high-frequency kanji meaning say or language; teach it through communication and quotation vocabulary.",
+      "tags": ["言", "say", "language", "communication"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-108",
+      "domainId": "kanji-200-core",
+      "statement": "曜 is a core high-frequency kanji used in weekday names; teach it through calendar vocabulary and verified compounds.",
+      "tags": ["曜", "weekday", "calendar", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-109",
+      "domainId": "kanji-200-core",
+      "statement": "朝 is a core high-frequency kanji meaning morning; teach it through daily-routine and time vocabulary.",
+      "tags": ["朝", "morning", "routine", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-110",
+      "domainId": "kanji-200-core",
+      "statement": "電 is a core high-frequency kanji meaning electricity; teach it through technology, transport, and daily-life compounds.",
+      "tags": ["電", "electricity", "technology", "transport"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-111",
+      "domainId": "kanji-200-core",
+      "statement": "車 is a core high-frequency kanji meaning vehicle or car; teach it through transport vocabulary.",
+      "tags": ["車", "car", "vehicle", "transport"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-112",
+      "domainId": "kanji-200-core",
+      "statement": "駅 is a core high-frequency kanji meaning station; teach it through travel and public-transport vocabulary.",
+      "tags": ["駅", "station", "travel", "transport"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-113",
+      "domainId": "kanji-200-core",
+      "statement": "道 is a core high-frequency kanji meaning road or way; teach literal route and abstract method senses.",
+      "tags": ["道", "road", "way", "method"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-114",
+      "domainId": "kanji-200-core",
+      "statement": "店 is a core high-frequency kanji meaning shop or store; teach it through shopping and place vocabulary.",
+      "tags": ["店", "shop", "store", "place"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-115",
+      "domainId": "kanji-200-core",
+      "statement": "家 is a core high-frequency kanji meaning house or family; teach spatial and household senses separately.",
+      "tags": ["家", "house", "home", "family"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-116",
+      "domainId": "kanji-200-core",
+      "statement": "室 is a core high-frequency kanji meaning room; teach it through household, school, and workplace vocabulary.",
+      "tags": ["室", "room", "house", "school"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-117",
+      "domainId": "kanji-200-core",
+      "statement": "場 is a core high-frequency kanji meaning place or situation; teach concrete and abstract contexts.",
+      "tags": ["場", "place", "situation", "context"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-118",
+      "domainId": "kanji-200-core",
+      "statement": "所 is a core high-frequency kanji meaning place or point; teach it through location and institutional vocabulary.",
+      "tags": ["所", "place", "location", "institution"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-119",
+      "domainId": "kanji-200-core",
+      "statement": "国 is a core high-frequency kanji meaning country or nation; teach it through geography and civic vocabulary.",
+      "tags": ["国", "country", "nation", "geography"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-120",
+      "domainId": "kanji-200-core",
+      "statement": "京 is a core high-frequency kanji associated with capital and place names; teach it through verified compounds.",
+      "tags": ["京", "capital", "place names"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-121",
+      "domainId": "kanji-200-core",
+      "statement": "都 is a core high-frequency kanji meaning metropolis or capital; teach it through civic and geographic vocabulary.",
+      "tags": ["都", "metropolis", "capital", "civic"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-122",
+      "domainId": "kanji-200-core",
+      "statement": "市 is a core high-frequency kanji meaning city or market; teach it through civic and commerce vocabulary.",
+      "tags": ["市", "city", "market", "civic"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-123",
+      "domainId": "kanji-200-core",
+      "statement": "町 is a core high-frequency kanji meaning town or neighborhood; teach it through place vocabulary.",
+      "tags": ["町", "town", "neighborhood", "place"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-124",
+      "domainId": "kanji-200-core",
+      "statement": "村 is a core high-frequency kanji meaning village; teach it through geography and community vocabulary.",
+      "tags": ["村", "village", "community", "geography"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-125",
+      "domainId": "kanji-200-core",
+      "statement": "県 is a core high-frequency kanji used for Japanese prefectures; teach it through administrative and place-name vocabulary.",
+      "tags": ["県", "prefecture", "administration", "place names"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-126",
+      "domainId": "kanji-200-core",
+      "statement": "会 is a core high-frequency kanji meaning meet or association; teach its social and institutional compounds.",
+      "tags": ["会", "meet", "association", "social"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-127",
+      "domainId": "kanji-200-core",
+      "statement": "社 is a core high-frequency kanji meaning company, shrine, or society in compounds; teach each lexical sense in context.",
+      "tags": ["社", "company", "shrine", "society"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-128",
+      "domainId": "kanji-200-core",
+      "statement": "業 is a core high-frequency kanji associated with work, business, and study tasks; teach it through verified compounds.",
+      "tags": ["業", "work", "business", "study"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-129",
+      "domainId": "kanji-200-core",
+      "statement": "事 is a core high-frequency kanji meaning matter, thing, or affair; teach its abstract and event-related compounds.",
+      "tags": ["事", "matter", "thing", "affair"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-130",
+      "domainId": "kanji-200-core",
+      "statement": "物 is a core high-frequency kanji meaning thing or object; teach concrete and abstract compound vocabulary.",
+      "tags": ["物", "thing", "object", "compound"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-131",
+      "domainId": "kanji-200-core",
+      "statement": "夜 is a core high-frequency kanji meaning night; teach it through daily-routine and time vocabulary.",
+      "tags": ["夜", "night", "routine", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-132",
+      "domainId": "kanji-200-core",
+      "statement": "方 is a core high-frequency kanji meaning direction, way, or person in selected polite expressions; teach each sense separately.",
+      "tags": ["方", "direction", "way", "person"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-133",
+      "domainId": "kanji-200-core",
+      "statement": "力 is a core high-frequency kanji meaning power or strength; teach it through physical and abstract compounds.",
+      "tags": ["力", "power", "strength", "compound"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-134",
+      "domainId": "kanji-200-core",
+      "statement": "心 is a core high-frequency kanji meaning heart or mind; teach its emotional and component-related uses.",
+      "tags": ["心", "heart", "mind", "emotion"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-135",
+      "domainId": "kanji-200-core",
+      "statement": "体 is a core high-frequency kanji meaning body; teach it through health, form, and physical-state vocabulary.",
+      "tags": ["体", "body", "health", "physical"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-136",
+      "domainId": "kanji-200-core",
+      "statement": "手 is a core high-frequency kanji meaning hand or method; teach literal and abstract uses separately.",
+      "tags": ["手", "hand", "method", "skill"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-137",
+      "domainId": "kanji-200-core",
+      "statement": "目 is a core high-frequency kanji meaning eye or item; teach body and list-related senses in context.",
+      "tags": ["目", "eye", "item", "body"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-138",
+      "domainId": "kanji-200-core",
+      "statement": "口 is a core high-frequency kanji meaning mouth or opening; teach body and entrance-related vocabulary.",
+      "tags": ["口", "mouth", "opening", "body"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-139",
+      "domainId": "kanji-200-core",
+      "statement": "耳 is a core high-frequency kanji meaning ear; teach it with body and listening vocabulary.",
+      "tags": ["耳", "ear", "body", "listening"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-140",
+      "domainId": "kanji-200-core",
+      "statement": "足 is a core high-frequency kanji meaning foot, leg, or be sufficient; teach body and abstract uses separately.",
+      "tags": ["足", "foot", "leg", "sufficient"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-141",
+      "domainId": "kanji-200-core",
+      "statement": "頭 is a core high-frequency kanji meaning head or top; teach body and ranking-related contexts.",
+      "tags": ["頭", "head", "top", "body"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-142",
+      "domainId": "kanji-200-core",
+      "statement": "顔 is a core high-frequency kanji meaning face; teach it through body and social-expression vocabulary.",
+      "tags": ["顔", "face", "expression", "body"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-143",
+      "domainId": "kanji-200-core",
+      "statement": "声 is a core high-frequency kanji meaning voice; teach it through speech and sound vocabulary.",
+      "tags": ["声", "voice", "sound", "speech"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-144",
+      "domainId": "kanji-200-core",
+      "statement": "音 is a core high-frequency kanji meaning sound; teach it through music, language, and audio vocabulary.",
+      "tags": ["音", "sound", "music", "audio"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-145",
+      "domainId": "kanji-200-core",
+      "statement": "春 is a core high-frequency kanji meaning spring; teach it through seasons and nature vocabulary.",
+      "tags": ["春", "spring", "season", "nature"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-146",
+      "domainId": "kanji-200-core",
+      "statement": "正 is a core high-frequency kanji meaning correct or正しい; teach it with evaluation and correction vocabulary.",
+      "tags": ["正", "correct", "right", "evaluation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-147",
+      "domainId": "kanji-200-core",
+      "statement": "間 is a core high-frequency kanji meaning interval, space, or between; teach temporal and spatial uses separately.",
+      "tags": ["間", "interval", "space", "between"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-148",
+      "domainId": "kanji-200-core",
+      "statement": "同 is a core high-frequency kanji meaning same or together; teach it through comparison and group vocabulary.",
+      "tags": ["同", "same", "together", "comparison"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-149",
+      "domainId": "kanji-200-core",
+      "statement": "別 is a core high-frequency kanji meaning separate or different; teach it as a contrast with 同.",
+      "tags": ["別", "separate", "different", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-150",
+      "domainId": "kanji-200-core",
+      "statement": "全 is a core high-frequency kanji meaning all or whole; teach it with quantity and completeness vocabulary.",
+      "tags": ["全", "all", "whole", "complete"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-151",
+      "domainId": "kanji-200-core",
+      "statement": "無 is a core high-frequency kanji meaning none, without, or nonexistent; teach it through negation-related compounds.",
+      "tags": ["無", "none", "without", "negation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-152",
+      "domainId": "kanji-200-core",
+      "statement": "有 is a core high-frequency kanji meaning have or exist; teach it as a contrast with 無.",
+      "tags": ["有", "have", "exist", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-153",
+      "domainId": "kanji-200-core",
+      "statement": "不 is a core high-frequency kanji used in negating compounds; teach the whole compound rather than assuming a standalone verb meaning.",
+      "tags": ["不", "not", "negative prefix", "compound"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-154",
+      "domainId": "kanji-200-core",
+      "statement": "未 is a core high-frequency kanji associated with not yet or unfinished; teach it through time and status compounds.",
+      "tags": ["未", "not yet", "unfinished", "status"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-155",
+      "domainId": "kanji-200-core",
+      "statement": "夏 is a core high-frequency kanji meaning summer; teach it through seasons and nature vocabulary.",
+      "tags": ["夏", "summer", "season", "nature"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-156",
+      "domainId": "kanji-200-core",
+      "statement": "秋 is a core high-frequency kanji meaning autumn; teach it through seasons and nature vocabulary.",
+      "tags": ["秋", "autumn", "season", "nature"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-157",
+      "domainId": "kanji-200-core",
+      "statement": "低 is a core high-frequency kanji meaning low; teach it as a contrast with 高.",
+      "tags": ["低", "low", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-158",
+      "domainId": "kanji-200-core",
+      "statement": "近 is a core high-frequency kanji meaning near or recent; teach spatial and temporal contexts separately.",
+      "tags": ["近", "near", "recent", "space", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-159",
+      "domainId": "kanji-200-core",
+      "statement": "遠 is a core high-frequency kanji meaning far or distant; teach it as a contrast with 近.",
+      "tags": ["遠", "far", "distant", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-160",
+      "domainId": "kanji-200-core",
+      "statement": "早 is a core high-frequency kanji meaning early or fast; teach temporal and speed contexts separately.",
+      "tags": ["早", "early", "fast", "time"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-161",
+      "domainId": "kanji-200-core",
+      "statement": "遅 is a core high-frequency kanji meaning late or slow; teach it as a contrast with 早.",
+      "tags": ["遅", "late", "slow", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-162",
+      "domainId": "kanji-200-core",
+      "statement": "冬 is a core high-frequency kanji meaning winter; teach it through seasons and nature vocabulary.",
+      "tags": ["冬", "winter", "season", "nature"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-163",
+      "domainId": "kanji-200-core",
+      "statement": "風 is a core high-frequency kanji meaning wind or style; teach natural and abstract senses separately.",
+      "tags": ["風", "wind", "style", "nature"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-164",
+      "domainId": "kanji-200-core",
+      "statement": "強 is a core high-frequency kanji meaning strong; teach physical, interpersonal, and abstract uses.",
+      "tags": ["強", "strong", "strength", "abstract"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-165",
+      "domainId": "kanji-200-core",
+      "statement": "弱 is a core high-frequency kanji meaning weak; teach it as a contrast with 強.",
+      "tags": ["弱", "weak", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-166",
+      "domainId": "kanji-200-core",
+      "statement": "良 is a core high-frequency kanji meaning good or favorable; teach it through evaluation vocabulary.",
+      "tags": ["良", "good", "favorable", "evaluation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-167",
+      "domainId": "kanji-200-core",
+      "statement": "悪 is a core high-frequency kanji meaning bad or harmful; teach it as a contrast with 良.",
+      "tags": ["悪", "bad", "harmful", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-168",
+      "domainId": "kanji-200-core",
+      "statement": "楽 is a core high-frequency kanji associated with ease, comfort, and enjoyment; teach each sense through context.",
+      "tags": ["楽", "easy", "comfort", "enjoyment"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-169",
+      "domainId": "kanji-200-core",
+      "statement": "好 is a core high-frequency kanji meaning like or fondness; teach it through preference and relationship vocabulary.",
+      "tags": ["好", "like", "preference", "fondness"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-170",
+      "domainId": "kanji-200-core",
+      "statement": "嫌 is a core high-frequency kanji meaning dislike or unpleasant; teach it through preference and emotional vocabulary.",
+      "tags": ["嫌", "dislike", "unpleasant", "emotion"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-171",
+      "domainId": "kanji-200-core",
+      "statement": "愛 is a core high-frequency kanji meaning love or affection; teach it through emotional and cultural vocabulary.",
+      "tags": ["愛", "love", "affection", "emotion"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-172",
+      "domainId": "kanji-200-core",
+      "statement": "島 is a core high-frequency kanji meaning island; teach it through geography and travel vocabulary.",
+      "tags": ["島", "island", "geography", "travel"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-173",
+      "domainId": "kanji-200-core",
+      "statement": "温 is a core high-frequency kanji associated with warm or temperature; teach it through weather, health, and descriptive vocabulary.",
+      "tags": ["温", "warm", "temperature", "weather"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-174",
+      "domainId": "kanji-200-core",
+      "statement": "度 is a core high-frequency kanji associated with degree, time, or frequency; teach each lexical sense in context.",
+      "tags": ["度", "degree", "time", "frequency"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-175",
+      "domainId": "kanji-200-core",
+      "statement": "現 is a core high-frequency kanji associated with present, appear, or actual; teach it through status and reality vocabulary.",
+      "tags": ["現", "present", "appear", "actual"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-176",
+      "domainId": "kanji-200-core",
+      "statement": "実 is a core high-frequency kanji associated with truth, reality, fruit, and substance; teach each compound contextually.",
+      "tags": ["実", "truth", "reality", "fruit"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-177",
+      "domainId": "kanji-200-core",
+      "statement": "理 is a core high-frequency kanji associated with reason, logic, and principle; teach it through academic and abstract vocabulary.",
+      "tags": ["理", "reason", "logic", "principle"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-178",
+      "domainId": "kanji-200-core",
+      "statement": "病 is a core high-frequency kanji meaning illness or disease; teach it through health vocabulary and register-aware examples.",
+      "tags": ["病", "illness", "disease", "health"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-179",
+      "domainId": "kanji-200-core",
+      "statement": "医 is a core high-frequency kanji associated with medicine and medical professionals; teach it through health vocabulary.",
+      "tags": ["医", "medicine", "medical", "health"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-180",
+      "domainId": "kanji-200-core",
+      "statement": "意 is a core high-frequency kanji associated with intention, meaning, and attention; teach it through abstract compounds.",
+      "tags": ["意", "intention", "meaning", "attention"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-181",
+      "domainId": "kanji-200-core",
+      "statement": "味 is a core high-frequency kanji meaning taste or meaning; teach physical and abstract senses separately.",
+      "tags": ["味", "taste", "meaning", "polysemy"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-182",
+      "domainId": "kanji-200-core",
+      "statement": "感 is a core high-frequency kanji associated with feeling and impression; teach it through emotional and perceptual vocabulary.",
+      "tags": ["感", "feeling", "impression", "emotion"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-183",
+      "domainId": "kanji-200-core",
+      "statement": "主 is a core high-frequency kanji associated with main, master, or subject; teach each sense through compounds.",
+      "tags": ["主", "main", "master", "subject"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-184",
+      "domainId": "kanji-200-core",
+      "statement": "民 is a core high-frequency kanji associated with people or citizens; teach it through civic and social vocabulary.",
+      "tags": ["民", "people", "citizens", "civic"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-185",
+      "domainId": "kanji-200-core",
+      "statement": "世 is a core high-frequency kanji associated with world, society, and generation; teach its abstract compounds contextually.",
+      "tags": ["世", "world", "society", "generation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-186",
+      "domainId": "kanji-200-core",
+      "statement": "界 is a core high-frequency kanji meaning boundary or world; teach it through domain and boundary vocabulary.",
+      "tags": ["界", "boundary", "world", "domain"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-187",
+      "domainId": "kanji-200-core",
+      "statement": "忘 is a core high-frequency kanji meaning forget; teach it as an inflected verb with okurigana and memory vocabulary.",
+      "tags": ["忘", "forget", "memory", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-188",
+      "domainId": "kanji-200-core",
+      "statement": "問 is a core high-frequency kanji meaning question or ask; teach it through inquiry and school vocabulary.",
+      "tags": ["問", "question", "ask", "inquiry"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-189",
+      "domainId": "kanji-200-core",
+      "statement": "答 is a core high-frequency kanji meaning answer; teach it as a contrast with 問.",
+      "tags": ["答", "answer", "問", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-190",
+      "domainId": "kanji-200-core",
+      "statement": "教 is a core high-frequency kanji meaning teach or instruct; teach it through education and social vocabulary.",
+      "tags": ["教", "teach", "instruct", "education"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-191",
+      "domainId": "kanji-200-core",
+      "statement": "習 is a core high-frequency kanji meaning learn or practice; teach it through study and habit vocabulary.",
+      "tags": ["習", "learn", "practice", "study"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-192",
+      "domainId": "kanji-200-core",
+      "statement": "試 is a core high-frequency kanji meaning try or test; teach it through assessment and experimentation vocabulary.",
+      "tags": ["試", "try", "test", "assessment"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-193",
+      "domainId": "kanji-200-core",
+      "statement": "験 is a core high-frequency kanji associated with test and experience; teach it through verified compounds.",
+      "tags": ["験", "test", "experience", "compound"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-194",
+      "domainId": "kanji-200-core",
+      "statement": "考 is a core high-frequency study kanji meaning consider; reinforce it with reasoning and examination vocabulary.",
+      "tags": ["考", "consider", "study", "reasoning"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-195",
+      "domainId": "kanji-200-core",
+      "statement": "記 is a core high-frequency kanji meaning write down, record, or remember; teach it through documentation vocabulary.",
+      "tags": ["記", "record", "write down", "remember"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-196",
+      "domainId": "kanji-200-core",
+      "statement": "旅 is a core high-frequency kanji meaning journey or travel; teach it through transport and experience vocabulary.",
+      "tags": ["旅", "journey", "travel", "experience"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-197",
+      "domainId": "kanji-200-core",
+      "statement": "持 is a core high-frequency kanji meaning hold or possess; teach it as an inflected verb with okurigana.",
+      "tags": ["持", "hold", "possess", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-198",
+      "domainId": "kanji-200-core",
+      "statement": "置 is a core high-frequency kanji meaning put or place; teach it as an inflected verb with spatial examples.",
+      "tags": ["置", "put", "place", "okurigana"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-199",
+      "domainId": "kanji-200-core",
+      "statement": "始 is a core high-frequency kanji meaning begin or start; teach it as a contrast with 終.",
+      "tags": ["始", "begin", "start", "終"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "k200-200",
+      "domainId": "kanji-200-core",
+      "statement": "終 is a core high-frequency kanji meaning end or finish; teach it as a contrast with 始.",
+      "tags": ["終", "end", "finish", "始"],
+      "confidence": "high",
+      "scope": "teaching"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-k200-core-to-method",
+      "fromFactId": "k200-001",
+      "toFactId": "k200-200",
+      "relationType": "uses_study_method",
+      "description": "Every core character should be learned through verified vocabulary, context, retrieval, and review rather than isolated gloss memorization."
+    },
+    {
+      "id": "rel-k200-time-to-calendar",
+      "fromFactId": "k200-015",
+      "toFactId": "k200-023",
+      "relationType": "supports",
+      "description": "Year, month, day, and 午前/午後 vocabulary form a connected calendar-learning cluster."
+    },
+    {
+      "id": "rel-k200-directions",
+      "fromFactId": "k200-030",
+      "toFactId": "k200-033",
+      "relationType": "forms_contrast_set",
+      "description": "East, west, south, and north should be taught as a directional contrast set."
+    },
+    {
+      "id": "rel-k200-colors",
+      "fromFactId": "k200-046",
+      "toFactId": "k200-050",
+      "relationType": "forms_semantic_set",
+      "description": "Basic color kanji are best reinforced through contrast and concrete examples."
+    },
+    {
+      "id": "rel-k200-nature",
+      "fromFactId": "k200-051",
+      "toFactId": "k200-068",
+      "relationType": "forms_semantic_set",
+      "description": "Weather, landscape, materials, and weekdays create a high-utility nature vocabulary network."
+    },
+    {
+      "id": "rel-k200-family",
+      "fromFactId": "k200-069",
+      "toFactId": "k200-075",
+      "relationType": "forms_semantic_set",
+      "description": "People and family kanji should be taught with relationship vocabulary and register notes."
+    },
+    {
+      "id": "rel-k200-literacy",
+      "fromFactId": "k200-081",
+      "toFactId": "k200-089",
+      "relationType": "forms_literacy_set",
+      "description": "Book, writing, language, reading, listening, and seeing connect into a practical literacy cluster."
+    },
+    {
+      "id": "rel-k200-movement",
+      "fromFactId": "k200-090",
+      "toFactId": "k200-096",
+      "relationType": "forms_verb_set",
+      "description": "Movement and daily routine verbs should be taught with okurigana and transitivity context."
+    },
+    {
+      "id": "rel-k200-commerce",
+      "fromFactId": "k200-097",
+      "toFactId": "k200-106",
+      "relationType": "forms_daily_life_set",
+      "description": "Eating, buying, making, using, working, thinking, and knowing form a useful daily-life progression."
+    },
+    {
+      "id": "rel-k200-transport",
+      "fromFactId": "k200-110",
+      "toFactId": "k200-118",
+      "relationType": "forms_context_set",
+      "description": "Electricity, vehicles, stations, roads, stores, homes, rooms, places, and locations support practical reading."
+    },
+    {
+      "id": "rel-k200-civic",
+      "fromFactId": "k200-119",
+      "toFactId": "k200-129",
+      "relationType": "forms_civic_set",
+      "description": "Country, city, town, village, prefecture, meetings, companies, work, matters, and things form a civic vocabulary network."
+    },
+    {
+      "id": "rel-k200-body",
+      "fromFactId": "k200-134",
+      "toFactId": "k200-145",
+      "relationType": "forms_body_and_sound_set",
+      "description": "Mind, body, hand, eye, mouth, ear, foot, head, face, voice, and sound should be taught through sensory examples."
+    },
+    {
+      "id": "rel-k200-contrast",
+      "fromFactId": "k200-146",
+      "toFactId": "k200-167",
+      "relationType": "forms_contrast_sets",
+      "description": "Correctness, sameness, difference, quantity, strength, goodness, and preference are best learned in semantic contrasts."
+    },
+    {
+      "id": "rel-k200-abstract",
+      "fromFactId": "k200-175",
+      "toFactId": "k200-186",
+      "relationType": "forms_abstract_set",
+      "description": "Present, reality, logic, thought, meaning, society, world, and boundary are high-value abstract reading concepts."
+    },
+    {
+      "id": "rel-k200-learning",
+      "fromFactId": "k200-188",
+      "toFactId": "k200-200",
+      "relationType": "forms_learning_workflow",
+      "description": "Question, answer, teaching, learning, testing, recording, holding, placing, beginning, and ending support instructional language."
+    }
+  ]
+}
