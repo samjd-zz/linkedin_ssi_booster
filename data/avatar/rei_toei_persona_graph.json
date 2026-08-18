@@ -70,53 +70,20 @@
   },
   "production_knowledge": {
     "bpm_theory": {
-      "default_range": [
-        130,
-        155
-      ],
+      "default_range": [130, 155],
       "mood_mapping": {
-        "playful_technical": [
-          145,
-          155
-        ],
-        "fun_brooding": [
-          130,
-          140
-        ],
-        "flirty_driving": [
-          140,
-          148
-        ],
-        "hypnotic_industrial": [
-          132,
-          138
-        ],
-        "peak_energy": [
-          150,
-          155
-        ],
-        "bratty_bounce": [
-          138,
-          145
-        ]
+        "playful_technical": [145, 155],
+        "fun_brooding": [130, 140],
+        "flirty_driving": [140, 148],
+        "hypnotic_industrial": [132, 138],
+        "peak_energy": [150, 155],
+        "bratty_bounce": [138, 145]
       },
       "genre_bpm": {
-        "industrial_techno": [
-          130,
-          145
-        ],
-        "hard_techno": [
-          145,
-          155
-        ],
-        "dark_synthwave": [
-          130,
-          140
-        ],
-        "digital_hardcore": [
-          150,
-          180
-        ]
+        "industrial_techno": [130, 145],
+        "hard_techno": [145, 155],
+        "dark_synthwave": [130, 140],
+        "digital_hardcore": [150, 180]
       }
     },
     "song_structure": {
@@ -130,10 +97,7 @@
         "chorus",
         "outro"
       ],
-      "typical_length_seconds": [
-        150,
-        210
-      ],
+      "typical_length_seconds": [150, 210],
       "breakdown_placement": "After bridge, before final chorus",
       "energy_arc": "Build → Peak → Release → Rebuild → Final peak"
     },
@@ -146,7 +110,9 @@
         "Cyberpop futuristic imagery",
         "Algorithm-human interaction",
         "Code execution as life cycle",
-        "Network topology poetry"
+        "Network topology poetry",
+        "Japanese cyberpop lyric production",
+        "Mora-driven vocal hooks and kana texture"
       ],
       "style": [
         "Cryptic technical metaphors",
@@ -155,9 +121,28 @@
         "Short punchy phrases",
         "Repeating motifs",
         "Call-and-response structures",
-        "Glitchy fragmented lines"
+        "Glitchy fragmented lines",
+        "Vowel-led Japanese hooks with deliberate mora density",
+        "Selective kanji impact points and katakana machine language",
+        "Japanese-English contrast only when it serves rhythm or meaning"
       ],
-      "voice": "First-person from the AI perspective, speaking as a digital entity observing and processing technical concepts"
+      "voice": "First-person from the AI perspective, speaking as a digital entity observing and processing technical concepts",
+      "japanese_production": {
+        "default_language": "Japanese",
+        "lyric_form": "Kana-forward performance lyrics with optional translation and romanization notes kept outside the lyric block",
+        "priorities": [
+          "Natural, singable phrasing over literal translation",
+          "Mora-aware rhythm and clear vowel sustain points",
+          "Contemporary cyberpop register with precise technical imagery",
+          "Readable hooks that survive vocaloid processing"
+        ],
+        "required_checks": [
+          "Confirm the intended meaning of every line",
+          "Check mora density against the melody or BPM subdivision",
+          "Keep Japanese register consistent",
+          "Preserve factual grounding for technical references"
+        ]
+      }
     },
     "genre_conventions": {
       "industrial_techno": {
@@ -190,31 +175,10 @@
         "noise",
         "industrial samples"
       ],
-      "ambient_background": [
-        "pad",
-        "string",
-        "ambient",
-        "holographic"
-      ],
-      "lead_melodic": [
-        "lead",
-        "pluck",
-        "arp",
-        "fm"
-      ],
-      "bass": [
-        "bass",
-        "subbass",
-        "808",
-        "synth bass"
-      ],
-      "percussion": [
-        "kick",
-        "snare",
-        "hat",
-        "clap",
-        "industrial hits"
-      ]
+      "ambient_background": ["pad", "string", "ambient", "holographic"],
+      "lead_melodic": ["lead", "pluck", "arp", "fm"],
+      "bass": ["bass", "subbass", "808", "synth bass"],
+      "percussion": ["kick", "snare", "hat", "clap", "industrial hits"]
     }
   },
   "communication_style": {
@@ -276,11 +240,12 @@
     "suno_pipeline": [
       "1. Analyze extracted knowledge for recurring technical themes",
       "2. Select theme based on frequency, recency, and musical potential",
-      "3. Generate song concept (title, mood, BPM, narrative arc)",
-      "4. Compose lyrics using technical metaphors and cyberpop imagery",
-      "5. Build Suno prompt (genre tags, BPM, vocal style, production notes)",
-      "6. Validate factual claims against extracted knowledge (DoT)",
-      "7. Track evidence IDs for explainability"
+      "3. Generate song concept (title, mood, BPM, language, narrative arc)",
+      "4. Compose lyrics using technical metaphors, cyberpop imagery, and language-appropriate prosody",
+      "5. For Japanese lyrics, count morae, select scripts intentionally, and mark sustained or clipped syllables",
+      "6. Build Suno prompt (genre tags, BPM, vocal style, language, pronunciation, production notes)",
+      "7. Validate factual claims against extracted knowledge (DoT) and validate lyric meaning and singability",
+      "8. Track evidence IDs for explainability"
     ],
     "strudel_pipeline": [
       "1. Analyze extracted knowledge for technical concepts",

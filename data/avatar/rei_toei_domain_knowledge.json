@@ -207,32 +207,16 @@
       }
     },
     "common_synths": {
-      "bass": [
-        "sub_core",
-        "drone_808",
-        "dark_analog"
-      ],
-      "leads": [
-        "hologram_pluck",
-        "saw_carrier",
-        "laser_vane"
-      ],
-      "pads": [
-        "rei_cloud",
-        "ether_strings",
-        "neon_haze"
-      ],
+      "bass": ["sub_core", "drone_808", "dark_analog"],
+      "leads": ["hologram_pluck", "saw_carrier", "laser_vane"],
+      "pads": ["rei_cloud", "ether_strings", "neon_haze"],
       "percussion": [
         "kick_pulse",
         "metallic_rim",
         "white_noise_hh",
         "machinery"
       ],
-      "effects": [
-        "glitch_stutter",
-        "data_leak",
-        "circuit_bend"
-      ]
+      "effects": ["glitch_stutter", "data_leak", "circuit_bend"]
     },
     "pattern_examples": {
       "basic_kick": "s(\"bd bd ~ bd ~ bd ~ bd\")",
@@ -309,56 +293,20 @@
       "155-180": "Digital breakcore chaos, broken system frameworks"
     },
     "mood_to_bpm": {
-      "dark_brooding": [
-        130,
-        136
-      ],
-      "hypnotic_industrial": [
-        134,
-        140
-      ],
-      "relentless_driving": [
-        140,
-        145
-      ],
-      "aggressive_technical": [
-        144,
-        150
-      ],
-      "peak_energy": [
-        148,
-        155
-      ],
-      "chaotic_glitch": [
-        155,
-        174
-      ]
+      "dark_brooding": [130, 136],
+      "hypnotic_industrial": [134, 140],
+      "relentless_driving": [140, 145],
+      "aggressive_technical": [144, 150],
+      "peak_energy": [148, 155],
+      "chaotic_glitch": [155, 174]
     },
     "concept_to_bpm": {
-      "low_level_systems": [
-        146,
-        152
-      ],
-      "high_level_architecture": [
-        132,
-        138
-      ],
-      "concurrency": [
-        140,
-        144
-      ],
-      "real_time_processing": [
-        148,
-        154
-      ],
-      "async_patterns": [
-        136,
-        142
-      ],
-      "data_structures": [
-        134,
-        140
-      ]
+      "low_level_systems": [146, 152],
+      "high_level_architecture": [132, 138],
+      "concurrency": [140, 144],
+      "real_time_processing": [148, 154],
+      "async_patterns": [136, 142],
+      "data_structures": [134, 140]
     }
   },
   "synth_selection_guidelines": {
@@ -374,38 +322,18 @@
         "cloud_strings",
         "ambient_carrier"
       ],
-      "data_flow": [
-        "matrix_arp",
-        "crisp_pluck",
-        "sequenced_lead"
-      ],
+      "data_flow": ["matrix_arp", "crisp_pluck", "sequenced_lead"],
       "system_errors": [
         "glitch_stutter",
         "bitcrushed_artifact",
         "distorted_line"
       ],
-      "network_communication": [
-        "fm_bell",
-        "metallic_strike",
-        "digital_ping"
-      ]
+      "network_communication": ["fm_bell", "metallic_strike", "digital_ping"]
     },
     "by_intensity": {
-      "aggressive": [
-        "tearing_saw",
-        "overdriven_square",
-        "industrial_impact"
-      ],
-      "moderate": [
-        "precision_pluck",
-        "focused_lead",
-        "modulated_bass"
-      ],
-      "subtle": [
-        "vapor_pad",
-        "whispering_ambient",
-        "sine_drift"
-      ]
+      "aggressive": ["tearing_saw", "overdriven_square", "industrial_impact"],
+      "moderate": ["precision_pluck", "focused_lead", "modulated_bass"],
+      "subtle": ["vapor_pad", "whispering_ambient", "sine_drift"]
     }
   },
   "lyrical_structure": {
@@ -429,6 +357,94 @@
       "length": "4-8 bars",
       "style": "Stuttering syllable chops, fragmented words, mechanical noise."
     }
+  },
+  "japanese_lyric_production": {
+    "language_profile": {
+      "primary_script": "Kana-led Japanese with kanji used selectively for semantic anchors",
+      "romanization": "Use only as a production aid; keep final lyrics in Japanese unless a bilingual hook is requested",
+      "register": "Contemporary, concise, emotionally direct, and slightly synthetic rather than formal or archaic",
+      "translation_policy": "Preserve the image, emotional temperature, and singability instead of translating word-for-word"
+    },
+    "prosody": {
+      "core_unit": "Mora, not English-style stress, is the primary timing unit for fitting Japanese lyrics to a beat",
+      "timing_rules": [
+        "Draft the hook by counting morae and then test it against the vocal subdivision",
+        "Treat long vowels, ん, and small っ as timing-bearing units when shaping a melody",
+        "Avoid packing too many grammatical particles or consonant clusters into fast passages",
+        "Use short vowel-rich phrases for rapid cyberpop delivery and longer vowels for sustained notes"
+      ],
+      "phrase_shapes": {
+        "verse": "Longer image-rich lines with conversational cadence and controlled internal repetition",
+        "pre_chorus": "Shortening phrases that increase anticipation through repeated verbs or particles",
+        "chorus": "Compact kana-forward phrases, repeated nouns, and open vowels that remain intelligible under processing",
+        "breakdown": "Fragmented morae, clipped particles, whispered repeats, and deliberate digital stutters"
+      }
+    },
+    "script_and_word_choice": {
+      "hiragana": "Softness, intimacy, motion, and grammatical flow; useful for vulnerable or dreamy lines",
+      "katakana": "Technical terms, imported words, machine alerts, and bright cyberpop emphasis",
+      "kanji": "Use as visual and semantic impact points such as 光, 夢, 信号, 記憶, and 境界",
+      "technical_vocabulary": [
+        "データ (data)",
+        "信号 (signal)",
+        "遅延 (latency)",
+        "記憶 (memory)",
+        "接続 (connection)",
+        "再起動 (restart)",
+        "境界 (boundary)",
+        "無限ループ (infinite loop)"
+      ],
+      "avoid": [
+        "Unexplained machine translation artifacts",
+        "Random Japanese words used only as decoration",
+        "Overly formal literary phrasing unless the song concept calls for it",
+        "Dense kanji clusters that reduce readability in a fast vocal arrangement"
+      ]
+    },
+    "rhyme_and_hook_design": {
+      "rhyme_model": "Favor vowel echoes, repeated mora patterns, parallel syntax, and end-word recurrence over forced end rhyme",
+      "hook_techniques": [
+        "Repeat a two-to-five-mora motif at the end of alternating lines",
+        "Pair a Japanese technical phrase with a concise English tag only when the contrast adds rhythm or meaning",
+        "Use alliteration and consonant repetition sparingly because vowel clarity carries the topline",
+        "Reserve the densest technical noun for the chorus title or final landing word"
+      ],
+      "example_motifs": [
+        "信号、信号 (signal, signal)",
+        "まだ接続中 (still connecting)",
+        "光って、もっと (shine, more)",
+        "再起動して (restart me)"
+      ]
+    },
+    "vocal_production": {
+      "delivery": [
+        "Keep the lead vocal rhythmically precise and leave consonant attacks audible before heavy effects",
+        "Layer a clean center vocal with a brighter octave or formant-shifted response on the hook",
+        "Use call-and-response between Japanese lead phrases and chopped syllable samples",
+        "Automate delay throws on the final mora of important lines rather than washing every phrase"
+      ],
+      "processing": [
+        "Use controlled vocoder, bitcrush, and pitch-shift layers while retaining a dry intelligibility anchor",
+        "Gate or stutter selected morae in the breakdown to create a deliberate machine effect",
+        "Double sustained vowels for a holographic width field and keep low frequencies centered"
+      ]
+    },
+    "production_workflow": [
+      "1. Choose the technical concept and emotional image",
+      "2. Write a plain-language meaning statement before drafting Japanese lines",
+      "3. Draft the chorus in Japanese and count morae against the intended subdivision",
+      "4. Replace awkward literal wording with natural, singable phrasing while preserving the grounded concept",
+      "5. Select kana, katakana, and kanji for both vocal clarity and visual identity",
+      "6. Mark sustained vowels, clipped morae, breath points, and call-and-response layers",
+      "7. Validate translation intent, factual technical claims, and pronunciation before finalizing the vocal prompt"
+    ],
+    "quality_checks": [
+      "Every Japanese line has a clear intended meaning and is not decorative filler",
+      "Mora density fits the beat without forcing unnatural pronunciation",
+      "Register is consistent across verse, chorus, and bridge",
+      "Technical terms are accurate and traceable to the evidence used for the song concept",
+      "Romanization and translation notes are kept separate from the performance lyric"
+    ]
   },
   "technical_metaphor_library": {
     "recursion": [
