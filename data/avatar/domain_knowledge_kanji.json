@@ -1,0 +1,543 @@
+{
+  "schemaVersion": "1.0",
+  "description": "A teaching-oriented knowledge graph for Japanese kanji and literacy. It connects character structure, readings, vocabulary, grammar context, handwriting, morphology, learner progression, spaced review, and practical study workflows. Statements describe durable learning principles; individual kanji meanings and readings should be verified against a current Japanese dictionary before being used as authoritative teaching examples.",
+  "domains": [
+    {
+      "id": "japanese-writing-system",
+      "name": "Japanese Writing System",
+      "description": "How kanji, hiragana, katakana, and Latin text work together in Japanese writing."
+    },
+    {
+      "id": "kanji-structure",
+      "name": "Kanji Structure and Components",
+      "description": "Radicals, semantic components, phonetic components, compounds, and visual decomposition."
+    },
+    {
+      "id": "kanji-readings",
+      "name": "Kanji Readings and Vocabulary",
+      "description": "On'yomi, kun'yomi, okurigana, inflection, compounds, and context-dependent reading selection."
+    },
+    {
+      "id": "kanji-writing",
+      "name": "Kanji Handwriting and Stroke Order",
+      "description": "Stroke order, stroke types, proportions, radicals, handwriting practice, and recognition."
+    },
+    {
+      "id": "kanji-pedagogy",
+      "name": "Kanji Teaching and Learning",
+      "description": "Memory strategies, graded introduction, retrieval practice, spaced repetition, and error correction."
+    },
+    {
+      "id": "japanese-literacy-context",
+      "name": "Japanese Literacy in Context",
+      "description": "How kanji meaning and reading are learned through words, sentences, register, and authentic text."
+    }
+  ],
+  "facts": [
+    {
+      "id": "kanji-writing-system-mixed-script",
+      "domainId": "japanese-writing-system",
+      "statement": "Modern Japanese commonly uses kanji together with hiragana and katakana. Kanji usually carries lexical meaning, hiragana commonly represents grammatical material and inflection, and katakana commonly represents loanwords, names, emphasis, and some technical terms.",
+      "tags": [
+        "kanji",
+        "hiragana",
+        "katakana",
+        "mixed script",
+        "Japanese literacy"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-semantic-function",
+      "domainId": "japanese-writing-system",
+      "statement": "Kanji are used primarily to represent lexical units and semantic distinctions, but a kanji does not have one fixed English translation or one universally valid pronunciation outside context.",
+      "tags": ["kanji meaning", "context", "translation", "lexical unit"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-hiragana-okurigana",
+      "domainId": "japanese-writing-system",
+      "statement": "Okurigana are kana written alongside a kanji, especially in inflected verbs and adjectives, and they help show grammatical form and constrain the intended reading.",
+      "tags": ["okurigana", "hiragana", "inflection", "verbs", "adjectives"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-katakana-specialized-use",
+      "domainId": "japanese-writing-system",
+      "statement": "Katakana is not a substitute for kanji knowledge: it is a separate syllabary used heavily for loanwords and selected stylistic or technical functions, while many native and Sino-Japanese lexical items remain conventionally written with kanji.",
+      "tags": ["katakana", "loanwords", "technical Japanese", "writing choice"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-components-not-always-radicals",
+      "domainId": "kanji-structure",
+      "statement": "A visible part of a kanji may be a radical, a phonetic component, a semantic component, or simply a recurring graphic component. These categories overlap in practice but should not be treated as synonyms.",
+      "tags": [
+        "radical",
+        "component",
+        "semantic component",
+        "phonetic component",
+        "decomposition"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-radical-indexing",
+      "domainId": "kanji-structure",
+      "statement": "A radical is a dictionary and classification concept used to organize kanji. A radical can provide a useful semantic clue, but it does not reliably determine the complete meaning or pronunciation of every character containing it.",
+      "tags": ["radicals", "dictionary", "classification", "semantic clue"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-semantic-phonetic-compounds",
+      "domainId": "kanji-structure",
+      "statement": "Many kanji contain a semantic component and a phonetic component. The phonetic component can suggest a reading family and the semantic component can suggest a meaning field, but both are clues rather than guarantees because sound and meaning have changed over time.",
+      "tags": [
+        "semantic-phonetic",
+        "phonetic component",
+        "meaning clue",
+        "reading clue"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-compound-morphology",
+      "domainId": "kanji-structure",
+      "statement": "Kanji compounds, especially Sino-Japanese compounds, often combine multiple characters into a lexical unit whose meaning is related to but not always mechanically predictable from isolated English glosses.",
+      "tags": [
+        "jukugo",
+        "compound",
+        "morphology",
+        "Sino-Japanese vocabulary",
+        "vocabulary"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-readings-onyomi-kunyomi",
+      "domainId": "kanji-readings",
+      "statement": "On'yomi are readings historically associated with Chinese-derived pronunciation, while kun'yomi are Japanese readings associated with native Japanese words. A character may have multiple readings of either type.",
+      "tags": [
+        "on'yomi",
+        "kun'yomi",
+        "readings",
+        "Chinese-derived",
+        "native Japanese"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-reading-context",
+      "domainId": "kanji-readings",
+      "statement": "The correct reading of a kanji is selected by the word and grammatical context, not by choosing a single reading from a memorized list in isolation.",
+      "tags": ["reading", "context", "vocabulary", "grammar", "disambiguation"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-okurigana-reading",
+      "domainId": "kanji-readings",
+      "statement": "Okurigana often distinguish inflected native readings and grammatical forms, so learners should study a kanji together with complete vocabulary items rather than deleting the kana and memorizing only an isolated character.",
+      "tags": [
+        "okurigana",
+        "kun'yomi",
+        "inflection",
+        "vocabulary-first",
+        "reading"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-ateji-special-readings",
+      "domainId": "kanji-readings",
+      "statement": "Some Japanese words use established readings that cannot be safely inferred from the most common on'yomi or kun'yomi of their individual characters. These lexicalized readings should be learned as vocabulary and verified in a dictionary.",
+      "tags": [
+        "lexicalized reading",
+        "special reading",
+        "dictionary",
+        "vocabulary",
+        "exception"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-reading-annotation",
+      "domainId": "kanji-readings",
+      "statement": "Furigana are kana annotations that show pronunciation for kanji. They are useful in graded material, learner texts, names, and accessibility contexts, but learners should gradually practice retrieving readings from vocabulary and sentence context.",
+      "tags": [
+        "furigana",
+        "reading support",
+        "graded reading",
+        "accessibility"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-stroke-order-principles",
+      "domainId": "kanji-writing",
+      "statement": "Common Japanese stroke-order conventions include writing from top to bottom, left to right, horizontal strokes before vertical strokes in many configurations, and outside components before enclosing interiors, with established exceptions.",
+      "tags": ["stroke order", "top to bottom", "left to right", "handwriting"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-stroke-order-purpose",
+      "domainId": "kanji-writing",
+      "statement": "Stroke order supports consistent proportions, legibility, handwriting fluency, dictionary lookup, and recognition of handwritten forms. It is a learning aid and writing convention, not a complete description of character meaning.",
+      "tags": [
+        "stroke order",
+        "legibility",
+        "handwriting",
+        "recognition",
+        "proportion"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-radical-position-variants",
+      "domainId": "kanji-writing",
+      "statement": "Recurring components can change shape or position inside a kanji, such as when a component appears on the left, top, or enclosing a region. Learners should recognize these graphic variants instead of expecting every occurrence to have identical proportions.",
+      "tags": [
+        "component variants",
+        "radical forms",
+        "position",
+        "graphic recognition"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-font-handwriting-variation",
+      "domainId": "kanji-writing",
+      "statement": "Printed fonts, textbook forms, handwriting, and calligraphic styles can differ in stroke shape and proportion while representing the same character. Teaching materials should distinguish meaningful character differences from ordinary stylistic variation.",
+      "tags": [
+        "fonts",
+        "handwriting",
+        "calligraphy",
+        "variant forms",
+        "recognition"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-recognition-production",
+      "domainId": "kanji-writing",
+      "statement": "Kanji recognition and kanji production are related but different abilities. A learner may recognize a character while being unable to reproduce it from memory, so assessment should state whether it targets reading, meaning recognition, typing, or handwriting.",
+      "tags": [
+        "recognition",
+        "production",
+        "handwriting",
+        "typing",
+        "assessment"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-vocabulary-first",
+      "domainId": "kanji-pedagogy",
+      "statement": "Teaching kanji through useful words and short sentences connects form, meaning, pronunciation, and grammar. Isolated character lists are efficient for lookup but are insufficient as the only learning method.",
+      "tags": ["pedagogy", "vocabulary", "sentences", "context", "meaning"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-spaced-retrieval",
+      "domainId": "kanji-pedagogy",
+      "statement": "Spaced retrieval practice is more useful than repeated passive rereading for durable kanji learning. Reviews should require the learner to retrieve meaning, reading, or written form before revealing the answer.",
+      "tags": [
+        "spaced repetition",
+        "retrieval practice",
+        "memory",
+        "flashcards",
+        "study"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-interleaved-review",
+      "domainId": "kanji-pedagogy",
+      "statement": "Interleaving similar-looking characters and related vocabulary can improve discrimination when the learner must explain the difference, but new learners should first receive enough focused practice to establish each form.",
+      "tags": [
+        "interleaving",
+        "similar kanji",
+        "discrimination",
+        "review",
+        "pedagogy"
+      ],
+      "confidence": "medium",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-component-mnemonics",
+      "domainId": "kanji-pedagogy",
+      "statement": "A mnemonic can connect a character's visual components to a memorable image, but it should be presented as a memory aid rather than as the historical origin or literal etymology of the character.",
+      "tags": ["mnemonic", "memory aid", "etymology", "components", "teaching"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-error-correction",
+      "domainId": "kanji-pedagogy",
+      "statement": "Useful kanji feedback identifies the error type: wrong character, wrong reading, missing okurigana, incorrect component, stroke-order issue, or contextually inappropriate word. Vague correction does not tell the learner what to retrieve next time.",
+      "tags": [
+        "error correction",
+        "feedback",
+        "okurigana",
+        "reading error",
+        "writing error"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-graded-progression",
+      "domainId": "kanji-pedagogy",
+      "statement": "A practical kanji curriculum should move from high-frequency and high-utility vocabulary toward less frequent forms while recycling earlier characters in new compounds and sentences. Frequency lists are guides, not universal lesson orders.",
+      "tags": [
+        "curriculum",
+        "frequency",
+        "high utility",
+        "graded learning",
+        "vocabulary"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-teaching-record-fields",
+      "domainId": "kanji-pedagogy",
+      "statement": "A useful learner record for a kanji or word can include the character, vocabulary item, kana reading, English gloss, part of speech, example sentence, component notes, stroke count, source, confidence, and next review date.",
+      "tags": [
+        "learner record",
+        "study metadata",
+        "reading",
+        "example sentence",
+        "review date"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-context-register",
+      "domainId": "japanese-literacy-context",
+      "statement": "A kanji-containing word can differ in politeness, formality, technicality, emotional tone, and frequency from a near-synonym. Teaching should include register and usage notes rather than treating an English gloss as a complete definition.",
+      "tags": ["register", "formality", "usage", "synonym", "context"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-sentence-context",
+      "domainId": "japanese-literacy-context",
+      "statement": "Example sentences should make the target reading and meaning recoverable from context while introducing only a manageable amount of new grammar and vocabulary.",
+      "tags": [
+        "example sentence",
+        "context",
+        "reading",
+        "grammar",
+        "comprehensible input"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-compound-reading-patterns",
+      "domainId": "japanese-literacy-context",
+      "statement": "Learners can use recurring compound patterns as clues to reading and meaning, but each new word still needs lexical verification because Japanese compounds contain irregular and lexicalized readings.",
+      "tags": [
+        "compounds",
+        "reading patterns",
+        "lexical verification",
+        "morphology"
+      ],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-dictionary-verification",
+      "domainId": "japanese-literacy-context",
+      "statement": "A teaching system should distinguish a verified dictionary entry from a mnemonic, model prediction, or inferred reading. Uncertain readings and uncommon names should be marked for verification instead of presented as certain.",
+      "tags": [
+        "dictionary",
+        "verification",
+        "uncertainty",
+        "names",
+        "grounding"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kanji-typing-input-method",
+      "domainId": "japanese-literacy-context",
+      "statement": "Japanese input methods commonly allow a learner to type a kana reading and select a kanji conversion. Typing can reinforce reading and vocabulary recognition, but it does not by itself demonstrate handwriting production.",
+      "tags": ["Japanese input", "IME", "typing", "kana", "kanji conversion"],
+      "confidence": "high",
+      "scope": "general"
+    },
+    {
+      "id": "kanji-learning-confidence",
+      "domainId": "japanese-literacy-context",
+      "statement": "Confidence in a kanji lesson should be attached to the specific claim: character meaning, reading, stroke count, etymology, usage, or example sentence. High confidence in one field does not automatically validate every field.",
+      "tags": [
+        "confidence",
+        "claim-level grounding",
+        "etymology",
+        "reading",
+        "teaching"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-script-to-okurigana",
+      "fromFactId": "kanji-writing-system-mixed-script",
+      "toFactId": "kanji-hiragana-okurigana",
+      "relationType": "explains",
+      "description": "The mixed writing system explains why kana may carry grammatical information beside kanji."
+    },
+    {
+      "id": "rel-components-to-radicals",
+      "fromFactId": "kanji-components-not-always-radicals",
+      "toFactId": "kanji-radical-indexing",
+      "relationType": "distinguishes",
+      "description": "Component analysis prevents learners from treating every visible part as the dictionary radical."
+    },
+    {
+      "id": "rel-components-to-phonetic",
+      "fromFactId": "kanji-semantic-phonetic-compounds",
+      "toFactId": "kanji-reading-context",
+      "relationType": "supports",
+      "description": "Phonetic components can support a reading hypothesis, but context still decides the word reading."
+    },
+    {
+      "id": "rel-compound-to-reading",
+      "fromFactId": "kanji-compound-morphology",
+      "toFactId": "kanji-compound-reading-patterns",
+      "relationType": "extends",
+      "description": "Compound morphology provides useful reading patterns for vocabulary study."
+    },
+    {
+      "id": "rel-reading-to-okurigana",
+      "fromFactId": "kanji-okurigana-reading",
+      "toFactId": "kanji-reading-context",
+      "relationType": "constrains",
+      "description": "Okurigana constrain the grammatical form and help identify the intended reading."
+    },
+    {
+      "id": "rel-reading-to-furigana",
+      "fromFactId": "kanji-reading-context",
+      "toFactId": "kanji-reading-annotation",
+      "relationType": "is_supported_by",
+      "description": "Furigana expose a reading while learners build context-based retrieval."
+    },
+    {
+      "id": "rel-stroke-to-variants",
+      "fromFactId": "kanji-stroke-order-principles",
+      "toFactId": "kanji-radical-position-variants",
+      "relationType": "connects_to",
+      "description": "Stroke order and component position both influence consistent visual recognition."
+    },
+    {
+      "id": "rel-variants-to-fonts",
+      "fromFactId": "kanji-radical-position-variants",
+      "toFactId": "kanji-font-handwriting-variation",
+      "relationType": "prepares_for",
+      "description": "Component variants help learners distinguish meaningful forms from ordinary font variation."
+    },
+    {
+      "id": "rel-recognition-to-assessment",
+      "fromFactId": "kanji-recognition-production",
+      "toFactId": "kanji-teaching-record-fields",
+      "relationType": "informs",
+      "description": "Separate skill labels improve the quality of learner records and assessments."
+    },
+    {
+      "id": "rel-vocabulary-to-context",
+      "fromFactId": "kanji-vocabulary-first",
+      "toFactId": "kanji-sentence-context",
+      "relationType": "requires",
+      "description": "Vocabulary-first teaching is strengthened by controlled sentence context."
+    },
+    {
+      "id": "rel-retrieval-to-interleaving",
+      "fromFactId": "kanji-spaced-retrieval",
+      "toFactId": "kanji-interleaved-review",
+      "relationType": "combines_with",
+      "description": "Spaced retrieval and interleaving can be combined after initial character discrimination is established."
+    },
+    {
+      "id": "rel-mnemonic-to-components",
+      "fromFactId": "kanji-component-mnemonics",
+      "toFactId": "kanji-components-not-always-radicals",
+      "relationType": "depends_on",
+      "description": "Component-based mnemonics should use accurate structural labels and avoid inventing etymology."
+    },
+    {
+      "id": "rel-errors-to-records",
+      "fromFactId": "kanji-error-correction",
+      "toFactId": "kanji-teaching-record-fields",
+      "relationType": "updates",
+      "description": "Specific error types can drive the next review field and exercise."
+    },
+    {
+      "id": "rel-progression-to-frequency",
+      "fromFactId": "kanji-graded-progression",
+      "toFactId": "kanji-vocabulary-first",
+      "relationType": "organizes",
+      "description": "Frequency and utility can organize vocabulary-first lessons without replacing contextual judgment."
+    },
+    {
+      "id": "rel-register-to-sentences",
+      "fromFactId": "kanji-context-register",
+      "toFactId": "kanji-sentence-context",
+      "relationType": "enriches",
+      "description": "Sentences reveal register and usage that an isolated gloss cannot provide."
+    },
+    {
+      "id": "rel-dictionary-to-special-readings",
+      "fromFactId": "kanji-ateji-special-readings",
+      "toFactId": "kanji-dictionary-verification",
+      "relationType": "requires",
+      "description": "Special and lexicalized readings require dictionary verification."
+    },
+    {
+      "id": "rel-dictionary-to-confidence",
+      "fromFactId": "kanji-dictionary-verification",
+      "toFactId": "kanji-learning-confidence",
+      "relationType": "calibrates",
+      "description": "Verification status should determine confidence for individual teaching claims."
+    },
+    {
+      "id": "rel-ime-to-recognition",
+      "fromFactId": "kanji-typing-input-method",
+      "toFactId": "kanji-recognition-production",
+      "relationType": "differentiates",
+      "description": "Typing practice can demonstrate reading and recognition without demonstrating handwriting."
+    },
+    {
+      "id": "rel-confidence-to-grounding",
+      "fromFactId": "kanji-learning-confidence",
+      "toFactId": "kanji-teaching-record-fields",
+      "relationType": "annotates",
+      "description": "Claim-level confidence belongs in the learner record alongside source and review metadata."
+    }
+  ]
+}
