@@ -1,440 +1,481 @@
-# HOPL Graph Knowledge: Logical Expression to Graph Representation
+# Typed Predicate Knowledge Graph
 
 ## Overview
 
-Transform natural language sentences into higher-order predicate logic (HOPL) expressions and represent them as graph structures. This enhances our knowledge representation by making logical structure explicit, enabling formal inference and multi-hop reasoning.
+Add a typed, provenance-aware representation for selected facts in the avatar's
+knowledge graph.
 
-## Problem Statement
+The near-term goal is not to build a complete higher-order predicate-logic
+engine. The goal is to make important factual relationships explicit enough to
+support better retrieval, bounded multi-hop reasoning, contradiction
+candidates, and explanations of how a conclusion was formed.
 
-Current knowledge representation stores facts as text strings with metadata. While effective for retrieval, this approach:
+The proposed pipeline is:
 
-- Lacks explicit logical structure
-- Makes compositional reasoning difficult
-- Cannot easily detect logical contradictions
-- Limits formal inference capabilities
-- Requires LLM interpretation for every logical operation
-
-## Proposed Solution
-
-Implement a pipeline: **Sentence → HOPL Expression → Graph Structure**
-
-### Example Transformation
-
-```
-Natural Language:
-"Python 3.12 improved async performance significantly"
-
-↓ Parse to HOPL ↓
-
-∃x,y,z [Python(x) ∧ Version(x,3.12) ∧ Feature(y,async) ∧
-       Improved(x,y,z) ∧ Significance(z,high)]
-
-↓ Convert to Graph ↓
-
-Nodes:
-- x (type: Language, label: "Python")
-- v1 (type: Version, label: "3.12")
-- y (type: Feature, label: "async")
-- z (type: Metric, label: "performance")
-- sig (type: Degree, label: "high")
-
-Edges:
-- x --[HasVersion]--> v1
-- x --[Improved]--> y
-- Improved --[affects]--> z
-- z --[HasDegree]--> sig
+```text
+natural-language statement
+  -> candidate predicate fact
+  -> validated graph representation
+  -> logical-pattern retrieval or bounded derivation
+  -> PLN scoring and provenance
+  -> grounded generation or review
 ```
 
-## Current System Integration Points
+This feature should be treated as an additional semantic layer over the current
+knowledge system. It should not replace the existing text facts, BM25
+retrieval, NetworkX graph, or truth-gate validation.
 
-### Existing Infrastructure
+## Why This Is Worth Adding
 
-1. **KnowledgeGraphManager** (`services/knowledge_graph.py`)
-   - NetworkX MultiDiGraph backend
-   - Typed nodes and edges with metadata
-   - Graph proximity and claim support scoring
+The current system already has substantial infrastructure:
 
-2. **PLN Inference** (`services/pln_inference.py`)
-   - Probabilistic Logic Networks with truth values
-   - Deduction, induction, abduction rules
-   - Strength + confidence calculations
+- `services/knowledge_graph.py` stores typed nodes and edges in a NetworkX
+  `MultiDiGraph`, with graph proximity, claim support, and explanation paths.
+- `services/hybrid_retriever.py` combines BM25 ranking with graph proximity and
+  claim-support signals.
+- `services/avatar_intelligence/_extraction.py` extracts and persists factual
+  statements from articles.
+- Domain knowledge packs, including the Japanese language and kanji packs, are
+  loaded as structured facts and relationships.
+- `services/pln_inference.py` provides deduction, induction, abduction,
+  revision, and evidence-weight calculations.
+- Derivative of Truth annotations provide evidence and reasoning metadata, but
+  they are scoring and validation signals rather than a formal proof system.
 
-3. **NLP Pipeline** (`services/spacy_nlp.py`)
-   - Entity extraction
-   - Dependency parsing
-   - Semantic similarity
+What is missing is a stable representation connecting these capabilities. A
+fact is generally available as text and metadata, while its subject,
+predicate, object, polarity, scope, and qualifiers are not consistently
+queryable.
 
-### What's Missing
+For example, the system can retrieve a statement containing `Python`,
+`improved`, and `async`, but it cannot yet reliably distinguish:
 
-- **Logical expression parser** (sentence → HOPL)
-- **Logic-to-graph mapper** (HOPL → nodes/edges)
-- **Graph-based unification** for logical inference
-- **Contradiction detection** via graph patterns
-- **Compositional query interface**
+```text
+Python --improved--> async performance
+```
 
-## Implementation Approaches
+from a statement that merely mentions those words in unrelated roles.
 
-### Option A: Lightweight (SVO Triples)
+Typed predicate facts would improve the structure and auditability of that
+existing workflow.
 
-**Complexity**: Low  
-**Coverage**: ~80% of factual statements  
-**Timeline**: 2-3 days
+## Scope And Terminology
 
-**Components**:
+The original idea called this feature HOPL, or higher-order predicate logic.
+That name implies considerably more than the first implementation should
+promise: higher-order variables, lambda calculus, quantifier semantics,
+unification, theorem proving, and a formally specified model of truth.
 
-- `LogicalTripleExtractor` using spaCy dependency parsing
-- Extract Subject-Verb-Object patterns
-- Map to simple predicate logic: `Predicate(Subject, Object)`
-- Store as typed graph edges
+The first implementation should instead be called a **typed predicate
+knowledge graph**. It can later become a source for richer logical forms if
+the project develops concrete requirements for them.
 
-**Example**:
+The system should distinguish three levels:
+
+1. **Structured extraction**: a candidate interpretation of a sentence.
+2. **Graph representation**: a persisted relationship with provenance and
+   confidence.
+3. **Inference**: a bounded, explicitly recorded derivation scored by PLN.
+
+None of these should be described as proof of objective truth. They are
+evidence-grounded representations and estimates that remain subject to source
+quality, parser uncertainty, ambiguity, and truth-gate review.
+
+## Proposed Data Model
+
+Add a small, serializable model rather than embedding an unbounded logic
+language in every graph node.
 
 ```python
-sentence = "Python improved async performance"
-triple = extract_svo(sentence)
-# → ("Python", "improved", "async performance")
-
-# Graph representation:
-add_node("python_lang", NODE_LANGUAGE, label="Python")
-add_node("async_perf", NODE_FEATURE, label="async performance")
-link_entities("python_lang", "async_perf", EDGE_IMPROVED)
+@dataclass
+class PredicateFact:
+    id: str
+    subject_id: str
+    predicate: str
+    object_id: str | None
+    source_fact_id: str
+    source_text: str
+    qualifiers: dict[str, str] = field(default_factory=dict)
+    polarity: str = "positive"
+    confidence: str = "medium"
+    parse_status: str = "accepted"
 ```
 
-**Pros**:
+Recommended fields and meanings:
 
-- Quick to implement
-- Handles most factual claims
-- Integrates directly with current graph structure
+- `subject_id`: stable entity or concept identifier.
+- `predicate`: normalized relation such as `improved`, `supports`,
+  `has_version`, or `located_in`.
+- `object_id`: stable entity or concept identifier, when the relation has an
+  object.
+- `source_fact_id`: link back to the existing domain or extracted fact.
+- `source_text`: original text retained for auditability and generation.
+- `qualifiers`: optional values such as `version`, `time`, `degree`, `scope`,
+  or `comparison_target`.
+- `polarity`: initially `positive` or `negative`; absence of a predicate must
+  not be interpreted as negation.
+- `confidence`: confidence in the extraction or relation, not a claim of
+  universal truth.
+- `parse_status`: for example `accepted`, `uncertain`, or `rejected`.
 
-**Cons**:
+An event or claim node should be used when a statement has several qualifiers:
 
-- Cannot handle complex logic (quantifiers, nested clauses)
-- Loses nuance in complex sentences
-- No support for negation or conditional logic
+```text
+Python 3.12
+    |
+    | subject
+    v
+ImprovementClaim
+    | predicate
+    v
+improved
+    |
+    | object
+    v
+async performance
 
-### Option B: Full HOPL (Lambda Calculus)
+ImprovementClaim --has_version--> 3.12
+ImprovementClaim --has_degree--> significant
+ImprovementClaim --supported_by--> article-fact
+```
 
-**Complexity**: High  
-**Coverage**: ~95% of logical statements  
-**Timeline**: 2-3 weeks
+This is preferable to placing arbitrary qualifiers directly on a binary edge,
+because it preserves the identity and provenance of the claim or event.
 
-**Components**:
+## Initial Supported Semantics
 
-- Integrate formal logic parser (NLTK logic, or custom)
-- Lambda calculus representations for complex sentences
-- Bi-directional mapping: logic ↔ graph
-- Graph-based unification algorithm
+The first version should support only semantics that can be tested reliably:
 
-**Example**:
+- binary subject-predicate-object relations;
+- subject-property-value facts;
+- explicit positive and negative polarity;
+- version, numeric, time, source, and scope qualifiers;
+- provenance back to the original fact;
+- extraction confidence and parse status;
+- stable entity identifiers and normalized predicate names.
+
+It should not initially claim to support unrestricted quantifiers, modal
+logic, causal certainty, nested lambda expressions, or general theorem
+proving.
+
+Statements that are ambiguous should produce an uncertain candidate or remain
+text-only. A parser that guesses a relation should not silently promote that
+guess to a high-confidence graph fact.
+
+## Relationship To Existing Components
+
+### Knowledge graph
+
+Extend the existing `KnowledgeGraphManager` through a focused helper or
+companion module. Do not create a second unrelated graph implementation.
+
+The existing graph remains responsible for nodes, edges, metadata, proximity,
+claim support, persistence, and explanation paths. Predicate facts add
+normalized semantic metadata and carefully named relationship edges.
+
+### NLP extraction
+
+Use the current spaCy pipeline and dependency information as the first parser
+source. The extractor should be deterministic and return a parse result with
+confidence and failure reasons.
+
+It should be conservative about:
+
+- passive voice;
+- coordination and multiple clauses;
+- pronouns and unresolved references;
+- negation;
+- comparative language;
+- numeric and version scope;
+- statements where the subject or object is implicit.
+
+An LLM may eventually propose alternative parses, but it should not be the
+only source of logical structure and it should not bypass provenance or
+validation.
+
+### Hybrid retrieval
+
+Keep BM25 as the broad candidate selector. Add predicate-aware filtering or
+reranking only after candidate selection:
+
+```text
+BM25 candidates
+  -> optional predicate-pattern match
+  -> graph proximity and claim support
+  -> DoT / PLN evidence signals
+  -> final ranked evidence
+```
+
+This preserves the current graceful fallback behavior and avoids requiring
+every fact to have a successful parse.
+
+### PLN inference
+
+PLN already supplies truth-value calculations. The new graph layer should
+provide explicit premises and derivation records for those functions.
+
+For example:
+
+```text
+Python 3.12 --has_feature--> async
+async --improves--> I/O performance
+```
+
+may support a bounded candidate conclusion:
+
+```text
+Python 3.12 --improves--> I/O performance
+```
+
+The derivation should record its premises, inference type, hop count, and
+resulting `PLNTruthValue`. The result is an inferred candidate, not a new
+first-party fact. It must retain lower confidence than direct evidence unless
+independent evidence supports it.
+
+### Domain knowledge packs
+
+Existing packs such as `domain_knowledge_kanji_200.json` already express useful
+relationships through statements, tags, domains, and relationship records.
+They should continue to load unchanged.
+
+Predicate extraction can be added incrementally to selected facts or generated
+at load time. The feature must not require rewriting all existing domain packs
+before the system remains usable.
+
+## User And System Use Cases
+
+### Predicate-aware retrieval
+
+```text
+Question: What did Python improve?
+
+Pattern: improved(Python, ?object)
+
+Result: the matching fact, source, confidence, qualifiers, and provenance
+```
+
+This is more precise than relying on keyword co-occurrence alone, while still
+retaining BM25 for recall.
+
+### Bounded multi-hop reasoning
+
+```text
+Premise 1: Python 3.12 has async support.
+Premise 2: async support improves I/O performance.
+
+Candidate conclusion: Python 3.12 improves I/O performance.
+```
+
+The system should return the derivation path and confidence degradation rather
+than presenting the conclusion as directly observed.
+
+### Contradiction candidates
+
+Detect potentially conflicting claims such as:
+
+```text
+Python --property--> fast
+Python --property--> slow
+```
+
+The first version should report these for review only. It should consider
+scope, time, comparison target, polarity, and source before calling two facts
+incompatible. “Fast” and “slow” may both be valid under different workloads.
+
+### Grounded generation
+
+Provide the generator with structured evidence alongside the original text:
+
+```text
+subject: Python 3.12
+predicate: improved
+object: async performance
+source: article URL
+confidence: medium
+parse_status: accepted
+```
+
+This improves prompt grounding and explanation. It does not guarantee that
+generated prose will preserve every logical qualifier, so the existing truth
+gate and post-generation validation remain necessary.
+
+## Proposed API Surface
+
+Prefer a focused service or module over making `KnowledgeGraphManager` a
+large reasoning object.
 
 ```python
-sentence = "All Python versions after 3.5 support async"
-logic = parse_to_hopl(sentence)
-# → ∀x,y [Python(x) ∧ Version(x,y) ∧ GreaterThan(y,3.5) → Supports(x,async)]
+class PredicateGraph:
+    def parse_statement(self, statement: str) -> ParseResult:
+        """Return a conservative candidate predicate fact."""
 
-# Graph representation:
-# Nodes: x (quantified), y (quantified), "3.5", "async"
-# Edges: x --[HasVersion]--> y
-#        y --[GreaterThan]--> "3.5"  (with metadata: {"implies": True})
-#        x --[Supports]--> "async"   (with metadata: {"conditional": True})
-# Metadata: {"quantifier": "universal", "variables": ["x", "y"]}
+    def add_predicate_fact(self, fact: PredicateFact) -> str:
+        """Persist a validated predicate fact and its provenance."""
+
+    def query_pattern(self, pattern: PredicatePattern) -> list[PredicateFact]:
+        """Return facts matching a bounded predicate pattern."""
+
+    def find_contradiction_candidates(self) -> list[ContradictionCandidate]:
+        """Return review candidates, not automatically proven contradictions."""
+
+    def derive(self, premises: list[str], rule: str) -> DerivationResult:
+        """Create a bounded, provenance-preserving inference candidate."""
+
+    def explain(self, conclusion_id: str) -> Derivation:
+        """Return premises, rules, scores, and source links for a conclusion."""
 ```
 
-**Pros**:
+The exact public names should follow existing package conventions after the
+first implementation slice is tested. Avoid exposing a custom text grammar
+until the supported pattern vocabulary is stable.
 
-- Handles complex logical structure
-- Enables formal theorem proving
-- Can detect contradictions automatically
-- Supports full logical inference
+## Recommended Implementation Plan
 
-**Cons**:
+### Phase 1: Model and extraction spike
 
-- Complex to implement and maintain
-- Higher computational cost
-- May be overkill for current use cases
+- Define `PredicateFact`, `ParseResult`, and provenance fields.
+- Implement deterministic extraction for a small set of English factual
+  patterns.
+- Add tests for active voice, passive voice, negation, coordination,
+  qualifiers, and ambiguous sentences.
+- Measure parse acceptance and precision on a small, reviewed fixture set.
+- Keep failed or uncertain parses as ordinary text facts.
 
-### Option C: Hybrid (Staged Approach)
+### Phase 2: Graph integration
 
-**Recommended**: Start with Option A, extend to Option B as needed
+- Map accepted predicate facts into the existing NetworkX graph.
+- Reuse existing fact IDs and entity IDs where possible.
+- Add stable predicate names and metadata without changing existing pack
+  schemas.
+- Preserve source fact, source URL, original statement, confidence, and parse
+  status.
+- Add serialization and reload tests.
 
-1. **Phase 1**: SVO triple extraction (weeks 1-2)
-2. **Phase 2**: Add quantifiers and negation (weeks 3-4)
-3. **Phase 3**: Full HOPL with lambda calculus (weeks 5-8)
+### Phase 3: Pattern retrieval
 
-## Use Cases
+- Implement a small internal pattern object rather than a full query language.
+- Support subject, predicate, object, polarity, and simple qualifier filters.
+- Use predicate matches as a reranking or filtering signal after BM25.
+- Return explanations showing the matched relation and source fact.
 
-### 1. Enhanced Fact Retrieval
+### Phase 4: Bounded inference and review signals
 
-**Current**: Keyword matching + BM25  
-**Enhanced**: Logical query → subgraph pattern matching
+- Implement only explicit, tested one-hop and two-hop deduction rules.
+- Call the existing PLN functions for strength and confidence calculations.
+- Persist derivation records separately from direct facts.
+- Add contradiction candidates for narrow, known-incompatible predicate/value
+  pairs.
+- Keep inferred results out of first-party persona claims unless explicitly
+  reviewed or independently supported.
 
-```python
-query = "What features did Python improve?"
-# Current: searches for keywords "python", "improve", "features"
-# Enhanced: query_pattern = "?x Improved ?y WHERE Python(?x) AND Feature(?y)"
-#           → returns structured results with logical provenance
-```
+### Phase 5: Evaluation and selective expansion
 
-### 2. Contradiction Detection
+- Add Japanese-language handling only after the English semantic contract is
+  stable, or introduce a language-aware parser boundary from the beginning.
+- Evaluate whether domain packs such as the kanji knowledge graph benefit from
+  explicit predicates beyond their current statements and relationships.
+- Add CLI inspection and visualization only if debugging or editorial review
+  demonstrates a need.
 
-**Current**: Manual review or LLM-based detection  
-**Enhanced**: Automatic graph pattern detection
-
-```python
-# Detect: "Python is fast" ∧ "Python is slow"
-find_contradictions(graph)
-# → [("claim:123", "claim:456", "opposing_predicates: [fast, slow]")]
-```
-
-### 3. Multi-Step Reasoning
-
-**Current**: Single-hop retrieval  
-**Enhanced**: Chain logical inferences
-
-```python
-# Given: "Python 3.12 has async" ∧ "async improves I/O performance"
-# Infer: "Python 3.12 improves I/O performance"
-
-chain = find_reasoning_chain(
-    start="Python 3.12",
-    end="I/O performance",
-    max_hops=3
-)
-# → Returns logical derivation with PLN truth values
-```
-
-### 4. Structured Prompt Generation
-
-**Current**: Template-based prompts  
-**Enhanced**: Generate prompts from logical structure
-
-```python
-# For content creation:
-relevant_facts = query_logical_graph(
-    pattern="Improved(?x, ?y) WHERE Python(?x)",
-    confidence_threshold=0.8
-)
-prompt = generate_from_logic(relevant_facts)
-# → "Given that Python 3.12 improved async (confidence: 0.85) and
-#     async affects I/O performance (confidence: 0.90), write about..."
-```
-
-## Technical Design
-
-### Data Structures
-
-```python
-# LogicalExpression (new)
-class LogicalExpression:
-    """Represents a parsed logical formula."""
-    predicates: list[Predicate]
-    variables: list[Variable]
-    quantifiers: dict[str, str]  # {variable: "exists"|"forall"}
-    operators: list[LogicalOperator]  # AND, OR, NOT, IMPLIES
-
-# Predicate (new)
-class Predicate:
-    name: str
-    arguments: list[Term]
-    truth_value: PLNTruthValue
-
-# LogicalGraphNode (extends current node metadata)
-{
-    "id": "node123",
-    "type": "Claim",
-    "label": "Python improved async",
-    "metadata": {
-        "source": "article",
-        "confidence": "high",
-        "logical_structure": {  # NEW
-            "predicates": [
-                {"name": "Improved", "args": ["python", "async"]},
-                {"name": "Python", "args": ["python"]},
-                {"name": "Feature", "args": ["async"]}
-            ],
-            "quantifiers": {},
-            "operators": ["AND"]
-        }
-    }
-}
-```
-
-### API Design
-
-```python
-# New module: services/logical_graph.py
-
-class LogicalGraphManager(KnowledgeGraphManager):
-    """Extends KnowledgeGraphManager with logical reasoning."""
-
-    def parse_sentence_to_logic(
-        self,
-        sentence: str
-    ) -> LogicalExpression:
-        """Convert natural language to logical expression."""
-        pass
-
-    def add_logical_fact(
-        self,
-        sentence: str,
-        metadata: dict
-    ) -> str:
-        """Parse sentence, create nodes/edges for logical structure."""
-        pass
-
-    def query_logical_pattern(
-        self,
-        pattern: str
-    ) -> list[dict]:
-        """Query graph using logical pattern matching."""
-        # pattern: "Improved(?x, ?y) WHERE Python(?x)"
-        pass
-
-    def find_contradictions(self) -> list[tuple[str, str, str]]:
-        """Detect logical contradictions in graph."""
-        pass
-
-    def derive_inference(
-        self,
-        premises: list[str],
-        inference_type: str
-    ) -> PLNTruthValue:
-        """Apply PLN inference rules over logical graph."""
-        pass
-
-    def explain_derivation(
-        self,
-        conclusion_id: str
-    ) -> list[dict]:
-        """Return logical derivation path to conclusion."""
-        pass
-```
-
-### Integration with Existing Systems
-
-```python
-# In services/avatar_intelligence/_extraction.py
-# Enhance extract_knowledge to include logical structure
-
-def extract_knowledge(content: str) -> ExtractedKnowledge:
-    facts = extract_facts(content)
-
-    # NEW: Add logical parsing
-    logical_facts = []
-    for fact in facts:
-        logic_expr = parse_sentence_to_logic(fact.statement)
-        fact.logical_structure = logic_expr
-        logical_facts.append(fact)
-
-    return ExtractedKnowledge(facts=logical_facts)
-
-# In services/hybrid_retriever.py
-# Enhance find_facts with logical query
-
-def find_facts(query: str, use_logical: bool = True) -> list[dict]:
-    # Existing BM25 retrieval
-    bm25_results = bm25_retrieve(query)
-
-    if use_logical:
-        # NEW: Parse query to logical pattern
-        query_logic = parse_query_to_pattern(query)
-        logical_results = logical_graph.query_logical_pattern(query_logic)
-
-        # Combine results
-        results = merge_and_rerank(bm25_results, logical_results)
-    else:
-        results = bm25_results
-
-    return results
-```
-
-## Implementation Roadmap
-
-### Phase 1: Foundation (Week 1-2)
-
-- [ ] Create `services/logical_graph.py` module
-- [ ] Implement basic SVO triple extraction using spaCy
-- [ ] Add `logical_structure` field to node metadata schema
-- [ ] Write unit tests for triple extraction
-- [ ] Document logical graph schema
-
-### Phase 2: Graph Integration (Week 3-4)
-
-- [ ] Implement `add_logical_fact()` method
-- [ ] Create mapping from predicates to graph edges
-- [ ] Add logical metadata to existing facts in knowledge graph
-- [ ] Implement basic pattern matching query
-- [ ] Write integration tests
-
-### Phase 3: Inference (Week 5-6)
-
-- [ ] Implement `derive_inference()` using PLN rules
-- [ ] Add multi-hop reasoning over logical graph
-- [ ] Create `explain_derivation()` for provenance tracking
-- [ ] Integrate with `HybridRetriever`
-- [ ] Add logical grounding to content generation
-
-### Phase 4: Advanced Logic (Week 7-8)
-
-- [ ] Add quantifier support (∃, ∀)
-- [ ] Implement negation and conditional logic
-- [ ] Add contradiction detection
-- [ ] Create visualization for logical derivations
-- [ ] Performance optimization for large graphs
-
-### Phase 5: Production (Week 9-10)
-
-- [ ] Add caching for parsed logical expressions
-- [ ] Create CLI commands for logical queries
-- [ ] Add logging and monitoring
-- [ ] Write comprehensive documentation
-- [ ] Create example use cases in README
+Full quantifiers, lambda calculus, richer unification, and external RDF or
+Prolog integration should remain future options, not Phase 1 requirements.
 
 ## Success Metrics
 
-1. **Coverage**: % of extracted facts with valid logical structure (target: 80%+)
-2. **Precision**: Accuracy of logical parsing (target: 90%+ for SVO triples)
-3. **Inference Quality**: PLN confidence in derived facts (target: >0.7 for 1-hop)
-4. **Performance**: Query time for logical pattern matching (target: <100ms)
-5. **Contradiction Detection**: False positive rate (target: <5%)
+Use measured behavior rather than assumed coverage percentages.
+
+1. **Parse precision**: percentage of accepted predicate facts judged correct by
+   a reviewed test set.
+2. **Parse abstention quality**: ambiguous statements should be marked
+   uncertain rather than confidently misrepresented.
+3. **Retrieval quality**: compare predicate-aware retrieval with the existing
+   BM25-plus-graph baseline on representative queries.
+4. **Provenance completeness**: every accepted predicate fact and derived result
+   links back to source text and, where applicable, source URL and premises.
+5. **Inference calibration**: multi-hop conclusions must show lower or
+   appropriately revised confidence than their premises.
+6. **Contradiction review precision**: measure useful review candidates and
+   false positives before considering automated enforcement.
+7. **Performance**: measure extraction, pattern query, and derivation latency
+   against the actual graph size; do not commit to `<100 ms` until a benchmark
+   exists.
+
+## Risks And Guardrails
+
+### Semantic overreach
+
+Dependency parsing can identify grammatical structure without fully resolving
+meaning. Every parse needs an uncertainty state and a path back to the source
+sentence.
+
+### False contradictions
+
+Opposing adjectives or values are not necessarily contradictions. Scope,
+time, workload, comparison class, and polarity must be considered.
+
+### Confidence inflation
+
+PLN confidence is a modelled weight of evidence. It is not proof that a parsed
+or derived statement is true. Direct, derived, and inferred facts must remain
+distinguishable in storage and prompts.
+
+### Schema migration pressure
+
+The current knowledge packs and extracted knowledge files are useful and
+actively loaded. The new layer should be additive and backward compatible.
+
+### Language coverage
+
+The current extraction assumptions are primarily English-oriented. Japanese
+facts, kanji knowledge, and future bilingual lyric workflows need a parser
+boundary that can represent language, script, reading, and segmentation without
+forcing English spaCy assumptions onto Japanese text.
 
 ## Dependencies
 
-### Required Packages
+No new logic framework is required for the initial implementation.
 
-```bash
-pip install nltk>=3.8  # For logic parsing (Option B)
-# spaCy already installed
-# networkx already installed
-```
+Use the existing:
 
-### Optional Enhancements
+- spaCy and dependency parsing;
+- NetworkX graph;
+- avatar knowledge models and loaders;
+- BM25 retrieval;
+- PLN inference functions;
+- Derivative of Truth annotations and truth-gate validation.
 
-- **rdflib**: For RDF/OWL export compatibility
-- **owlready2**: For ontology-based reasoning
-- **prolog**: For advanced logical inference
-
-## Related Work
-
-- **OpenCog Hyperon**: AtomSpace + MeTTa for logical knowledge graphs
-- **Stanford CoreNLP**: Dependency parsing to logical forms
-- **AllenNLP**: Semantic role labeling for predicate extraction
-- **NLTK Logic**: Lambda calculus and first-order logic
+Consider `nltk`, `rdflib`, `owlready2`, or a Prolog runtime only when a tested
+requirement cannot be met by the focused predicate model. Adding a formal logic
+dependency before the semantic contract is proven would increase maintenance
+cost without guaranteeing better grounding.
 
 ## Open Questions
 
-1. **Storage**: Should we persist logical expressions in JSON or use a dedicated format (e.g., N-Triples)?
-2. **Scope**: Which logical operators are essential vs. nice-to-have?
-3. **Ambiguity**: How to handle sentences with multiple valid logical interpretations?
-4. **Performance**: At what graph size do we need to consider graph databases (Neo4j)?
-5. **UI**: Should we create a visualization tool for logical derivations?
+1. Which fact categories produce enough retrieval or reasoning value to justify
+   parsing first: domain facts, extracted article facts, persona claims, or all
+   three?
+2. Should predicate facts be persisted in a separate JSON artifact, embedded in
+   graph metadata, or stored in the optional PostgreSQL schema?
+3. What entity-normalization rules prevent `Python`, `Python 3.12`, and
+   `CPython` from being incorrectly merged?
+4. Which predicate pairs are genuinely incompatible, and what scope fields are
+   required before flagging them?
+5. How should Japanese predicates, readings, and mixed Japanese-English facts be
+   represented without depending on an English-only tokenizer?
+6. Which reviewed fixture set will be the acceptance benchmark for parser
+   precision and abstention?
 
-## Next Steps
+## Recommendation
 
-**Decision needed**: Which implementation approach?
+Proceed with a small implementation spike in the near future, but name and
+scope it accurately:
 
-- Option A (SVO triples): Fast, practical, limited expressiveness
-- Option B (Full HOPL): Powerful, complex, longer timeline
-- Option C (Hybrid): Staged rollout, balanced approach
+> Build a typed predicate layer over the existing knowledge graph to improve
+> structured retrieval, bounded provenance-aware inference, and contradiction
+> review.
 
-**Recommendation**: Start with Option A (SVO triples) to validate the approach, then extend based on real-world use cases.
+Start with a reversible, additive Phase 1. Do not begin with full HOPL,
+quantifier semantics, theorem proving, or a new graph database. The feature is
+worth adding because it can make the current graph and PLN capabilities more
+useful; its value depends on measured precision, conservative abstention, and
+clear separation between direct evidence and inferred candidates.
