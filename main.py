@@ -1013,7 +1013,14 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         
         # Route 1: Explicit file name requests → Deterministic citation (raw facts)
         if constraints.explicit_artifact_request:
-            facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+            if constraints.list_domain_characters or constraints.list_domain_terms:
+                facts = [
+                    f
+                    for f in _profile_facts
+                    if f.source.startswith("domain:") or f.company == "Domain Knowledge"
+                ]
+            else:
+                facts = retrieve_relevant_facts(_profile_facts, constraints, query=user_input, limit=8)
             reply = build_deterministic_grounded_reply(user_input, facts, constraints)
             history.append({"role": "user", "content": user_input})
             history.append({"role": "assistant", "content": reply})
@@ -1090,13 +1097,34 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             for f in facts_ranked:
                 if isinstance(f, EvidenceFact):
                     # Find matching ProjectFact from _profile_facts
-                    matching = [pf for pf in _profile_facts if pf.source.startswith("persona:") and f.evidence_id in pf.source]
+                    matching = [
+                        pf
+                        for pf in _profile_facts
+                        if pf.source.startswith("avatar:")
+                        and (f.source_project_id and pf.source.endswith(f.source_project_id))
+                    ]
                     facts.extend(matching[:1])  # Add first match
                 elif isinstance(f, DomainEvidenceFact):
-                    matching = [pf for pf in _profile_facts if pf.source.startswith("domain:") and f.evidence_id in pf.source]
+                    matching = [
+                        pf
+                        for pf in _profile_facts
+                        if pf.source.startswith("domain:")
+                        and (
+                            (f.source_fact_id and pf.source.endswith(f.source_fact_id))
+                            or f.evidence_id in pf.source
+                        )
+                    ]
                     facts.extend(matching[:1])
                 elif isinstance(f, ExtractedEvidenceFact):
-                    matching = [pf for pf in _profile_facts if pf.source.startswith("extracted_knowledge:") and f.evidence_id in pf.source]
+                    matching = [
+                        pf
+                        for pf in _profile_facts
+                        if pf.source.startswith("extracted_knowledge:")
+                        and (
+                            (f.evidence_id and pf.source.endswith(f.evidence_id))
+                            or (f.source_fact_id and f.source_fact_id in pf.source)
+                        )
+                    ]
                     facts.extend(matching[:1])
             # Categorize only the top facts for the validation report
             # This ensures build_explain_output only sees what was actually used
@@ -1106,10 +1134,10 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             used_external = []
             # Ensure we have at least some facts even if conversion failed
             if not facts:
-                facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+                facts = retrieve_relevant_facts(_profile_facts, constraints, query=user_input, limit=8)
         else:
             # Fallback to simple retrieval when graph not available
-            facts = retrieve_relevant_facts(_profile_facts, constraints, limit=8)
+            facts = retrieve_relevant_facts(_profile_facts, constraints, query=user_input, limit=8)
             used_ev, used_dom, used_ext, used_external = [], [], [], []
 
         external_context = ""

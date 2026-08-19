@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 from services.console_grounding._config import (
     DOMAIN_KNOWLEDGE_PHRASES,
@@ -32,6 +33,23 @@ def parse_query_constraints(
     
     # Check for explicit artifact requests (deterministic citation mode)
     explicit_artifact_request = any(phrase in q for phrase in EXPLICIT_ARTIFACT_PHRASES)
+
+    # Special deterministic intent: list/extract all kanji characters from
+    # domain knowledge (supports natural phrasing, not only file names).
+    character_list_request = (
+        ("character" in q or "characters" in q or "kanji" in q)
+        and ("list" in q or "show" in q or "all" in q)
+        and ("domain knowledge" in q or "domain_knowledge" in q)
+    )
+
+    term_list_request = (
+        ("term" in q or "terms" in q or "concept" in q or "concepts" in q)
+        and ("list" in q or "show" in q or "all" in q)
+        and ("domain knowledge" in q or "domain_knowledge" in q)
+        and ("meaning" in q or "meanings" in q)
+    )
+    explicit_artifact_request = explicit_artifact_request or character_list_request
+    explicit_artifact_request = explicit_artifact_request or term_list_request
     
     # Check for "learned knowledge" requests
     use_learned_knowledge = any(phrase in q for phrase in LEARNED_KNOWLEDGE_PHRASES)
@@ -78,6 +96,8 @@ def parse_query_constraints(
         require_domain_knowledge=require_domain_knowledge,
         tech_tags=tags,
         explicit_artifact_request=explicit_artifact_request,
+        list_domain_characters=character_list_request,
+        list_domain_terms=term_list_request,
         use_learned_knowledge=use_learned_knowledge,
         search_learned_knowledge=search_learned_knowledge,
         route_mode=route_mode,
@@ -87,16 +107,24 @@ def parse_query_constraints(
 def retrieve_relevant_facts(
     facts: list[ProjectFact],
     constraints: QueryConstraints,
+    query: str = "",
     limit: int = 8,
 ) -> list[ProjectFact]:
     if not facts:
         return []
 
     _is_domain = lambda f: f.source.startswith("domain:") or f.company == "Domain Knowledge"
+    query_tokens = set(re.findall(r"\w+", query.lower()))
 
     scored: list[tuple[int, ProjectFact]] = []
     for fact in facts:
         score = 0
+        fact_text = f"{fact.project} {fact.company} {fact.years} {fact.details}".lower()
+        fact_tokens = set(re.findall(r"\w+", fact_text))
+        # Reward direct lexical overlap so new domain packs are discoverable
+        # even when their tags are not pre-configured in .env keyword lists.
+        if query_tokens:
+            score += len(query_tokens.intersection(fact_tokens)) * 3
         if constraints.tech_tags:
             score += len(fact.tags.intersection(constraints.tech_tags)) * 5
         if constraints.require_projects and not _is_domain(fact):
@@ -145,7 +173,7 @@ def build_deterministic_grounded_reply(
     query_lower = query.lower()
     requested_extracted = "extracted_knowledge" in query_lower
     requested_persona = "persona_graph" in query_lower
-    requested_domain = "domain_knowledge" in query_lower
+    requested_domain = "domain_knowledge" in query_lower or "domain knowledge" in query_lower
     requested_narrative = "narrative_memory" in query_lower
 
     extracted_facts = [f for f in facts if _is_extracted(f)]
@@ -153,6 +181,69 @@ def build_deterministic_grounded_reply(
     persona_facts = [f for f in facts if _is_persona(f)]
 
     lines: list[str] = []
+
+    list_term_request = constraints.list_domain_terms
+
+    list_character_request = (
+        requested_domain
+        and ("character" in query_lower or "characters" in query_lower or "kanji" in query_lower)
+        and ("list" in query_lower or "show" in query_lower or "all" in query_lower)
+    )
+
+    if list_character_request:
+        if not domain_facts:
+            return "I don't have any domain knowledge facts loaded to extract characters from."
+        include_meanings = "meaning" in query_lower or "meanings" in query_lower
+        chars = _extract_cjk_characters_from_domain_facts(domain_facts)
+        if not chars:
+            # Fallback: reload full domain-knowledge fact pool in case caller
+            # passed a ranked subset that omitted kanji-bearing facts.
+            try:
+                from services.avatar_intelligence import (
+                    domain_facts_to_project_facts,
+                    load_avatar_state,
+                    normalize_domain_facts,
+                )
+
+                full_state = load_avatar_state()
+                full_domain_facts = domain_facts_to_project_facts(
+                    normalize_domain_facts(full_state)
+                )
+                domain_facts = full_domain_facts
+                chars = _extract_cjk_characters_from_domain_facts(full_domain_facts)
+            except Exception:
+                chars = []
+        if not chars:
+            return "I found domain knowledge facts, but no CJK characters were detected in them."
+
+        if include_meanings:
+            meanings = _extract_cjk_character_meanings_from_domain_facts(domain_facts)
+            lines.append(f"I found {len(chars)} characters with extracted meanings from loaded domain knowledge:")
+            for ch in chars:
+                meaning = meanings.get(ch, "meaning not explicitly stated")
+                lines.append(f"{ch}: {meaning}")
+            return "\n".join(lines)
+
+        # Keep output readable while returning the full list deterministically.
+        chunk_size = 40
+        lines.append(f"I found {len(chars)} characters in loaded domain knowledge:")
+        for i in range(0, len(chars), chunk_size):
+            lines.append("".join(chars[i : i + chunk_size]))
+        return "\n".join(lines)
+
+    if list_term_request:
+        if not domain_facts:
+            return "I don't have any domain knowledge facts loaded to extract terms from."
+        term_meanings = _extract_domain_terms_with_meanings(domain_facts)
+        if not term_meanings:
+            return "I found domain knowledge facts, but no clear term-meaning pairs were detected."
+
+        lines.append(
+            f"I found {len(term_meanings)} domain terms with extracted meanings from loaded domain knowledge:"
+        )
+        for term, meaning in term_meanings:
+            lines.append(f"{term}: {meaning}")
+        return "\n".join(lines)
 
     # If user explicitly requested extracted_knowledge, show ONLY that
     if requested_extracted:
@@ -255,6 +346,128 @@ def build_grounding_facts_block(facts: list[ProjectFact], limit: int | None = No
             f"- Project: {fact.project} | Company: {fact.company} | Years: {fact.years} | Detail: {fact.details}"
         )
     return "\n".join(lines)
+
+
+def _extract_cjk_characters_from_domain_facts(domain_facts: list[ProjectFact]) -> list[str]:
+    """Extract unique CJK Unified Ideographs from domain fact text/tags.
+
+    Preserves first-seen order so output is deterministic and stable.
+    """
+    seen: set[str] = set()
+    ordered: list[str] = []
+
+    def _push(text: str) -> None:
+        for ch in text:
+            if "\u4e00" <= ch <= "\u9fff" and ch not in seen:
+                seen.add(ch)
+                ordered.append(ch)
+
+    for fact in domain_facts:
+        _push(fact.project)
+        _push(fact.details)
+        for tag in fact.tags:
+            _push(tag)
+
+    return ordered
+
+
+def _extract_cjk_character_meanings_from_domain_facts(
+    domain_facts: list[ProjectFact],
+) -> dict[str, str]:
+    """Extract per-character meanings from domain facts.
+
+    Heuristics (first match wins in corpus order):
+    - "<char> ... meaning <text>;" pattern in the statement.
+    - English tags (non-CJK) when available.
+    """
+    mapping: dict[str, str] = {}
+    meaning_re = re.compile(
+        r"([\u4e00-\u9fff])[^\n]{0,80}?\bmeaning\s+([^.;\n]+)",
+        re.IGNORECASE,
+    )
+
+    for fact in domain_facts:
+        statement = fact.details or ""
+        match = meaning_re.search(statement)
+        if match:
+            ch = match.group(1)
+            meaning = match.group(2).strip().strip('"\'')
+            if ch and meaning and ch not in mapping:
+                mapping[ch] = meaning
+
+        # Tag fallback for characters that have no explicit "meaning ..." clause.
+        # We treat the first non-CJK tag as a concise gloss.
+        for tag in sorted(fact.tags):
+            cjk_chars = [c for c in tag if "\u4e00" <= c <= "\u9fff"]
+            if not cjk_chars:
+                continue
+            gloss_candidates = [
+                t.strip()
+                for t in sorted(fact.tags)
+                if t.strip() and not any("\u4e00" <= x <= "\u9fff" for x in t)
+            ]
+            if not gloss_candidates:
+                continue
+            gloss = gloss_candidates[0]
+            for ch in cjk_chars:
+                mapping.setdefault(ch, gloss)
+
+    return mapping
+
+
+def _extract_domain_terms_with_meanings(
+    domain_facts: list[ProjectFact],
+) -> list[tuple[str, str]]:
+    """Extract generic term -> meaning pairs from domain facts.
+
+    Heuristics:
+    - Primary: leading noun phrase before definition verbs ("is", "are", "refers to", "means").
+    - Fallback: first non-CJK tag as term when statement still contains a definition cue.
+    """
+    # Capture concise leading term and definition tail.
+    # Example: "Python is a high-level ..." -> (Python, a high-level ...)
+    primary_re = re.compile(
+        r"^\s*([A-Za-z0-9][A-Za-z0-9_+.#\-/()\s]{1,80}?)\s+"
+        r"(is|are|refers to|means)\s+(.+?)\.?\s*$",
+        re.IGNORECASE,
+    )
+
+    seen: set[str] = set()
+    pairs: list[tuple[str, str]] = []
+
+    for fact in domain_facts:
+        statement = (fact.details or "").strip()
+        if not statement:
+            continue
+
+        m = primary_re.match(statement)
+        if m:
+            term = " ".join(m.group(1).split())
+            meaning = " ".join(m.group(3).split())
+            term_key = term.lower()
+            if term_key not in seen and len(term) <= 80 and len(meaning) >= 8:
+                seen.add(term_key)
+                pairs.append((term, meaning))
+            continue
+
+        # Fallback: try first ASCII tag when statement appears definitional.
+        if not re.search(r"\b(is|are|refers to|means)\b", statement, re.IGNORECASE):
+            continue
+        ascii_tags = [
+            t.strip()
+            for t in sorted(fact.tags)
+            if t.strip() and not any("\u4e00" <= ch <= "\u9fff" for ch in t)
+        ]
+        if not ascii_tags:
+            continue
+        term = ascii_tags[0]
+        term_key = term.lower()
+        if term_key in seen:
+            continue
+        seen.add(term_key)
+        pairs.append((term, statement))
+
+    return pairs
 
 
 def build_katzilla_citation_reply(query: str, external_facts: list[object]) -> str:

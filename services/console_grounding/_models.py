@@ -48,6 +48,8 @@ class QueryConstraints:
     require_domain_knowledge: bool
     tech_tags: set[str]
     explicit_artifact_request: bool = False  # User explicitly asks to see artifacts
+    list_domain_characters: bool = False  # User asks to list all domain knowledge characters
+    list_domain_terms: bool = False  # User asks to list domain terms/concepts with meanings
     use_learned_knowledge: bool = False  # User asks to use "learned knowledge"
     search_learned_knowledge: bool = False  # User asks to search learned knowledge
     route_mode: str = "llm_with_context"  # "llm_with_context", "deterministic_citation", "learned_context"

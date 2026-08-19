@@ -5,9 +5,11 @@ from __future__ import annotations
 import pytest
 
 from services.console_grounding import (
+    build_deterministic_grounded_reply,
     parse_query_constraints,
     get_latest_extracted_knowledge,
     build_learned_knowledge_context,
+    retrieve_relevant_facts,
 )
 from services.console_grounding._models import ProjectFact
 
@@ -141,6 +143,23 @@ class TestSimplifiedQueryRouting:
         assert constraints.explicit_artifact_request is False
         assert constraints.route_mode == "llm_with_context"
 
+    def test_list_domain_knowledge_characters_routes_deterministic(self):
+        """Natural language character-list requests should bypass LLM."""
+        query = "list me all the characters from your domain knowledge"
+        constraints = parse_query_constraints(query)
+
+        assert constraints.explicit_artifact_request is True
+        assert constraints.list_domain_characters is True
+        assert constraints.route_mode == "deterministic_citation"
+
+    def test_list_domain_terms_with_meanings_routes_deterministic(self):
+        query = "list all domain knowledge terms with meanings"
+        constraints = parse_query_constraints(query)
+
+        assert constraints.explicit_artifact_request is True
+        assert constraints.list_domain_terms is True
+        assert constraints.route_mode == "deterministic_citation"
+
 
 class TestExtractedKnowledgeHelpers:
     """Test helper functions for extracted knowledge handling."""
@@ -258,6 +277,123 @@ class TestBackwardCompatibility:
         constraints = parse_query_constraints(query)
         
         assert constraints.require_projects is True
+
+
+class TestFactRetrievalScoring:
+    """Regression tests for query-aware ranking in console retrieval."""
+
+    def test_query_overlap_boosts_domain_fact(self):
+        constraints = parse_query_constraints("kanji")
+        facts = [
+            ProjectFact(
+                project="Spring APIs",
+                company="Acme",
+                years="2021",
+                details="Built microservices with Java and Spring Boot",
+                source="avatar:proj-1",
+                tags={"java", "spring"},
+            ),
+            ProjectFact(
+                project="Japanese Writing System",
+                company="Domain Knowledge",
+                years="general",
+                details="Kanji are used with hiragana and katakana in mixed script.",
+                source="domain:kanji-writing-system-mixed-script",
+                tags={"kanji", "hiragana", "katakana"},
+            ),
+        ]
+
+        ranked = retrieve_relevant_facts(facts, constraints, query="kanji", limit=1)
+        assert ranked
+        assert ranked[0].source.startswith("domain:")
+
+
+class TestDomainCharacterListing:
+    """Deterministic listing for domain knowledge character extraction."""
+
+    def test_build_reply_lists_detected_cjk_characters(self):
+        facts = [
+            ProjectFact(
+                project="Kanji Core",
+                company="Domain Knowledge",
+                years="general",
+                details="Characters include 一二三 and 界 in examples.",
+                source="domain:k200",
+                tags={"一", "二", "三", "界"},
+            )
+        ]
+        constraints = parse_query_constraints("list me all the characters from your domain knowledge")
+        reply = build_deterministic_grounded_reply(
+            "list me all the characters from your domain knowledge",
+            facts,
+            constraints,
+        )
+
+        assert "I found" in reply
+        for ch in ("一", "二", "三", "界"):
+            assert ch in reply
+
+    def test_build_reply_lists_characters_with_meanings(self):
+        facts = [
+            ProjectFact(
+                project="Kanji Core",
+                company="Domain Knowledge",
+                years="general",
+                details="一 is a core high-frequency kanji meaning one; teach via words.",
+                source="domain:k200-001",
+                tags={"一", "one", "core kanji"},
+            ),
+            ProjectFact(
+                project="Kanji Core",
+                company="Domain Knowledge",
+                years="general",
+                details="二 is a core high-frequency kanji meaning two; teach via words.",
+                source="domain:k200-002",
+                tags={"二", "two", "core kanji"},
+            ),
+        ]
+        constraints = parse_query_constraints(
+            "list me all the characters from your domain knowledge with their meaning"
+        )
+        reply = build_deterministic_grounded_reply(
+            "list me all the characters from your domain knowledge with their meaning",
+            facts,
+            constraints,
+        )
+
+        assert "with extracted meanings" in reply
+        assert "一: one" in reply
+        assert "二: two" in reply
+
+    def test_build_reply_lists_generic_domain_terms_with_meanings(self):
+        facts = [
+            ProjectFact(
+                project="Python",
+                company="Domain Knowledge",
+                years="general",
+                details="Python is a high-level interpreted programming language.",
+                source="domain:python-core",
+                tags={"python", "language"},
+            ),
+            ProjectFact(
+                project="FastAPI",
+                company="Domain Knowledge",
+                years="general",
+                details="FastAPI is a modern high-performance Python web framework for APIs.",
+                source="domain:python-fastapi",
+                tags={"fastapi", "api"},
+            ),
+        ]
+        constraints = parse_query_constraints("list all domain knowledge terms with meanings")
+        reply = build_deterministic_grounded_reply(
+            "list all domain knowledge terms with meanings",
+            facts,
+            constraints,
+        )
+
+        assert "domain terms with extracted meanings" in reply
+        assert "Python: a high-level interpreted programming language" in reply
+        assert "FastAPI: a modern high-performance Python web framework for APIs" in reply
 
     def test_require_companies_still_works(self):
         """Test that require_companies flag still works."""
