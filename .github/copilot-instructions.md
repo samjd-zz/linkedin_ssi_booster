@@ -164,9 +164,16 @@ linkedin_ssi_booster/
 - Run tests as `python -m pytest` from the project venv (never bare `pytest`), and run focused tests first before full-suite runs.
 - Treat flaky tests as defects: fix fixture state leaks, timing assumptions, and environment coupling before merging.
 
-## File Size & Modularization (CRITICAL)
+## Python File Size & Modularization (CRITICAL)
 
-**Maximum file size: 300-500 lines per `.py` file**
+**Maximum source-code size: 300-500 lines per `.py` file**
+
+- This limit applies to Python/source-code files only.
+- Markdown documentation has a maximum of 500 lines per document. PRDs, designs,
+  implementation plans, feature documentation, and testing guides may exceed
+  300 lines when the additional detail improves completeness and usability.
+- Split documentation over 500 lines by phase, topic, or subsystem and link the
+  parts from a concise index or overview document.
 
 - Any service module exceeding 500 lines MUST be refactored into a package structure
 - Use package-based architecture with private modules (underscore prefix) + public API via `__init__.py`
