@@ -24,6 +24,7 @@ import logging
 import re
 import sys
 import gc
+import importlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from dotenv import load_dotenv
@@ -453,14 +454,16 @@ def _display_art_in_terminal(image_path: str | None, width: int | None = None) -
             logger.warning("terminal upsampling skipped: %s", _upsample_err)
 
     try:
-        from term_image.image import from_file as _ti_from_file
+        _ti_image_mod = importlib.import_module("term_image.image")
+        _ti_from_file = getattr(_ti_image_mod, "from_file")
         _img = _ti_from_file(_render_image_path, width=_render_width)
         _img.draw()
     except Exception as _ti_err:  # noqa: BLE001
         if _render_width is not None:
             # Fallback to auto-fit if fixed-width rendering fails in the current pane.
             try:
-                from term_image.image import from_file as _ti_from_file
+                _ti_image_mod = importlib.import_module("term_image.image")
+                _ti_from_file = getattr(_ti_image_mod, "from_file")
                 _img = _ti_from_file(_render_image_path, width=None)
                 _img.draw()
                 logger.warning(
@@ -1631,7 +1634,7 @@ def main():
                     if task.status == "complete":
                         async def _download_media(url: str, dest: "Path", label: str) -> bool:
                             """Download a single media URL to dest; returns True on success."""
-                            import aiohttp as _aiohttp
+                            _aiohttp = importlib.import_module("aiohttp")
                             print(str(Fore.CYAN) + f"   \u2b07\ufe0f  Downloading {label} \u2192 {dest.name} ..." + str(Style.RESET_ALL))
                             try:
                                 async with _aiohttp.ClientSession() as _dl_session:
