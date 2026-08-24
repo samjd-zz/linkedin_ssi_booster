@@ -237,7 +237,7 @@ linkedin_ssi_booster/
 ## Version & Test Status
 
 - **Version**: alpha-v0.0.3.4
-- **Test Count**: 775 collected; 773 passed, 2 skipped, 0 failed
+- **Test Count**: 806 collected; 806 passed, 0 skipped, 0 failed
 - **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
 
 ## Docker & Deployment
