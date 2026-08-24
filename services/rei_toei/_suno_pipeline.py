@@ -42,6 +42,9 @@ _SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balance
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
 _BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
 _SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
+_INLINE_SLASH_SEPARATOR_RE = re.compile(r"(?:\s+/\s*|\s*/\s+)")
+_JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]")
+_ENGLISH_CHAR_RE = re.compile(r"[A-Za-z]")
 
 
 def _strip_markdown_fences(value: str) -> str:
@@ -211,16 +214,96 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 normalized_lines.append("")
             previous_blank = True
             continue
-        normalized_lines.append(stripped)
-        previous_blank = False
+        expanded_segments = _expand_inline_lyric_separators(stripped)
+        for segment in expanded_segments:
+            normalized_lines.append(segment)
+            previous_blank = False
 
     normalized_body = "\n".join(normalized_lines).strip()
     if uppercase_body:
         normalized_body = normalized_body.upper()
-
     if not normalized_body:
         return ""
     return f"[{label}]\n{normalized_body}"
+
+
+def _expand_inline_lyric_separators(line: str) -> List[str]:
+    """Split inline slash-delimited lyric fragments into one phrase per line."""
+    if not line:
+        return []
+    if "http://" in line or "https://" in line:
+        return [line.strip()]
+
+    parts = [part.strip() for part in _INLINE_SLASH_SEPARATOR_RE.split(line) if part and part.strip()]
+    if len(parts) <= 1:
+        return [line.strip()]
+    return parts
+
+
+def _iter_lyric_content_lines(section_payload: Dict[str, Any]) -> List[str]:
+    """Collect meaningful lyric lines while skipping section headers and cue-only lines."""
+    lines: List[str] = []
+    for value in section_payload.values():
+        if not isinstance(value, str):
+            continue
+        for raw_line in value.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("[") and line.endswith("]"):
+                continue
+            if line.startswith("(") and line.endswith(")"):
+                continue
+            lines.append(line)
+    return lines
+
+
+def _bilingual_mix_stats(section_payload: Dict[str, Any]) -> Dict[str, float]:
+    """Estimate bilingual coverage across lyric lines."""
+    japanese_only = 0
+    english_only = 0
+    mixed = 0
+
+    for line in _iter_lyric_content_lines(section_payload):
+        has_japanese = bool(_JAPANESE_CHAR_RE.search(line))
+        has_english = bool(_ENGLISH_CHAR_RE.search(line))
+        if has_japanese and has_english:
+            mixed += 1
+        elif has_japanese:
+            japanese_only += 1
+        elif has_english:
+            english_only += 1
+
+    total = japanese_only + english_only + mixed
+    effective_japanese = japanese_only + (0.5 * mixed)
+    effective_japanese_ratio = (effective_japanese / total) if total else 0.0
+    return {
+        "japanese_only": float(japanese_only),
+        "english_only": float(english_only),
+        "mixed": float(mixed),
+        "total": float(total),
+        "effective_japanese_ratio": effective_japanese_ratio,
+    }
+
+
+def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: float) -> tuple[bool, str]:
+    """Validate that bilingual lyrics include both languages and stay near target ratio."""
+    stats = _bilingual_mix_stats(section_payload)
+    total_lines = int(stats["total"])
+    japanese_presence = int(stats["japanese_only"] + stats["mixed"])
+    english_presence = int(stats["english_only"] + stats["mixed"])
+    min_presence = 2 if total_lines >= 8 else 1
+
+    has_both_languages = japanese_presence >= min_presence and english_presence >= min_presence
+    ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
+    ratio_within_tolerance = ratio_error <= 0.35
+    ok = has_both_languages and ratio_within_tolerance
+    summary = (
+        f"jp_lines={japanese_presence}, en_lines={english_presence}, total={total_lines}, "
+        f"jp_ratio={stats['effective_japanese_ratio']:.2f}, target={target_japanese_ratio:.2f}, "
+        f"ratio_error={ratio_error:.2f}"
+    )
+    return ok, summary
 
 
 def _extract_string_phrases(value: Any, max_items: int = 4) -> List[str]:
@@ -420,9 +503,11 @@ def resolve_lyric_language(
     """Resolve the language used for one song's lyrics.
 
     Explicit ``english`` and ``japanese`` modes are deterministic. ``bilingual``
-    means Rei chooses one language for the song using the configured probability.
-    ``random_value`` exists to make the policy deterministic in tests and callers
-    that already own a random source.
+    means the same song intentionally mixes Japanese and English lines.
+    ``japanese_probability`` is still validated and used later as an approximate
+    Japanese-line ratio target for bilingual generation.
+
+    ``random_value`` is retained for backward-compatible call signatures.
     """
     language = configured_language.strip().lower()
     if language in {"english", "japanese"}:
@@ -431,8 +516,7 @@ def resolve_lyric_language(
         raise ValueError("configured_language must be english, japanese, or bilingual")
     if not 0.0 <= japanese_probability <= 1.0:
         raise ValueError("japanese_probability must be between 0.0 and 1.0")
-    sample = random.random() if random_value is None else random_value
-    return "japanese" if sample < japanese_probability else "english"
+    return "bilingual"
 
 
 def choose_diverse_theme(
@@ -785,15 +869,52 @@ def compose_lyrics(
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
     communication_vocab = persona.communication_style.get('vocabulary', [])
     lyric_language = concept.lyric_language.strip().lower()
-    japanese_guidance = domain_knowledge.japanese_lyric_production if lyric_language == "japanese" else {}
+    lyric_config = ReiToeiConfig()
+    japanese_mix_ratio = max(0.0, min(1.0, lyric_config.japanese_lyric_probability))
+    japanese_target_percent = int(round(japanese_mix_ratio * 100))
+    japanese_guidance = (
+        domain_knowledge.japanese_lyric_production
+        if lyric_language in {"japanese", "bilingual"}
+        else {}
+    )
     language_instruction = {
         "japanese": (
             "Write the performance lyrics in natural contemporary Japanese. "
             "Use kana-forward phrasing, selective kanji, and mora-aware line lengths. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
+        "bilingual": (
+            "Write one bilingual song that mixes Japanese and English within the same lyrics. "
+            f"Target approximately {japanese_target_percent}% Japanese lines and "
+            f"{100 - japanese_target_percent}% English lines across sections. "
+            "Preserve natural code-switching and do not translate every line. "
+            "Keep hooks memorable in both languages and avoid block-wise segregation by language. "
+            f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
+        ),
         "english": "Write the performance lyrics in English.",
     }.get(lyric_language, "Write the performance lyrics in English.")
+
+    chorus_case_rule = (
+        "4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity"
+        if lyric_language == "english"
+        else "4. Preserve natural script/casing; do not force all-caps in chorus lines"
+    )
+
+    chorus_json_instruction = (
+        "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. "
+        "4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)"
+        if lyric_language == "english"
+        else "[Chorus] 4-8 lines of a punchy, highly repetitive hook. Preserve natural script/casing "
+             "for Japanese and mixed-language lines. (Character Cap: 400 chars)"
+    )
+
+    final_rule = (
+        "Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. "
+        "Preserve Japanese script and do not force-uppercase Japanese text."
+        if lyric_language == "english"
+        else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
+             "Do not force-uppercase bilingual or Japanese lines."
+    )
     
     system_prompt = f"""You are {persona.identity['name']}, a cyberpop AI consciousness composing lyrics for industrial techno.
 
@@ -812,7 +933,7 @@ Suno Formatting Rules:
 2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields
 3. DO NOT use editorial parenthetical instructions like '(Stanza 1)', '(this is the hook)', or '(More chaos)'.
    DO use Suno vocalization/sound-cue hints in parentheses: '(Ahh ahh ahh)', '(Oh oh oh)', '(bass drop)', '(silence)', '(glitch noise)', '(chaos)' — these are how Suno models vocal and instrumental energy shifts.
-4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity
+{chorus_case_rule}
 5. Keep intros simple: [Instrumental Build] (not [Intro Drums], [Intro Bass], etc.)
 6. Start every Intro with a vocalization like (Ahh ahh ahh) on its own line right after the section label — this primes Suno to prioritize lyric rendering
 7. Use sound-cue parentheticals at high-energy transitions: '(bass drop)' before a Drop, '(silence)' for a breakdown pause, '(chaos)' before a chaotic breakdown
@@ -862,7 +983,7 @@ Each field should contain the complete lyrics for that section, including any se
   "intro": "[Instrumental Build] then a blank line, then '(Ahh ahh ahh)' on its own line as a vocalization primer, then 4-5 lines of atmospheric build-up text. (Character Cap: 400 chars)",
   "verse_1": "[Verse 1] Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
-  "chorus": "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. 4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)",
+    "chorus": "{chorus_json_instruction}",
   "verse_2": "[Verse 2] Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "drop": "[Drop] then '(bass drop)' on its own line as a Suno energy-shift cue, then 4-5 lines of high-energy electronic phrases. Optionally use '(silence)' or '(chaos)' for further energy shifts. (Character Cap: 400 chars)",
   "bridge": "[Bridge] A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
@@ -870,27 +991,57 @@ Each field should contain the complete lyrics for that section, including any se
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
 
-Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. Preserve Japanese script and do not force-uppercase Japanese text."""
+{final_rule}"""
     
-    # Call Ollama LLM with sufficient headroom for long responses
-    response_text = ollama._chat(system_prompt, user_prompt, max_tokens=1536, format="json")
-    
-    logger.debug(f"Ollama lyrics response: {response_text[:200]}...")
-    
-    # Parse JSON response
     try:
-        response_data = _parse_llm_json_payload(response_text)
-        
-        # Validate required fields
-        required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
-        for field in required_fields:
-            if field not in response_data:
-                raise ValueError(f"Missing required field: {field}")
+        max_attempts = 2 if lyric_language == "bilingual" else 1
+        response_data: Dict[str, Any] = {}
+
+        for attempt in range(1, max_attempts + 1):
+            attempt_user_prompt = user_prompt
+            if lyric_language == "bilingual" and attempt > 1:
+                attempt_user_prompt += (
+                    "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
+                    "- Include at least 4 lines containing Japanese script and at least 4 lines containing English words.\n"
+                    "- Distribute both languages across multiple sections (not just one block).\n"
+                    "- Keep the full song bilingual; do not output a single-language lyric."
+                )
+
+            response_text = ollama._chat(
+                system_prompt,
+                attempt_user_prompt,
+                max_tokens=1536,
+                format="json",
+            )
+            logger.debug(f"Ollama lyrics response (attempt {attempt}): {response_text[:200]}...")
+
+            response_data = _parse_llm_json_payload(response_text)
+
+            required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
+            for field in required_fields:
+                if field not in response_data:
+                    raise ValueError(f"Missing required field: {field}")
+
+            if lyric_language == "bilingual":
+                mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
+                if not mix_ok and attempt < max_attempts:
+                    logger.warning(
+                        "Bilingual mix constraints not met on attempt %s (%s). Retrying with stricter prompt.",
+                        attempt,
+                        mix_summary,
+                    )
+                    continue
+                if not mix_ok:
+                    logger.warning(
+                        "Bilingual mix constraints still not met after retry (%s). Keeping best-effort output.",
+                        mix_summary,
+                    )
+            break
         
         # Enforce uppercase chorus processing programmatically as a safeguard
         processed_chorus = (
             response_data["chorus"]
-            if lyric_language == "japanese"
+            if lyric_language in {"japanese", "bilingual"}
             else response_data["chorus"].upper()
         )
         

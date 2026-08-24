@@ -743,11 +743,11 @@ Controls the language policy for Rei's generated lyrics.
 
 **Options:**
 
-- `bilingual` — Rei chooses Japanese or English once per song using `REI_JAPANESE_LYRIC_PROBABILITY`.
-- `japanese` — Always generate Japanese lyrics; the probability setting is ignored.
-- `english` — Always generate English lyrics; the probability setting is ignored.
+- `bilingual` — Rei mixes English and Japanese within the same song.
+- `japanese` — Always generate full Japanese lyrics; the probability setting is ignored.
+- `english` — Always generate full English lyrics; the probability setting is ignored.
 
-The resolved language is selected once during song-concept generation and carried through lyric composition, so a song does not switch languages between sections because of a second random decision.
+When bilingual mode is enabled, `REI_JAPANESE_LYRIC_PROBABILITY` is used as a target Japanese mix ratio during lyric composition.
 
 ```bash
 REI_LYRIC_LANGUAGE=bilingual
@@ -755,9 +755,9 @@ REI_LYRIC_LANGUAGE=bilingual
 
 ### `REI_JAPANESE_LYRIC_PROBABILITY`
 
-Probability that Rei selects Japanese lyrics when `REI_LYRIC_LANGUAGE=bilingual`.
+Target Japanese mix ratio when `REI_LYRIC_LANGUAGE=bilingual`.
 
-**Default:** `0.25` (25%)
+**Default:** `0.25` (25% target Japanese mix)
 
 **Range:** `0.0` to `1.0`
 

@@ -1031,6 +1031,75 @@ def test_compose_lyrics_fallback_on_error(mock_domain_knowledge_data):
     assert "Test Theme" in lyrics.verse_1
 
 
+def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Bilingual mode should retry when first LLM output drifts to one language."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.5")
+
+    concept = SongConcept(
+        song_id="song_003",
+        title="Bilingual Mix Test",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    first_response = json.dumps(
+        {
+            "verse_1": "データの波が走る\n回路の熱が踊る",
+            "chorus": "信号を追いかける",
+            "verse_2": "境界線を越えていく\nノイズが光になる",
+            "bridge": "この夜を再起動する",
+        },
+        ensure_ascii=False,
+    )
+
+    second_response = json.dumps(
+        {
+            "verse_1": "データの波が走る\nSignal wakes inside the core",
+            "chorus": "SIGNALを超えて\nBreak the circuit now",
+            "verse_2": "境界線を越えていく\nWe rewrite the night in code",
+            "bridge": "次のステップへ\nHold the pulse and never slow",
+        },
+        ensure_ascii=False,
+    )
+
+    with patch.object(OllamaService, "_chat", side_effect=[first_response, second_response]) as mock_chat:
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    assert mock_chat.call_count == 2
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert "Signal" in merged or "Break" in merged or "rewrite" in merged
+    assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
+
+
 def test_validate_lyrics_with_dot_enabled(mock_extracted_knowledge, monkeypatch):
     """Test validate_lyrics_with_dot validates claims against knowledge"""
     monkeypatch.setenv("REI_TOEI_DOT_VALIDATION_ENABLED", "true")
@@ -1227,6 +1296,40 @@ def test_assemble_suno_prompt_injects_actual_bpm(mock_domain_knowledge_data):
 
     assert "147 bpm" in suno_prompt.suno_prompt.lower()
     assert suno_prompt.metadata["style_tags_length"] <= 240
+
+
+def test_assemble_suno_prompt_splits_inline_slash_fragments(mock_domain_knowledge_data):
+    """Slash-delimited lyric phrases should be split onto separate lines for readability."""
+    concept = SongConcept(
+        song_id="song_fmt_001",
+        title="Formatter Check",
+        theme="Signal routing",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno", "cyberpop"],
+        narrative_arc="Test formatting behavior.",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+    )
+
+    lyrics = Lyrics(
+        verse_1="Input overflow / 境界線超えて / signal still rising",
+        chorus="SIGNAL / LOOP BACK",
+        verse_2="Depth layer / メモリの波形",
+        bridge="Deterministic chaos / 再定義する",
+        breakdown=None,
+        evidence_ids=[],
+        outro="Protocol complete / 次へ",
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "Input overflow\n境界線超えて\nsignal still rising" in suno_prompt.lyrics
+    assert "Protocol complete\n次へ" in suno_prompt.lyrics
 
 
 def test_suno_api_generate_music_success():

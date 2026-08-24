@@ -219,6 +219,8 @@ linkedin_ssi_booster/
 
 ## After Every Code Change
 
+- Use the existing project virtual environment at `.venv/`.
+- Never create a new virtual environment automatically (no `python -m venv`, no alternate env names) unless the user explicitly asks.
 - Always run `source .venv/bin/activate && python -m py_compile <changed_files>` immediately after editing any `.py` file
 - Fix all syntax errors before considering a task complete
 - Example: `source .venv/bin/activate && python -m py_compile services/content_curator/curator.py services/console_grounding/_gate_helpers.py`
