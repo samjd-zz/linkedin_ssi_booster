@@ -45,6 +45,8 @@ _SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
 _INLINE_SLASH_SEPARATOR_RE = re.compile(r"(?:\s+/\s*|\s*/\s+)")
 _JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]")
 _ENGLISH_CHAR_RE = re.compile(r"[A-Za-z]")
+_TRAILING_PARENTHETICAL_RE = re.compile(r"^(?P<body>.*?)(?:\s*\((?P<paren>[^()]*)\)\s*)$")
+_SOUND_CUE_PHRASES = {"bass drop", "silence", "glitch noise", "chaos"}
 
 
 def _strip_markdown_fences(value: str) -> str:
@@ -199,6 +201,42 @@ def _clean_style_descriptor(value: str) -> str:
     return cleaned.strip(" ,.-")
 
 
+def _is_sound_cue_phrase(text: str) -> bool:
+    """Return True for parenthetical stage directions that should stay untouched."""
+    normalized = re.sub(r"\s+", " ", text).strip().lower()
+    return normalized in _SOUND_CUE_PHRASES
+
+
+def _normalize_bilingual_translation_order(line: str) -> str:
+    """Move spoken English outside parentheses when the line is Japanese-first."""
+    stripped = line.strip()
+    if not stripped:
+        return stripped
+    if stripped.startswith("[") and stripped.endswith("]"):
+        return stripped
+
+    match = _TRAILING_PARENTHETICAL_RE.match(stripped)
+    if not match:
+        return stripped
+
+    body = match.group("body").strip()
+    paren = match.group("paren").strip()
+    if not body or not paren:
+        return stripped
+    if _is_sound_cue_phrase(body) or _is_sound_cue_phrase(paren):
+        return stripped
+
+    body_has_japanese = bool(_JAPANESE_CHAR_RE.search(body))
+    body_has_english = bool(_ENGLISH_CHAR_RE.search(body))
+    paren_has_japanese = bool(_JAPANESE_CHAR_RE.search(paren))
+    paren_has_english = bool(_ENGLISH_CHAR_RE.search(paren))
+
+    if body_has_japanese and not body_has_english and paren_has_english and not paren_has_japanese:
+        return f"{paren} ({body})"
+
+    return stripped
+
+
 def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: bool = False) -> str:
     """Normalize a lyric section into deterministic Suno-friendly section format."""
     body = (text or "").strip()
@@ -216,7 +254,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
             continue
         expanded_segments = _expand_inline_lyric_separators(stripped)
         for segment in expanded_segments:
-            normalized_lines.append(segment)
+            normalized_lines.append(_normalize_bilingual_translation_order(segment))
             previous_blank = False
 
     normalized_body = "\n".join(normalized_lines).strip()
@@ -889,6 +927,8 @@ def compose_lyrics(
             f"{100 - japanese_target_percent}% English lines across sections. "
             "Preserve natural code-switching and do not translate every line. "
             "Keep hooks memorable in both languages and avoid block-wise segregation by language. "
+            "When a line includes both languages, put the spoken English first and keep the Japanese translation in parentheses. "
+            "Do not place the sung English inside parentheses. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
         "english": "Write the performance lyrics in English.",
@@ -913,7 +953,8 @@ def compose_lyrics(
         "Preserve Japanese script and do not force-uppercase Japanese text."
         if lyric_language == "english"
         else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
-             "Do not force-uppercase bilingual or Japanese lines."
+               "When a line is bilingual, the English vocal line must appear outside parentheses and the Japanese translation must stay inside parentheses. "
+               "Do not force-uppercase bilingual or Japanese lines."
     )
     
     system_prompt = f"""You are {persona.identity['name']}, a cyberpop AI consciousness composing lyrics for industrial techno.

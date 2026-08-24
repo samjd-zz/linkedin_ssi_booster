@@ -1100,6 +1100,46 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
     assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
 
 
+def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_knowledge_data):
+    """Test assemble_suno_prompt rewrites Japanese-first bilingual lines to English-first."""
+
+    concept = SongConcept(
+        song_id="song_004",
+        title="Bilingual Order Test",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+
+    lyrics = Lyrics(
+        verse_1="フィールドにサインが混じる (Signal enters the field)",
+        chorus="カスケード・フロー、今、開く (Cascade flow, it opens now)",
+        verse_2="ノイズをフィルタリング (Filtering the noise)",
+        bridge="再起動する夜 (Reboot the night)",
+        evidence_ids=["fact_001"],
+        intro=None,
+        pre_chorus="",
+        drop=None,
+        solo=None,
+        outro=None,
+        breakdown=None,
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "Signal enters the field (フィールドにサインが混じる)" in suno_prompt.lyrics
+    assert "Cascade flow, it opens now (カスケード・フロー、今、開く)" in suno_prompt.lyrics
+
+
 def test_validate_lyrics_with_dot_enabled(mock_extracted_knowledge, monkeypatch):
     """Test validate_lyrics_with_dot validates claims against knowledge"""
     monkeypatch.setenv("REI_TOEI_DOT_VALIDATION_ENABLED", "true")
@@ -1334,9 +1374,7 @@ def test_assemble_suno_prompt_splits_inline_slash_fragments(mock_domain_knowledg
 
 def test_suno_api_generate_music_success():
     """Test generate_music_api makes correct API call"""
-    import aiohttp
     from services.rei_toei_service import generate_music_api
-    from unittest.mock import AsyncMock
     
     mock_response_data = {
         "code": 200,
@@ -1345,25 +1383,16 @@ def test_suno_api_generate_music_success():
         }
     }
 
-    with patch("aiohttp.ClientSession") as mock_session:
-        # Create async mock for response
-        mock_resp = AsyncMock()
-        mock_resp.status = 200
-        mock_resp.json = AsyncMock(return_value=mock_response_data)
-        
-        # Create async context manager for post
-        mock_post_ctx = MagicMock()
-        mock_post_ctx.__aenter__ = AsyncMock(return_value=mock_resp)
-        mock_post_ctx.__aexit__ = AsyncMock(return_value=None)
-        
-        mock_session_instance = MagicMock()
-        mock_session_instance.post = MagicMock(return_value=mock_post_ctx)
-        
-        # Create async context manager for session
-        mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_session_instance)
-        mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
-        
-        # Call the async function using asyncio.run() since test is now sync
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.read.return_value = json.dumps(mock_response_data).encode("utf-8")
+
+        mock_context = MagicMock()
+        mock_context.__enter__.return_value = mock_response
+        mock_context.__exit__.return_value = None
+        mock_urlopen.return_value = mock_context
+
         import asyncio
         result = asyncio.run(generate_music_api(
             title="Test Song",
@@ -1391,7 +1420,6 @@ def test_suno_api_generate_music_missing_key():
 def test_suno_api_query_status_success():
     """Test query_status_api retrieves task status"""
     from services.rei_toei_service import query_status_api
-    from unittest.mock import AsyncMock
     
     mock_response_data = {
         "code": 200,
@@ -1415,24 +1443,16 @@ def test_suno_api_query_status_success():
         }
     }
 
-    with patch("aiohttp.ClientSession") as mock_session:
-        # Create async mock for response
-        mock_resp = AsyncMock()
-        mock_resp.status = 200
-        mock_resp.json = AsyncMock(return_value=mock_response_data)
-        
-        # Create async context manager for get
-        mock_get_ctx = MagicMock()
-        mock_get_ctx.__aenter__ = AsyncMock(return_value=mock_resp)
-        mock_get_ctx.__aexit__ = AsyncMock(return_value=None)
-        
-        mock_session_instance = MagicMock()
-        mock_session_instance.get = MagicMock(return_value=mock_get_ctx)
-        
-        # Create async context manager for session
-        mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_session_instance)
-        mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
-        
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.read.return_value = json.dumps(mock_response_data).encode("utf-8")
+
+        mock_context = MagicMock()
+        mock_context.__enter__.return_value = mock_response
+        mock_context.__exit__.return_value = None
+        mock_urlopen.return_value = mock_context
+
         import asyncio
         tasks = asyncio.run(query_status_api(["task_001"], api_key="test_key"))
     

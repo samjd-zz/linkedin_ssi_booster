@@ -10,9 +10,14 @@ Author: Shawn Jackson Dyck
 Version: alpha-v0.0.3.3
 """
 
+import asyncio
+import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
+from urllib import error as urllib_error
+from urllib import parse as urllib_parse
+from urllib import request as urllib_request
 
 from ._models import SunoTask
 
@@ -23,6 +28,46 @@ _DEFAULT_MODEL = "V4_5"
 # Required by sunoapi.org schema; we poll instead of using callbacks, so a
 # placeholder URL is fine here.
 _CALLBACK_PLACEHOLDER = "https://example.com/suno-callback"
+
+
+def _request_json(
+    method: str,
+    url: str,
+    headers: Dict[str, str],
+    payload: Optional[Dict[str, Any]] = None,
+    params: Optional[Dict[str, Any]] = None,
+    timeout_seconds: int = 30,
+) -> tuple[int, Dict[str, Any]]:
+    """Make a JSON HTTP request using the standard library."""
+    final_url = url
+    if params:
+        final_url = f"{url}?{urllib_parse.urlencode(params)}"
+
+    body = None
+    if payload is not None:
+        body = json.dumps(payload).encode("utf-8")
+
+    request = urllib_request.Request(final_url, data=body, headers=headers, method=method)
+
+    try:
+        with urllib_request.urlopen(request, timeout=timeout_seconds) as response:
+            status = int(response.getcode() or 0)
+            raw_text = response.read().decode("utf-8")
+    except urllib_error.HTTPError as exc:
+        status = int(exc.code or 0)
+        raw_text = exc.read().decode("utf-8", errors="replace")
+    except urllib_error.URLError as exc:
+        raise Exception(f"Suno API request failed: {exc.reason}") from exc
+
+    try:
+        parsed = json.loads(raw_text or "{}")
+    except json.JSONDecodeError as exc:
+        raise Exception(f"Suno API returned invalid JSON: {raw_text[:200]}") from exc
+
+    if not isinstance(parsed, dict):
+        raise Exception("Suno API returned a non-object JSON payload")
+
+    return status, parsed
 
 
 async def generate_music_api(
@@ -54,8 +99,6 @@ async def generate_music_api(
         ValueError: If API key is missing.
         Exception:  If the HTTP call fails or the API returns a non-200 code.
     """
-    import aiohttp
-
     if api_key is None:
         api_key = os.getenv("SUNO_API_KEY")
 
@@ -85,23 +128,27 @@ async def generate_music_api(
         "Content-Type": "application/json",
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(api_url, json=payload, headers=headers) as response:
-            if response.status != 200:
-                error_text = await response.text()
-                raise Exception(f"Suno API error ({response.status}): {error_text}")
+    status, result = await asyncio.to_thread(
+        _request_json,
+        "POST",
+        api_url,
+        headers,
+        payload,
+        None,
+    )
+    if status != 200:
+        raise Exception(f"Suno API error ({status}): {result}")
 
-            result = await response.json()
-            code = result.get("code", 0)
-            if code != 200:
-                raise Exception(
-                    f"Suno API returned code {code}: {result.get('msg', 'unknown error')}"
-                )
+    code = result.get("code", 0)
+    if code != 200:
+        raise Exception(
+            f"Suno API returned code {code}: {result.get('msg', 'unknown error')}"
+        )
 
-            task_id: str = result["data"]["taskId"]
-            logger.info(f"Suno task submitted: {task_id}")
-            # Wrap in list form so submit_to_suno's existing extraction works unchanged.
-            return {"data": [{"id": task_id}]}
+    task_id: str = result["data"]["taskId"]
+    logger.info(f"Suno task submitted: {task_id}")
+    # Wrap in list form so submit_to_suno's existing extraction works unchanged.
+    return {"data": [{"id": task_id}]}
 
 
 async def query_status_api(
@@ -131,8 +178,6 @@ async def query_status_api(
         ValueError: If API key is missing.
         Exception:  If the HTTP call fails or the API returns a non-200 code.
     """
-    import aiohttp
-
     if api_key is None:
         api_key = os.getenv("SUNO_API_KEY")
 
@@ -153,50 +198,54 @@ async def query_status_api(
         "Content-Type": "application/json",
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(api_url, params={"taskId": task_id}, headers=headers) as response:
-            if response.status != 200:
-                error_text = await response.text()
-                raise Exception(f"Suno API query error ({response.status}): {error_text}")
+    status, result = await asyncio.to_thread(
+        _request_json,
+        "GET",
+        api_url,
+        headers,
+        None,
+        {"taskId": task_id},
+    )
+    if status != 200:
+        raise Exception(f"Suno API query error ({status}): {result}")
 
-            result = await response.json()
-            code = result.get("code", 0)
-            if code != 200:
-                raise Exception(
-                    f"Suno API query returned code {code}: {result.get('msg', 'unknown error')}"
-                )
+    code = result.get("code", 0)
+    if code != 200:
+        raise Exception(
+            f"Suno API query returned code {code}: {result.get('msg', 'unknown error')}"
+        )
 
-            data = result.get("data", {})
-            raw_status: str = data.get("status", "PENDING")
+    data = result.get("data", {})
+    raw_status: str = data.get("status", "PENDING")
 
-            _ERROR_STATUSES = {
-                "CREATE_TASK_FAILED",
-                "GENERATE_AUDIO_FAILED",
-                "CALLBACK_EXCEPTION",
-                "SENSITIVE_WORD_ERROR",
-            }
-            if raw_status == "SUCCESS":
-                mapped_status = "complete"
-            elif raw_status in _ERROR_STATUSES:
-                mapped_status = "error"
-            else:
-                mapped_status = "pending"
+    _ERROR_STATUSES = {
+        "CREATE_TASK_FAILED",
+        "GENERATE_AUDIO_FAILED",
+        "CALLBACK_EXCEPTION",
+        "SENSITIVE_WORD_ERROR",
+    }
+    if raw_status == "SUCCESS":
+        mapped_status = "complete"
+    elif raw_status in _ERROR_STATUSES:
+        mapped_status = "error"
+    else:
+        mapped_status = "pending"
 
-            suno_data: list = data.get("response", {}).get("sunoData", [])
-            first_track: dict = suno_data[0] if suno_data else {}
+    suno_data: list = data.get("response", {}).get("sunoData", [])
+    first_track: dict = suno_data[0] if suno_data else {}
 
-            task = SunoTask(
-                id=task_id,
-                title=first_track.get("title", ""),
-                status=mapped_status,
-                image_url=first_track.get("imageUrl"),
-                lyric=first_track.get("prompt"),
-                audio_url=first_track.get("audioUrl"),
-                video_url=first_track.get("videoUrl"),
-                created_at=first_track.get("createTime", ""),
-                model_name=first_track.get("modelName", ""),
-                tags=first_track.get("tags", ""),
-            )
-            logger.info(f"Task {task_id}: raw_status={raw_status!r} → {mapped_status!r}")
-            return [task]
+    task = SunoTask(
+        id=task_id,
+        title=first_track.get("title", ""),
+        status=mapped_status,
+        image_url=first_track.get("imageUrl"),
+        lyric=first_track.get("prompt"),
+        audio_url=first_track.get("audioUrl"),
+        video_url=first_track.get("videoUrl"),
+        created_at=first_track.get("createTime", ""),
+        model_name=first_track.get("modelName", ""),
+        tags=first_track.get("tags", ""),
+    )
+    logger.info(f"Task {task_id}: raw_status={raw_status!r} → {mapped_status!r}")
+    return [task]
 
