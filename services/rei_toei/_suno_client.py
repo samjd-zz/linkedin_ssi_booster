@@ -7,7 +7,7 @@ via sunoapi.org (third-party proxy with stable v1 REST interface).
 API docs: https://docs.sunoapi.org/suno-api/generate-music
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.3.3
+Version: alpha-v0.0.3.4
 """
 
 import asyncio
