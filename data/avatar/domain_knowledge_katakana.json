@@ -1,0 +1,292 @@
+{
+  "schemaVersion": "1.0",
+  "description": "A foundational Katakana knowledge pack covering the modern basic syllabary, voiced and semi-voiced kana, contracted sounds, long-vowel notation, and loanword reading conventions.",
+  "domains": [
+    {
+      "id": "katakana-basic",
+      "name": "Modern Katakana Basic Syllabary",
+      "description": "The 46 modern basic Katakana characters, organized by vowel and consonant rows for reading instruction."
+    },
+    {
+      "id": "katakana-voiced",
+      "name": "Katakana Voiced and Semi-Voiced Sounds",
+      "description": "Dakuten and handakuten transformations used to represent voiced and p-row sounds."
+    },
+    {
+      "id": "katakana-combinations",
+      "name": "Katakana Contracted and Extended Sounds",
+      "description": "Yoon combinations and additional combinations used to represent foreign-language sounds."
+    },
+    {
+      "id": "katakana-method",
+      "name": "Katakana Study Method",
+      "description": "Script recognition, loanword decoding, long-vowel accuracy, and context-based verification rules."
+    }
+  ],
+  "facts": [
+    {
+      "id": "kata-001",
+      "domainId": "katakana-basic",
+      "statement": "The modern basic Katakana syllabary contains 46 standard kana representing morae, including the five vowels ア, イ, ウ, エ, and オ.",
+      "tags": ["Katakana", "basic kana", "mora", "vowels"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-002",
+      "domainId": "katakana-basic",
+      "statement": "The ア-row is ア a, イ i, ウ u, エ e, and オ o; these vowel sounds anchor the organization of the Japanese kana table.",
+      "tags": ["ア", "イ", "ウ", "エ", "オ", "vowels"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-003",
+      "domainId": "katakana-basic",
+      "statement": "The カ-row is カ ka, キ ki, ク ku, ケ ke, and コ ko.",
+      "tags": ["カ", "キ", "ク", "ケ", "コ", "ka-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-004",
+      "domainId": "katakana-basic",
+      "statement": "The サ-row is サ sa, シ shi, ス su, セ se, and ソ so; シ is read shi rather than si in standard Hepburn romanization.",
+      "tags": ["サ", "シ", "ス", "セ", "ソ", "sa-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-005",
+      "domainId": "katakana-basic",
+      "statement": "The タ-row is タ ta, チ chi, ツ tsu, テ te, and ト to; チ and ツ have irregular romanized forms.",
+      "tags": ["タ", "チ", "ツ", "テ", "ト", "ta-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-006",
+      "domainId": "katakana-basic",
+      "statement": "The ナ-row is ナ na, ニ ni, ヌ nu, ネ ne, and ノ no.",
+      "tags": ["ナ", "ニ", "ヌ", "ネ", "ノ", "na-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-007",
+      "domainId": "katakana-basic",
+      "statement": "The ハ-row is ハ ha, ヒ hi, フ fu, ヘ he, and ホ ho; フ is commonly romanized fu rather than hu.",
+      "tags": ["ハ", "ヒ", "フ", "ヘ", "ホ", "ha-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-008",
+      "domainId": "katakana-basic",
+      "statement": "The マ-row is マ ma, ミ mi, ム mu, メ me, and モ mo.",
+      "tags": ["マ", "ミ", "ム", "メ", "モ", "ma-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-009",
+      "domainId": "katakana-basic",
+      "statement": "The ヤ-row has ヤ ya, ユ yu, and ヨ yo; modern standard Katakana does not use standalone yi or ye kana.",
+      "tags": ["ヤ", "ユ", "ヨ", "ya-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-010",
+      "domainId": "katakana-basic",
+      "statement": "The ラ-row is ラ ra, リ ri, ル ru, レ re, and ロ ro; the Japanese r sound is distinct from English r and l.",
+      "tags": ["ラ", "リ", "ル", "レ", "ロ", "ra-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-011",
+      "domainId": "katakana-basic",
+      "statement": "The ワ-row is ワ wa and ヲ wo; ヲ is uncommon in modern loanword spelling and is primarily encountered as the object particle written in Hiragana.",
+      "tags": ["ワ", "ヲ", "wa-row", "particle"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-012",
+      "domainId": "katakana-basic",
+      "statement": "ン is the Katakana counterpart of the moraic nasal ん, and its pronunciation changes phonetically according to the following sound.",
+      "tags": ["ン", "moraic nasal", "phonology"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-013",
+      "domainId": "katakana-voiced",
+      "statement": "Dakuten marks transform parts of the カ, サ, タ, and ハ rows into voiced sounds: ガ, ザ, ダ, and バ rows.",
+      "tags": ["dakuten", "゛", "voicing", "ガ", "ザ", "ダ", "バ"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-014",
+      "domainId": "katakana-voiced",
+      "statement": "The dakuten rows are ガ ga, ギ gi, グ gu, ゲ ge, ゴ go; ザ za, ジ ji, ズ zu, ゼ ze, ゾ zo; ダ da, ヂ ji, ヅ zu, デ de, ド do; and バ ba, ビ bi, ブ bu, ベ be, ボ bo.",
+      "tags": [
+        "ガ",
+        "ギ",
+        "グ",
+        "ゲ",
+        "ゴ",
+        "ザ",
+        "ジ",
+        "ズ",
+        "ゼ",
+        "ゾ",
+        "ダ",
+        "ヂ",
+        "ヅ",
+        "デ",
+        "ド",
+        "バ",
+        "ビ",
+        "ブ",
+        "ベ",
+        "ボ"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-015",
+      "domainId": "katakana-voiced",
+      "statement": "Handakuten marks transform the ハ-row into the パ-row: パ pa, ピ pi, プ pu, ペ pe, and ポ po.",
+      "tags": ["handakuten", "゜", "パ", "ピ", "プ", "ペ", "ポ", "p-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-016",
+      "domainId": "katakana-combinations",
+      "statement": "Contracted yoon sounds combine an i-row kana with small ャ, ュ, or ョ, as in キャ kya, キュ kyu, and キョ kyo.",
+      "tags": ["ャ", "ュ", "ョ", "yoon", "キャ", "キュ", "キョ"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-017",
+      "domainId": "katakana-combinations",
+      "statement": "Katakana uses extended combinations such as ティ ti, ディ di, ファ fa, フィ fi, フェ fe, フォ fo, and ウィ wi to approximate foreign-language sounds.",
+      "tags": [
+        "ティ",
+        "ディ",
+        "ファ",
+        "フィ",
+        "フェ",
+        "フォ",
+        "ウィ",
+        "foreign sounds"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-018",
+      "domainId": "katakana-combinations",
+      "statement": "A small ッ represents a geminate consonant and adds a mora, as in ベッド beddo; it is not pronounced as an independent tsu syllable.",
+      "tags": ["ッ", "small tsu", "geminate", "mora", "ベッド"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-019",
+      "domainId": "katakana-combinations",
+      "statement": "The long-vowel mark ー commonly indicates vowel length in Katakana loanwords, as in コーヒー koohii and ケーキ keeki.",
+      "tags": ["ー", "long vowel", "loanword", "コーヒー", "ケーキ"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-020",
+      "domainId": "katakana-method",
+      "statement": "Katakana is primarily used for loanwords, foreign names and places, onomatopoeia, technical terms, emphasis, and some plant or animal names; usage is context-dependent.",
+      "tags": [
+        "loanwords",
+        "foreign names",
+        "onomatopoeia",
+        "technical terms",
+        "emphasis"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-021",
+      "domainId": "katakana-method",
+      "statement": "Katakana lookalikes such as シ and ツ, ソ and ン, and ク and ケ should be learned as contrast sets using complete words rather than isolated visual mnemonics.",
+      "tags": ["シ", "ツ", "ソ", "ン", "ク", "ケ", "lookalikes", "contrast"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-022",
+      "domainId": "katakana-method",
+      "statement": "Romanization is a temporary bridge; verified Japanese loanwords and sentence context are the source of truth for pronunciation, vowel length, and consonant doubling.",
+      "tags": ["romanization", "verification", "loanwords", "context"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "kata-023",
+      "domainId": "katakana-method",
+      "statement": "Katakana decoding should be tested in both directions: identify the sound from the character and reconstruct the character sequence from a spoken or romanized loanword.",
+      "tags": ["retrieval", "recognition", "decoding", "study method"],
+      "confidence": "high",
+      "scope": "teaching"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-kata-rows",
+      "fromFactId": "kata-002",
+      "toFactId": "kata-012",
+      "relationType": "forms_basic_table",
+      "description": "The vowel and consonant rows organize the complete modern basic Katakana table."
+    },
+    {
+      "id": "rel-kata-voicing",
+      "fromFactId": "kata-013",
+      "toFactId": "kata-015",
+      "relationType": "forms_sound_transformations",
+      "description": "Dakuten and handakuten are systematic marks that extend the basic kana inventory."
+    },
+    {
+      "id": "rel-kata-yoon",
+      "fromFactId": "kata-016",
+      "toFactId": "kata-017",
+      "relationType": "forms_extended_sound_set",
+      "description": "Standard yoon and foreign-sound combinations use small kana to represent contracted or non-native sound sequences."
+    },
+    {
+      "id": "rel-kata-mora",
+      "fromFactId": "kata-018",
+      "toFactId": "kata-019",
+      "relationType": "requires_context_verification",
+      "description": "Small ッ and ー change timing and must be practiced in complete loanwords."
+    },
+    {
+      "id": "rel-kata-lookalikes",
+      "fromFactId": "kata-021",
+      "toFactId": "kata-023",
+      "relationType": "uses_contrastive_retrieval",
+      "description": "Visual contrast sets and bidirectional retrieval reduce common Katakana decoding errors."
+    },
+    {
+      "id": "rel-kata-study",
+      "fromFactId": "kata-020",
+      "toFactId": "kata-022",
+      "relationType": "uses_study_method",
+      "description": "Katakana literacy develops through real loanwords, context, pronunciation verification, and reduced dependence on romanization."
+    }
+  ]
+}

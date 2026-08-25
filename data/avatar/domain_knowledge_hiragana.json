@@ -1,0 +1,291 @@
+{
+  "schemaVersion": "1.0",
+  "description": "A foundational Hiragana knowledge pack covering the modern basic syllabary, voiced and semi-voiced kana, contracted sounds, orthographic rules, and a context-first study method.",
+  "domains": [
+    {
+      "id": "hiragana-basic",
+      "name": "Modern Hiragana Basic Syllabary",
+      "description": "The 46 modern basic Hiragana characters, organized by vowel and consonant rows for reading instruction."
+    },
+    {
+      "id": "hiragana-voiced",
+      "name": "Hiragana Voiced and Semi-Voiced Sounds",
+      "description": "Dakuten and handakuten transformations used to represent voiced and p-row sounds."
+    },
+    {
+      "id": "hiragana-combinations",
+      "name": "Hiragana Contracted Sounds",
+      "description": "Yoon combinations formed with small ゃ, ゅ, and ょ, plus common spelling distinctions."
+    },
+    {
+      "id": "hiragana-method",
+      "name": "Hiragana Study Method",
+      "description": "Stroke recognition, sound recall, vocabulary, handwriting, and reading verification rules."
+    }
+  ],
+  "facts": [
+    {
+      "id": "hira-001",
+      "domainId": "hiragana-basic",
+      "statement": "The modern basic Hiragana syllabary contains 46 standard kana representing morae, including the five vowels あ, い, う, え, and お.",
+      "tags": ["Hiragana", "basic kana", "mora", "vowels"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-002",
+      "domainId": "hiragana-basic",
+      "statement": "The あ-row is あ a, い i, う u, え e, and お o; these vowel sounds anchor the organization of the Japanese kana table.",
+      "tags": ["あ", "い", "う", "え", "お", "vowels"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-003",
+      "domainId": "hiragana-basic",
+      "statement": "The か-row is か ka, き ki, く ku, け ke, and こ ko.",
+      "tags": ["か", "き", "く", "け", "こ", "ka-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-004",
+      "domainId": "hiragana-basic",
+      "statement": "The さ-row is さ sa, し shi, す su, せ se, and そ so; し is read shi rather than si in standard Hepburn romanization.",
+      "tags": ["さ", "し", "す", "せ", "そ", "sa-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-005",
+      "domainId": "hiragana-basic",
+      "statement": "The た-row is た ta, ち chi, つ tsu, て te, and と to; ち and つ have irregular romanized forms.",
+      "tags": ["た", "ち", "つ", "て", "と", "ta-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-006",
+      "domainId": "hiragana-basic",
+      "statement": "The な-row is な na, に ni, ぬ nu, ね ne, and の no.",
+      "tags": ["な", "に", "ぬ", "ね", "の", "na-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-007",
+      "domainId": "hiragana-basic",
+      "statement": "The は-row is は ha, ひ hi, ふ fu, へ he, and ほ ho; ふ is commonly romanized fu rather than hu.",
+      "tags": ["は", "ひ", "ふ", "へ", "ほ", "ha-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-008",
+      "domainId": "hiragana-basic",
+      "statement": "The ま-row is ま ma, み mi, む mu, め me, and も mo.",
+      "tags": ["ま", "み", "む", "め", "も", "ma-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-009",
+      "domainId": "hiragana-basic",
+      "statement": "The や-row has や ya, ゆ yu, and よ yo; modern standard Hiragana does not use standalone yi or ye kana.",
+      "tags": ["や", "ゆ", "よ", "ya-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-010",
+      "domainId": "hiragana-basic",
+      "statement": "The ら-row is ら ra, り ri, る ru, れ re, and ろ ro; the Japanese r sound is distinct from English r and l.",
+      "tags": ["ら", "り", "る", "れ", "ろ", "ra-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-011",
+      "domainId": "hiragana-basic",
+      "statement": "The わ-row is わ wa and を wo; を is primarily the object particle and is normally pronounced o in modern Japanese.",
+      "tags": ["わ", "を", "wa-row", "particle"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-012",
+      "domainId": "hiragana-basic",
+      "statement": "ん is the sole basic Hiragana kana for a moraic nasal and its pronunciation changes phonetically according to the following sound.",
+      "tags": ["ん", "moraic nasal", "phonology"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-013",
+      "domainId": "hiragana-voiced",
+      "statement": "Dakuten marks transform parts of the か, さ, た, and は rows into voiced sounds: が, ざ, だ, and ば rows.",
+      "tags": ["dakuten", "゛", "voicing", "が", "ざ", "だ", "ば"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-014",
+      "domainId": "hiragana-voiced",
+      "statement": "The dakuten rows are が ga, ぎ gi, ぐ gu, げ ge, ご go; ざ za, じ ji, ず zu, ぜ ze, ぞ zo; だ da, ぢ ji, づ zu, で de, ど do; and ば ba, び bi, ぶ bu, べ be, ぼ bo.",
+      "tags": [
+        "が",
+        "ぎ",
+        "ぐ",
+        "げ",
+        "ご",
+        "ざ",
+        "じ",
+        "ず",
+        "ぜ",
+        "ぞ",
+        "だ",
+        "ぢ",
+        "づ",
+        "で",
+        "ど",
+        "ば",
+        "び",
+        "ぶ",
+        "べ",
+        "ぼ"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-015",
+      "domainId": "hiragana-voiced",
+      "statement": "Handakuten marks transform the は-row into the p-row: ぱ pa, ぴ pi, ぷ pu, ぺ pe, and ぽ po.",
+      "tags": ["handakuten", "゜", "ぱ", "ぴ", "ぷ", "ぺ", "ぽ", "p-row"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-016",
+      "domainId": "hiragana-voiced",
+      "statement": "ぢ and づ occur in specific vocabulary and spelling patterns, while じ and ず are more common; learners should verify each reading in a complete word.",
+      "tags": ["ぢ", "づ", "じ", "ず", "spelling", "context"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-017",
+      "domainId": "hiragana-combinations",
+      "statement": "Contracted yoon sounds combine a kana from the i-row with small ゃ, ゅ, or ょ, as in きゃ kya, きゅ kyu, and きょ kyo.",
+      "tags": ["ゃ", "ゅ", "ょ", "yoon", "きゃ", "きゅ", "きょ"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-018",
+      "domainId": "hiragana-combinations",
+      "statement": "Common yoon families include しゃ sha, しゅ shu, しょ sho; ちゃ cha, ちゅ chu, ちょ cho; にゃ nya, にゅ nyu, にょ nyo; and ひゃ hya, ひゅ hyu, ひょ hyo.",
+      "tags": [
+        "しゃ",
+        "しゅ",
+        "しょ",
+        "ちゃ",
+        "ちゅ",
+        "ちょ",
+        "にゃ",
+        "にゅ",
+        "にょ",
+        "ひゃ",
+        "ひゅ",
+        "ひょ"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-019",
+      "domainId": "hiragana-combinations",
+      "statement": "Voiced and semi-voiced yoon families include ぎゃ gya, じゃ ja, びゃ bya, and ぴゃ pya, with corresponding small ゅ and ょ forms.",
+      "tags": ["ぎゃ", "じゃ", "びゃ", "ぴゃ", "contracted sounds"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-020",
+      "domainId": "hiragana-combinations",
+      "statement": "A small っ represents a geminate consonant and adds a mora, as in がっこう gakkou; it is not pronounced as an independent tsu syllable.",
+      "tags": ["っ", "small tsu", "geminate", "mora", "がっこう"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-021",
+      "domainId": "hiragana-combinations",
+      "statement": "Long vowels must be learned from the word and context because their spelling varies by vowel sequence; do not infer pronunciation from isolated kana alone.",
+      "tags": ["long vowels", "vowel length", "context", "reading"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-022",
+      "domainId": "hiragana-method",
+      "statement": "Hiragana is the primary kana script for native Japanese words, okurigana, grammatical particles, and inflectional endings; learn it alongside real vocabulary and sentences.",
+      "tags": ["native words", "okurigana", "particles", "grammar"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-023",
+      "domainId": "hiragana-method",
+      "statement": "Kana recognition should be tested in both directions: identify the sound from the character and write or select the character from the sound.",
+      "tags": ["retrieval", "recognition", "writing", "study method"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "hira-024",
+      "domainId": "hiragana-method",
+      "statement": "Romanization is a temporary bridge; verified Japanese vocabulary and sentence context are the source of truth for pronunciation, particles, and sound changes.",
+      "tags": ["romanization", "verification", "vocabulary", "context"],
+      "confidence": "high",
+      "scope": "teaching"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-hira-rows",
+      "fromFactId": "hira-002",
+      "toFactId": "hira-012",
+      "relationType": "forms_basic_table",
+      "description": "The vowel and consonant rows organize the complete modern basic Hiragana table."
+    },
+    {
+      "id": "rel-hira-voicing",
+      "fromFactId": "hira-013",
+      "toFactId": "hira-015",
+      "relationType": "forms_sound_transformations",
+      "description": "Dakuten and handakuten are systematic marks that extend the basic kana inventory."
+    },
+    {
+      "id": "rel-hira-yoon",
+      "fromFactId": "hira-017",
+      "toFactId": "hira-019",
+      "relationType": "forms_contracted_sound_set",
+      "description": "Basic, voiced, and semi-voiced yoon combinations share the small ゃ, ゅ, and ょ spelling pattern."
+    },
+    {
+      "id": "rel-hira-mora",
+      "fromFactId": "hira-020",
+      "toFactId": "hira-021",
+      "relationType": "requires_context_verification",
+      "description": "Small っ and long-vowel spelling change timing and must be practiced in complete words."
+    },
+    {
+      "id": "rel-hira-study",
+      "fromFactId": "hira-022",
+      "toFactId": "hira-024",
+      "relationType": "uses_study_method",
+      "description": "Hiragana literacy develops through retrieval, vocabulary, sentence context, and reduced dependence on romanization."
+    }
+  ]
+}

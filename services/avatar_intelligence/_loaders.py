@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -47,12 +48,12 @@ def _validate_persona_graph(data: dict[str, Any]) -> list[str]:
     """Return a list of validation errors; empty list means valid."""
     errors: list[str] = []
     if not isinstance(data.get("schemaVersion"), str):
-        errors.append("missing or invalid 'schemaVersion'")
+        errors.extend(["missing or invalid 'schemaVersion'"])
     if not isinstance(data.get("person"), dict):
-        errors.append("missing or invalid 'person'")
+        errors.extend(["missing or invalid 'person'"])
     for key in ("projects", "companies", "skills", "claims"):
         if not isinstance(data.get(key), list):
-            errors.append(f"missing or invalid '{key}' (must be a list)")
+            errors.extend([f"missing or invalid '{key}' (must be a list)"])
     return errors
 
 
@@ -60,7 +61,7 @@ def _validate_narrative_memory(data: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     for key in ("recentThemes", "recentClaims", "openNarrativeArcs"):
         if not isinstance(data.get(key), list):
-            errors.append(f"missing or invalid '{key}' (must be a list)")
+            errors.extend([f"missing or invalid '{key}' (must be a list)"])
     return errors
 
 
@@ -68,9 +69,9 @@ def _validate_extracted_knowledge(data: dict[str, Any]) -> list[str]:
     """Return a list of validation errors for extracted_knowledge.json; empty list means valid."""
     errors: list[str] = []
     if not isinstance(data.get("schemaVersion"), str):
-        errors.append("missing or invalid 'schemaVersion'")
+        errors.extend(["missing or invalid 'schemaVersion'"])
     if not isinstance(data.get("facts"), list):
-        errors.append("missing or invalid 'facts' (must be a list)")
+        errors.extend(["missing or invalid 'facts' (must be a list)"])
     return errors
 
 
@@ -78,10 +79,10 @@ def _validate_domain_knowledge(data: dict[str, Any]) -> list[str]:
     """Return a list of validation errors; empty list means valid."""
     errors: list[str] = []
     if not isinstance(data.get("schemaVersion"), str):
-        errors.append("missing or invalid 'schemaVersion'")
+        errors.extend(["missing or invalid 'schemaVersion'"])
     for key in ("domains", "facts", "relationships"):
         if not isinstance(data.get(key), list):
-            errors.append(f"missing or invalid '{key}' (must be a list)")
+            errors.extend([f"missing or invalid '{key}' (must be a list)"])
     return errors
 
 
@@ -89,6 +90,12 @@ def _coerce_str_list(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value]
     return []
+
+
+def _format_timestamp(value: Any) -> str | None:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -341,10 +348,8 @@ def _load_narrative_memory(path: Path) -> tuple[NarrativeMemory | None, list[str
                         open_narrative_arcs=_coerce_str_list(
                             getattr(narrative_db, "open_narrative_arcs", [])
                         ),
-                        last_updated=(
-                            narrative_db.last_updated.isoformat()
-                            if narrative_db.last_updated is not None
-                            else None
+                        last_updated=_format_timestamp(
+                            getattr(narrative_db, "last_updated", None)
                         ),
                     )
                     logger.debug("Loaded narrative memory from database")
