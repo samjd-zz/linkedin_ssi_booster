@@ -36,6 +36,7 @@ from services.buffer_service import BufferService, BufferQueueFullError, BufferR
 from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
 from services.shared import get_rei_toei_dir, get_youtube_scripts_dir
 from services.flux_capacitor import get_flux_service, SourceMode, RenderStatus
+from services.graph_stats import collect_domain_knowledge_profiles
 
 
 def _configure_stdio() -> None:
@@ -428,13 +429,13 @@ def _display_art_in_terminal(image_path: str | None, width: int | None = None) -
     # Upsample with nearest-neighbor so terminal downscaling keeps edge contrast.
     if _upsample_factor > 1:
         try:
-            from PIL import Image as _PILImage
+            _pil_image_mod = importlib.import_module("PIL.Image")
             import tempfile as _tempfile
 
-            _resampling = getattr(_PILImage, "Resampling", _PILImage)
+            _resampling = getattr(_pil_image_mod, "Resampling", _pil_image_mod)
             _nearest = getattr(_resampling, "NEAREST")
 
-            with _PILImage.open(image_path) as _source_img:
+            with _pil_image_mod.open(image_path) as _source_img:
                 _upsampled_img = _source_img.resize(
                     (_source_img.width * _upsample_factor, _source_img.height * _upsample_factor),
                     _nearest,
@@ -815,37 +816,91 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         except Exception:
             pass  # never interrupt the conversation for a scoring failure
 
-    def print_graph_statistics(summary):
-        """
-        Prints the graph statistics in a visually enhanced, structured, and colored format.
-        """
-        print("\n" + "="*60)
-        print(f"{Fore.CYAN}{Style.BRIGHT}{'GRAPH STRUCTURE ANALYSIS':^60}")
-        print("="*60)
+    def print_graph_statistics(summary, domain_profiles=None):
+        """Print graph and domain-knowledge diagnostics with aligned tables."""
+        width = 76
+        print("\n" + "=" * width)
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'GRAPH STRUCTURE ANALYSIS':^{width}}")
+        print("=" * width)
 
-        # --- 1. Core Metrics (Table Format) ---
-        print(f"\n{Fore.YELLOW}{'--- CORE METRICS ---':^60}")
-        print(f"{Fore.YELLOW}{'Metric':<20}{'Count':>10}{'Details':<30}")
-        print("-" * 60)
+        # --- 1. Core Metrics ---
+        print(f"\n{Fore.YELLOW}{'--- CORE METRICS ---':^{width}}")
+        print(f"{'Metric':<24} {'Count':>10}    {'Metric':<24} {'Count':>10}")
+        print("-" * width)
+        print(f"{'Nodes':<24} {int(summary.get('nodes', 0)):>10}    {'Edges':<24} {int(summary.get('edges', 0)):>10}")
 
-        print(f"{'Nodes':<20}{summary['nodes']:>10} | {'Edges':<20}{summary['edges']:>10}")
-        
-        # --- 2. Component Breakdown (Grouped Stats) ---
-        print(f"\n{Fore.YELLOW}{'--- COMPONENT BREAKDOWN ---':^60}")
-        
-        # Node Type Breakdown
-        node_types = summary.get('node_types', {})
+        # --- 2. Component Breakdown ---
+        print(f"\n{Fore.YELLOW}{'--- COMPONENT BREAKDOWN ---':^{width}}")
+        node_types = summary.get("node_types", {})
         if node_types:
-            print(f"{Fore.BLUE}{'Node Type Distribution':<20}{'Count':>10}")
-            print("-" * 30)
-            for node_type, count in node_types.items():
-                print(f"  {Fore.BLUE}{node_type:<18}{Fore.BLUE}{count:>10}")
+            print(f"{'Node Type':<32} {'Count':>10}")
+            print("-" * 44)
+            for node_type, count in sorted(node_types.items(), key=lambda item: item[1], reverse=True):
+                print(f"  {str(node_type):<30} {int(count):>10}")
         else:
-            print(f"{Fore.BLUE}{'No specific node type breakdown available.'}")
+            print("No specific node type breakdown available.")
 
-        print("\n" + "="*60)
-        print(f"{Fore.CYAN}{Style.BRIGHT}{'ANALYSIS COMPLETE':^60}")
-        print("="*60)
+        # --- 3. Domain Knowledge Profiles (Sam + Rei) ---
+        print(f"\n{Fore.YELLOW}{'--- DOMAIN KNOWLEDGE PROFILES ---':^{width}}")
+
+        sam = (domain_profiles or {}).get("sam", {}) if domain_profiles else {}
+        sam_totals = sam.get("totals", {}) if isinstance(sam, dict) else {}
+        sam_files_loaded = int(sam.get("files_loaded", 0)) if isinstance(sam, dict) else 0
+        print(f"{Fore.GREEN}Sam Domain Knowledge{Style.RESET_ALL} (files={sam_files_loaded})")
+        print(
+            f"  domains={int(sam_totals.get('domains', 0))}  "
+            f"facts={int(sam_totals.get('facts', 0))}  "
+            f"relationships={int(sam_totals.get('relationships', 0))}"
+        )
+        sam_files = sam.get("files", []) if isinstance(sam, dict) else []
+        if sam_files:
+            file_col = 44
+            print(f"{'  file':<{file_col}} {'domains':>8} {'facts':>8} {'rels':>8}")
+            print("  " + "-" * (file_col + 28))
+            for row in sam_files:
+                file_name = str(row.get("file", "unknown"))
+                if len(file_name) > file_col - 2:
+                    file_name = file_name[: file_col - 5] + "..."
+                print(
+                    f"  {file_name:<{file_col - 2}} "
+                    f"{int(row.get('domains', 0)):>8} "
+                    f"{int(row.get('facts', 0)):>8} "
+                    f"{int(row.get('relationships', 0)):>8}"
+                )
+        sam_errors = sam.get("errors", []) if isinstance(sam, dict) else []
+        if sam_errors:
+            print(f"  {Fore.YELLOW}notes:{Style.RESET_ALL} {len(sam_errors)} Sam domain file(s) were skipped due to load errors")
+
+        rei = (domain_profiles or {}).get("rei", {}) if domain_profiles else {}
+        rei_file = str(rei.get("file", "rei_toei_domain_knowledge.json"))
+        print(f"\n{Fore.MAGENTA}Rei Domain Knowledge{Style.RESET_ALL} (file={rei_file})")
+        if rei.get("exists"):
+            shape = rei.get("shape", {})
+            print(
+                f"  sections={int(rei.get('section_count', 0))}  "
+                f"dict_keys={int(shape.get('dict_keys', 0))}  "
+                f"list_items={int(shape.get('list_items', 0))}"
+            )
+            top_sections = rei.get("sections", [])[:5]
+            if top_sections:
+                section_col = 44
+                print(f"{'  top section':<{section_col}} {'type':>10} {'size':>8}")
+                print("  " + "-" * (section_col + 22))
+                for section in top_sections:
+                    section_name = str(section.get("name", "unknown"))
+                    if len(section_name) > section_col - 2:
+                        section_name = section_name[: section_col - 5] + "..."
+                    print(
+                        f"  {section_name:<{section_col - 2}} "
+                        f"{str(section.get('type', 'n/a')):>10} "
+                        f"{int(section.get('size', 0)):>8}"
+                    )
+        else:
+            print(f"  {Fore.YELLOW}Rei domain knowledge file not available or invalid JSON.{Style.RESET_ALL}")
+
+        print("\n" + "=" * width)
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'ANALYSIS COMPLETE':^{width}}")
+        print("=" * width)
 
     while True:
         try:
@@ -933,8 +988,9 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 print(str(Fore.RED) + "Knowledge Graph is not available." + str(Style.RESET_ALL))
             else:
                 summary = _kg.summary()
+                domain_profiles = collect_domain_knowledge_profiles(Path("data/avatar"))
                 print(f"  Persona ID: {summary['persona_id']}")
-                print_graph_statistics(summary)
+                print_graph_statistics(summary, domain_profiles)
             continue
         
         # Rei Toei routing: explicit /rei command or sticky Rei mode turns

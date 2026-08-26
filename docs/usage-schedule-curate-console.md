@@ -102,7 +102,7 @@ When you run `--console`, the startup screen explains the three query modes and 
     - 70% BM25 keyword matching
     - 20% graph proximity (facts closer to persona node rank higher)
     - 10% claim support (facts with more supporting edges rank higher)
-  • Use /graph-stats to inspect graph structure (nodes, edges, types)
+  • Use /graph-stats to inspect graph structure and both domain-knowledge profiles (Sam + Rei)
 
   Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art
   Art note: /art uses the most recent AI reply in this session as source text.
@@ -123,7 +123,14 @@ Console mode supports the following slash commands:
 | `/verify`          | Toggle DoT + similarity verification on/off                               |
 | `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
 | `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off |
-| `/graph-stats`     | Show knowledge graph statistics (node/edge counts, node types)            |
+| `/graph-stats`     | Show graph metrics and both domain-knowledge profiles (Sam + Rei)          |
+
+`/graph-stats` output now includes:
+
+1. Core graph metrics (nodes and edges)
+2. Node type distribution
+3. Sam domain knowledge totals from `domain_knowledge.json` + `domain_knowledge_*.json` packs
+4. Rei domain knowledge structural summary from `rei_toei_domain_knowledge.json`
 
 **Status Display**: The status line shows the current state of all three diagnostic modes. When a mode is enabled, it displays in **green**; when disabled, it displays in **red**.
 
