@@ -20,16 +20,18 @@ This guide shows you how to customize Rei Toei — the AI music avatar — to ma
 
 Rei Toei's behavior is controlled by three main JSON configuration files:
 
-| File                             | Purpose                                              | Location       |
-| -------------------------------- | ---------------------------------------------------- | -------------- |
-| `rei_toei_persona_graph.json`    | Rei's identity, voice, musical expertise             | `data/avatar/` |
+| File                             | Purpose                                                     | Location       |
+| -------------------------------- | ----------------------------------------------------------- | -------------- |
+| `rei_toei_persona_graph.json`    | Rei's identity, voice, musical expertise                    | `data/avatar/` |
 | `rei_toei_domain_knowledge.json` | Music theory, genre production techniques, prompt templates | `data/avatar/` |
-| `rei_toei_strudel_patterns.json` | Reusable Tidal Cycles pattern templates              | `data/avatar/` |
+| `rei_toei_strudel_patterns.json` | Reusable Tidal Cycles pattern templates                     | `data/avatar/` |
 
 All files use standard JSON format (no comments/trailing commas) and can be edited with any text editor.
 
 - CLI generation commands (`--rei-generate`, `--rei-generate-strudel`) load files on each run.
 - Console mode keeps a service instance in memory; use `/reload` to pick up file changes without restarting.
+
+Rei's knowledge boundary is intentional: `rei_toei_domain_knowledge.json` supplies music, production, and Japanese lyric-production guidance. Sam's general `domain_knowledge_*.json` packs are used by Sam's grounded conversation and study workflows, not directly by Rei. When `REI_TOEI_USE_SAM_PERSONA=true`, Rei may receive selected Sam project, skill, and company names as optional creative inspiration, and technical themes can also come from extracted article knowledge.
 
 ---
 

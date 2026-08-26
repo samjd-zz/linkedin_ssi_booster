@@ -71,9 +71,11 @@ Rei maintains her own persona graph (`data/avatar/rei_toei_persona_graph.json`) 
 
 Rei has read access to:
 
-- **`extracted_knowledge.json`** — All learned facts from curated articles
-- **`domain_knowledge.json`** **`domain_knowledge_python.json`** and **`domain_knowledge_java.json`** — Technical foundation
-- **RSS feed summaries** — Recent industry trends and news
+- **Technical themes from extracted knowledge** — Topics and evidence selected from facts learned through curated articles
+- **Selected Sam persona context** — Project, skill, and company names may be passed to Rei as optional creative inspiration when `REI_TOEI_USE_SAM_PERSONA=true`
+- **RSS feed summaries** — Recent industry trends and news, when they become extracted themes
+
+Sam's general domain knowledge packs, including the Japanese study packs, are not directly loaded into Rei's music-domain knowledge. They remain available to Sam for grounded study and conversation. Rei instead uses her dedicated music domain knowledge, including Japanese lyric-production guidance, to decide how Japanese language should function in songs.
 
 ### 3. Music Generation Pipeline
 
