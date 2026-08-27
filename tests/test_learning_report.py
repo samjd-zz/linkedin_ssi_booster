@@ -108,12 +108,20 @@ def test_load_learning_events_skips_malformed(tmp_path: Path, monkeypatch: pytes
     log = tmp_path / "learning_log.jsonl"
     log.parent.mkdir(parents=True, exist_ok=True)
     with log.open("w", encoding="utf-8") as fh:
-        fh.write('{"valid": "event"}\n')
+        fh.write(
+            '{"timestamp": "2024-01-01T00:00:00+00:00", "channel": "linkedin", '
+            '"reason_code": "project_claim", "decision": "kept", "sentence_hash": "abc", '
+            '"article_ref": "http://example.com", "project_refs": [], "run_id": "test-run"}\n'
+        )
         fh.write("{broken json line\n")
-        fh.write('{"another": "valid"}\n')
+        fh.write(
+            '{"timestamp": "2024-01-01T00:00:00+00:00", "channel": "x", '
+            '"reason_code": "unsupported_numeric", "decision": "removed", "sentence_hash": "def", '
+            '"article_ref": "http://example.com", "project_refs": [], "run_id": "test-run"}\n'
+        )
     monkeypatch.setattr(ai, "LEARNING_LOG_PATH", log)
     events = _load_learning_events()
-    assert len(events) == 2  # malformed line is skipped
+    assert len(events) == 2  # malformed line is skipped; non-moderation rows are filtered
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +289,33 @@ def test_build_learning_report_counts(tmp_path: Path, monkeypatch: pytest.Monkey
     assert report.total_events == 5
     assert report.kept_count == 3
     assert report.removed_count == 2
+
+
+def test_build_learning_report_ignores_confidence_decision_entries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    log = tmp_path / "learning_log.jsonl"
+    moderation = _project_claim_kept_events(2) + _numeric_removed_events(1)
+    confidence = [{
+        "timestamp": "2024-01-01T00:00:00+00:00",
+        "channel": "linkedin",
+        "route": "post",
+        "policy": "balanced",
+        "confidence_score": 1.0,
+        "confidence_level": "high",
+        "dominant_signal": "channel_length_pressure",
+        "reason": "balanced policy: high confidence (1.00) → direct post",
+        "article_ref": "http://example.com",
+        "run_id": "run-1",
+    }]
+    _write_events(log, moderation + confidence)
+    monkeypatch.setattr(ai, "LEARNING_LOG_PATH", log)
+
+    report = build_learning_report()
+    assert report.total_events == 3
+    assert report.kept_count == 2
+    assert report.removed_count == 1
+    assert all(code != "unknown" for code, _ in report.top_reason_codes)
 
 
 def test_build_learning_report_top_reason_codes_sorted(

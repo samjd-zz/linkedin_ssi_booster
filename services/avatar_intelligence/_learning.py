@@ -394,7 +394,7 @@ def format_explain_output(explain: ExplainOutput) -> str:
 
 
 def _load_learning_events() -> list[dict[str, Any]]:
-    """Read all events from learning_log.jsonl; skip malformed lines."""
+    """Read moderation events from learning_log.jsonl; skip malformed and non-moderation rows."""
     log_path = _learning_log_path()
     if not log_path.exists():
         return []
@@ -406,9 +406,20 @@ def _load_learning_events() -> list[dict[str, Any]]:
         if not line:
             continue
         try:
-            events.append(json.loads(line))
+            event = json.loads(line)
         except json.JSONDecodeError:
             logger.warning("Learning log line %d is not valid JSON — skipping", i)
+            continue
+
+        if not isinstance(event, dict):
+            continue
+
+        reason_code = str(event.get("reason_code", "")).strip()
+        decision = str(event.get("decision", "")).strip()
+        if not reason_code or decision not in ("kept", "removed"):
+            continue
+
+        events.append(event)
     return events
 
 
