@@ -29,6 +29,7 @@ from services.rei_toei_service import (
     validate_strudel_syntax,
     execute_strudel_pattern,
     map_concept_to_pattern,
+    resolve_lyric_language,
     Theme,
 )
 from services.ollama_service import OllamaService
@@ -239,6 +240,31 @@ def _build_rei_system_prompt(rei_persona: Any, rei_domain: Any) -> str:
     if hasattr(rei_domain, "genre_production_techniques") and rei_domain.genre_production_techniques:
         genres = list(rei_domain.genre_production_techniques.keys())[:4]
         lines.append(f"Genre specialties: {', '.join(genres)}.")
+
+    # Keep this fallback path aligned with the CLI/grounded pipeline's language policy
+    # (REI_LYRIC_LANGUAGE / REI_JAPANESE_LYRIC_PROBABILITY via ReiToeiConfig).
+    lyric_config = ReiToeiConfig()
+    lyric_language = resolve_lyric_language(
+        lyric_config.lyric_language,
+        lyric_config.japanese_lyric_probability,
+    )
+    japanese_target_percent = int(round(lyric_config.japanese_lyric_probability * 100))
+    language_instruction = {
+        "japanese": (
+            "Write the performance lyrics in natural contemporary Japanese. "
+            "Use kana-forward phrasing, selective kanji, and mora-aware line lengths."
+        ),
+        "bilingual": (
+            "Write one bilingual song that mixes Japanese and English within the same lyrics. "
+            f"Target approximately {japanese_target_percent}% Japanese lines and "
+            f"{100 - japanese_target_percent}% English lines across sections. "
+            "Preserve natural code-switching and do not translate every line. "
+            "When a line includes both languages, put the spoken English first and keep the "
+            "Japanese translation in parentheses. Do not place the sung English inside parentheses."
+        ),
+        "english": "Write the performance lyrics in English.",
+    }.get(lyric_language, "Write the performance lyrics in English.")
+    lines.append(f"\nLanguage policy: {language_instruction}")
 
     lines.append(
         "\n"

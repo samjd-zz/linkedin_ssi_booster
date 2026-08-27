@@ -1777,7 +1777,7 @@ def test_generate_strudel_code_removes_markdown():
     # Mock Ollama service at import location with markdown-wrapped response
     with patch("services.ollama_service.OllamaService") as mock_ollama:
         mock_ollama_instance = MagicMock()
-        mock_ollama_instance._chat.return_value = '```javascript\nstack(note("c3").s("pluck"))\n```'
+        mock_ollama_instance._chat.return_value = '```javascript\nstack(note("c3").sound("pluck"))\n```'
         mock_ollama.return_value = mock_ollama_instance
         
         pattern = generate_strudel_code(theme, template, persona, knowledge)
@@ -1785,15 +1785,15 @@ def test_generate_strudel_code_removes_markdown():
     # Should strip markdown and extract clean code
     assert "```" not in pattern.strudel_code
     assert "javascript" not in pattern.strudel_code
-    assert pattern.strudel_code.strip() == 'stack(note("c3").s("pluck"))'
+    assert pattern.strudel_code.strip() == 'stack(note("c3").sound("pluck"))'
 
 
 def test_validate_strudel_syntax_valid_code():
     """Test validate_strudel_syntax accepts valid Tidal Cycles code"""
     valid_code = '''
     stack(
-        note("c3 e3 g3").s("sawtooth"),
-        s("bd*4").gain(0.8)
+        note("c3 e3 g3").sound("sawtooth"),
+        sound("bd*4").gain(0.8)
     ).every(4, x => x.rev())
     '''
     
@@ -1853,7 +1853,7 @@ def test_execute_strudel_pattern_success():
         pattern_id="pat_001",
         title="Test Pattern",
         theme="Recursion",
-        strudel_code='stack(note("c3 e3 g3").s("sawtooth"))',
+        strudel_code='stack(note("c3 e3 g3").sound("sawtooth"))',
         bpm=142,
         duration_bars=16,
         synths=["sawtooth"],

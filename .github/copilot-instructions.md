@@ -230,14 +230,14 @@ linkedin_ssi_booster/
   source .venv/bin/activate && python -m pytest -q   # full suite
   ```
 - **Write unit tests** for every new module or significant new function — place them in `tests/test_<module_name>.py` following the patterns in `tests/test_learning_report.py` and `tests/test_confidence_scoring.py`. Tests must pass before a task is considered complete.
-- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 773 passed, 2 skipped) or new behaviour is covered — keep the test table and count in sync.
+- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 820 passed, 0 skipped) or new behaviour is covered — keep the test table and count in sync.
 - **Update README.md** whenever you change how the tool is configured, how a feature works, or what env vars are required — keep the docs in sync with the code.
 - **Update relevant feature docs** in `docs/features/` when implementing new subsystems.
 
 ## Version & Test Status
 
-- **Version**: alpha-v0.0.3.4
-- **Test Count**: 806 collected; 806 passed, 0 skipped, 0 failed
+- **Version**: alpha-v0.0.3.5
+- **Test Count**: 822 collected; 820 passed, 0 skipped, 0 failed, 2 errors (network-dependent `test_buffer_service.py` cases, offline-only)
 - **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
 
 ## Docker & Deployment

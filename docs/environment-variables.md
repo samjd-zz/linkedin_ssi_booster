@@ -767,6 +767,11 @@ This setting is ignored when `REI_LYRIC_LANGUAGE=japanese` or `REI_LYRIC_LANGUAG
 REI_JAPANESE_LYRIC_PROBABILITY=0.25
 ```
 
+> Both settings apply identically to `--rei-generate` (CLI) and `/rei` console requests,
+> including the console's direct-LLM fallback path used when no extracted knowledge is
+> available yet. Suno chorus ALL-CAPS formatting is only forced for `english` lyrics —
+> `japanese`/`bilingual` lyrics preserve natural script and casing.
+
 ### `SUNO_API_KEY` (required for Suno integration)
 
 Suno API key from [sunoapi.org](https://sunoapi.org/api-key) — a third-party proxy for Suno AI with a stable v1 REST interface.

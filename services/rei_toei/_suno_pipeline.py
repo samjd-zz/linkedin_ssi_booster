@@ -1416,7 +1416,9 @@ def assemble_suno_prompt(
     if pre_chorus_block:
         lyric_blocks.append(pre_chorus_block)
 
-    chorus_block = _normalize_suno_section(lyrics.chorus, "Chorus", uppercase_body=True)
+    # Only force ALL-CAPS chorus for English lyrics; Japanese/bilingual keep natural script/casing.
+    uppercase_chorus = concept.lyric_language.strip().lower() == "english"
+    chorus_block = _normalize_suno_section(lyrics.chorus, "Chorus", uppercase_body=uppercase_chorus)
     if chorus_block:
         lyric_blocks.append(chorus_block)
 
