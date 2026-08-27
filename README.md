@@ -257,7 +257,7 @@ See [docs/derivative-of-truth.md](docs/derivative-of-truth.md) · [docs/dot-pln-
 
 ## 🧩 Knowledge Graph: NetworkX Core, Neo4j for Expansion
 
-The core knowledge graph uses NetworkX — in-memory, pure Python, fast for the sub-1,000 node graphs a single avatar generates. Neo4j is the scale-out path for multi-avatar, enterprise, or bulk-import scenarios requiring persistent disk-backed storage and Cypher queries.
+The core knowledge graph uses NetworkX — in-memory, pure Python, fast for the graph sizes a single avatar generates. Neo4j is the scale-out path for multi-avatar, enterprise, or bulk-import scenarios approaching the ~100k node/edge range where NetworkX starts to strain, requiring persistent disk-backed storage and Cypher queries.
 
 See [docs/knowledge-graph.md](docs/knowledge-graph.md) for graph operations, the hybrid BM25+graph retrieval formula, and the Neo4j expansion path.
 

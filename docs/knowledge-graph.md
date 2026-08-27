@@ -38,9 +38,11 @@ The core knowledge graph is implemented with **NetworkX**, an in-memory Python g
 
 **Bottom line:** The core of the avatar remains in NetworkX for speed, simplicity, and local-first operation. Neo4j is available for future expansion, mass knowledge injection, or advanced analytics if needed.
 
-### Current Graph Size
+### Practical Capacity
 
-The combined domain and learning knowledge graphs are well below 1,000 nodes — orders of magnitude under any practical NetworkX limit.
+There is no hard-coded node limit in the code; growth is bounded only by process RAM and the
+practical NetworkX/Neo4j crossover noted in the table above (~100k nodes/edges before NetworkX
+starts to strain and Neo4j becomes worth considering).
 
 **Scalability Policy:**
 
@@ -328,7 +330,7 @@ NetworkX graphs are **in-memory only** and reconstructed on every application st
 - `extracted_knowledge.json`
 - `narrative_memory.json`
 
-**Startup time:** ~500ms for 1,000-node graph (negligible)
+**Startup time:** negligible at current scale; still sub-second well past 10,000 nodes
 
 ### Future: Neo4j Persistence (Optional)
 
