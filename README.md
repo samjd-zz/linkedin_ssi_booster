@@ -231,6 +231,28 @@ The SSI Booster integrates with **Buffer for seamless social scheduling**. All p
 
 **Roadmap Focus:** See [ROADMAP.md](ROADMAP.md) for next steps on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service active, unit tests added; live endpoint validation and consumer wiring pending).
 
+## 👥 Multi-Client Operations (one repo, many clients)
+
+For agencies or consultants handling multiple Buffer accounts, the recommended approach is one env file per client plus isolated cache/output paths.
+
+- Full runbook: [docs/multi-client-runbook.md](docs/multi-client-runbook.md)
+- Helpers:
+  - `scripts/create-client.sh` (scaffold env + client folders)
+  - `scripts/client-env.sh` (load and validate client env)
+  - `scripts/run-client.sh` (run any `main.py` command with a client env)
+  - `scripts/run-client-curate.sh` (preset curate workflow)
+
+Quick examples:
+
+```bash
+scripts/create-client.sh acme
+scripts/run-client.sh acme -- --schedule --week 1 --channel linkedin --type post
+scripts/run-client-curate.sh acme
+scripts/run-client-curate.sh acme --live --type post --reconcile
+```
+
+Use unique per-client values for `IDEAS_CACHE_PATH`, `GENERATED_CONTENT_DIR`, and (if enabled) `DATABASE_URL`/`POSTGRES_DB` to avoid cross-client data contamination.
+
 ---
 
 ## 🔍 Learning, Grounding, and Explainability Pipeline
@@ -341,6 +363,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 - [Docker deployment](docs/docker-deployment.md) — Docker Compose profiles, GPU passthrough, services overview, and production deployment
 - [Environment variables](docs/environment-variables.md) — comprehensive reference for all configuration options (Buffer, Ollama, truth gate, Model2Vec, voice, image gen, database)
+- [Multi-client runbook](docs/multi-client-runbook.md) — one-repo workflow for managing multiple client accounts with per-client env files and helper scripts
 
 ### Core Intelligence & Learning
 
