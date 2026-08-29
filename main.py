@@ -34,7 +34,7 @@ from scheduler import PostScheduler
 from content_calendar import CONTENT_CALENDAR
 from services.buffer_service import BufferService, BufferQueueFullError, BufferRateLimitError, BufferChannelNotConnectedError
 from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
-from services.shared import get_rei_toei_dir, get_youtube_scripts_dir
+from services.shared import append_channel_footer, get_rei_toei_dir, get_youtube_scripts_dir
 from services.flux_capacitor import get_flux_service, SourceMode, RenderStatus
 from services.graph_stats import collect_domain_knowledge_profiles
 
@@ -2067,6 +2067,7 @@ def main():
                             hashtag_str = " ".join(f"#{h.lstrip('#')}" for h in topic.get("hashtags", []))
                             if hashtag_str and hashtag_str not in post:
                                 post = post.rstrip() + f"\n\n{hashtag_str}"
+                        post = append_channel_footer(post, channel)
                         optimized_post = _optimize_flux_story_for_render(
                             ai,
                             post,

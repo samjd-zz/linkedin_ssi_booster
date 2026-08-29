@@ -18,7 +18,7 @@ from typing import Any, Callable
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
-from services.shared import X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, get_youtube_scripts_dir
+from services.shared import append_channel_footer, X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, get_youtube_scripts_dir
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
 from services.console_grounding import ProjectFact, truth_gate_result
 
@@ -736,6 +736,7 @@ class ContentCurator:
         )
         _li_source_ref = build_source_article_block(article.get("title", ""), article.get("link", ""))
         li_text = append_url_and_hashtags(li_text, _li_source_ref)
+        li_text = append_channel_footer(li_text, "linkedin")
         # print_validation_reports(
         #     post_text=li_text,
         #     context_text=article["summary"],
@@ -1006,6 +1007,8 @@ class ContentCurator:
             article_ref=article.get("link", article["title"]),
             requested_mode=message_type,
         )
+
+        post_text = append_channel_footer(post_text, channel)
 
         if not dry_run:
             try:

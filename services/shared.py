@@ -68,6 +68,10 @@ X_CHAR_LIMIT = 280  # Standard X character limit
 X_URL_CHARS  = 23   # Every URL on X counts as exactly 23 characters
 THREADS_CHAR_LIMIT = 500  # Standard Threads post limit
 
+# Optional per-channel footers appended before Buffer publishing.
+LINKEDIN_POST_FOOTER = os.getenv("LINKEDIN_POST_FOOTER", "").strip()
+FACEBOOK_POST_FOOTER = os.getenv("FACEBOOK_POST_FOOTER", "").strip()
+
 # ---------------------------------------------------------------------------
 # Persona — configurable via .env
 
@@ -203,6 +207,40 @@ def format_post_paragraphs(text: str, sentences_per_para: int = 3) -> str:
     if hashtags:
         result += f"\n\n{hashtags}"
     return result
+
+
+def append_channel_footer(text: str, channel: str) -> str:
+    """Append configured footer text for supported channels.
+
+    Currently supports LinkedIn and Facebook via LINKEDIN_POST_FOOTER and
+    FACEBOOK_POST_FOOTER env vars. If no footer is configured, returns input unchanged.
+    """
+    if not text:
+        return text
+
+    channel_key = (channel or "").strip().lower()
+    footer = ""
+    if channel_key == "linkedin":
+        footer = LINKEDIN_POST_FOOTER
+    elif channel_key == "facebook":
+        footer = FACEBOOK_POST_FOOTER
+
+    if not footer:
+        return text
+
+    # Support both true multiline env values and escaped "\\n" sequences.
+    normalized_footer = footer.replace("\\r\\n", "\n").replace("\\r", "\n").replace("\\n", "\n")
+    footer_lines = [line.rstrip() for line in normalized_footer.strip().split("\n")]
+    normalized_footer = "\n".join(footer_lines).strip()
+    if not normalized_footer:
+        return text
+
+    normalized_text = text.replace("\r\n", "\n").replace("\r", "\n")
+    normalized_text = "\n".join(line.rstrip() for line in normalized_text.split("\n"))
+    if normalized_footer in normalized_text:
+        return text
+
+    return text.rstrip() + f"\n\n{normalized_footer}"
 
 
 def parse_xml_thread(raw: str, source_url: str) -> Optional[list[str]]:
