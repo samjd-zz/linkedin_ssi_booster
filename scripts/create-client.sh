@@ -94,6 +94,13 @@ for seed in persona_graph domain_knowledge narrative_memory extracted_knowledge;
   fi
 done
 
+# Seed a per-client content calendar so --schedule never falls back to Shawn's own beta-launch calendar.
+calendar_target="${data_dir}/content_calendar.json"
+calendar_template="data/content_calendar.example.json"
+if [[ ! -f "$calendar_target" && -f "$calendar_template" ]]; then
+  cp "$calendar_template" "$calendar_target"
+fi
+
 append_or_replace() {
   local key="$1"
   local value="$2"
@@ -110,6 +117,7 @@ append_or_replace() {
 append_or_replace "IDEAS_CACHE_PATH" "${data_dir}/published_ideas_cache.json"
 append_or_replace "GENERATED_CONTENT_DIR" "${content_dir}"
 append_or_replace "AVATAR_DATA_DIR" "${avatar_dir}"
+append_or_replace "CONTENT_CALENDAR_PATH" "${calendar_target}"
 append_or_replace "POSTGRES_DB" "linkedin_ssi_booster_${slug}"
 append_or_replace "DATABASE_URL" "postgresql://ssi_booster:change_this_to_a_secure_password@postgres:5432/linkedin_ssi_booster_${slug}"
 
@@ -119,12 +127,14 @@ Created client scaffold:
 - Data dir: ${data_dir}
 - Generated content dir: ${content_dir}
 - Avatar data dir: ${avatar_dir} (persona_graph.json, domain_knowledge.json, narrative_memory.json, extracted_knowledge.json)
+- Content calendar: ${calendar_target}
 
 Next steps:
 1) Edit ${env_file} and set client-specific secrets (BUFFER_API_KEY, channel IDs, etc.)
 2) Edit ${avatar_dir}/persona_graph.json with the client's real name, projects, and facts
-3) Run a safe preview:
+3) Edit ${calendar_target} with the client's own weekly topics/angles (used by --schedule)
+4) Run a safe preview:
    scripts/run-client-curate.sh ${slug}
-4) When ready to publish:
+5) When ready to publish:
    scripts/run-client-curate.sh ${slug} --live --type post --reconcile
 EOF

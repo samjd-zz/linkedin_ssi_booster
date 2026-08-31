@@ -25,9 +25,10 @@ This creates:
 - `.env.client-acme` (or matching slug)
 - `data/client-acme/`
 - `data/client-acme/avatar/` (persona_graph.json, domain_knowledge.json, narrative_memory.json, extracted_knowledge.json — seeded from the `*.example.json` templates)
+- `data/client-acme/content_calendar.json` (seeded from `data/content_calendar.example.json`) — used by `--schedule`
 - `yt-vid-data/client-acme/`
 
-**Important:** edit `data/client-acme/avatar/persona_graph.json` with the client's real name, projects, and facts before generating content — the seeded file is a blank template, not Shawn's persona.
+**Important:** edit `data/client-acme/avatar/persona_graph.json` with the client's real name, projects, and facts before generating content — the seeded file is a blank template, not Shawn's persona. Also edit `data/client-acme/content_calendar.json` with the client's own weekly topics — the seeded file is a blank template, not Shawn's beta-launch calendar.
 
 ## 2) Required isolation settings per client
 
@@ -37,6 +38,7 @@ For each client env file, set unique values for:
 - `IDEAS_CACHE_PATH`
 - `GENERATED_CONTENT_DIR`
 - `AVATAR_DATA_DIR` (persona graph, domain knowledge, narrative memory, extracted knowledge — see below)
+- `CONTENT_CALENDAR_PATH` (per-client `--schedule` calendar — see below)
 - Any selection/learning file paths if you override defaults
 - `DATABASE_URL` or `POSTGRES_DB` (only when `DATABASE_ENABLED=true`)
 - Channel IDs and per-channel footers
@@ -47,6 +49,21 @@ Example path pattern:
 - Client B: `IDEAS_CACHE_PATH=data/client-beta/published_ideas_cache.json`
 
 `AVATAR_DATA_DIR` controls where the persona/avatar files live (default: `data/avatar`). Without a unique value per client, every client shares the same `persona_graph.json` and narrative memory — set it to `data/client-<name>/avatar` for each client. `scripts/create-client.sh` sets this automatically.
+
+`CONTENT_CALENDAR_PATH` controls the JSON file `--schedule` reads for weekly topics/angles/hashtags. When unset, `--schedule` falls back to the local `content_calendar.py` module (Shawn's own beta-launch calendar) — always set this per client. `scripts/create-client.sh` sets this automatically to `data/client-<name>/content_calendar.json`. The JSON shape mirrors `content_calendar.example.py`:
+
+```json
+{
+  "week_1": [
+    {
+      "title": "...",
+      "angle": "...",
+      "ssi_component": "establish_brand",
+      "hashtags": ["YourTech"]
+    }
+  ]
+}
+```
 
 ## 2.1) Required content settings per client (curation + learning)
 
@@ -150,6 +167,7 @@ echo "$BUFFER_API_KEY" | sed 's/./*/g' | cut -c1-8
 echo "$IDEAS_CACHE_PATH"
 echo "$GENERATED_CONTENT_DIR"
 echo "$AVATAR_DATA_DIR"
+echo "$CONTENT_CALENDAR_PATH"
 echo "$DATABASE_ENABLED"
 ```
 
@@ -185,10 +203,11 @@ For each new client:
 2. Set client-specific keys and channel IDs.
 3. Set unique `IDEAS_CACHE_PATH`, `GENERATED_CONTENT_DIR`, and `AVATAR_DATA_DIR`.
 4. Fill in `data/client-<name>/avatar/persona_graph.json` with the client's real name, projects, and facts.
-5. Set `CURATOR_RSS_FEEDS`, `CURATOR_KEYWORDS`, and `PERSONA_SYSTEM_PROMPT`/`SSI_*` prompts for the client's niche and voice.
-6. If DB is enabled, set unique DB name/URL.
-7. Create folders with `mkdir -p` (or use `scripts/create-client.sh`, which does all of the above).
-8. Run one `--dry-run` command and verify output path and behavior.
+5. Set `CONTENT_CALENDAR_PATH` and fill in `data/client-<name>/content_calendar.json` with the client's own weekly topics (used by `--schedule`).
+6. Set `CURATOR_RSS_FEEDS`, `CURATOR_KEYWORDS`, and `PERSONA_SYSTEM_PROMPT`/`SSI_*` prompts for the client's niche and voice.
+7. If DB is enabled, set unique DB name/URL.
+8. Create folders with `mkdir -p` (or use `scripts/create-client.sh`, which does all of the above).
+9. Run one `--dry-run` command and verify output path and behavior.
 
 ## 9) Common failure modes
 
@@ -196,6 +215,7 @@ For each new client:
 - Shared cache path: duplicate detection leaks across clients.
 - Shared output dir: generated assets mixed across clients.
 - Shared `AVATAR_DATA_DIR`: persona graph, narrative memory, and learned facts leak across clients.
+- Missing `CONTENT_CALENDAR_PATH`: `--schedule` silently falls back to Shawn's own beta-launch calendar.
 - Shared DB in multi-client mode: history/learning contamination.
 
 ## 10) Minimal standard to stay safe

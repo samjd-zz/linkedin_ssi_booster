@@ -1,0 +1,51 @@
+{
+    "week_1": [
+        {
+            "title": "[YOUR PROJECT NAME]: [one-line description]",
+            "angle": "Showcase: what you built, why it matters, and what others can learn from it.",
+            "ssi_component": "establish_brand",
+            "hashtags": [
+                "YourTech",
+                "OpenSource",
+                "AI"
+            ]
+        },
+        {
+            "title": "What tools or communities should [your target audience] know about?",
+            "angle": "Recommend a tool, community, or event relevant to your niche and invite replies from your target audience.",
+            "ssi_component": "find_right_people",
+            "hashtags": [
+                "YourNiche",
+                "Community"
+            ]
+        },
+        {
+            "title": "React to a recent trend or article in [your industry]",
+            "angle": "Summarize a recent development and give your own bold or counterintuitive take on it.",
+            "ssi_component": "engage_with_insights",
+            "hashtags": [
+                "Industry",
+                "Trends"
+            ]
+        },
+        {
+            "title": "A behind-the-scenes lesson from a recent project",
+            "angle": "Share an honest story about a challenge you faced and how you solved it.",
+            "ssi_component": "build_relationships",
+            "hashtags": [
+                "BuildInPublic",
+                "LessonsLearned"
+            ]
+        }
+    ],
+    "week_2": [
+        {
+            "title": "[Replace with week 2 topic]",
+            "angle": "[Replace with the angle to take]",
+            "ssi_component": "establish_brand",
+            "hashtags": [
+                "YourTech"
+            ]
+        }
+    ]
+}

@@ -31,7 +31,6 @@ from dotenv import load_dotenv
 from colorama import Fore, Style, init as _colorama_init
 
 from scheduler import PostScheduler
-from content_calendar import CONTENT_CALENDAR
 from services.buffer_service import BufferService, BufferQueueFullError, BufferRateLimitError, BufferChannelNotConnectedError
 from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
 from services.shared import append_channel_footer, get_rei_toei_dir, get_youtube_scripts_dir
@@ -56,6 +55,20 @@ def _configure_stdio() -> None:
 _configure_stdio()
 _colorama_init(autoreset=True)
 load_dotenv()
+
+
+def load_content_calendar() -> dict:
+    """Load the content calendar, preferring CONTENT_CALENDAR_PATH (per-client JSON) over the local module."""
+    calendar_path = os.getenv("CONTENT_CALENDAR_PATH", "").strip()
+    if calendar_path:
+        path = Path(calendar_path)
+        if not path.exists():
+            raise FileNotFoundError(f"CONTENT_CALENDAR_PATH set but file not found: {calendar_path}")
+        with path.open(encoding="utf-8") as f:
+            return json.load(f)
+    from content_calendar import CONTENT_CALENDAR as _default_calendar
+    return _default_calendar
+
 
 # --- Intelligent Startup Notice ---
 def print_startup_notice():
@@ -1973,7 +1986,8 @@ def main():
 
     if args.schedule:
         try:
-            week_topics = CONTENT_CALENDAR.get(f"week_{args.week}", [])
+            content_calendar = load_content_calendar()
+            week_topics = content_calendar.get(f"week_{args.week}", [])
             if not week_topics:
                 logger.error("No content found for week %d", args.week)
                 return
