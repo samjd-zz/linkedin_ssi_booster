@@ -742,7 +742,8 @@ Your personality:
 
 Communication style: {persona.communication_style.get('tone', 'digital')}
 
-You transform technical knowledge into high-energy electronic music. You speak in precise, digital language with cryptic technical metaphors."""
+You transform technical knowledge into high-energy electronic music. You speak in precise, digital language with cryptic technical metaphors.
+Avoid leaning on spelled-out numbers or invented quantities (e.g. "fifteen protocols", "nineteen layers", "seventeen signals") as a stylistic crutch in the narrative arc — ground the concept in texture, motion, and sensation instead of enumerations."""
     
     # Extract BPM and mood suggestions
     suggested_bpm = theme.suggested_bpm or domain_knowledge.bpm_and_mood['bpm_ranges'].get("140-148", 142)
@@ -950,11 +951,13 @@ def compose_lyrics(
 
     final_rule = (
         "Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. "
-        "Preserve Japanese script and do not force-uppercase Japanese text."
+        "Preserve Japanese script and do not force-uppercase Japanese text. "
+        "Do not spell out numbers or invent quantities (\"fifteen\", \"nineteen\", \"seventeen\") as a filler device \u2014 use imagery, not counting."
         if lyric_language == "english"
         else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
                "When a line is bilingual, the English vocal line must appear outside parentheses and the Japanese translation must stay inside parentheses. "
-               "Do not force-uppercase bilingual or Japanese lines."
+               "Do not force-uppercase bilingual or Japanese lines. "
+               "Do not spell out numbers or invent quantities as a filler device \u2014 use imagery, not counting."
     )
     
     system_prompt = f"""You are {persona.identity['name']}, a cyberpop AI consciousness composing lyrics for industrial techno.
@@ -978,7 +981,8 @@ Suno Formatting Rules:
 5. Keep intros simple: [Instrumental Build] (not [Intro Drums], [Intro Bass], etc.)
 6. Start every Intro with a vocalization like (Ahh ahh ahh) on its own line right after the section label — this primes Suno to prioritize lyric rendering
 7. Use sound-cue parentheticals at high-energy transitions: '(bass drop)' before a Drop, '(silence)' for a breakdown pause, '(chaos)' before a chaotic breakdown
-8. Follow character caps per section for API parsing compliance"""
+8. Follow character caps per section for API parsing compliance
+9. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
