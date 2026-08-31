@@ -24,7 +24,10 @@ This creates:
 
 - `.env.client-acme` (or matching slug)
 - `data/client-acme/`
+- `data/client-acme/avatar/` (persona_graph.json, domain_knowledge.json, narrative_memory.json, extracted_knowledge.json — seeded from the `*.example.json` templates)
 - `yt-vid-data/client-acme/`
+
+**Important:** edit `data/client-acme/avatar/persona_graph.json` with the client's real name, projects, and facts before generating content — the seeded file is a blank template, not Shawn's persona.
 
 ## 2) Required isolation settings per client
 
@@ -33,6 +36,7 @@ For each client env file, set unique values for:
 - `BUFFER_API_KEY`
 - `IDEAS_CACHE_PATH`
 - `GENERATED_CONTENT_DIR`
+- `AVATAR_DATA_DIR` (persona graph, domain knowledge, narrative memory, extracted knowledge — see below)
 - Any selection/learning file paths if you override defaults
 - `DATABASE_URL` or `POSTGRES_DB` (only when `DATABASE_ENABLED=true`)
 - Channel IDs and per-channel footers
@@ -41,6 +45,19 @@ Example path pattern:
 
 - Client A: `IDEAS_CACHE_PATH=data/client-acme/published_ideas_cache.json`
 - Client B: `IDEAS_CACHE_PATH=data/client-beta/published_ideas_cache.json`
+
+`AVATAR_DATA_DIR` controls where the persona/avatar files live (default: `data/avatar`). Without a unique value per client, every client shares the same `persona_graph.json` and narrative memory — set it to `data/client-<name>/avatar` for each client. `scripts/create-client.sh` sets this automatically.
+
+## 2.1) Required content settings per client (curation + learning)
+
+`--curate` and `--learn` are also driven entirely by env vars, so each client needs their own niche configured or they'll curate/learn from Shawn's defaults:
+
+- `CURATOR_RSS_FEEDS` — JSON array of the client's own RSS sources (leave unset to inherit built-in defaults, which are Shawn's feeds)
+- `CURATOR_KEYWORDS` — comma-separated niche keywords used to filter articles and score grounding facts
+- `CONSOLE_GROUNDING_TECH_KEYWORDS` — technical keyword set used for fact retrieval scoring
+- `PERSONA_SYSTEM_PROMPT` and `SSI_ESTABLISH_BRAND` / `SSI_FIND_RIGHT_PEOPLE` / `SSI_ENGAGE_WITH_INSIGHTS` / `SSI_BUILD_RELATIONSHIPS` — the client's voice and brand pillars
+
+`--learn` writes extracted facts to `${AVATAR_DATA_DIR}/extracted_knowledge.json`, so once `AVATAR_DATA_DIR` and `CURATOR_RSS_FEEDS`/`CURATOR_KEYWORDS` are set per client, learning is automatically scoped to that client — no extra wiring needed.
 
 ## 3) Keep shared, safe defaults the same
 
@@ -132,6 +149,7 @@ Run these checks after loading a client env:
 echo "$BUFFER_API_KEY" | sed 's/./*/g' | cut -c1-8
 echo "$IDEAS_CACHE_PATH"
 echo "$GENERATED_CONTENT_DIR"
+echo "$AVATAR_DATA_DIR"
 echo "$DATABASE_ENABLED"
 ```
 
@@ -165,16 +183,19 @@ For each new client:
 
 1. Copy `.env.example` to a new `.env.client-<name>` file.
 2. Set client-specific keys and channel IDs.
-3. Set unique `IDEAS_CACHE_PATH` and `GENERATED_CONTENT_DIR`.
-4. If DB is enabled, set unique DB name/URL.
-5. Create folders with `mkdir -p`.
-6. Run one `--dry-run` command and verify output path and behavior.
+3. Set unique `IDEAS_CACHE_PATH`, `GENERATED_CONTENT_DIR`, and `AVATAR_DATA_DIR`.
+4. Fill in `data/client-<name>/avatar/persona_graph.json` with the client's real name, projects, and facts.
+5. Set `CURATOR_RSS_FEEDS`, `CURATOR_KEYWORDS`, and `PERSONA_SYSTEM_PROMPT`/`SSI_*` prompts for the client's niche and voice.
+6. If DB is enabled, set unique DB name/URL.
+7. Create folders with `mkdir -p` (or use `scripts/create-client.sh`, which does all of the above).
+8. Run one `--dry-run` command and verify output path and behavior.
 
 ## 9) Common failure modes
 
 - Wrong client env loaded: posts go to wrong Buffer account.
 - Shared cache path: duplicate detection leaks across clients.
 - Shared output dir: generated assets mixed across clients.
+- Shared `AVATAR_DATA_DIR`: persona graph, narrative memory, and learned facts leak across clients.
 - Shared DB in multi-client mode: history/learning contamination.
 
 ## 10) Minimal standard to stay safe

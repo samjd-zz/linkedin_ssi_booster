@@ -75,14 +75,24 @@ fi
 env_file=".env.client-${slug}"
 data_dir="data/client-${slug}"
 content_dir="yt-vid-data/client-${slug}"
+avatar_dir="${data_dir}/avatar"
 
 if [[ -f "$env_file" && "$force" != true ]]; then
   echo "Error: ${env_file} already exists. Use --force to overwrite." >&2
   exit 1
 fi
 
-mkdir -p "$data_dir" "$content_dir"
+mkdir -p "$data_dir" "$content_dir" "$avatar_dir"
 cp "$template_file" "$env_file"
+
+# Seed per-client persona/domain/memory files so clients never share Shawn's persona graph.
+for seed in persona_graph domain_knowledge narrative_memory extracted_knowledge; do
+  seed_target="${avatar_dir}/${seed}.json"
+  seed_template="data/avatar/${seed}.example.json"
+  if [[ ! -f "$seed_target" && -f "$seed_template" ]]; then
+    cp "$seed_template" "$seed_target"
+  fi
+done
 
 append_or_replace() {
   local key="$1"
@@ -99,6 +109,7 @@ append_or_replace() {
 
 append_or_replace "IDEAS_CACHE_PATH" "${data_dir}/published_ideas_cache.json"
 append_or_replace "GENERATED_CONTENT_DIR" "${content_dir}"
+append_or_replace "AVATAR_DATA_DIR" "${avatar_dir}"
 append_or_replace "POSTGRES_DB" "linkedin_ssi_booster_${slug}"
 append_or_replace "DATABASE_URL" "postgresql://ssi_booster:change_this_to_a_secure_password@postgres:5432/linkedin_ssi_booster_${slug}"
 
@@ -107,11 +118,13 @@ Created client scaffold:
 - Env file: ${env_file}
 - Data dir: ${data_dir}
 - Generated content dir: ${content_dir}
+- Avatar data dir: ${avatar_dir} (persona_graph.json, domain_knowledge.json, narrative_memory.json, extracted_knowledge.json)
 
 Next steps:
 1) Edit ${env_file} and set client-specific secrets (BUFFER_API_KEY, channel IDs, etc.)
-2) Run a safe preview:
+2) Edit ${avatar_dir}/persona_graph.json with the client's real name, projects, and facts
+3) Run a safe preview:
    scripts/run-client-curate.sh ${slug}
-3) When ready to publish:
+4) When ready to publish:
    scripts/run-client-curate.sh ${slug} --live --type post --reconcile
 EOF
