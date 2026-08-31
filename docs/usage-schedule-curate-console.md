@@ -40,7 +40,7 @@ python main.py --save-ssi 10.49 9.69 11.0 12.15
 
 ## Schedule mode
 
-`--schedule --week N` generates posts from the selected week of the content calendar and schedules them through Buffer unless `--dry-run` is supplied. The scheduler uses configured posting slots and SSI focus weights from `.env`, preserves topic order within components, and avoids repeating topics within a week.
+`--schedule --week N` generates posts from the selected week of the content calendar and adds them to Buffer's queue unless `--dry-run` is supplied. The scheduler uses SSI focus weights from `.env` to balance selected topics across pillars, then sends each selected post without an explicit publish timestamp so Buffer owns queue placement, cadence, and posting times.
 
 Examples:
 
@@ -123,7 +123,7 @@ Console mode supports the following slash commands:
 | `/verify`          | Toggle DoT + similarity verification on/off                               |
 | `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
 | `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off |
-| `/graph-stats`     | Show graph metrics and both domain-knowledge profiles (Sam + Rei)          |
+| `/graph-stats`     | Show graph metrics and both domain-knowledge profiles (Sam + Rei)         |
 
 `/graph-stats` output now includes:
 
@@ -208,15 +208,15 @@ The following terms are recognized by the console router and trigger tech-tag gr
 
 The README documents channel-specific output rules across LinkedIn, X, Bluesky, Threads, Facebook, YouTube, and `all`. LinkedIn appends source URLs and hashtags programmatically, while X, Bluesky, Threads, and Facebook are shorter single-post outputs without hashtag appending, and YouTube produces spoken Short scripts that are saved locally rather than sent to Buffer.
 
-| Channel    | Behavior                                                                                                             |
-| ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| `linkedin` | Default channel; source URL and hashtags are appended programmatically for curation output.                          |
-| `x`        | 280-character limit, single paragraph, no hashtag append.                                                            |
-| `bluesky`  | 300-character limit, X-like post behavior.                                                                           |
-| `threads`  | 500-character limit, conversational short post behavior, no hashtag append.                                          |
-| `facebook` | Similar to LinkedIn; source URL and hashtags are appended programmatically for curation output.                      |
+| Channel    | Behavior                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `linkedin` | Default channel; source URL and hashtags are appended programmatically for curation output.                                      |
+| `x`        | 280-character limit, single paragraph, no hashtag append.                                                                        |
+| `bluesky`  | 300-character limit, X-like post behavior.                                                                                       |
+| `threads`  | 500-character limit, conversational short post behavior, no hashtag append.                                                      |
+| `facebook` | Similar to LinkedIn; source URL and hashtags are appended programmatically for curation output.                                  |
 | `youtube`  | Generates a spoken script, prints it, and saves it to `<GENERATED_CONTENT_DIR>/<YOUTUBE_SCRIPTS_SUBDIR>/`; not pushed to Buffer. |
-| `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together, with YouTube handled as a local script artifact. |
+| `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together, with YouTube handled as a local script artifact.             |
 
 You can target any combination of channels in a single run by passing a comma-separated list to `--channel`. Each article is processed once per listed channel — the `max_ideas` cap counts **articles**, not channel-posts, so `--channel linkedin,bluesky,x` with the default `max_ideas=3` will produce posts for 3 distinct articles (up to 9 Buffer posts total, 3 per channel).
 

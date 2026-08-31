@@ -44,7 +44,7 @@ Users need a repeatable, low-friction workflow to publish consistent thought lea
 
 - Acceptance criteria:
 - Running `python main.py --generate --week N --dry-run` prints complete posts with mapped SSI components.
-- Running `python main.py --generate --schedule --week N` schedules posts according to configured slots.
+- Running `python main.py --generate --schedule --week N` adds generated posts to Buffer's queue without explicit publish times.
 
 2. As a technical creator, I want to curate relevant AI/GovTech articles so that I can engage with fresh insights without manual research each day.
 

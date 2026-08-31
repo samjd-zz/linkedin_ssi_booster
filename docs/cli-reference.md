@@ -44,15 +44,15 @@ python main.py --curate --channel all
 
 **Channel behavior:**
 
-| Channel    | Output Format                                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| `linkedin` | Default; source URL and hashtags appended programmatically for curation                           |
-| `x`        | 280-character limit, single paragraph, no hashtag append                                          |
-| `bluesky`  | 300-character limit, X-like post behavior                                                         |
-| `threads`  | 500-character limit, conversational short post, no hashtag append                                 |
-| `facebook` | Similar to LinkedIn; source URL and hashtags appended for curation                                |
+| Channel    | Output Format                                                                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `linkedin` | Default; source URL and hashtags appended programmatically for curation                                                |
+| `x`        | 280-character limit, single paragraph, no hashtag append                                                               |
+| `bluesky`  | 300-character limit, X-like post behavior                                                                              |
+| `threads`  | 500-character limit, conversational short post, no hashtag append                                                      |
+| `facebook` | Similar to LinkedIn; source URL and hashtags appended for curation                                                     |
 | `youtube`  | Generates spoken script, prints it, saves to `<GENERATED_CONTENT_DIR>/<YOUTUBE_SCRIPTS_SUBDIR>/`; not pushed to Buffer |
-| `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together (YouTube as local script only) |
+| `all`      | Runs LinkedIn, X, Bluesky, Threads, Facebook, and YouTube together (YouTube as local script only)                      |
 
 ---
 
@@ -82,8 +82,8 @@ python main.py --schedule --week 3 --dry-run
 - Loads content topics from `content_calendar.py` for the specified week
 - Generates posts using persona grounding and domain knowledge
 - Applies truth gate validation and confidence scoring
-- Routes to Buffer queue or Ideas board based on confidence policy
-- Uses configured posting slots from `.env` (`SSI_FOCUS_*` weights)
+- Sends schedule-mode posts to Buffer's queue without explicit publish timestamps
+- Uses `SSI_FOCUS_*` weights from `.env` to balance selected topics across SSI pillars
 
 When `FLUX_CAPACITOR_ENABLED=true`, a FLUX image is rendered for each non-YouTube post after Ollama text generation completes. Art metadata (`art_avatar_status`, `art_avatar_image_path`, `art_avatar_story_path`, etc.) is attached to each post entry.
 
@@ -230,19 +230,19 @@ python main.py --console --verify --avatar-explain --dot-report
 
 **Console commands:**
 
-| Command            | Description                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| `/help`            | Display all available commands                                                                   |
-| `/reset`           | Clear conversation history                                                                       |
-| `/reload`          | Re-read persona graph, domain packs, and extracted_knowledge.json                                |
-| `/exit` or `/quit` | Exit console mode                                                                                |
-| `/verify`          | Toggle DoT + similarity verification on/off                                                      |
-| `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off                         |
-| `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off                        |
-| `/graph-stats`     | Show knowledge graph statistics plus domain-knowledge profiles for both Sam and Rei               |
-| `/katzilla <query>`| Show deterministic external evidence citations for a query                                       |
-| `/rei` or `/rei-toei` | Switch to Rei Toei music avatar mode                                                          |
-| `/art [topic]`     | Render FLUX art avatar from the most recent AI reply in this session. Optional topic hint narrows the visual prompt. |
+| Command               | Description                                                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/help`               | Display all available commands                                                                                       |
+| `/reset`              | Clear conversation history                                                                                           |
+| `/reload`             | Re-read persona graph, domain packs, and extracted_knowledge.json                                                    |
+| `/exit` or `/quit`    | Exit console mode                                                                                                    |
+| `/verify`             | Toggle DoT + similarity verification on/off                                                                          |
+| `/avatar-explain`     | Toggle avatar-explain report (evidence IDs and grounding summary) on/off                                             |
+| `/dot-report`         | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off                                            |
+| `/graph-stats`        | Show knowledge graph statistics plus domain-knowledge profiles for both Sam and Rei                                  |
+| `/katzilla <query>`   | Show deterministic external evidence citations for a query                                                           |
+| `/rei` or `/rei-toei` | Switch to Rei Toei music avatar mode                                                                                 |
+| `/art [topic]`        | Render FLUX art avatar from the most recent AI reply in this session. Optional topic hint narrows the visual prompt. |
 
 `/art` always uses the previous assistant message in the current console session as source text. If you have not generated an AI reply yet, ask a question or produce a response first, then run `/art` with an optional topic hint.
 
@@ -253,8 +253,8 @@ The image prompt is then influenced by the active FLUX style preset, the `FLUX_C
 1. Core graph metrics (node + edge counts)
 2. Node-type distribution
 3. Domain knowledge profiles for both personas.
-Sam profile: merged totals across `domain_knowledge.json` and any `domain_knowledge_*.json` packs (domains, facts, relationships).
-Rei profile: structural summary of `rei_toei_domain_knowledge.json` (sections, dict key volume, list item volume, and top sections).
+   Sam profile: merged totals across `domain_knowledge.json` and any `domain_knowledge_*.json` packs (domains, facts, relationships).
+   Rei profile: structural summary of `rei_toei_domain_knowledge.json` (sections, dict key volume, list item volume, and top sections).
 
 **Query routing:**
 

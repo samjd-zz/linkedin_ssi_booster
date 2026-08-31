@@ -75,7 +75,7 @@ Primary internal modules:
 4. Generate channel-aware draft using `OllamaService`.
 5. Apply deterministic truth gate post-generation.
 6. If `--dry-run`, print output.
-7. If `--schedule`, create scheduled posts in Buffer according to slots.
+7. If `--schedule`, add posts to Buffer's queue without explicit publish times.
 
 ### 3.2 Curate Flow (`--curate`)
 
@@ -89,7 +89,7 @@ Primary internal modules:
 - Apply truth gate.
 - Assemble final body/url/hashtags by channel policy.
 
-5. Push as ideas (`--type idea`) or scheduled posts (`--type post`).
+5. Push as ideas (`--type idea`) or queued posts (`--type post`).
 
 ### 3.3 Console Flow (`--console`)
 
@@ -125,7 +125,7 @@ sequenceDiagram
 	alt --dry-run
 		Main-->>User: print drafts
 	else --schedule
-		Main->>Buf: create scheduled posts
+		Main->>Buf: create queued posts
 		Buf-->>Main: schedule results
 		Main-->>User: scheduling summary
 	end

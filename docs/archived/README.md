@@ -68,7 +68,7 @@ SSI decays if you go quiet — LinkedIn penalises inconsistency. Manually writin
 
 This tool handles the repeatable parts:
 
-- **Consistent cadence** — 3 posts/week scheduled to Buffer at proven engagement times (Tue/Wed/Fri 4 PM EST)
+- **Consistent cadence** — scheduled content is added to your Buffer queue, where Buffer owns cadence and posting times
 - **On-brand content** — every post is grounded in your real projects, real numbers, and real technical voice via a detailed persona prompt
 - **All four SSI pillars** — the content calendar and curator rotate across all four components so no single pillar is neglected
 - **Curation pipeline** — fetches today's AI/GovTech news, filters by your niche, and generates commentary that you can either:
@@ -99,7 +99,7 @@ You control whether curated content is reviewed before publishing or scheduled d
 
 2. **AI post creation** — Ollama writes posts as plain text, personalised to you (see below)
 
-3. **Post scheduling** — The scheduler distributes posts from the calendar to Buffer at configured weekdays/times (default: Tue/Wed/Fri 4 PM Toronto time). Each week, max posts per channel equals the number of configured scheduler slots.
+3. **Post scheduling** — The scheduler sends selected calendar posts to Buffer's queue without explicit publish times. Buffer owns final queue placement, cadence, and posting times.
    - Scheduling is CLI-triggered (`python main.py --schedule --week N`) — there is no always-running local background scheduler process in this repo.
    - The scheduler uses your `.env` SSI focus weights to determine how many posts per week should target each SSI component (e.g., if `establish_brand` is set to 40%, it will get more posts that week).
    - If there are not enough posts for a component, the scheduler fills remaining slots with available topics, always ensuring variety.
@@ -570,7 +570,7 @@ python main.py --curate --confidence-policy draft-first   # all posts → Ideas 
 
 | Flag                    | Source                                                   | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--schedule`            | Your content calendar (`content_calendar.py`)            | Writes posts from your pre-planned topics + angles; pushes them to Buffer as **scheduled posts**                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `--schedule`            | Your content calendar (`content_calendar.py`)            | Writes posts from your pre-planned topics + angles; pushes them to Buffer's queue without explicit publish times                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `--curate`              | Live RSS feeds (Anthropic, HuggingFace, Google AI, etc.) | Fetches today's articles, filters by your niche keywords, generates commentary; default behaviour pushes to Buffer as **Ideas** (unscheduled drafts for review)                                                                                                                                                                                                                                                                                                                                                   |
 | `--console`             | Persona graph + grounding                                | Opens an interactive terminal chat with your persona/context loaded. No Buffer actions are performed in this mode. Console commands: `/help`, `/reset`, `/exit`. For factual bio/project queries, a deterministic grounding layer extracts and cites matching records from `data/avatar/persona_graph.json` (project/company/year/details). Tech term matching is configurable via `CONSOLE_GROUNDING_TECH_KEYWORDS`.                                                                                             |
 | `--dry-run`             | Either                                                   | Prints generated posts to the terminal only — no calls to Buffer                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -715,47 +715,20 @@ Current scores are tracked in `ssi_history.json` (runtime file, gitignored). The
      - Loads the topics for week N
      - Uses your `.env` SSI focus weights to allocate posts per component (e.g., if `engage_with_insights` is set to 40%, it will try to schedule more posts from that pillar)
      - Ensures no component is neglected, and fills any gaps with available topics
-     - Schedules posts for Tue/Wed/Fri at 4 PM EST (Buffer queue)
+   - Sends selected posts to Buffer's queue without explicit publish times
      - Never repeats a topic within a week
 3. **Result:**
    - Over 4 weeks, all four SSI pillars are covered in a balanced, data-driven way, with each post having a clear purpose and unique perspective.
 
-### Customising scheduler.py behavior
+### Scheduler behavior
 
-The scheduler logic lives in `scheduler.py` and is driven by `.env` values.
-
-Key controls:
-
-- `SCHEDULER_TIMEZONE`  
-   Local timezone used when calculating weekday/time slots before conversion to UTC for Buffer.
-
-- `SCHEDULER_POSTING_SLOTS`  
-   Comma-separated slot list in `day@HH:MM` format. Example: `tuesday@16:00,wednesday@16:00,friday@16:00`.
-
-Rules for `SCHEDULER_POSTING_SLOTS`:
-
-- Valid days: `monday`..`sunday` (lowercase recommended).
-- Time uses 24-hour format (`HH:MM`).
-- Slot order is preserved and used as posting order.
-- Number of slots determines the max scheduled posts per week per channel.
-
-Examples:
-
-```ini
-# Keep default 3-post cadence
-SCHEDULER_TIMEZONE=America/Toronto
-SCHEDULER_POSTING_SLOTS=tuesday@16:00,wednesday@16:00,friday@16:00
-
-# 4-post cadence with custom times
-SCHEDULER_TIMEZONE=America/Toronto
-SCHEDULER_POSTING_SLOTS=monday@09:30,tuesday@16:00,thursday@11:00,friday@16:00
-```
+The scheduler logic lives in `scheduler.py`. Buffer owns publish timing and queue placement.
 
 Important runtime behavior:
 
 - Scheduling runs only when you execute `--schedule`.
-- The app computes future timestamps and writes them to Buffer.
-- Buffer performs the actual publish at those scheduled times.
+- The app sends selected posts to Buffer without a `scheduled_at` timestamp.
+- Buffer places the posts in its queue and performs publishing according to your Buffer settings.
 - There is no daemon/cron loop in this repo that continuously schedules in the background.
 
 ### Weekly SSI update workflow

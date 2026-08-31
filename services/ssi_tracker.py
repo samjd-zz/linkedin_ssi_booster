@@ -269,7 +269,7 @@ class SSITracker:
             print()
 
         print(str(Fore.CYAN) + str(Style.BRIGHT) + "  QUICK WINS (do these daily, 15 mins):" + str(Style.RESET_ALL))
-        print("    1. Check Buffer queue — confirm 3 posts scheduled this week")
+        print("    1. Check Buffer queue — confirm this week's posts are queued")
         print("    2. Leave 3 meaningful comments on AI/GovTech posts")
         print("    3. Accept + message 2 new connection requests")
         print("    4. Check linkedin.com/sales/ssi — track your score")

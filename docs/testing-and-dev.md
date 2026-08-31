@@ -43,12 +43,12 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Status          |
 | ----------- | ------- | ------- | ------ | --------------- |
-| **822**     | **820** | **0**   | **0**  | ✅ **All pass** |
+| **823**     | **821** | **0**   | **0**  | ✅ **All pass** |
 
-- **Latest Run Date:** August 27, 2026
-- **Latest Run Scope:** Full suite — confirmed green after Rei Toei console/CLI lyric-language alignment fix and Strudel legacy-alias test updates.
+- **Latest Run Date:** August 30, 2026
+- **Latest Run Scope:** Focused scheduler queue regression — confirmed `--schedule` queues all selected posts in Buffer without explicit publish timestamps.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. The 2 `test_buffer_service.py` cases requiring live network access error out offline (`requests.exceptions.ConnectionError`) and are excluded from the 820 passed count; run with `python -m dotenv run -- python -m pytest tests/test_buffer_service.py -v` and network access to include them.
+- **Notes:** 0 skipped, 0 failed. The 2 `test_buffer_service.py` cases requiring live network access error out offline (`requests.exceptions.ConnectionError`) and are excluded from the 821 passed count; run with `python -m dotenv run -- python -m pytest tests/test_buffer_service.py -v` and network access to include them.
 
 ### Test Suite Breakdown
 
@@ -175,6 +175,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_rei_console_routing.py`                       | Rei Toei console routing: command parsing, sticky Rei mode (`should_handle_rei_turn`), song/pattern heuristics, `_build_rei_system_prompt` identity and music-generation directive, Suno fallback to LLM when no extracted knowledge, `_handle_conversation` song re-routing, no Sam persona leakage. |
 | `tests/test_avatar_state_loader.py`                       | Confirms graph structural configurations, narrative memory loading, malformed input recovery routines, and multi-file asset joining (`domain_knowledge_*.json`).                                                                                                                                      |
 | `tests/test_buffer_service.py`                            | Exercises the GraphQL API wrapper connectivity layers, buffer item queues, and content idea generation.                                                                                                                                                                                               |
+| `tests/test_scheduler_queue.py`                           | Verifies schedule mode sends all selected posts to Buffer's queue without explicit `scheduled_at` timestamps, even when legacy scheduler environment variables are present.                                                                                                                           |
 | `tests/test_piper_service.py`                             | Verifies Wyoming Piper TTS protocol behaviors, header parsing, byte payload streaming, and sound device mapping.                                                                                                                                                                                      |
 | `tests/test_confidence_scoring.py`                        | Tests extracted heuristic signals, routing rules, and execution scoring boundaries.                                                                                                                                                                                                                   |
 | `tests/test_content_curator.py`                           | Drives RSS fetch pipelines, keyword screening constraints, SSI adaptive category shifts, and module routing layouts.                                                                                                                                                                                  |

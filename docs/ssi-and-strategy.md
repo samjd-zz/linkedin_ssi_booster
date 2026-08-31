@@ -23,14 +23,7 @@ The content calendar is a four-week plan whose topics each carry an angle and SS
 
 ## Scheduler behavior
 
-The scheduler is CLI-triggered rather than a persistent background process. It uses `.env` focus weights and `SCHEDULER_POSTING_SLOTS` to allocate topics, preserve posting order, and cap the number of posts to the number of defined time slots.
-
-Example scheduler configuration:
-
-```ini
-SCHEDULER_TIMEZONE=America/Toronto
-SCHEDULER_POSTING_SLOTS=tuesday@16:00,wednesday@16:00,friday@16:00
-```
+The scheduler is CLI-triggered rather than a persistent background process. It uses `.env` focus weights to select topics across SSI pillars, then sends every selected post to Buffer without an explicit `scheduled_at` timestamp. Buffer owns queue placement, posting cadence, and publish times.
 
 ## SSI targets
 
