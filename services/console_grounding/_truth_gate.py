@@ -64,13 +64,61 @@ def _is_likely_false_positive_org(org_phrase: str) -> bool:
     Skips:
       - Phrases containing newlines (e.g., 'Scale\nIf' from text wrapping)
       - Phrases containing slashes (e.g., 'AI/GovTech/Ottawa' community tags)
+      - Short social CTA labels such as 'DM' / 'Direct Message' used in copy
+        calls-to-action, not as company names
+      - Social phrases like 'DM exchange' or 'direct message exchange' that are
+        conversational CTA language, not organizations
     """
     if not org_phrase:
         return False
-    # Check for newlines or slashes
+    norm = org_phrase.strip().lower()
     if "\n" in org_phrase or "/" in org_phrase:
         return True
+    if re.fullmatch(r"dm(s)?", norm):
+        return True
+    if norm in {"direct message", "direct messages"}:
+        return True
+    if re.fullmatch(r"dm\s+exchange", norm):
+        return True
+    if re.fullmatch(r"direct message\s+exchange", norm):
+        return True
+    if re.search(r"\b(?:comment|reply|reach out|message|send|drop|leave)\s+(?:or\s+)?(?:a\s+)?dm\b", norm):
+        return True
+    if re.search(r"\b(?:comment|reply|reach out|message|send|drop|leave)\s+(?:or\s+)?(?:a\s+)?direct message\b", norm):
+        return True
+    if re.search(r"\b(?:earn|get|cause|prompt|start|spark|invite)\s+(?:a\s+)?dm\s+exchange\b", norm):
+        return True
+    if re.search(r"\b(?:earn|get|cause|prompt|start|spark|invite)\s+(?:a\s+)?direct message\s+exchange\b", norm):
+        return True
     return False
+
+
+def _is_valid_social_cta_sentence(sentence: str) -> bool:
+    """Return True for standard social CTA wording like 'DM' or 'Send a DM'.
+
+    These are valid LinkedIn CTA phrases used in outreach copy, not organization
+    names or unsupported claims. Keep them through the truth gate even when they
+    are short and lightweight.
+    """
+    text = sentence.lower()
+    if "dm" not in text and "direct message" not in text:
+        return False
+    patterns = [
+        r"\bcomment\s+or\s+(?:a\s+)?dm\b",
+        r"\bcomment\s+or\s+(?:a\s+)?direct message\b",
+        r"\bdm\s+['\"][^'\"]+['\"]",
+        r"\bdm\s+exchange\b",
+        r"\bdirect message\s+exchange\b",
+        r"\b(?:causes?|creates?|starts?|sparks?|drives?|gets?|earns?)\s+(?:a\s+)?dm\s+exchange\b",
+        r"\b(?:causes?|creates?|starts?|sparks?|drives?|gets?|earns?)\s+(?:a\s+)?direct message\s+exchange\b",
+        r"\b(?:send|drop|leave|reply|message|reach out|reach out to|hit me up)\s+(?:me\s+)?(?:a\s+)?dm\b",
+        r"\b(?:send|drop|leave|reply|message|reach out|reach out to|hit me up)\s+(?:me\s+)?(?:a\s+)?dm\s+['\"][^'\"]+['\"]",
+        r"\b(?:send|drop|leave|reply|message|reach out|reach out to)\s+(?:a\s+)?direct message\b",
+        r"\bdirect message\s+['\"][^'\"]+['\"]",
+        r"\b(?:reply|message|reach out)\s+with\s+dm\b",
+        r"\b(?:reply|response|conversation|lead)\s+(?:through|via|with)\s+(?:a\s+)?dm\b",
+    ]
+    return any(re.search(pattern, text) for pattern in patterns)
 
 
 def truth_gate_result(
@@ -143,6 +191,9 @@ def truth_gate_result(
             kept.append(sentence)
             continue
         if _normalize_phrase(stripped) in whitelisted_phrases:
+            kept.append(sentence)
+            continue
+        if _is_valid_social_cta_sentence(stripped):
             kept.append(sentence)
             continue
         if all(word.startswith("#") for word in stripped.split()):
@@ -228,6 +279,8 @@ def truth_gate_result(
             _spacy_orgs = _extract_spacy_orgs(sentence, spacy_nlp) if spacy_nlp else []
             if _spacy_orgs:
                 for _org in _spacy_orgs:
+                    if _is_valid_social_cta_sentence(sentence):
+                        continue
                     if _is_project_like_org_mention(sentence, _org):
                         continue
                     if _is_likely_false_positive_org(_org):
@@ -247,6 +300,8 @@ def truth_gate_result(
                             break
             else:
                 for m in _ORG_NAME_RE.finditer(sentence):
+                    if _is_valid_social_cta_sentence(sentence):
+                        continue
                     if _is_project_like_org_mention(sentence, m.group(1)):
                         continue
                     if _is_likely_false_positive_org(m.group(1)):

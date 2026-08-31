@@ -495,6 +495,91 @@ class TestPerSentenceDoTScoring:
         assert meta.removed_count == 0
         assert "Building Agentic AI Capabilities at Scale" in filtered
 
+    def test_dm_cta_not_flagged_as_org(self) -> None:
+        """Regression: social CTA terms like 'DM' and 'Send a DM' are valid LinkedIn actions.
+
+        The truth gate must not classify these as unsupported organizations or weak
+        evidence when used as a direct-response CTA in beta outreach copy.
+        """
+        fact = make_fact(
+            project="LinkedIn SSI Booster",
+            details="Builds grounded beta invites for B2B service businesses and social outreach workflows.",
+        )
+        text = "Comment or DM 'beta' for the link and a quick fit check."
+
+        with (
+            patch("services.console_grounding._truth_gate._extract_spacy_orgs", return_value=["DM"]),
+            patch("services.console_grounding._truth_gate._score_sentence_bm25", return_value=0.0),
+            patch("services.console_grounding._truth_gate.get_domain_facts_from_avatar_state", return_value=[]),
+            patch("services.console_grounding._truth_gate.get_project_names_from_avatar_state", return_value=set()),
+            patch("services.console_grounding._truth_gate.get_all_persona_facts_from_avatar_state", return_value=[]),
+        ):
+            filtered, meta = truth_gate_result(
+                text=text,
+                article_text="LinkedIn beta invites for B2B service businesses with grounded content and fit checks",
+                facts=[fact],
+                interactive=False,
+            )
+
+        assert meta.removed_count == 0
+        assert "DM 'beta'" in filtered
+
+    def test_issue_reported_beta_dm_cta_not_flagged(self) -> None:
+        """Regression: the exact beta CTA from the reported issue should remain intact."""
+        fact = make_fact(
+            project="SSI Booster",
+            details="Builds grounded beta invites for B2B service businesses and sales content workflows.",
+        )
+        text = (
+            "If you are done wading through general platitudes and need material that "
+            "demonstrably links back to proven operational reality, comment or DM 'beta'."
+        )
+
+        with (
+            patch("services.console_grounding._truth_gate._extract_spacy_orgs", return_value=["DM"]),
+            patch("services.console_grounding._truth_gate._score_sentence_bm25", return_value=0.0),
+            patch("services.console_grounding._truth_gate.get_domain_facts_from_avatar_state", return_value=[]),
+            patch("services.console_grounding._truth_gate.get_project_names_from_avatar_state", return_value=set()),
+            patch("services.console_grounding._truth_gate.get_all_persona_facts_from_avatar_state", return_value=[]),
+        ):
+            filtered, meta = truth_gate_result(
+                text=text,
+                article_text="Grounded operational content for B2B service businesses and proven reality",
+                facts=[fact],
+                interactive=False,
+            )
+
+        assert meta.removed_count == 0
+        assert "comment or dm 'beta'" in filtered.lower()
+
+    def test_dm_exchange_not_flagged_as_org(self) -> None:
+        """Regression: 'DM exchange' is social CTA language, not a company or org name."""
+        fact = make_fact(
+            project="LinkedIn SSI Booster",
+            details="Helps founders understand what content earns real replies and conversation quality.",
+        )
+        text = (
+            "Don't try to scale until you know what kind of content actually earns a reply, "
+            "or which specific offer causes a DM exchange."
+        )
+
+        with (
+            patch("services.console_grounding._truth_gate._extract_spacy_orgs", return_value=["DM exchange"]),
+            patch("services.console_grounding._truth_gate._score_sentence_bm25", return_value=0.0),
+            patch("services.console_grounding._truth_gate.get_domain_facts_from_avatar_state", return_value=[]),
+            patch("services.console_grounding._truth_gate.get_project_names_from_avatar_state", return_value=set()),
+            patch("services.console_grounding._truth_gate.get_all_persona_facts_from_avatar_state", return_value=[]),
+        ):
+            filtered, meta = truth_gate_result(
+                text=text,
+                article_text="Content that earns replies and the operational mechanics of demand generation",
+                facts=[fact],
+                interactive=False,
+            )
+
+        assert meta.removed_count == 0
+        assert "DM exchange" in filtered
+
     def test_org_with_slashes_not_flagged_community_tag(self) -> None:
         """Regression: 'AI/GovTech/Ottawa' (slash-separated tag) must not be flagged.
 

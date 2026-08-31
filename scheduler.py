@@ -7,11 +7,37 @@ Buffer owns the posting cadence and publish times.
 """
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 
 class PostScheduler:
+
+    @staticmethod
+    def _get_posting_slot_limit() -> int | None:
+        """Return the configured slot count if a weekly cap is explicitly set.
+
+        When SCHEDULER_POSTING_SLOTS is unset or blank, we do not cap the weekly
+        content calendar. The content calendar should define the full week volume.
+        """
+        raw_slots = os.getenv("SCHEDULER_POSTING_SLOTS", "").strip()
+        if not raw_slots:
+            return None
+
+        slots = [slot.strip() for slot in raw_slots.split(",") if slot.strip()]
+        if not slots:
+            return None
+
+        for slot in slots:
+            if "@" not in slot:
+                logger.warning(
+                    "Ignoring invalid SCHEDULER_POSTING_SLOTS entry %r; expected day@HH:MM.",
+                    slot,
+                )
+                return None
+
+        return len(slots)
 
     def __init__(self, buffer_service):
         self.buffer = buffer_service
@@ -106,6 +132,17 @@ class PostScheduler:
                 if id(post) not in used_ids and len(selected_posts) < total_posts:
                     selected_posts.append(post)
 
+        slot_limit = self._get_posting_slot_limit()
+        if slot_limit is not None:
+            if slot_limit <= 0:
+                logger.info("SCHEDULER_POSTING_SLOTS is configured to 0 slots; no posts scheduled.")
+                return []
+            selected_posts = selected_posts[:slot_limit]
+            logger.info(
+                "Applying explicit SCHEDULER_POSTING_SLOTS cap: %d of %d selected posts retained.",
+                len(selected_posts),
+                total_posts,
+            )
 
         scheduled = []
         for channel_id in channel_ids:
