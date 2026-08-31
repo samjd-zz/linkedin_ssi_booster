@@ -353,7 +353,7 @@ Do NOT include hashtags in your output â€” they will be appended automatica
         text = truth_gate(text, f"{title}. {angle}", grounding_facts or [], interactive=interactive, channel=channel)
 
         # Format into paragraphs with hashtags on their own line
-        if channel in ("linkedin",):
+        if channel in ("linkedin", "facebook"):
             text = format_post_paragraphs(text)
 
         if channel == "youtube" and len(text) > 500:
@@ -649,7 +649,7 @@ Write a {"Threads post" if channel == "threads" else "Bluesky post" if channel =
             result = truth_gate(result, article_text, grounding_facts or [], interactive=interactive, channel=channel)
 
         # Format into paragraphs with hashtags on their own line
-        if result and channel == "linkedin":
+        if result and channel in ("linkedin", "facebook"):
             result = format_post_paragraphs(result)
 
         if result:

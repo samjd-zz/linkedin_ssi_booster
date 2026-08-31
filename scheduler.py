@@ -42,40 +42,40 @@ class PostScheduler:
     def __init__(self, buffer_service):
         self.buffer = buffer_service
 
-    def _resolve_channel_ids(self, channel: str) -> list[str]:
-        """Return a list of Buffer channel IDs for the given channel selector."""
+    def _resolve_channel_ids(self, channel: str) -> list[tuple[str, str]]:
+        """Return a list of (channel_id, channel_name) pairs for the given channel selector."""
         if channel == "linkedin":
-            return [self.buffer.get_linkedin_channel_id()]
+            return [(self.buffer.get_linkedin_channel_id(), "linkedin")]
         elif channel == "x":
-            return [self.buffer.get_x_channel_id()]
+            return [(self.buffer.get_x_channel_id(), "x")]
         elif channel == "bluesky":
-            return [self.buffer.get_bluesky_channel_id()]
+            return [(self.buffer.get_bluesky_channel_id(), "bluesky")]
         elif channel == "threads":
-            return [self.buffer.get_threads_channel_id()]
+            return [(self.buffer.get_threads_channel_id(), "threads")]
         elif channel == "youtube":
-            return [self.buffer.get_youtube_channel_id()]
+            return [(self.buffer.get_youtube_channel_id(), "youtube")]
         elif channel == "facebook":
-            return [self.buffer.get_facebook_channel_id()]
+            return [(self.buffer.get_facebook_channel_id(), "facebook")]
         elif channel == "all":
-            ids = [self.buffer.get_linkedin_channel_id()]
+            ids = [(self.buffer.get_linkedin_channel_id(), "linkedin")]
             try:
-                ids.append(self.buffer.get_x_channel_id())
+                ids.append((self.buffer.get_x_channel_id(), "x"))
             except BufferChannelNotConnectedError as e:
                 logger.warning(f"X channel not configured; skipping in all-channel mode. ({e})")
             try:
-                ids.append(self.buffer.get_bluesky_channel_id())
+                ids.append((self.buffer.get_bluesky_channel_id(), "bluesky"))
             except BufferChannelNotConnectedError as e:
                 logger.warning(f"Bluesky channel not configured; skipping in all-channel mode. ({e})")
             try:
-                ids.append(self.buffer.get_threads_channel_id())
+                ids.append((self.buffer.get_threads_channel_id(), "threads"))
             except BufferChannelNotConnectedError as e:
                 logger.warning(f"Threads channel not configured; skipping in all-channel mode. ({e})")
             try:
-                ids.append(self.buffer.get_youtube_channel_id())
+                ids.append((self.buffer.get_youtube_channel_id(), "youtube"))
             except BufferChannelNotConnectedError as e:
                 logger.warning(f"YouTube channel not configured; skipping in all-channel mode. ({e})")
             try:
-                ids.append(self.buffer.get_facebook_channel_id())
+                ids.append((self.buffer.get_facebook_channel_id(), "facebook"))
             except BufferChannelNotConnectedError as e:
                 logger.warning(f"Facebook channel not configured; skipping in all-channel mode. ({e})")
             return ids
@@ -145,7 +145,7 @@ class PostScheduler:
             )
 
         scheduled = []
-        for channel_id in channel_ids:
+        for channel_id, channel_name in channel_ids:
             for i, post in enumerate(selected_posts):
                 scheduled_at = None
                 text = post.get("generated_text", "")
@@ -157,7 +157,8 @@ class PostScheduler:
                 result = self.buffer.create_post(
                     channel_id=channel_id,
                     text=text,
-                    scheduled_at=scheduled_at
+                    scheduled_at=scheduled_at,
+                    channel=channel_name,
                 )
                 logger.info(f"[{channel_id}] Queued post {i+1}/{len(selected_posts)} → Buffer queue")
                 scheduled.append(result)

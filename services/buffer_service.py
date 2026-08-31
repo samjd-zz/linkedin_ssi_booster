@@ -161,11 +161,19 @@ class BufferService:
                 return ch["id"]
         raise BufferChannelNotConnectedError("No Facebook channel found in Buffer. Connect your Facebook page first.")
 
-    def create_post(self, channel_id: str, text: str, scheduled_at: Optional[str] = None) -> dict:
+    def create_post(
+        self,
+        channel_id: str,
+        text: str,
+        scheduled_at: Optional[str] = None,
+        channel: str = "linkedin",
+    ) -> dict:
         """
         Create a post in Buffer.
         scheduled_at: ISO 8601 datetime string e.g. '2026-03-18T16:00:00Z'
                       If None, adds to next available queue slot.
+        channel: 'linkedin' | 'x' | 'bluesky' | 'threads' | 'youtube' | 'facebook' — Facebook
+                 requires an explicit metadata.facebook.type of 'post', 'story', or 'reel'.
         """
         mutation = """
         mutation CreatePost($input: CreatePostInput!) {
@@ -183,12 +191,14 @@ class BufferService:
           }
         }
         """
-        post_input = {
+        post_input: dict[str, Any] = {
             "channelId": channel_id,
             "text": text,
             "schedulingType": "automatic",
             "mode": "addToQueue",
         }
+        if channel == "facebook":
+            post_input["metadata"] = {"facebook": {"type": "post"}}
         # If scheduled_at is provided, Buffer API may require a different schedulingType or field. Adjust as needed.
         # If you want to support scheduled time, you may need to use a different mutation or input structure.
         data = self._query(mutation, {"input": post_input})
@@ -256,6 +266,8 @@ class BufferService:
         }
         if first_comment:
             post_input["metadata"] = {"linkedin": {"firstComment": first_comment}}
+        elif channel == "facebook":
+            post_input["metadata"] = {"facebook": {"type": "post"}}
 
         data = self._query(mutation, {"input": post_input})
         result = data.get("createPost", {})
