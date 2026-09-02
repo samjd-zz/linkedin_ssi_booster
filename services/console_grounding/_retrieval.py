@@ -97,7 +97,7 @@ def parse_query_constraints(
     has_japanese_subject = any(subject in q for subject in JAPANESE_ART_SUBJECTS)
     is_japanese_art_request = has_image_request and (
         has_japanese_subject
-        or any(k in q for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "anime", "manga"])
+        or any(k in q for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "kana", "anime", "manga", "glyph", "letter", "symbol", "syllabary"])
     )
 
     art_subject_hint = ""

@@ -73,11 +73,11 @@ In interactive console mode, asking Sam to generate or depict an image automatic
    - `illustration of`, `art of`, `picture of`
 
 2. **Subject & Japanese Art Markers (`JAPANESE_ART_SUBJECTS`)**:
-   - **Characters & Roles:** `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`
-   - **Scripts & Calligraphy:** `kanji`, `hiragana`, `katakana`, `romaji`, `calligraphy`
+   - **Orthographic Letters & Glyphs:** `hiragana`, `katakana`, `kanji`, `romaji`, `kana`, `letter`, `glyph`, `symbol`, `calligraphy`, `stroke order`, `radical`, `syllabary`
+   - **Narrative Characters & Roles:** `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`
    - **Art Styles & Culture:** `ukiyo-e`, `anime`, `manga`, `tokyo`, `kyoto`, `sakura`, `cherry blossom`, `torii`, `japanese`
 
-When an image request verb is detected along with a subject marker (e.g., *"Draw a shrine maiden at a torii gate"* or *"Render kanji 夢 in golden calligraphy"*), Sam explains the subject in text while the FLUX pipeline automatically generates and displays the visual in the terminal.
+When an image request verb is detected along with a subject marker (e.g., *"Draw the hiragana letter あ"*, *"Render kanji 夢 in golden calligraphy"*, or *"Draw a shrine maiden at a torii gate"*), Sam teaches/explains the character or subject in text while the FLUX pipeline automatically generates and displays the visual in the terminal.
 
 ---
 

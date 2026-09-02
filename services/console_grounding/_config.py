@@ -76,12 +76,13 @@ IMAGE_REQUEST_VERBS: frozenset[str] = frozenset([
     "visualize", "depict", "illustration of", "art of", "picture of",
 ])
 
-# Subjects/keywords indicating Japanese character or artwork image intent
+# Subjects/keywords indicating Japanese character (figure or language letter/glyph) or artwork image intent
 JAPANESE_ART_SUBJECTS: frozenset[str] = frozenset([
     "character", "shrine maiden", "miko", "samurai", "ninja", "geisha",
-    "kanji", "hiragana", "katakana", "romaji", "calligraphy", "ukiyo-e",
+    "kanji", "hiragana", "katakana", "romaji", "kana", "calligraphy", "ukiyo-e",
     "anime", "manga", "tokyo", "kyoto", "sakura", "cherry blossom", "torii",
-    "japanese", "japanese character", "japanese art",
+    "japanese", "japanese character", "japanese art", "letter", "glyph",
+    "symbol", "stroke order", "radical", "syllabary", "kana letter",
 ])
 
 DEFAULT_TAG_EXPANSIONS: dict[str, set[str]] = {

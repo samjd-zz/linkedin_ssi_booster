@@ -113,12 +113,13 @@ When you run `--console`, the startup screen explains the three query modes and 
 When asking Sam for artwork or character visuals in console mode, the system detects image intent using the following trigger sets:
 
 1. **Image Request Verbs:** `draw`, `render`, `paint`, `visualize`, `depict`, `generate an image`, `make an image`, `create an image`, `show me a picture`, `illustration of`, `art of`, `picture of`.
-2. **Japanese Character & Art Subject Markers:** `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`, `kanji`, `hiragana`, `katakana`, `romaji`, `calligraphy`, `ukiyo-e`, `anime`, `manga`, `tokyo`, `kyoto`, `sakura`, `cherry blossom`, `torii`, `japanese`.
+2. **Japanese Character & Art Subject Markers:** `hiragana`, `katakana`, `kanji`, `romaji`, `kana`, `letter`, `glyph`, `symbol`, `calligraphy`, `stroke order`, `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`, `ukiyo-e`, `anime`, `manga`, `tokyo`, `kyoto`, `sakura`, `cherry blossom`, `torii`, `japanese`.
 
 *Example queries:*
-- *"Draw a shrine maiden near a torii gate at sunset"*
+- *"Draw the hiragana character あ with stroke order details"*
 - *"Render kanji 夢 in golden calligraphy on dark silk"*
 - *"Paint an illustration of a samurai warrior in ukiyo-e style"*
+- *"Generate an image of the katakana letter カ"*
 - `"/art 'cherry blossoms over Tokyo skyline'"`
 
 The art avatar does not have its own separate persona graph. The FLUX prompt is based on the previous assistant reply, then refined with the active style preset, style system prompt, and optional realism hint / topic hint.

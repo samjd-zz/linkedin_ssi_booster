@@ -143,8 +143,11 @@ def build_prompt(
     # 6b. Japanese character & artwork styling cue
     japanese_art_cue = ""
     combo_text = f"{subject_text} {request.theme or ''} {request.knowledge_context or ''}".lower()
-    if any(k in combo_text for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "shrine maiden", "miko", "samurai", "ninja", "ukiyo-e", "geisha", "calligraphy", "sakura"]):
-        japanese_art_cue = " Japanese artistic influence: crisp elegant linework, balanced composition, expressive character styling, authentic cultural details, and refined aesthetic harmony."
+    if any(k in combo_text for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "kana", "letter", "glyph", "symbol", "shrine maiden", "miko", "samurai", "ninja", "ukiyo-e", "geisha", "calligraphy", "sakura"]):
+        if any(k in combo_text for k in ["kanji", "hiragana", "katakana", "romaji", "kana", "letter", "glyph", "symbol", "calligraphy"]):
+            japanese_art_cue = " Japanese artistic & orthographic influence: elegant stroke order, clean typographic or brush calligraphy, clear character/glyph distinction (Kanji, Hiragana, Katakana, Romaji), crisp linework, and refined aesthetic harmony."
+        else:
+            japanese_art_cue = " Japanese artistic influence: crisp elegant linework, balanced composition, expressive character styling, authentic cultural details, and refined aesthetic harmony."
 
     # 7. Assemble style block
     style_block = (
