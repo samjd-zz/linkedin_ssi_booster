@@ -21,19 +21,19 @@ The singleton is process-wide — all schedule/curate/console flows share one GP
 
 Three built-in presets, selected via `FLUX_CAPACITOR_STYLE_PRESET`:
 
-| Preset | Description |
-|---|---|
+| Preset                        | Description                                         |
+| ----------------------------- | --------------------------------------------------- |
 | `corporate_minimal` (default) | Muted palette, subtle sacred geometry, professional |
-| `sacred_geometry` | Geometric overlays, spiritual-tech aesthetic |
-| `tech_dark` | Dark background, high-contrast technical motifs |
+| `sacred_geometry`             | Geometric overlays, spiritual-tech aesthetic        |
+| `tech_dark`                   | Dark background, high-contrast technical motifs     |
 
 Style clamp variables cap parameter values to prevent over-rendering:
 
-| Variable | Default |
-|---|---|
-| `FLUX_CAPACITOR_SATURATION_CAP` | `0.55` |
-| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP` | `0.40` |
-| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP` | `0.30` |
+| Variable                               | Default |
+| -------------------------------------- | ------- |
+| `FLUX_CAPACITOR_SATURATION_CAP`        | `0.55`  |
+| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP`  | `0.40`  |
+| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP` | `0.30`  |
 
 An optional per-request system prompt override (`FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`) lets you inject custom style language at the prompt level.
 
@@ -77,7 +77,7 @@ In interactive console mode, asking Sam to generate or depict an image automatic
    - **Narrative Characters & Roles:** `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`
    - **Art Styles & Culture:** `ukiyo-e`, `anime`, `manga`, `tokyo`, `kyoto`, `sakura`, `cherry blossom`, `torii`, `japanese`
 
-When an image request verb is detected along with a subject marker (e.g., *"Draw the hiragana letter あ"*, *"Render kanji 夢 in golden calligraphy"*, or *"Draw a shrine maiden at a torii gate"*), Sam teaches/explains the character or subject in text while the FLUX pipeline automatically generates and displays the visual in the terminal.
+An image request verb alone (e.g., _"Draw a sunset over the ocean"_) is enough to auto-trigger a render. When a subject marker is also present (e.g., _"Draw the hiragana letter あ"_, _"Render kanji 夢 in golden calligraphy"_, or _"Draw a shrine maiden at a torii gate"_), the request is additionally flagged as Japanese art. Either way, Sam teaches/explains the character or subject in text while the FLUX pipeline automatically generates and displays the visual in the terminal.
 
 ---
 
@@ -112,26 +112,26 @@ docker compose --profile full exec flux-app curl -X POST http://flux-app:5000/un
 
 ## Configuration Reference
 
-| Variable | Default | Description |
-|---|---|---|
-| `FLUX_CAPACITOR_ENABLED` | `false` | Enable image generation (default off) |
-| `FLUX_CAPACITOR_STYLE_PRESET` | `corporate_minimal` | Active style preset |
-| `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT` | _(unset)_ | Optional style language override |
-| `FLUX_CAPACITOR_REALISM_HINT` | _(unset)_ | Optional photographic quality hint |
-| `FLUX_CAPACITOR_SATURATION_CAP` | `0.55` | Saturation clamp (0.0–1.0) |
-| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP` | `0.40` | Geometry density clamp |
-| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP` | `0.30` | Surreal intensity clamp |
-| `FLUX_CAPACITOR_RENDER_WIDTH` | `768` | Render width in pixels |
-| `FLUX_CAPACITOR_RENDER_HEIGHT` | `768` | Render height in pixels |
-| `FLUX_CAPACITOR_RENDER_STEPS` | `4` | Inference steps (FLUX.1-schnell optimised) |
-| `FLUX_CAPACITOR_OLLAMA_FIRST` | `true` | Hold FLUX until Ollama GPU drains |
-| `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA` | `true` | FLUX waits for Ollama completion signal |
-| `FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS` | `1` | Max simultaneous GPU jobs |
-| `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS` | `120` | Seconds before deferring a render |
-| `FLUX_CAPACITOR_SUBDIR` | `flux_capacitor` | Artifact subdirectory under `GENERATED_CONTENT_DIR` |
-| `FLUX_CAPACITOR_STORIES_SUBDIR` | `stories` | Story artifact subdirectory |
-| `FLUX_CAPACITOR_MINIMAL_MODE` | `false` | Skip story generation, render image only |
-| `FLUX_DISPLAY_WIDTH` | _(unset)_ | Terminal display column cap |
+| Variable                                    | Default             | Description                                         |
+| ------------------------------------------- | ------------------- | --------------------------------------------------- |
+| `FLUX_CAPACITOR_ENABLED`                    | `false`             | Enable image generation (default off)               |
+| `FLUX_CAPACITOR_STYLE_PRESET`               | `corporate_minimal` | Active style preset                                 |
+| `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`        | _(unset)_           | Optional style language override                    |
+| `FLUX_CAPACITOR_REALISM_HINT`               | _(unset)_           | Optional photographic quality hint                  |
+| `FLUX_CAPACITOR_SATURATION_CAP`             | `0.55`              | Saturation clamp (0.0–1.0)                          |
+| `FLUX_CAPACITOR_GEOMETRY_DENSITY_CAP`       | `0.40`              | Geometry density clamp                              |
+| `FLUX_CAPACITOR_SURREAL_INTENSITY_CAP`      | `0.30`              | Surreal intensity clamp                             |
+| `FLUX_CAPACITOR_RENDER_WIDTH`               | `768`               | Render width in pixels                              |
+| `FLUX_CAPACITOR_RENDER_HEIGHT`              | `768`               | Render height in pixels                             |
+| `FLUX_CAPACITOR_RENDER_STEPS`               | `4`                 | Inference steps (FLUX.1-schnell optimised)          |
+| `FLUX_CAPACITOR_OLLAMA_FIRST`               | `true`              | Hold FLUX until Ollama GPU drains                   |
+| `FLUX_CAPACITOR_FLUX_AFTER_OLLAMA`          | `true`              | FLUX waits for Ollama completion signal             |
+| `FLUX_CAPACITOR_MAX_CONCURRENT_GPU_JOBS`    | `1`                 | Max simultaneous GPU jobs                           |
+| `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS` | `120`               | Seconds before deferring a render                   |
+| `FLUX_CAPACITOR_SUBDIR`                     | `flux_capacitor`    | Artifact subdirectory under `GENERATED_CONTENT_DIR` |
+| `FLUX_CAPACITOR_STORIES_SUBDIR`             | `stories`           | Story artifact subdirectory                         |
+| `FLUX_CAPACITOR_MINIMAL_MODE`               | `false`             | Skip story generation, render image only            |
+| `FLUX_DISPLAY_WIDTH`                        | _(unset)_           | Terminal display column cap                         |
 
 See [docs/environment-variables.md](environment-variables.md) for the full reference.
 
@@ -141,11 +141,11 @@ See [docs/environment-variables.md](environment-variables.md) for the full refer
 
 Renders trigger automatically after post generation when `FLUX_CAPACITOR_ENABLED=true`:
 
-| Flow | Function in `main.py` |
-|---|---|
+| Flow     | Function in `main.py`           |
+| -------- | ------------------------------- |
 | Schedule | `_render_schedule_art_avatar()` |
-| Curate | `_render_curate_art_avatar()` |
-| Console | `_render_console_art_avatar()` |
+| Curate   | `_render_curate_art_avatar()`   |
+| Console  | `_render_console_art_avatar()`  |
 
 Results merge into the idea/post record as metadata keys:
 

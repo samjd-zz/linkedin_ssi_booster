@@ -262,7 +262,7 @@
     {
       "id": "flux-001",
       "domainId": "japanese-visual-learning-flux",
-      "statement": "In console mode, Sam can trigger a FLUX capacitor image render by combining a recognized image-request verb (draw, render, paint, visualize, depict, generate an image, make an image, create an image) with a Japanese subject marker (hiragana, katakana, kanji, romaji, kana, letter, glyph, character, calligraphy, stroke order, radical, syllabary, or a related cultural subject); this NLP trigger fires automatically without a dedicated slash command.",
+      "statement": "In console mode, any recognized image-request verb alone (draw, render, paint, visualize, depict, generate an image, make an image, create an image, show me a picture, illustration of, art of, picture of) auto-triggers a FLUX capacitor render without a slash command; when a Japanese subject marker (hiragana, katakana, kanji, romaji, kana, letter, glyph, character, calligraphy, stroke order, radical, syllabary, or related cultural subject) is also present, the request is additionally flagged as a Japanese-art request for downstream handling.",
       "tags": ["FLUX capacitor", "image trigger", "console", "NLP trigger"],
       "confidence": "high",
       "scope": "teaching"

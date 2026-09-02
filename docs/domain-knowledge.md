@@ -387,10 +387,16 @@ data/avatar/domain_knowledge_java.json
 data/avatar/domain_knowledge_hiragana.json
 data/avatar/domain_knowledge_katakana.json
 data/avatar/domain_knowledge_kanji.json
+data/avatar/domain_knowledge_kanji_200.json
 data/avatar/domain_knowledge_romaji.json
+data/avatar/domain_knowledge_japanese_language.json
 ```
 
 The system currently loads only `domain_knowledge.json`, but you can swap files as needed.
+
+### Japanese-Language Teaching Pack
+
+`domain_knowledge_japanese_language.json` is a teaching-oriented pack that unifies the script-focused packs (romaji, hiragana, katakana, kanji, kanji-200) into one curriculum and adds the layers those packs don't cover: grammar fundamentals, pronunciation/prosody, vocabulary-building strategy, JLPT learner-level tracking, teaching pedagogy, and how Sam should use FLUX capacitor image generation (stroke-order/calligraphy renders, sequencing, style presets) as a visual teaching aid. See [flux-art-avatar.md](flux-art-avatar.md) and the Console Image Auto-Render section of [usage-schedule-curate-console.md](usage-schedule-curate-console.md) for the FLUX trigger behavior this pack references.
 
 ## Future Enhancements
 
