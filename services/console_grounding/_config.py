@@ -24,6 +24,10 @@ DEFAULT_TECH_KEYWORDS = {
     "transformer", "agent", "agentic", "api", "rest", "graphql",
     "docker", "kubernetes", "kafka", "data pipeline", "etl",
     "information retrieval", "ranking", "similarity", "reranking",
+    # Japanese language & orthography domain knowledge terms
+    "japanese", "hiragana", "katakana", "kanji", "romaji", "kana",
+    "hepburn", "kunrei", "mora", "dakuten", "handakuten", "yoon",
+    "sokuon", "stroke", "reading", "vocabulary", "nihon-shiki",
 }
 
 # Phrases that indicate the user is asking for knowledge / explanation
