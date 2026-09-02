@@ -62,6 +62,25 @@ For console `/art`, the source story is the most recent assistant reply in the c
 
 ---
 
+## Console Auto-Render Intent Triggers
+
+In interactive console mode, asking Sam to generate or depict an image automatically triggers FLUX art rendering. The system uses a two-part NLP intent trigger:
+
+1. **Image Request Verbs (`IMAGE_REQUEST_VERBS`)**:
+   - `draw`, `render`, `paint`, `visualize`, `depict`
+   - `generate an image`, `generate image`, `make an image`, `create an image`
+   - `show me a picture`, `show picture`, `show me an image`
+   - `illustration of`, `art of`, `picture of`
+
+2. **Subject & Japanese Art Markers (`JAPANESE_ART_SUBJECTS`)**:
+   - **Characters & Roles:** `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`
+   - **Scripts & Calligraphy:** `kanji`, `hiragana`, `katakana`, `romaji`, `calligraphy`
+   - **Art Styles & Culture:** `ukiyo-e`, `anime`, `manga`, `tokyo`, `kyoto`, `sakura`, `cherry blossom`, `torii`, `japanese`
+
+When an image request verb is detected along with a subject marker (e.g., *"Draw a shrine maiden at a torii gate"* or *"Render kanji 夢 in golden calligraphy"*), Sam explains the subject in text while the FLUX pipeline automatically generates and displays the visual in the terminal.
+
+---
+
 ## Terminal Display
 
 Art renders are displayed inline using `term-image`. By default the image auto-fits to the full terminal width (maximum resolution for your renderer protocol). Override:

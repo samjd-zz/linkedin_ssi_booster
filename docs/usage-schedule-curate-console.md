@@ -108,6 +108,19 @@ When you run `--console`, the startup screen explains the three query modes and 
   Art note: /art uses the most recent AI reply in this session as source text, or an explicit topic if provided (e.g. /art "shrine maiden"). Asking Sam to draw or depict Japanese characters/artwork automatically triggers a FLUX render.
 ```
 
+#### Console Image Auto-Render NLP Triggers
+
+When asking Sam for artwork or character visuals in console mode, the system detects image intent using the following trigger sets:
+
+1. **Image Request Verbs:** `draw`, `render`, `paint`, `visualize`, `depict`, `generate an image`, `make an image`, `create an image`, `show me a picture`, `illustration of`, `art of`, `picture of`.
+2. **Japanese Character & Art Subject Markers:** `character`, `shrine maiden`, `miko`, `samurai`, `ninja`, `geisha`, `kanji`, `hiragana`, `katakana`, `romaji`, `calligraphy`, `ukiyo-e`, `anime`, `manga`, `tokyo`, `kyoto`, `sakura`, `cherry blossom`, `torii`, `japanese`.
+
+*Example queries:*
+- *"Draw a shrine maiden near a torii gate at sunset"*
+- *"Render kanji 夢 in golden calligraphy on dark silk"*
+- *"Paint an illustration of a samurai warrior in ukiyo-e style"*
+- `"/art 'cherry blossoms over Tokyo skyline'"`
+
 The art avatar does not have its own separate persona graph. The FLUX prompt is based on the previous assistant reply, then refined with the active style preset, style system prompt, and optional realism hint / topic hint.
 
 #### Console Commands
