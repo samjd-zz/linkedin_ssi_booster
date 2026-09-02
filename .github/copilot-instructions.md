@@ -9,7 +9,7 @@ Python automation tool that generates and schedules LinkedIn posts via the Buffe
 - **Language**: Python 3.12+ (3.12.2 in production)
 - **LLM**: Ollama (local) via `services/ollama_service.py` — primary model `gemma4:e4b`, fallback `qwen3.5:9b`
 - **Database**: PostgreSQL 16 Alpine (optional dual-write mode) — SQLAlchemy 2.0+ ORM, 17 tables
-- **NLP**: spaCy `en_core_web_md` — NER, semantic similarity, fact extraction (`services/spacy_nlp.py`)
+- **NLP**: spaCy multi-language (`en_core_web_md`, `ja_core_news_md` via `SPACY_MODELS`) — NER, semantic similarity, fact extraction (`services/spacy_nlp.py`)
 - **Classification**: Model2Vec (`minishlab/potion-base-8M`) — static embedding-based text classification
 - **Logic/Inference**: PLN (Probabilistic Logic Networks) — `services/pln_inference.py`
 - **Voice/TTS**: Wyoming Piper — local neural TTS on port 10200 (Docker service)
@@ -237,7 +237,7 @@ linkedin_ssi_booster/
 ## Version & Test Status
 
 - **Version**: alpha-v0.0.3.5
-- **Test Count**: 828 collected; 828 passed, 0 skipped, 0 failed
+- **Test Count**: 833 collected; 833 passed, 0 skipped, 0 failed
 - **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
 
 ## Docker & Deployment

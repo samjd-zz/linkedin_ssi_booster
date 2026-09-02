@@ -10,11 +10,11 @@ The setup flow uses a Python virtual environment, package installation from `req
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m spacy download en_core_web_md  # recommended: includes word vectors
+python -m spacy download en_core_web_md  # recommended for English: includes word vectors
+python -m spacy download ja_core_news_md # optional for Japanese: multi-language NLP pack
 ```
 
-If disk space is constrained, `en_core_web_sm` also works but produces lower-quality
-semantic similarity scores. Override the model at runtime with the `SPACY_MODEL` env var.
+If disk space is constrained, `en_core_web_sm` and `ja_core_news_sm` also work. Override or configure models at runtime via `SPACY_MODEL` and `SPACY_MODELS` (e.g. `SPACY_MODELS=en_core_web_md,ja_core_news_md`).
 
 ## Environment file
 

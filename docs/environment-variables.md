@@ -363,6 +363,30 @@ KATZILLA_MAX_UNCERTAINTY_PER_DAY=20.0
 
 ---
 
+## spaCy NLP Configuration
+
+### `SPACY_MODEL`
+
+Primary spaCy model name to load for NER, semantic similarity, sentiment analysis, and article summarization.
+
+**Default:** `en_core_web_md`
+
+```bash
+SPACY_MODEL=en_core_web_md
+```
+
+### `SPACY_MODELS` / `SPACY_LANGUAGE_PACKS`
+
+Comma-separated list of spaCy language packs/models to support (e.g. English, Japanese). Enables multi-language spaCy NLP routing based on text character detection or explicit language tags.
+
+**Default:** `en_core_web_md,ja_core_news_md`
+
+```bash
+SPACY_MODELS=en_core_web_md,ja_core_news_md
+```
+
+---
+
 ## Model2Vec Classification
 
 ### `MODEL2VEC_ENABLED`

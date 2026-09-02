@@ -56,7 +56,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-828%20passed-16A34A.svg" alt="Tests 828 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-833%20passed-16A34A.svg" alt="Tests 833 passed"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-98%25-brightgreen.svg" alt="Coverage 98%"></a>
 </p>
 
@@ -73,7 +73,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ##### Why this is smarter than "AI writes posts"
 
-- **Advanced NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and preprocessing that filters boilerplate before fact storage. See [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
+- **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md`). Preprocessing filters boilerplate before fact storage. See [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
 - **Model2Vec static embedding classification** — ultra-fast article categorisation (`minishlab/potion-base-8M`, 30MB, zero API deps) mapped to 10 SSI categories; results boost selection-learning rankings and stamp extracted facts with `primary_category` and `primary_ssi_component`.
 - **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
 - **Hybrid RAG + agent pipeline** — BM25 retrieval, deterministic validation, multi-step orchestration, and a BM25+graph reranker for high factuality and variety.
@@ -424,6 +424,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_md
+python -m spacy download ja_core_news_md  # optional: Japanese multi-language NLP
 cp .env.example .env
 cp data/avatar/persona_graph.example.json data/avatar/persona_graph.json
 cp data/avatar/domain_knowledge.example.json data/avatar/domain_knowledge.json

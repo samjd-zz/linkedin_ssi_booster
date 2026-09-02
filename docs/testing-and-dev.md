@@ -43,12 +43,12 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Status          |
 | ----------- | ------- | ------- | ------ | --------------- |
-| **828**     | **828** | **0**   | **0**  | ✅ **All pass** |
+| **833**     | **833** | **0**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** September 1, 2026
-- **Latest Run Scope:** Complete test suite execution — fixed `FakeBufferService.create_post` channel signature parameter and `TestPipelineDisabledPaths` minimal_mode flag isolation.
+- **Latest Run Scope:** Multi-language spaCy NLP support (`SPACY_MODELS` routing, Japanese character detection, CJK noun chunks, Japanese sentiment analysis).
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. All 828 tests pass.
+- **Notes:** 0 skipped, 0 failed. All 833 tests pass.
 
 ### Test Suite Breakdown
 

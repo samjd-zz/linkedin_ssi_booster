@@ -520,3 +520,83 @@ class TestSelectionLearningIntegration:
             assert len(result) == 1
             assert result[0]["candidate_id"] == "1"
             assert result[0]["similarity_score"] == 0.85
+
+
+class TestMultiLanguageSpacyNLP:
+    """Test suite for multi-language spaCy support."""
+
+    def test_detect_language(self):
+        from services.spacy_nlp import detect_language
+
+        assert detect_language("Hello world") == "en"
+        assert detect_language("こんにちは世界") == "ja"
+        assert detect_language("Python 3.12 と spaCy NLP") == "ja"
+        assert detect_language("Software engineering best practices") == "en"
+
+    def test_multi_language_init(self):
+        nlp_engine = SpacyNLP(
+            model_name="en_core_web_md",
+            model_names="en_core_web_md,ja_core_news_md",
+        )
+        assert nlp_engine.model_name == "en_core_web_md"
+        assert "en_core_web_md" in nlp_engine.model_names
+        assert "ja_core_news_md" in nlp_engine.model_names
+
+    def test_get_model_for_text_auto_routing(self):
+        mock_en_nlp = Mock()
+        mock_ja_nlp = Mock()
+
+        nlp_engine = SpacyNLP(
+            model_name="en_core_web_md",
+            model_names=["en_core_web_md", "ja_core_news_md"],
+        )
+
+        def mock_load_by_name(name):
+            if name.startswith("ja"):
+                return mock_ja_nlp
+            return mock_en_nlp
+
+        with patch.object(nlp_engine, "_ensure_model_by_name", side_effect=mock_load_by_name):
+            en_model = nlp_engine.get_model_for_text("Building AI pipelines with Python")
+            ja_model = nlp_engine.get_model_for_text("AIパイプラインと信号処理の構築")
+
+            assert en_model is mock_en_nlp
+            assert ja_model is mock_ja_nlp
+
+    def test_japanese_sentiment_analysis(self):
+        mock_token1 = Mock()
+        mock_token1.text = "素晴らしい"
+        mock_token2 = Mock()
+        mock_token2.text = "成功"
+
+        mock_sent = Mock()
+        mock_sent.__iter__ = Mock(return_value=iter([mock_token1, mock_token2]))
+
+        mock_doc = Mock()
+        mock_doc.__iter__ = Mock(return_value=iter([mock_token1, mock_token2]))
+        mock_doc.sents = [mock_sent]
+
+        mock_nlp = Mock(return_value=mock_doc)
+
+        nlp_engine = SpacyNLP(model_name="ja_core_news_md")
+        nlp_engine._nlp = mock_nlp
+
+        result = nlp_engine.analyze_sentiment("このシステムは素晴らしい成功です！", lang="ja")
+
+        assert result["polarity"] == "positive"
+        assert result["confidence"] > 0.5
+        assert "enthusiastic" in result["tone"]
+
+    def test_get_spacy_nlp_loads_spacy_models_env(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "SPACY_MODEL": "en_core_web_md",
+                "SPACY_MODELS": "en_core_web_md,ja_core_news_md",
+            },
+        ):
+            with patch("services.spacy_nlp._default_instance", None):
+                instance = get_spacy_nlp()
+                assert instance.model_name == "en_core_web_md"
+                assert "ja_core_news_md" in instance.model_names
+
