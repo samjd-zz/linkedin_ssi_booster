@@ -1,0 +1,271 @@
+{
+    "schemaVersion": "1.0",
+    "description": "A foundational Romaji knowledge pack covering Japanese romanization systems, Hepburn notation, Kunrei-shiki and Nihon-shiki variations, orthographic transcription rules, IME mechanics, and study methods.",
+    "domains": [
+        {
+            "id": "romaji-hepburn",
+            "name": "Standard Hepburn Romanization System",
+            "description": "The widely used Hepburn system representing Japanese sounds based on English phonetic approximations."
+        },
+        {
+            "id": "romaji-systems",
+            "name": "Romanization Systems Comparison",
+            "description": "Differences between Hepburn, Kunrei-shiki (ISO 3602), and Nihon-shiki romanization frameworks."
+        },
+        {
+            "id": "romaji-orthography",
+            "name": "Romaji Orthographic and Phonetic Rules",
+            "description": "Rules for long vowels, geminate consonants (sokuon), moraic nasal n, and particle spelling in Romaji."
+        },
+        {
+            "id": "romaji-method",
+            "name": "Romaji Study Method and Practical Role",
+            "description": "IME typing mechanics, bridge function for beginners, and transition strategies from Romaji to Kana/Kanji."
+        }
+    ],
+    "facts": [
+        {
+            "id": "roma-001",
+            "domainId": "romaji-hepburn",
+            "statement": "Hepburn romanization (ヘボン式 Rōmaji) is the most widely adopted Japanese transcription system in international contexts, signage, and passports.",
+            "tags": [
+                "Romaji",
+                "Hepburn",
+                "romanization",
+                "transcription"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-002",
+            "domainId": "romaji-hepburn",
+            "statement": "Standard Hepburn romanizes the five Japanese vowels as a, i, u, e, o, pronounced similarly to Italian or Spanish vowel sounds.",
+            "tags": [
+                "vowels",
+                "a",
+                "i",
+                "u",
+                "e",
+                "o",
+                "phonetics"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-003",
+            "domainId": "romaji-hepburn",
+            "statement": "Hepburn romanizes palatalized or irregular consonant sounds phonetically for English speakers: し as shi, ち as chi, つ as tsu, and ふ as fu.",
+            "tags": [
+                "shi",
+                "chi",
+                "tsu",
+                "fu",
+                "Hepburn",
+                "consonants"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-004",
+            "domainId": "romaji-hepburn",
+            "statement": "The voiced counterparts in Hepburn are じ as ji, ぢ as ji (or dji in disambiguation), ず as zu, and づ as zu (or dzu).",
+            "tags": [
+                "ji",
+                "zu",
+                "voiced kana",
+                "dakuten",
+                "Hepburn"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-005",
+            "domainId": "romaji-hepburn",
+            "statement": "Contracted sounds (yōon) in Hepburn use y-combinations such as kya, kyu, kyo, sha, shu, sho, cha, chu, cho, and nya.",
+            "tags": [
+                "yoon",
+                "contracted sounds",
+                "kya",
+                "sha",
+                "cha"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-006",
+            "domainId": "romaji-systems",
+            "statement": "Kunrei-shiki (訓令式) is the Japanese government's official romanization system (ISO 3602), designed from a phonemic perspective: si (し), ti (ち), tu (つ), hu (ふ), zi (じ).",
+            "tags": [
+                "Kunrei-shiki",
+                "ISO 3602",
+                "phonemic",
+                "si",
+                "ti",
+                "tu",
+                "hu"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-007",
+            "domainId": "romaji-systems",
+            "statement": "Nihon-shiki (日本式) is a strict 1-to-1 transliteration scheme mapping each Japanese kana row directly without English phonetic adjustments.",
+            "tags": [
+                "Nihon-shiki",
+                "transliteration",
+                "kana mapping"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-008",
+            "domainId": "romaji-systems",
+            "statement": "While Kunrei-shiki and Nihon-shiki reflect internal Japanese phonological regularity, Hepburn is preferred in foreign language teaching because 'shi', 'chi', 'tsu', and 'fu' match natural English pronunciation.",
+            "tags": [
+                "systems comparison",
+                "Hepburn vs Kunrei",
+                "pronunciation"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-009",
+            "domainId": "romaji-orthography",
+            "statement": "Long vowels in Hepburn are represented either with macrons (ō, ū) or circumflexes (ô, û); in casual ASCII typing, trailing 'u' or 'o' (ou, oo, aa, ee, ii) are commonly used.",
+            "tags": [
+                "long vowels",
+                "macron",
+                "ASCII",
+                "orthography"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-010",
+            "domainId": "romaji-orthography",
+            "statement": "A geminate consonant (small tsu / っ / ッ) is represented in Romaji by doubling the following consonant, as in 'nippon' (にっぽん) or 'zasshi' (ざっし).",
+            "tags": [
+                "geminate",
+                "small tsu",
+                "sokuon",
+                "double consonant"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-011",
+            "domainId": "romaji-orthography",
+            "statement": "When a geminate consonant precedes 'ch', Modified Hepburn uses 'tch' instead of 'cch' (e.g., 'matcha' for まっちゃ).",
+            "tags": [
+                "tch",
+                "matcha",
+                "geminate ch",
+                "Hepburn rules"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-012",
+            "domainId": "romaji-orthography",
+            "statement": "The moraic nasal ん is transcribed as 'n'; an apostrophe (n') is used before vowels or 'y' to prevent ambiguity (e.g., 'shin'i' しんい vs 'shini' しに).",
+            "tags": [
+                "moraic nasal",
+                "n'",
+                "apostrophe",
+                "ambiguity"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-013",
+            "domainId": "romaji-orthography",
+            "statement": "Grammatical particles written with specialized kana readings are spelled phonetically in Hepburn Romaji: particle は as 'wa', へ as 'e', and を as 'o'.",
+            "tags": [
+                "particles",
+                "wa",
+                "e",
+                "o",
+                "grammar"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-014",
+            "domainId": "romaji-orthography",
+            "statement": "Traditional Hepburn transcribes 'n' before 'b', 'm', and 'p' as 'm' (e.g., 'Shimbun'), whereas modern Revised Hepburn retains 'n' ('Shinbun').",
+            "tags": [
+                "Shimbun",
+                "Shinbun",
+                "m vs n",
+                "Revised Hepburn"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-015",
+            "domainId": "romaji-method",
+            "statement": "Romaji is essential for Japanese input method editors (IME) on digital keyboards, where typing Romaji keystrokes converts text into Kana and Kanji.",
+            "tags": [
+                "IME",
+                "typing",
+                "keyboard",
+                "input method"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-016",
+            "domainId": "romaji-method",
+            "statement": "While Romaji lowers the initial barrier for beginner learners, relying exclusively on Romaji obscures Japanese homophones and delays native kana/kanji reading speed.",
+            "tags": [
+                "study advice",
+                "homophones",
+                "kana transition"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-017",
+            "domainId": "romaji-method",
+            "statement": "Effective Japanese language pedagogy uses Romaji as a temporary bridge before transitioning early to Hiragana and Katakana.",
+            "tags": [
+                "pedagogy",
+                "bridge",
+                "Hiragana",
+                "Katakana"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        },
+        {
+            "id": "roma-018",
+            "domainId": "romaji-method",
+            "statement": "Passport names and official Japanese road signs use variations of Revised Hepburn without macron diacritics (e.g., 'Tokyo' instead of 'Tōkyō').",
+            "tags": [
+                "passports",
+                "signage",
+                "Tokyo",
+                "official use"
+            ],
+            "confidence": "high",
+            "scope": "teaching"
+        }
+    ],
+    "relationships": []
+}

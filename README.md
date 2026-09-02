@@ -56,7 +56,8 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-822%20total-16A34A.svg" alt="Tests 822 total"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-828%20passed-16A34A.svg" alt="Tests 828 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-98%25-brightgreen.svg" alt="Coverage 98%"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">

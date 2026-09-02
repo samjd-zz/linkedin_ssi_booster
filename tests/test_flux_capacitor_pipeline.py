@@ -320,7 +320,13 @@ class TestPipelineDisabledPaths:
         return GPUOrchestrator(policy)
 
     def test_feature_disabled_returns_text_only(self):
-        with patch.dict("os.environ", {"FLUX_CAPACITOR_ENABLED": "false"}):
+        with patch.dict(
+            "os.environ",
+            {
+                "FLUX_CAPACITOR_ENABLED": "false",
+                "FLUX_CAPACITOR_MINIMAL_MODE": "false",
+            },
+        ):
             cfg = FluxCapacitorConfig()
         orch = self._make_orch()
         req = _minimal_request()

@@ -381,9 +381,13 @@ You can maintain different domain knowledge files for different contexts:
 # Default (general knowledge)
 data/avatar/domain_knowledge.json
 
-# Version-specific (if needed in future)
+# Domain packs (auto-merged at runtime)
 data/avatar/domain_knowledge_python.json
 data/avatar/domain_knowledge_java.json
+data/avatar/domain_knowledge_hiragana.json
+data/avatar/domain_knowledge_katakana.json
+data/avatar/domain_knowledge_kanji.json
+data/avatar/domain_knowledge_romaji.json
 ```
 
 The system currently loads only `domain_knowledge.json`, but you can swap files as needed.

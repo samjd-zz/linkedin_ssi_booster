@@ -918,22 +918,22 @@ def compose_lyrics(
     )
     language_instruction = {
         "japanese": (
-            "Write the performance lyrics in natural contemporary Japanese. "
-            "Use kana-forward phrasing, selective kanji, and mora-aware line lengths. "
+            "Write the performance lyrics in natural contemporary Japanese with optional Romaji vocaloid hooks or echoes. "
+            "Use kana-forward phrasing, selective kanji, Romaji chant phrases where effective, and mora-aware line lengths. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
         "bilingual": (
-            "Write one bilingual song that mixes Japanese and English within the same lyrics. "
-            f"Target approximately {japanese_target_percent}% Japanese lines and "
+            "Write one bilingual song that mixes Japanese (including Romaji vocaloid hooks/echoes) and English within the same lyrics. "
+            f"Target approximately {japanese_target_percent}% Japanese/Romaji lines and "
             f"{100 - japanese_target_percent}% English lines across sections. "
             "Preserve natural code-switching and do not translate every line. "
-            "Keep hooks memorable in both languages and avoid block-wise segregation by language. "
+            "Keep hooks memorable in both languages using Romaji or Kana/Kanji and avoid block-wise segregation by language. "
             "When a line includes both languages, put the spoken English first and keep the Japanese translation in parentheses. "
             "Do not place the sung English inside parentheses. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
-        "english": "Write the performance lyrics in English.",
-    }.get(lyric_language, "Write the performance lyrics in English.")
+        "english": "Write the performance lyrics in English with optional Romaji/Japanese vocaloid hook phrases or chant accents.",
+    }.get(lyric_language, "Write the performance lyrics in English with optional Romaji vocaloid hook phrases.")
 
     chorus_case_rule = (
         "4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity"

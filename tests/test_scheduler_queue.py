@@ -8,11 +8,18 @@ class FakeBufferService:
     def get_linkedin_channel_id(self) -> str:
         return "linkedin-channel"
 
-    def create_post(self, channel_id: str, text: str, scheduled_at: str | None = None) -> dict[str, str | None]:
+    def create_post(
+        self,
+        channel_id: str,
+        text: str,
+        scheduled_at: str | None = None,
+        channel: str = "linkedin",
+    ) -> dict[str, str | None]:
         post = {
             "channel_id": channel_id,
             "text": text,
             "scheduled_at": scheduled_at,
+            "channel": channel,
         }
         self.created_posts.append(post)
         return post

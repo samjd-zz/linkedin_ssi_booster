@@ -207,16 +207,32 @@
       }
     },
     "common_synths": {
-      "bass": ["sub_core", "drone_808", "dark_analog"],
-      "leads": ["hologram_pluck", "saw_carrier", "laser_vane"],
-      "pads": ["rei_cloud", "ether_strings", "neon_haze"],
+      "bass": [
+        "sub_core",
+        "drone_808",
+        "dark_analog"
+      ],
+      "leads": [
+        "hologram_pluck",
+        "saw_carrier",
+        "laser_vane"
+      ],
+      "pads": [
+        "rei_cloud",
+        "ether_strings",
+        "neon_haze"
+      ],
       "percussion": [
         "kick_pulse",
         "metallic_rim",
         "white_noise_hh",
         "machinery"
       ],
-      "effects": ["glitch_stutter", "data_leak", "circuit_bend"]
+      "effects": [
+        "glitch_stutter",
+        "data_leak",
+        "circuit_bend"
+      ]
     },
     "pattern_examples": {
       "basic_kick": "s(\"bd bd ~ bd ~ bd ~ bd\")",
@@ -293,20 +309,56 @@
       "155-180": "Digital breakcore chaos, broken system frameworks"
     },
     "mood_to_bpm": {
-      "dark_brooding": [130, 136],
-      "hypnotic_industrial": [134, 140],
-      "relentless_driving": [140, 145],
-      "aggressive_technical": [144, 150],
-      "peak_energy": [148, 155],
-      "chaotic_glitch": [155, 174]
+      "dark_brooding": [
+        130,
+        136
+      ],
+      "hypnotic_industrial": [
+        134,
+        140
+      ],
+      "relentless_driving": [
+        140,
+        145
+      ],
+      "aggressive_technical": [
+        144,
+        150
+      ],
+      "peak_energy": [
+        148,
+        155
+      ],
+      "chaotic_glitch": [
+        155,
+        174
+      ]
     },
     "concept_to_bpm": {
-      "low_level_systems": [146, 152],
-      "high_level_architecture": [132, 138],
-      "concurrency": [140, 144],
-      "real_time_processing": [148, 154],
-      "async_patterns": [136, 142],
-      "data_structures": [134, 140]
+      "low_level_systems": [
+        146,
+        152
+      ],
+      "high_level_architecture": [
+        132,
+        138
+      ],
+      "concurrency": [
+        140,
+        144
+      ],
+      "real_time_processing": [
+        148,
+        154
+      ],
+      "async_patterns": [
+        136,
+        142
+      ],
+      "data_structures": [
+        134,
+        140
+      ]
     }
   },
   "synth_selection_guidelines": {
@@ -322,18 +374,38 @@
         "cloud_strings",
         "ambient_carrier"
       ],
-      "data_flow": ["matrix_arp", "crisp_pluck", "sequenced_lead"],
+      "data_flow": [
+        "matrix_arp",
+        "crisp_pluck",
+        "sequenced_lead"
+      ],
       "system_errors": [
         "glitch_stutter",
         "bitcrushed_artifact",
         "distorted_line"
       ],
-      "network_communication": ["fm_bell", "metallic_strike", "digital_ping"]
+      "network_communication": [
+        "fm_bell",
+        "metallic_strike",
+        "digital_ping"
+      ]
     },
     "by_intensity": {
-      "aggressive": ["tearing_saw", "overdriven_square", "industrial_impact"],
-      "moderate": ["precision_pluck", "focused_lead", "modulated_bass"],
-      "subtle": ["vapor_pad", "whispering_ambient", "sine_drift"]
+      "aggressive": [
+        "tearing_saw",
+        "overdriven_square",
+        "industrial_impact"
+      ],
+      "moderate": [
+        "precision_pluck",
+        "focused_lead",
+        "modulated_bass"
+      ],
+      "subtle": [
+        "vapor_pad",
+        "whispering_ambient",
+        "sine_drift"
+      ]
     }
   },
   "lyrical_structure": {
@@ -360,8 +432,8 @@
   },
   "japanese_lyric_production": {
     "language_profile": {
-      "primary_script": "Kana-led Japanese with kanji used selectively for semantic anchors",
-      "romanization": "Use only as a production aid; keep final lyrics in Japanese unless a bilingual hook is requested",
+      "primary_script": "Kana-led Japanese with kanji used selectively for semantic anchors, plus Romaji for vocaloid hooks",
+      "romanization": "Incorporate Romaji (Hepburn/standard Japanese romanization) alongside Kana/Kanji for vocaloid pronunciation clarity, bilingual hook singability, and global listener engagement",
       "register": "Contemporary, concise, emotionally direct, and slightly synthetic rather than formal or archaic",
       "translation_policy": "Preserve the image, emotional temperature, and singability instead of translating word-for-word"
     },
@@ -376,14 +448,15 @@
       "phrase_shapes": {
         "verse": "Longer image-rich lines with conversational cadence and controlled internal repetition",
         "pre_chorus": "Shortening phrases that increase anticipation through repeated verbs or particles",
-        "chorus": "Compact kana-forward phrases, repeated nouns, and open vowels that remain intelligible under processing",
-        "breakdown": "Fragmented morae, clipped particles, whispered repeats, and deliberate digital stutters"
+        "chorus": "Compact kana-forward phrases, repeated nouns, Romaji hook accents, and open vowels that remain intelligible under processing",
+        "breakdown": "Fragmented morae, clipped particles, whispered repeats, Romaji stutters, and deliberate digital noise"
       }
     },
     "script_and_word_choice": {
       "hiragana": "Softness, intimacy, motion, and grammatical flow; useful for vulnerable or dreamy lines",
       "katakana": "Technical terms, imported words, machine alerts, and bright cyberpop emphasis",
       "kanji": "Use as visual and semantic impact points such as 光, 夢, 信号, 記憶, and 境界",
+      "romaji": "Use Romaji phrases (e.g. 'Setsuzoku OK', 'Saikidō', 'Hikari', 'Mada setsuzokuchū', 'Kokoro no Code') for rhythmic vocaloid hooks, chorus echoes, chant layers, and accessible J-pop/cyberpop vocal cues",
       "technical_vocabulary": [
         "データ (data)",
         "信号 (signal)",
@@ -405,15 +478,17 @@
       "rhyme_model": "Favor vowel echoes, repeated mora patterns, parallel syntax, and end-word recurrence over forced end rhyme",
       "hook_techniques": [
         "Repeat a two-to-five-mora motif at the end of alternating lines",
-        "Pair a Japanese technical phrase with a concise English tag only when the contrast adds rhythm or meaning",
+        "Pair a Japanese technical phrase with a concise English or Romaji tag when the contrast adds rhythm or meaning",
+        "Incorporate a Romaji vocaloid hook or call-and-response chant (e.g. 'Setsuzoku OK', 'Hikari wo mototte', 'Sistem error') to pair with Kana/Kanji lyrics",
         "Use alliteration and consonant repetition sparingly because vowel clarity carries the topline",
         "Reserve the densest technical noun for the chorus title or final landing word"
       ],
       "example_motifs": [
-        "信号、信号 (signal, signal)",
-        "まだ接続中 (still connecting)",
-        "光って、もっと (shine, more)",
-        "再起動して (restart me)"
+        "信号、信号 / Shingō, Shingō (signal, signal)",
+        "まだ接続中 / Mada setsuzokuchū (still connecting)",
+        "光って、もっと / Hikari wo mototte (shine, more)",
+        "再起動して / Saikidō shite (restart me)",
+        "Setsuzoku OK (connection OK)"
       ]
     },
     "vocal_production": {
@@ -501,7 +576,8 @@
     "industrial_techno_template": "138 bpm, dark techno hyperpop, {mood} cute female vocaloid, heavy bass, glitch pop energy",
     "cyberpunk_electro_template": "144 bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks, bright pop energy",
     "dark_synthwave_template": "126 bpm, dark synthpop, {mood} dreamy vocaloid, analog synths, ethereal atmosphere",
-    "glitch_industrial_template": "150 bpm, glitch pop industrial, {mood} playful vocaloid, hyper energy, kawaii bass"
+    "glitch_industrial_template": "150 bpm, glitch pop industrial, {mood} playful vocaloid, hyper energy, kawaii bass",
+    "romaji_cyberpop_template": "142 bpm, cyberpop vocaloid, Romaji and Japanese hooks, {mood} AI vocals, synthwave vibes, catchy J-pop electropop"
   },
   "production_notes": {
     "mixing": {

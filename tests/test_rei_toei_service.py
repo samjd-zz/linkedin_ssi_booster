@@ -747,6 +747,7 @@ def test_extract_themes_suggests_bpm_and_mood(mock_extracted_knowledge):
 
 def test_choose_diverse_theme_penalizes_recent_repeats():
     """Test that recent themes are penalized during random selection."""
+    import random
     themes = [
         Theme(
             id="theme_hot",
@@ -767,10 +768,11 @@ def test_choose_diverse_theme_penalizes_recent_repeats():
     ]
 
     # With the recent-repeat penalty, Hot Theme should be less likely than base scoring suggests.
+    random.seed(42)
     with patch("services.rei_toei._suno_pipeline.random.uniform", return_value=1.0):
         picks = [
             choose_diverse_theme(themes, recent_theme_names=["Hot Theme"]).name
-            for _ in range(300)
+            for _ in range(500)
         ]
 
     hot_count = picks.count("Hot Theme")
@@ -1786,6 +1788,22 @@ def test_generate_strudel_code_removes_markdown():
     assert "```" not in pattern.strudel_code
     assert "javascript" not in pattern.strudel_code
     assert pattern.strudel_code.strip() == 'stack(note("c3").sound("pluck"))'
+
+
+def test_rei_toei_domain_knowledge_includes_romaji():
+    """Test that Rei Toei's domain knowledge and suno templates incorporate Romaji guidance."""
+    service = ReiToeiService()
+    dk = service.domain_knowledge
+
+    # Check japanese_lyric_production includes Romaji guidance
+    jlp = dk.japanese_lyric_production
+    assert "romaji" in jlp.get("language_profile", {}).get("primary_script", "").lower() or "romaji" in jlp.get("language_profile", {}).get("romanization", "").lower()
+    assert "romaji" in jlp.get("script_and_word_choice", {})
+
+    # Check suno prompt templates include a Romaji template
+    templates = dk.suno_prompt_templates
+    assert "romaji_cyberpop_template" in templates
+    assert "romaji" in templates["romaji_cyberpop_template"].lower()
 
 
 def test_validate_strudel_syntax_valid_code():
