@@ -8,6 +8,8 @@ import re
 from services.console_grounding._config import (
     DOMAIN_KNOWLEDGE_PHRASES,
     EXPLICIT_ARTIFACT_PHRASES,
+    IMAGE_REQUEST_VERBS,
+    JAPANESE_ART_SUBJECTS,
     LEARNED_KNOWLEDGE_PHRASES,
     SEARCH_LEARNED_KNOWLEDGE_PHRASES,
     get_console_grounding_keywords,
@@ -90,6 +92,41 @@ def parse_query_constraints(
         if base_tag in tags:
             tags.update(related)
 
+    # Check for image generation / artwork requests
+    has_image_request = any(phrase in q for phrase in IMAGE_REQUEST_VERBS)
+    has_japanese_subject = any(subject in q for subject in JAPANESE_ART_SUBJECTS)
+    is_japanese_art_request = has_image_request and (
+        has_japanese_subject
+        or any(k in q for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "anime", "manga"])
+    )
+
+    art_subject_hint = ""
+    if has_image_request:
+        match = re.search(r'["\']([^"\']+)["\']', query)
+        if match:
+            art_subject_hint = match.group(1).strip()
+        else:
+            for prep in [
+                "illustration of",
+                "picture of",
+                "image of",
+                "art of",
+                "depicting",
+                "showing",
+                "draw a",
+                "draw an",
+                "draw",
+                "render",
+                "paint",
+                "visualize",
+            ]:
+                if prep in q:
+                    idx = q.find(prep) + len(prep)
+                    art_subject_hint = query[idx:].strip(" .!?,;")
+                    break
+            if not art_subject_hint:
+                art_subject_hint = query.strip()
+
     return QueryConstraints(
         require_projects=require_projects,
         require_companies=require_companies,
@@ -100,6 +137,9 @@ def parse_query_constraints(
         list_domain_terms=term_list_request,
         use_learned_knowledge=use_learned_knowledge,
         search_learned_knowledge=search_learned_knowledge,
+        has_image_request=has_image_request,
+        is_japanese_art_request=is_japanese_art_request,
+        art_subject_hint=art_subject_hint,
         route_mode=route_mode,
     )
 

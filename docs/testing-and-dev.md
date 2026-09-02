@@ -43,12 +43,12 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Status          |
 | ----------- | ------- | ------- | ------ | --------------- |
-| **833**     | **833** | **0**   | **0**  | ✅ **All pass** |
+| **837**     | **837** | **0**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** September 1, 2026
-- **Latest Run Scope:** Multi-language spaCy NLP support (`SPACY_MODELS` routing, Japanese character detection, CJK noun chunks, Japanese sentiment analysis).
+- **Latest Run Scope:** Multi-language spaCy NLP language packs (`ja_core_news_md`), Sam Japanese teacher chat persona, and console Japanese artwork auto-rendering integration via FLUX.1.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. All 833 tests pass.
+- **Notes:** 0 skipped, 0 failed. All 837 tests pass.
 
 ### Test Suite Breakdown
 
@@ -64,8 +64,8 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
 - **47** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
 - _36 Pipeline | 11 GPU Orchestration Policy_
-- **18** FLUX Capacitor main.py integration tests (Steps 5–7)
-- _3 Schedule flow | 7 Curate flow | 7 Console flow (plus 1 SourceMode assertion)_
+- **20** FLUX Capacitor main.py integration tests (Steps 5–7)
+- _3 Schedule flow | 7 Curate flow | 9 Console flow (includes auto-render trigger for Japanese character/art requests)_
   - `tests/test_flux_capacitor_schedule_integration.py`
   - `tests/test_flux_capacitor_curate_console_integration.py`
 

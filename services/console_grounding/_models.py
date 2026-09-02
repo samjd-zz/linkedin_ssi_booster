@@ -52,6 +52,9 @@ class QueryConstraints:
     list_domain_terms: bool = False  # User asks to list domain terms/concepts with meanings
     use_learned_knowledge: bool = False  # User asks to use "learned knowledge"
     search_learned_knowledge: bool = False  # User asks to search learned knowledge
+    has_image_request: bool = False  # User asks for an image / artwork / drawing
+    is_japanese_art_request: bool = False  # Request is specifically for Japanese character or art
+    art_subject_hint: str = ""  # Extracted subject or character name for image render
     route_mode: str = "llm_with_context"  # "llm_with_context", "deterministic_citation", "learned_context"
 
     @property

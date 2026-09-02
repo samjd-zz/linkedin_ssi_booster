@@ -140,6 +140,12 @@ def build_prompt(
         kc = request.knowledge_context.strip()[:200]
         knowledge_snippet = f" Context: {kc}."
 
+    # 6b. Japanese character & artwork styling cue
+    japanese_art_cue = ""
+    combo_text = f"{subject_text} {request.theme or ''} {request.knowledge_context or ''}".lower()
+    if any(k in combo_text for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "shrine maiden", "miko", "samurai", "ninja", "ukiyo-e", "geisha", "calligraphy", "sakura"]):
+        japanese_art_cue = " Japanese artistic influence: crisp elegant linework, balanced composition, expressive character styling, authentic cultural details, and refined aesthetic harmony."
+
     # 7. Assemble style block
     style_block = (
         f"Palette: {preset.palette}. "
@@ -166,7 +172,7 @@ def build_prompt(
     # 10. Combine
     prompt = (
         f"Visual concept inspired by the input story: {subject_text}."
-        f"{theme_cue}{knowledge_snippet} "
+        f"{theme_cue}{knowledge_snippet}{japanese_art_cue} "
         "Prioritize cohesive composition, clear focal hierarchy, and refined illustration quality. "
         f"{style_block}{style_persona}{realism_clause}"
     ).strip()

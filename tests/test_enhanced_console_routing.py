@@ -408,3 +408,29 @@ class TestDomainCharacterListing:
         constraints = parse_query_constraints(query)
         
         assert constraints.require_domain_knowledge is True
+
+
+class TestJapaneseArtImageIntent:
+    """Test suite for Japanese art and character image request detection."""
+
+    def test_japanese_art_image_request_detection(self):
+        queries = [
+            ("Draw a shrine maiden near a torii gate", "shrine maiden near a torii gate"),
+            ("Render a samurai warrior in ukiyo-e style", "samurai warrior in ukiyo-e style"),
+            ("Generate an image of 'Sakura'", "Sakura"),
+            ("Paint an illustration of a geisha with cherry blossoms", "geisha with cherry blossoms"),
+            ("Show me a picture of kanji 夢 in golden calligraphy", "kanji 夢 in golden calligraphy"),
+        ]
+        for query, expected_hint in queries:
+            constraints = parse_query_constraints(query)
+            assert constraints.has_image_request is True
+            assert constraints.is_japanese_art_request is True
+            assert expected_hint in constraints.art_subject_hint
+
+    def test_generic_image_request_detection(self):
+        query = "Generate an image of a cloud architecture diagram"
+        constraints = parse_query_constraints(query)
+        assert constraints.has_image_request is True
+        assert constraints.is_japanese_art_request is False
+        assert "cloud architecture" in constraints.art_subject_hint
+

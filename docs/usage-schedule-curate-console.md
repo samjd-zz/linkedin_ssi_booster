@@ -105,7 +105,7 @@ When you run `--console`, the startup screen explains the three query modes and 
   • Use /graph-stats to inspect graph structure and both domain-knowledge profiles (Sam + Rei)
 
   Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art
-  Art note: /art uses the most recent AI reply in this session as source text.
+  Art note: /art uses the most recent AI reply in this session as source text, or an explicit topic if provided (e.g. /art "shrine maiden"). Asking Sam to draw or depict Japanese characters/artwork automatically triggers a FLUX render.
 ```
 
 The art avatar does not have its own separate persona graph. The FLUX prompt is based on the previous assistant reply, then refined with the active style preset, style system prompt, and optional realism hint / topic hint.

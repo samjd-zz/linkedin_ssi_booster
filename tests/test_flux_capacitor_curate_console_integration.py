@@ -282,3 +282,42 @@ class TestRenderConsoleArtAvatar:
         monkeypatch.setattr(main, "get_flux_service", lambda: svc)
         result = main._render_console_art_avatar(_MockOllamaAI(), "text without hint")
         assert "art_avatar_status" in result
+
+    def test_auto_render_art_if_requested_triggers_render(self, monkeypatch):
+        rendered_calls: list = []
+
+        def _mock_render(ai, reply_text, topic_hint):
+            rendered_calls.append((reply_text, topic_hint))
+            return {"art_avatar_status": "rendered", "art_avatar_image_path": "/tmp/test.png"}
+
+        monkeypatch.setattr(main, "_render_console_art_avatar", _mock_render)
+        monkeypatch.setattr(main, "_display_art_in_terminal", lambda path: None)
+
+        constraints = SimpleNamespace(
+            is_japanese_art_request=True,
+            has_image_request=True,
+            art_subject_hint="shrine maiden",
+        )
+
+        ai = _MockOllamaAI()
+        main._auto_render_art_if_requested(ai, "A serene Miko stands at the torii gate.", constraints, "draw a shrine maiden")
+
+        assert len(rendered_calls) == 1
+        assert rendered_calls[0][0] == "A serene Miko stands at the torii gate."
+        assert rendered_calls[0][1] == "shrine maiden"
+
+    def test_auto_render_art_if_requested_skips_when_no_image_intent(self, monkeypatch):
+        rendered_calls: list = []
+        monkeypatch.setattr(main, "_render_console_art_avatar", lambda *a: rendered_calls.append(a))
+
+        constraints = SimpleNamespace(
+            is_japanese_art_request=False,
+            has_image_request=False,
+            art_subject_hint="",
+        )
+
+        ai = _MockOllamaAI()
+        main._auto_render_art_if_requested(ai, "Just normal text response", constraints, "hello sam")
+
+        assert len(rendered_calls) == 0
+

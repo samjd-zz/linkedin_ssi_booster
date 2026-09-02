@@ -25,6 +25,7 @@ import re
 import sys
 import gc
 import importlib
+from typing import Any, Optional, Dict, List
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from dotenv import load_dotenv
@@ -402,6 +403,32 @@ def _render_console_art_avatar(
         return {"art_avatar_status": "failed", "art_avatar_render_error": str(exc)}
 
 
+def _auto_render_art_if_requested(
+    ai: OllamaService,
+    reply_text: str,
+    constraints: Any,
+    user_input: str,
+) -> None:
+    """Automatically trigger FLUX art avatar render when user requests an image/artwork."""
+    if not getattr(constraints, "is_japanese_art_request", False) and not getattr(constraints, "has_image_request", False):
+        return
+
+    _art_topic_hint = getattr(constraints, "art_subject_hint", "") or user_input
+    print(str(Fore.CYAN) + f"\n🎨 Auto-rendering artwork ('{_art_topic_hint}') via FLUX.1..." + str(Style.RESET_ALL))
+    _art_result = _render_console_art_avatar(ai, reply_text, _art_topic_hint)
+    _art_status = _art_result.get("art_avatar_status", "unavailable")
+    if _art_status == RenderStatus.RENDERED.value:
+        print(str(Fore.GREEN) + f"✅  Art rendered → {_art_result.get('art_avatar_image_path', '')}" + str(Style.RESET_ALL))
+        _display_art_in_terminal(_art_result.get("art_avatar_image_path"))
+        _story = _art_result.get("art_avatar_story_path")
+        if _story:
+            print(str(Fore.GREEN) + f"   Story → {_story}" + str(Style.RESET_ALL))
+    elif _art_status in (RenderStatus.DEFERRED.value, RenderStatus.TEXT_ONLY.value):
+        print(str(Fore.YELLOW) + f"⏳  GPU busy — {_art_result.get('art_avatar_defer_reason', 'image deferred')}" + str(Style.RESET_ALL))
+    else:
+        print(str(Fore.RED) + f"⚠️  Art generation: {_art_status} — {_art_result.get('art_avatar_render_error', '')}" + str(Style.RESET_ALL))
+
+
 def _display_art_in_terminal(image_path: str | None, width: int | None = None) -> None:
     """Render a FLUX-generated image inline in the terminal using term-image.
 
@@ -435,23 +462,23 @@ def _display_art_in_terminal(image_path: str | None, width: int | None = None) -
 
     _render_image_path = image_path
     _temp_upsampled_path: str | None = None
-    _upsample_factor_raw = os.getenv("FLUX_DISPLAY_UPSCALE_FACTOR", "2").strip()
-    _upsample_factor = int(_upsample_factor_raw) if _upsample_factor_raw.isdigit() else 2
+    _upsample_factor_raw = os.getenv("FLUX_DISPLAY_UPSCALE_FACTOR", "1").strip()
+    _upsample_factor = int(_upsample_factor_raw) if _upsample_factor_raw.isdigit() else 1
     _upsample_factor = max(1, min(_upsample_factor, 6))
 
-    # Upsample with nearest-neighbor so terminal downscaling keeps edge contrast.
+    # High-quality Lanczos/Bicubic resampling if upscaling is requested
     if _upsample_factor > 1:
         try:
             _pil_image_mod = importlib.import_module("PIL.Image")
             import tempfile as _tempfile
 
             _resampling = getattr(_pil_image_mod, "Resampling", _pil_image_mod)
-            _nearest = getattr(_resampling, "NEAREST")
+            _filter = getattr(_resampling, "LANCZOS", getattr(_resampling, "BICUBIC", None))
 
             with _pil_image_mod.open(image_path) as _source_img:
                 _upsampled_img = _source_img.resize(
                     (_source_img.width * _upsample_factor, _source_img.height * _upsample_factor),
-                    _nearest,
+                    _filter,
                 )
 
                 with _tempfile.NamedTemporaryFile(
@@ -1042,8 +1069,10 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 (m["content"] for m in reversed(history) if m["role"] == "assistant"),
                 None,
             )
+            if not _art_src and _art_topic_hint:
+                _art_src = f"Visual representation of {_art_topic_hint}"
             if not _art_src:
-                print(str(Fore.YELLOW) + "⚠️  No previous reply to render art from. Generate a response first." + str(Style.RESET_ALL))
+                print(str(Fore.YELLOW) + "⚠️  No previous reply to render art from. Generate a response first or provide a topic (e.g. /art 'shrine maiden')." + str(Style.RESET_ALL))
             else:
                 print(str(Fore.CYAN) + "🎨 Requesting art avatar..." + str(Style.RESET_ALL))
                 _art_result = _render_console_art_avatar(ai, _art_src, _art_topic_hint)
@@ -1130,6 +1159,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             history.append({"role": "assistant", "content": reply})
             _print_console_reply("sam", reply)
             speak_text(reply)
+            _auto_render_art_if_requested(ai, reply, constraints, user_input)
             
             if verify:
                 print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
@@ -1245,6 +1275,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         history.append({"role": "assistant", "content": reply})
         _print_console_reply("sam", reply)
         speak_text(reply)
+        _auto_render_art_if_requested(ai, reply, constraints, user_input)
         
         if verify:
             print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)

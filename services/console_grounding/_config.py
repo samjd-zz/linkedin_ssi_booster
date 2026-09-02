@@ -68,6 +68,22 @@ SEARCH_LEARNED_KNOWLEDGE_PHRASES: frozenset[str] = frozenset([
     "query your learned knowledge",
 ])
 
+# Verbs/phrases that indicate a request for generating an image/artwork
+IMAGE_REQUEST_VERBS: frozenset[str] = frozenset([
+    "draw", "render", "generate an image", "generate image",
+    "make an image", "make image", "create an image", "create image",
+    "paint", "show me a picture", "show picture", "show me an image",
+    "visualize", "depict", "illustration of", "art of", "picture of",
+])
+
+# Subjects/keywords indicating Japanese character or artwork image intent
+JAPANESE_ART_SUBJECTS: frozenset[str] = frozenset([
+    "character", "shrine maiden", "miko", "samurai", "ninja", "geisha",
+    "kanji", "hiragana", "katakana", "romaji", "calligraphy", "ukiyo-e",
+    "anime", "manga", "tokyo", "kyoto", "sakura", "cherry blossom", "torii",
+    "japanese", "japanese character", "japanese art",
+])
+
 DEFAULT_TAG_EXPANSIONS: dict[str, set[str]] = {
     "java": {"spring", "jms", "oracle", "weblogic", "solr", "lucene", "elasticsearch"},
 }
