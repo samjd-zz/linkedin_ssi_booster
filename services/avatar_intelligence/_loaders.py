@@ -53,7 +53,7 @@ def _validate_persona_graph(data: dict[str, Any]) -> list[str]:
         errors.extend(["missing or invalid 'person'"])
     for key in ("projects", "companies", "skills", "claims"):
         if not isinstance(data.get(key), list):
-            errors.extend([f"missing or invalid '{key}' (must be a list)"])
+            errors.append(f"missing or invalid '{key}' (must be a list)")
     return errors
 
 
@@ -61,7 +61,7 @@ def _validate_narrative_memory(data: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     for key in ("recentThemes", "recentClaims", "openNarrativeArcs"):
         if not isinstance(data.get(key), list):
-            errors.extend([f"missing or invalid '{key}' (must be a list)"])
+            errors.append(f"missing or invalid '{key}' (must be a list)")
     return errors
 
 
@@ -82,7 +82,7 @@ def _validate_domain_knowledge(data: dict[str, Any]) -> list[str]:
         errors.extend(["missing or invalid 'schemaVersion'"])
     for key in ("domains", "facts", "relationships"):
         if not isinstance(data.get(key), list):
-            errors.extend([f"missing or invalid '{key}' (must be a list)"])
+            errors.append(f"missing or invalid '{key}' (must be a list)")
     return errors
 
 

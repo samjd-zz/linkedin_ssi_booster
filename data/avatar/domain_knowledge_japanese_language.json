@@ -1,0 +1,399 @@
+{
+  "schemaVersion": "1.0",
+  "description": "A teaching-oriented knowledge pack for Sam that unifies the dedicated Japanese-language study packs (romaji, hiragana, katakana, kanji, kanji-200) into one coherent curriculum, adds grammar, pronunciation, vocabulary, learner-level, and pedagogy knowledge those packs do not cover, and encodes how Sam should use FLUX capacitor image generation as a teaching aid. General linguistic and pedagogical claims below are durable; any specific vocabulary item, JLPT list entry, or novel example sentence should still be verified against a current Japanese dictionary before being taught as authoritative.",
+  "domains": [
+    {
+      "id": "japanese-curriculum-map",
+      "name": "Japanese Learning Curriculum Map",
+      "description": "How the dedicated romaji, hiragana, katakana, kanji, and kanji-200 knowledge packs fit together into one teaching sequence, and how Sam should cross-reference them."
+    },
+    {
+      "id": "japanese-grammar-fundamentals",
+      "name": "Japanese Grammar Fundamentals",
+      "description": "Word order, particles, verb and adjective conjugation groups, and politeness register — the structural layer the script-focused packs assume but do not teach directly."
+    },
+    {
+      "id": "japanese-pronunciation-prosody",
+      "name": "Japanese Pronunciation and Prosody",
+      "description": "Mora timing, pitch accent, vowel length, vowel devoicing, and geminate consonants — the sound layer of spoken Japanese."
+    },
+    {
+      "id": "japanese-vocabulary-building",
+      "name": "Japanese Vocabulary Building",
+      "description": "Lexical strata (native, Sino-Japanese, loanword), counters, compound-reading patterns, and graded vocabulary targets."
+    },
+    {
+      "id": "japanese-learner-levels",
+      "name": "Japanese Learner Levels and Progression",
+      "description": "JLPT level structure, how this pack's scope maps onto that structure, and tracking recognition vs. reading vs. production skill separately."
+    },
+    {
+      "id": "japanese-teaching-pedagogy",
+      "name": "Japanese Teaching Pedagogy",
+      "description": "Evidence-informed teaching methods for Sam to apply when guiding a learner through Japanese script, grammar, and vocabulary."
+    },
+    {
+      "id": "japanese-visual-learning-flux",
+      "name": "Visual Japanese Teaching with the FLUX Capacitor",
+      "description": "How Sam should invoke FLUX capacitor image generation during console teaching sessions to reinforce script, calligraphy, and cultural-vocabulary lessons."
+    },
+    {
+      "id": "japanese-culture-context",
+      "name": "Japanese Cultural Context for Language Learning",
+      "description": "Social register, seasonal vocabulary, and the cultural subjects that commonly accompany Japanese-language visual teaching aids."
+    }
+  ],
+  "facts": [
+    {
+      "id": "jlm-001",
+      "domainId": "japanese-curriculum-map",
+      "statement": "The recommended teaching sequence across Sam's Japanese packs is: romaji as a typing/reading bridge for absolute beginners, then hiragana for native grammatical readings, then katakana for loanwords and names, then the kanji structure pack for radicals/readings/handwriting, then the kanji-200 pack for a practical core literacy set.",
+      "tags": [
+        "curriculum",
+        "sequence",
+        "romaji",
+        "hiragana",
+        "katakana",
+        "kanji"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "jlm-002",
+      "domainId": "japanese-curriculum-map",
+      "statement": "Each Japanese pack (romaji, hiragana, katakana, kanji, kanji-200) loads as an independent domain_knowledge_*.json file and is auto-merged with this pack into one evidence pool, so a single teaching statement Sam makes may be jointly supported by facts from several packs at once.",
+      "tags": ["domain knowledge", "merging", "evidence", "truth gate"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "jlm-003",
+      "domainId": "japanese-curriculum-map",
+      "statement": "The hiragana, katakana, and romaji packs all standardize on Hepburn romanization (shi, chi, tsu, fu rather than si, ti, tu, hu), and Sam should keep that convention consistent across grammar and vocabulary explanations to avoid contradicting the script packs.",
+      "tags": ["Hepburn", "romanization", "consistency", "romaji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "jlm-004",
+      "domainId": "japanese-curriculum-map",
+      "statement": "This pack supplies the grammar, pronunciation, vocabulary-strategy, level-tracking, and visual-teaching layers that the script-focused packs intentionally omit; script mechanics remain the authority of the romaji, hiragana, katakana, and kanji packs.",
+      "tags": ["scope", "curriculum", "grammar", "pronunciation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "gram-001",
+      "domainId": "japanese-grammar-fundamentals",
+      "statement": "Japanese is typically described as subject-object-verb word order, and grammatical roles are marked primarily by particles rather than by strict word position, which is a foundational contrast with English that should be introduced early.",
+      "tags": ["word order", "SOV", "particles", "grammar basics"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "gram-002",
+      "domainId": "japanese-grammar-fundamentals",
+      "statement": "Core particles include は (topic marker), が (subject marker), を (direct object marker), に (target/time/location), で (location of action/means), と (and/with), も (also), and か (question marker); the topic-vs-subject distinction between は and が is a common early source of learner confusion and deserves explicit contrastive examples.",
+      "tags": ["particles", "wa", "ga", "topic", "subject"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "gram-003",
+      "domainId": "japanese-grammar-fundamentals",
+      "statement": "Japanese verbs fall into three conjugation groups: godan (u-verbs), ichidan (ru-verbs), and irregular verbs (する suru, 来る kuru); Sam should identify a verb's group before applying a conjugation rule, since the three groups conjugate differently for the same tense or form.",
+      "tags": ["verb groups", "godan", "ichidan", "conjugation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "gram-004",
+      "domainId": "japanese-grammar-fundamentals",
+      "statement": "Politeness register spans plain/dictionary form, polite です/ます (desu/masu) form, and keigo (honorific and humble speech); learners should be taught to recognize all three registers in input before being expected to produce keigo accurately in output.",
+      "tags": ["politeness", "keigo", "desu-masu", "register"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "gram-005",
+      "domainId": "japanese-grammar-fundamentals",
+      "statement": "Japanese adjectives split into い-adjectives and な-adjectives, which conjugate differently for negation and past tense; conflating the two categories is a frequent beginner error worth correcting early.",
+      "tags": ["adjectives", "i-adjective", "na-adjective", "conjugation"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "gram-006",
+      "domainId": "japanese-grammar-fundamentals",
+      "statement": "Sentence-final particles such as ね, よ, か, and わ add pragmatic or emotional nuance (seeking agreement, asserting new information, asking a question, softening a statement) that a literal word-for-word translation usually does not capture.",
+      "tags": ["sentence-final particles", "ne", "yo", "pragmatics"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "pron-001",
+      "domainId": "japanese-pronunciation-prosody",
+      "statement": "Standard Japanese rhythm is mora-timed rather than stress-timed like English: each kana, or kana-plus-modifier combination, generally corresponds to one mora of roughly equal perceived duration.",
+      "tags": ["mora", "rhythm", "prosody", "phonology"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "pron-002",
+      "domainId": "japanese-pronunciation-prosody",
+      "statement": "Pitch accent (a high-low tonal pattern across a word) can distinguish otherwise homophonous words, such as はし meaning chopsticks versus はし meaning bridge; pitch accent patterns are lexical and vary between standard Tokyo Japanese and other regional dialects such as Kansai.",
+      "tags": ["pitch accent", "homophones", "hashi", "dialect"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "pron-003",
+      "domainId": "japanese-pronunciation-prosody",
+      "statement": "The vowels い and う are frequently devoiced (whispered rather than voiced) between voiceless consonants or at the end of an utterance in standard Tokyo Japanese, which learners should recognize as normal rather than as a mispronunciation when they hear it.",
+      "tags": ["vowel devoicing", "listening", "phonology"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "pron-004",
+      "domainId": "japanese-pronunciation-prosody",
+      "statement": "Vowel length is phonemically distinctive in Japanese, so a short vowel versus a long vowel changes word meaning, as in おばさん (aunt) versus おばあさん (grandmother); long-vowel accuracy should be taught and drilled explicitly rather than treated as a minor detail.",
+      "tags": ["vowel length", "long vowels", "minimal pairs"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "pron-005",
+      "domainId": "japanese-pronunciation-prosody",
+      "statement": "The small っ/ッ (sokuon) doubles the duration of the following consonant and changes word meaning, as in きて versus きって; sokuon should be taught alongside the kana packs as a pronunciation feature, not only as a spelling rule.",
+      "tags": ["sokuon", "geminate consonant", "small tsu"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "vocab-001",
+      "domainId": "japanese-vocabulary-building",
+      "statement": "Japanese vocabulary is commonly grouped into three strata — 和語 wago (native Japanese), 漢語 kango (Sino-Japanese, usually kanji compounds), and 外来語 gairaigo (loanwords, usually written in katakana) — and each stratum tends to carry different register and formality associations.",
+      "tags": ["wago", "kango", "gairaigo", "lexical strata"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "vocab-002",
+      "domainId": "japanese-vocabulary-building",
+      "statement": "Counters (助数詞 josuushi) change based on the shape or category of the object being counted rather than using one general counting sequence, which is a persistent challenge for learners coming from English and should be taught with concrete category examples.",
+      "tags": ["counters", "josuushi", "vocabulary"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "vocab-003",
+      "domainId": "japanese-vocabulary-building",
+      "statement": "熟語 jukugo (kanji compounds) frequently recombine the on'yomi readings covered in the kanji structure pack, so vocabulary study should explicitly link a new compound's reading back to the individual kanji's known on'yomi rather than memorizing the compound reading in isolation.",
+      "tags": ["jukugo", "compounds", "on-yomi", "kanji"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "vocab-004",
+      "domainId": "japanese-vocabulary-building",
+      "statement": "JLPT vocabulary lists provide graded, frequency-informed targets across levels N5 through N1, but the official lists and exact word counts are maintained externally and change over time, so specific list membership should be verified rather than recalled from memory as fact.",
+      "tags": ["JLPT", "vocabulary lists", "verification needed"],
+      "confidence": "medium",
+      "scope": "teaching"
+    },
+    {
+      "id": "level-001",
+      "domainId": "japanese-learner-levels",
+      "statement": "The JLPT defines five proficiency levels, N5 (easiest) through N1 (hardest), with each higher level generally requiring a larger kanji inventory, larger vocabulary, and more complex grammar; the JLPT organization does not publish an official one-to-one CEFR equivalence, so any CEFR comparison should be presented as an approximation.",
+      "tags": ["JLPT", "N5", "N1", "levels", "CEFR"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "level-002",
+      "domainId": "japanese-learner-levels",
+      "statement": "The kanji-200 core pack corresponds roughly to early N5/N4 literacy; full N1-level reading competency requires close to the full jōyō kanji list of around 2,000+ characters, far beyond this pack's 200-character core, so Sam should frame kanji-200 as a starting foundation rather than a complete literacy set.",
+      "tags": ["kanji-200", "jouyou kanji", "N5", "N1", "scope"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "level-003",
+      "domainId": "japanese-learner-levels",
+      "statement": "Recognition (reading passively), reading aloud correctly, and free production (writing or speaking from memory) often progress at different rates for the same word or character, so Sam should track and report these as distinct skills rather than assuming mastery of one implies mastery of the others.",
+      "tags": ["recognition", "production", "skill tracking", "progression"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "ped-001",
+      "domainId": "japanese-teaching-pedagogy",
+      "statement": "Comprehensible input paired with structured output practice, such as speaking or writing at a level slightly above the learner's current comfort, tends to build retention more effectively than passive review of flashcards or reference material alone.",
+      "tags": ["comprehensible input", "output practice", "retention"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "ped-002",
+      "domainId": "japanese-teaching-pedagogy",
+      "statement": "Spaced repetition scheduling is most effective when the review interval adapts per item based on demonstrated recall difficulty, rather than applying one fixed interval to an entire deck of kana, kanji, or vocabulary.",
+      "tags": ["spaced repetition", "review interval", "pedagogy"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "ped-003",
+      "domainId": "japanese-teaching-pedagogy",
+      "statement": "Error correction lands best when Sam models the correct form in context immediately, rather than only naming the grammatical rule that was violated in the abstract.",
+      "tags": ["error correction", "modeling", "feedback"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "ped-004",
+      "domainId": "japanese-teaching-pedagogy",
+      "statement": "Interleaving kana and kanji together inside authentic sentences produces better transfer to real reading than studying kana and kanji as fully separate, decontextualized tracks, so example sentences should be introduced as soon as a learner has a small working set of characters.",
+      "tags": ["interleaving", "authentic text", "transfer"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-001",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "In console mode, Sam can trigger a FLUX capacitor image render by combining a recognized image-request verb (draw, render, paint, visualize, depict, generate an image, make an image, create an image) with a Japanese subject marker (hiragana, katakana, kanji, romaji, kana, letter, glyph, character, calligraphy, stroke order, radical, syllabary, or a related cultural subject); this NLP trigger fires automatically without a dedicated slash command.",
+      "tags": ["FLUX capacitor", "image trigger", "console", "NLP trigger"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-002",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "Stroke-order and calligraphy renders, such as rendering a kanji with a stroke-order guide, give a learner a visual memory anchor that complements the textual reading and meaning explanation, and Sam should proactively offer this kind of render when introducing a new kanji rather than waiting only for an explicit image request.",
+      "tags": ["stroke order", "calligraphy", "mnemonic", "FLUX capacitor"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-003",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "Culturally-associated scene images, such as a shrine maiden at a torii gate or cherry blossoms over a Tokyo skyline, can reinforce vocabulary that carries strong cultural or seasonal association, but the rendered image is a memory aid layered on top of the lesson, not a substitute for a dictionary-verified meaning or reading.",
+      "tags": ["cultural imagery", "mnemonic", "vocabulary reinforcement"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-004",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "The FLUX capacitor console render is built from the most recent assistant reply as source text plus an optional topic hint, so Sam's preceding text explanation of a character, word, or concept directly shapes the resulting image; accurate teaching text should always be produced before an image request is fulfilled.",
+      "tags": ["FLUX capacitor", "source text", "console", "sequencing"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-005",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "FLUX capacitor style presets (corporate_minimal, sacred_geometry, tech_dark) and their saturation, geometry-density, and surreal-intensity clamps apply uniformly across all topics, including Japanese-teaching renders; there is no dedicated Japanese-teaching preset, so Sam should favor a restrained style choice for calligraphy and character-study renders so the character itself stays legible.",
+      "tags": ["FLUX capacitor", "style preset", "clamps"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-006",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "GPU sequencing in the FLUX capacitor pipeline gives Ollama LLM generation priority over FLUX rendering (Ollama-first), so a teaching reply is generated and delivered before any accompanying image finishes rendering; Sam should not delay or withhold the textual teaching content while waiting on an image to complete.",
+      "tags": [
+        "FLUX capacitor",
+        "GPU orchestration",
+        "Ollama-first",
+        "sequencing"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "flux-007",
+      "domainId": "japanese-visual-learning-flux",
+      "statement": "The `/art` console command can also be invoked explicitly with a quoted topic, such as `/art \"shrine maiden\"`, giving Sam a deliberate way to request a teaching visual outside the automatic NLP intent trigger when a learner asks for an image indirectly.",
+      "tags": ["FLUX capacitor", "/art command", "console"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "cult-001",
+      "domainId": "japanese-culture-context",
+      "statement": "Keigo and honorific register choice is driven by social context, such as relative status, in-group versus out-group relationship, and the formality of the setting, more than by grammatical rule alone, so honorific speech is best taught through scenario-based examples rather than as an isolated conjugation chart.",
+      "tags": ["keigo", "honorifics", "social context", "register"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "cult-002",
+      "domainId": "japanese-culture-context",
+      "statement": "Seasonal vocabulary (季語 kigo) appears commonly in poetry, seasonal greetings, and everyday small talk, and building learner awareness of season-linked words improves comprehension of authentic Japanese media and conversation.",
+      "tags": ["kigo", "seasonal vocabulary", "culture"],
+      "confidence": "high",
+      "scope": "teaching"
+    },
+    {
+      "id": "cult-003",
+      "domainId": "japanese-culture-context",
+      "statement": "Common FLUX-rendered subjects such as shrine maidens, torii gates, cherry blossoms, and ukiyo-e style carry cultural context worth briefly explaining alongside the visual, so an image request becomes a combined language-and-culture lesson rather than decoration alone.",
+      "tags": [
+        "shrine maiden",
+        "torii",
+        "sakura",
+        "ukiyo-e",
+        "culture",
+        "FLUX capacitor"
+      ],
+      "confidence": "high",
+      "scope": "teaching"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-curriculum-to-grammar",
+      "fromFactId": "jlm-001",
+      "toFactId": "gram-001",
+      "relationType": "extends",
+      "description": "The script-based curriculum sequence assumes and is extended by grammar fundamentals once basic kana literacy is in place."
+    },
+    {
+      "id": "rel-particles-to-topic-confusion",
+      "fromFactId": "gram-002",
+      "toFactId": "gram-001",
+      "relationType": "supports",
+      "description": "Particle function supports and refines the general SOV word-order claim by explaining how grammatical roles are actually marked."
+    },
+    {
+      "id": "rel-jukugo-to-kanji-structure",
+      "fromFactId": "vocab-003",
+      "toFactId": "level-002",
+      "relationType": "supports",
+      "description": "Compound reading patterns reinforce why kanji-200 functions as an early foundation rather than complete literacy."
+    },
+    {
+      "id": "rel-pedagogy-to-flux",
+      "fromFactId": "ped-004",
+      "toFactId": "flux-002",
+      "relationType": "supports",
+      "description": "Interleaving kana and kanji in authentic context is reinforced by offering a visual stroke-order or calligraphy anchor at the point a new character is introduced."
+    },
+    {
+      "id": "rel-flux-sequencing-to-source-text",
+      "fromFactId": "flux-004",
+      "toFactId": "flux-006",
+      "relationType": "extends",
+      "description": "Source-text-driven image generation and Ollama-first GPU sequencing together define the correct order of operations for a teaching turn: text first, then image."
+    },
+    {
+      "id": "rel-culture-to-flux-subjects",
+      "fromFactId": "cult-003",
+      "toFactId": "flux-003",
+      "relationType": "extends",
+      "description": "Cultural context for common visual subjects extends the guidance that FLUX renders should reinforce, not replace, verified language content."
+    }
+  ]
+}
