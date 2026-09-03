@@ -14,7 +14,7 @@ python -m spacy download en_core_web_md  # recommended for English: includes wor
 python -m spacy download ja_core_news_md # optional for Japanese: multi-language NLP pack
 ```
 
-If disk space is constrained, `en_core_web_sm` and `ja_core_news_sm` also work. Override or configure models at runtime via `SPACY_MODEL` and `SPACY_MODELS` (e.g. `SPACY_MODELS=en_core_web_md,ja_core_news_md`).
+If disk space is constrained, `en_core_web_sm` and `ja_core_news_sm` also work; `ja_core_news_lg` is available when higher-resource Japanese analysis is appropriate. Configure the exact installed models with `SPACY_MODEL` and `SPACY_MODELS` (for example, `SPACY_MODELS=en_core_web_md,ja_core_news_md`). The application loads only the names configured there and does not probe missing optional Japanese models.
 
 ## Environment file
 

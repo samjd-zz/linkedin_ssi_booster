@@ -563,6 +563,21 @@ class TestMultiLanguageSpacyNLP:
             assert en_model is mock_en_nlp
             assert ja_model is mock_ja_nlp
 
+    def test_japanese_fallback_only_tries_default_medium_model(self):
+        """Unconfigured Japanese routing must not probe optional sm/lg models."""
+        mock_ja_nlp = Mock()
+        nlp_engine = SpacyNLP(model_name="en_core_web_md")
+
+        with patch.object(
+            nlp_engine,
+            "_ensure_model_by_name",
+            return_value=mock_ja_nlp,
+        ) as mock_load:
+            result = nlp_engine.get_model_for_text("AIパイプラインと信号処理の構築")
+
+        assert result is mock_ja_nlp
+        mock_load.assert_called_once_with("ja_core_news_md")
+
     def test_japanese_sentiment_analysis(self):
         mock_token1 = Mock()
         mock_token1.text = "素晴らしい"

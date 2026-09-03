@@ -197,18 +197,16 @@ class SpacyNLP:
                     if nlp_inst is not None:
                         return nlp_inst
 
-            # If target is Japanese and not yet in model_names, attempt standard ja models
+            # If Japanese is not configured, use the project's default Japanese
+            # pipeline. Do not probe optional sm/lg packages and emit noisy
+            # missing-model warnings for models the user did not request.
             if target_lang == "ja":
-                for ja_candidate in (
-                    "ja_core_news_md",
-                    "ja_core_news_sm",
-                    "ja_core_news_lg",
-                ):
-                    nlp_inst = self._ensure_model_by_name(ja_candidate)
-                    if nlp_inst is not None:
-                        if ja_candidate not in self.model_names:
-                            self.model_names.append(ja_candidate)
-                        return nlp_inst
+                ja_candidate = "ja_core_news_md"
+                nlp_inst = self._ensure_model_by_name(ja_candidate)
+                if nlp_inst is not None:
+                    if ja_candidate not in self.model_names:
+                        self.model_names.append(ja_candidate)
+                    return nlp_inst
 
         return self._ensure_model()
 

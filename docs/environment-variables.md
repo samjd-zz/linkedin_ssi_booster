@@ -381,6 +381,8 @@ Comma-separated list of spaCy language packs/models to support (e.g. English, Ja
 
 **Default:** `en_core_web_md,ja_core_news_md`
 
+For Japanese, `ja_core_news_md` is the recommended balanced model. Set `ja_core_news_sm` instead when disk or memory is constrained, or explicitly select `ja_core_news_lg` when its larger resource requirement is acceptable. The loader only uses models explicitly listed in this variable; it does not probe optional Japanese variants and therefore does not emit missing-model warnings for them.
+
 ```bash
 SPACY_MODELS=en_core_web_md,ja_core_news_md
 ```
