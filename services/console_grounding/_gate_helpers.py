@@ -113,8 +113,32 @@ def get_project_names_from_avatar_state() -> set[str]:
 # ---------------------------------------------------------------------------
 
 def _tokenize_for_bm25(text: str) -> list[str]:
-    """Return lowercased tokens of 2+ alphanumeric characters."""
-    return re.findall(r"[a-zA-Z0-9_+#.-]{2,}", text.lower())
+    """Lemmatized, language-aware tokens for BM25 scoring."""
+    from services.spacy_nlp import tokenize_for_search
+
+    return tokenize_for_search(text)
+
+
+def build_bm25_index(article_text: str, facts: list[ProjectFact]) -> Any:
+    """Tokenize the evidence corpus and build a BM25 index once.
+
+    Returns None when BM25 or the corpus is unavailable.
+    """
+    if not _BM25Okapi:
+        return None
+    corpus_docs: list[str] = [article_text] + [
+        f"{f.project} {f.company} {f.years} {f.details}" for f in facts
+    ]
+    if not any(d.strip() for d in corpus_docs):
+        return None
+    try:
+        from services.spacy_nlp import tokenize_many_for_search
+
+        tokenized_corpus = tokenize_many_for_search(corpus_docs)
+        return _BM25Okapi(tokenized_corpus)
+    except Exception as exc:
+        logger.debug("BM25 index build failed: %s", exc)
+        return None
 
 
 def _build_allowed_tokens(article_text: str, facts: list[ProjectFact]) -> set[str]:
@@ -191,16 +215,19 @@ def _score_sentence_bm25(
     sentence: str,
     article_text: str,
     facts: list[ProjectFact],
+    index: Any | None = None,
 ) -> float:
-    """Score a sentence against article text and persona facts using BM25."""
+    """Score a sentence against article text and persona facts using BM25.
+
+    Pass *index* from :func:`build_bm25_index` to avoid re-tokenizing the whole
+    corpus for every sentence.
+    """
     if not _BM25_AVAILABLE:
         return 0.0
-    corpus_docs: list[str] = [article_text] + [
-        f"{f.project} {f.company} {f.years} {f.details}" for f in facts
-    ]
     try:
-        tokenized_corpus = [_tokenize_for_bm25(doc) for doc in corpus_docs]
-        bm25 = _BM25Okapi(tokenized_corpus)
+        bm25 = index if index is not None else build_bm25_index(article_text, facts)
+        if bm25 is None:
+            return 0.0
         sentence_tokens = _tokenize_for_bm25(sentence)
         if not sentence_tokens:
             return 0.0

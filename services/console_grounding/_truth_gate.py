@@ -28,6 +28,7 @@ from services.console_grounding._gate_helpers import (
     _check_project_claim,
     _extract_spacy_orgs,
     _score_sentence_bm25,
+    build_bm25_index,
     get_all_persona_facts_from_avatar_state,
     get_domain_facts_from_avatar_state,
     get_project_names_from_avatar_state,
@@ -185,6 +186,17 @@ def truth_gate_result(
 
     whitelisted_phrases = get_whitelisted_phrases()
 
+    # Built once: the evidence corpus is identical for every sentence.
+    _bm25_index = None
+    if _BM25_AVAILABLE and (article_text or all_facts):
+        _bm25_index = build_bm25_index(article_text, all_facts)
+
+    _fact_texts = [
+        f"{f.project} {f.details}".strip()
+        for f in all_facts
+        if (f.project or f.details)
+    ]
+
     for sentence in sentences:
         stripped = sentence.strip()
         if not stripped:
@@ -214,7 +226,9 @@ def truth_gate_result(
 
         # BM25 evidence strength check
         if _BM25_AVAILABLE and (article_text or all_facts):
-            bm25_score = _score_sentence_bm25(sentence, article_text, all_facts)
+            bm25_score = _score_sentence_bm25(
+                sentence, article_text, all_facts, index=_bm25_index
+            )
             if bm25_score < bm25_threshold:
                 reason = f"weak_evidence_bm25: score={bm25_score:.2f} < threshold={bm25_threshold}"
 
@@ -235,16 +249,10 @@ def truth_gate_result(
         # Part E: spaCy semantic similarity vs persona/domain fact pool (all contexts)
         # Computes best similarity across all facts individually; works in console mode too.
         if not reason and spacy_nlp and all_facts:
-            _fact_texts = [
-                f"{f.project} {f.details}".strip()
-                for f in all_facts
-                if (f.project or f.details)
-            ]
             if _fact_texts:
                 try:
-                    _best_fact_sim = max(
-                        spacy_nlp.compute_similarity(sentence, ft) for ft in _fact_texts
-                    )
+                    _sims = spacy_nlp.compute_similarity_batch(sentence, _fact_texts)
+                    _best_fact_sim = max(_sims) if _sims else 0.0
                     fact_sim_scores[sentence] = _best_fact_sim
                     if 0.0 < _best_fact_sim < fact_sim_floor:
                         reason = f"low_fact_similarity: sim={_best_fact_sim:.3f} < floor={fact_sim_floor:.2f}"

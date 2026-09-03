@@ -43,12 +43,12 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Status          |
 | ----------- | ------- | ------- | ------ | --------------- |
-| **864**     | **864** | **0**   | **0**  | ✅ **All pass** |
+| **885**     | **885** | **0**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** September 3, 2026
-- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Japanese spaCy fallback routing, curator extra-feed/keyword append, and language-agnostic theme grouping coverage.
+- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, and language-routed spaCy search tokenization and batch similarity coverage.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. All 864 tests pass.
+- **Notes:** 0 skipped, 0 failed. All 885 tests pass.
 
 ### Test Suite Breakdown
 
@@ -63,6 +63,7 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - _6 Service client | 2 Envelope adapter | 4 Retrieval integration/fallback_
 - _+4 Phase 4-6 coverage: citation UX, external DoT paths, telemetry budgets_
 - **47** FLUX Capacitor art-avatar subsystem tests (Phase 1: package foundation)
+- **21** spaCy search tokenizer, batch similarity, and reusable BM25 index tests
 - _36 Pipeline | 11 GPU Orchestration Policy_
 - **20** FLUX Capacitor main.py integration tests (Steps 5–7)
 - _3 Schedule flow | 7 Curate flow | 9 Console flow (includes auto-render trigger for Japanese character/art requests)_

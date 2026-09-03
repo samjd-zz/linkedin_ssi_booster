@@ -55,7 +55,15 @@ This check routes through the same language-matched model as the rest of the pip
 
 ### 4. Truth gate similarity floors
 
-Layers 3 and 5 of the truth gate use `compute_similarity()` against the source article and the fact pool. See [Truth Gate layers](learning-pipeline.md#stage-3-truth-gate-5-layers).
+Layers 3 and 5 of the truth gate use spaCy similarity against the source article and fact pool. Candidate fact comparisons use `compute_similarity_batch()` so the base sentence is parsed once and candidate documents are processed through `nlp.pipe()`. See [Truth Gate layers](learning-pipeline.md#stage-3-truth-gate-5-layers).
+
+### 5. Shared search tokenization
+
+All BM25 call sites use `tokenize_for_search()` rather than an ASCII-only regular expression. The tokenizer routes each text to its language model, keeps non-stopword lemmas, and uses `nlp.pipe()` for corpus batches. This means Japanese retrieval can use SudachiPy tokenization and normalized lemmas such as `観る`, `ライブ`, and `リリース`, instead of seeing only embedded ASCII words.
+
+The truth gate builds its evidence BM25 index once per generated response and reuses it for every sentence. This avoids re-tokenizing the article and persona facts for each sentence while preserving the existing scoring contract. `tokenize_many_for_search()` preserves input order when a mixed English/Japanese corpus is grouped by language.
+
+When a language model is missing or a pipeline fails, the affected text falls back to the legacy `regex_tokens()` behavior. English remains searchable in that mode; Japanese requires its configured `ja_core_news_md` model for useful lexical retrieval.
 
 ---
 
@@ -121,6 +129,8 @@ Three claims that appeared in earlier versions of this document were wrong or ha
 | `CURATOR_MAX_PER_FEED`     | `10`     | Entries scanned per feed before keyword filtering — the upstream volume control.                                              |
 | `MODEL2VEC_ENABLED`        | `true`   | When false, `primary_category` and `primary_ssi_component` are left empty on every fact.                                      |
 | `AVATAR_LEARNING_ENABLED`  | `true`   | Master switch for narrative memory injection and moderation-event logging.                                                    |
+
+Search tokenization is intentionally not controlled by a separate threshold. Because lemma-based tokenization can change BM25 corpus statistics when a model is available, validate any custom `TRUTH_GATE_BM25_THRESHOLD` with a dry run after changing language models or tokenizer configuration.
 
 `--learn` bypasses the `max_ideas` cap so every relevant article in the run is processed, not just the ones selected for posting.
 

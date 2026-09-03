@@ -759,6 +759,10 @@ class TestPartEFactPoolSpacySim:
     def _make_spacy_nlp(self, sim_value: float) -> MagicMock:
         nlp = MagicMock()
         nlp.compute_similarity.return_value = sim_value
+        # The fact-pool check batches: one score per candidate fact text.
+        nlp.compute_similarity_batch.side_effect = lambda _t, cands, **_kw: [
+            sim_value for _ in cands
+        ]
         return nlp
 
     def test_fact_sim_scores_populated_when_facts_present(self) -> None:

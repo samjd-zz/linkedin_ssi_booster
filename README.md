@@ -69,7 +69,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-864%20passed-16A34A.svg" alt="Tests 864 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-885%20passed-16A34A.svg" alt="Tests 885 passed"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-98%25-brightgreen.svg" alt="Coverage 98%"></a>
 </p>
 
@@ -339,7 +339,7 @@ A multi-layer noise filter (first-person narration, truncated RSS fragments, nav
 
 ### 🇯🇵 Learning from Japanese sources
 
-The curator ships with 8 Japanese-language music feeds covering the Shinjuku/Tokyo scene — Real Sound 音楽, CINRA, Spincoaster, FNMNL, Arban (jazz / 新宿ピットイン), block.fm, Higher Frequency, and Qetic. These are real native-language sources, not translations, so the `ja_core_news_md` pipeline gets exercised end to end: SudachiPy tokenization, NER, semantic similarity, and fact extraction into the same knowledge graph English articles feed.
+The curator ships with 8 Japanese-language music feeds covering the Shinjuku/Tokyo scene — Real Sound 音楽, CINRA, Spincoaster, FNMNL, Arban (jazz / 新宿ピットイン), block.fm, Higher Frequency, and Qetic. These are real native-language sources, not translations, so the `ja_core_news_md` pipeline gets exercised end to end: SudachiPy tokenization, NER, semantic similarity, lemma-based BM25 retrieval, and fact extraction into the same knowledge graph English articles feed.
 
 Routing is automatic — `detect_language()` checks for Hiragana, Katakana, or Kanji and picks the matching model from `SPACY_MODELS`. Keyword filtering is substring-based, so Japanese feeds need Japanese keywords; `CURATOR_KEYWORDS_EXTRA` appends them without discarding the English defaults.
 
@@ -347,7 +347,7 @@ Routing is automatic — `detect_language()` checks for Hiragana, Katakana, or K
 
 Previously documented here as a limitation, now fixed: `ja_core_news_md` **does** implement `noun_chunks` (verified on spaCy 3.8.16), sentence splitting now fires on `。！？`, and entities/tags are split by source (NER vs noun chunks) rather than by ASCII whitespace — the old whitespace rule filed every Japanese theme as a tag because Japanese is written without spaces.
 
-Full breakdown in [docs/spacy-extraction.md](docs/spacy-extraction.md).
+Full breakdown in [docs/spacy-extraction.md](docs/spacy-extraction.md), including the shared search tokenizer and batched spaCy processing used by retrieval and grounding.
 
 See [docs/features/continual-learning/idea.md](docs/features/continual-learning/idea.md) for the full noise filter catalogue, schema, and NLP writing principles.
 
@@ -420,7 +420,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (864 collected; 864 passed, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (885 collected; 885 passed, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

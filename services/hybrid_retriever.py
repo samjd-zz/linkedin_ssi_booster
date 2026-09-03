@@ -42,8 +42,10 @@ except ImportError:  # pragma: no cover
 
 
 def _tokenize(text: str) -> list[str]:
-    """Tokenize text using the same regex as avatar_intelligence."""
-    return re.findall(r"[a-zA-Z0-9_+#.-]{2,}", text.lower())
+    """Lemmatized, language-aware tokens shared with the truth gate."""
+    from services.spacy_nlp import tokenize_for_search
+
+    return tokenize_for_search(text)
 
 
 def _fact_text(fact: Any) -> str:

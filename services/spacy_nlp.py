@@ -342,6 +342,40 @@ class SpacyNLP:
             logger.warning("spacy_nlp: compute_similarity failed: %s", exc)
             return 0.0
 
+    def compute_similarity_batch(
+        self, text: str, candidates: list[str], lang: str | None = None
+    ) -> list[float]:
+        """Similarity of *text* against many *candidates*, parsing each once.
+
+        ``compute_similarity`` re-parses both sides on every call, so comparing
+        one sentence to N facts costs 2N parses. This costs N+1.
+        """
+        if not candidates:
+            return []
+
+        nlp = self.get_model_for_text(text, lang=lang)
+        if nlp is None:
+            logger.debug("spacy_nlp: compute_similarity_batch fallback (spaCy unavailable)")
+            return [0.0] * len(candidates)
+
+        try:
+            base = nlp(text)
+            if not base.has_vector:
+                logger.debug("spacy_nlp: compute_similarity_batch fallback (no vectors)")
+                return [0.0] * len(candidates)
+
+            scores: list[float] = []
+            for doc in nlp.pipe(candidates):
+                if not doc.has_vector:
+                    scores.append(0.0)
+                    continue
+                scores.append(max(0.0, min(1.0, float(base.similarity(doc)))))
+            return scores
+
+        except Exception as exc:
+            logger.warning("spacy_nlp: compute_similarity_batch failed: %s", exc)
+            return [0.0] * len(candidates)
+
     def analyze_sentiment(
         self, text: str, lang: str | None = None
     ) -> dict[str, Any]:
@@ -616,4 +650,84 @@ def get_spacy_nlp() -> SpacyNLP:
         models_env = os.getenv("SPACY_MODELS") or os.getenv("SPACY_LANGUAGE_PACKS")
         _default_instance = SpacyNLP(model_name=primary, model_names=models_env)
     return _default_instance
+
+
+# ---------------------------------------------------------------------------
+# Search tokenization (shared by every BM25 call site)
+# ---------------------------------------------------------------------------
+
+_SEARCH_TOKEN_RE = re.compile(r"[a-zA-Z0-9_+#.-]{2,}")
+
+# Lemmas come from the tagger/morphologizer/attribute_ruler; the parser and NER
+# contribute nothing to tokenization and are the expensive components.
+_TOKENIZE_DISABLE: tuple[str, ...] = ("parser", "ner")
+
+
+def regex_tokens(text: str) -> list[str]:
+    """ASCII-only fallback tokenizer used when spaCy is unavailable.
+
+    Returns almost nothing for Japanese, which is why it is a fallback only.
+    """
+    return _SEARCH_TOKEN_RE.findall(text.lower())
+
+
+def _lemma_tokens(doc: Any) -> list[str]:
+    tokens: list[str] = []
+    for tok in doc:
+        if tok.is_space or tok.is_punct or tok.is_stop:
+            continue
+        lemma = (tok.lemma_ or tok.text).strip().lower()
+        if lemma:
+            tokens.append(lemma)
+    return tokens
+
+
+def tokenize_many_for_search(
+    texts: list[str], lang: str | None = None
+) -> list[list[str]]:
+    """Lemmatized, language-routed tokenization for BM25 corpora.
+
+    Texts are grouped by detected language so a mixed corpus is still batched
+    through ``nlp.pipe`` once per language rather than parsed one at a time.
+    Falls back to :func:`regex_tokens` per text when spaCy or a model is missing.
+    """
+    if not texts:
+        return []
+
+    results: list[list[str]] = [[] for _ in texts]
+    engine = get_spacy_nlp()
+
+    groups: dict[str, list[int]] = {}
+    for idx, text in enumerate(texts):
+        key = lang or detect_language(text or "")
+        groups.setdefault(key, []).append(idx)
+
+    for key, indices in groups.items():
+        nlp = engine.get_model_for_text(texts[indices[0]] or "", lang=key)
+        if nlp is None:
+            for idx in indices:
+                results[idx] = regex_tokens(texts[idx] or "")
+            continue
+
+        disable = [p for p in _TOKENIZE_DISABLE if p in nlp.pipe_names]
+        batch = [texts[idx] or "" for idx in indices]
+        filled: set[int] = set()
+        try:
+            for idx, doc in zip(indices, nlp.pipe(batch, disable=disable)):
+                results[idx] = _lemma_tokens(doc) or regex_tokens(texts[idx] or "")
+                filled.add(idx)
+        except Exception as exc:
+            logger.warning("spacy_nlp: tokenize_many_for_search failed: %s", exc)
+
+        # nlp.pipe should yield one doc per input; fall back for any it skipped.
+        for idx in indices:
+            if idx not in filled:
+                results[idx] = regex_tokens(texts[idx] or "")
+
+    return results
+
+
+def tokenize_for_search(text: str, lang: str | None = None) -> list[str]:
+    """Single-text convenience wrapper around :func:`tokenize_many_for_search`."""
+    return tokenize_many_for_search([text], lang=lang)[0]
 
