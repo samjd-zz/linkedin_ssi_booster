@@ -334,12 +334,15 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
 
     has_both_languages = japanese_presence >= min_presence and english_presence >= min_presence
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
-    ratio_within_tolerance = ratio_error <= 0.35
+    # A lyric line contributes at least one discrete unit to the mix, so allow
+    # one line of rounding error instead of a fixed, overly permissive range.
+    ratio_tolerance = 1.0 / total_lines if total_lines else 0.0
+    ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
         f"jp_lines={japanese_presence}, en_lines={english_presence}, total={total_lines}, "
         f"jp_ratio={stats['effective_japanese_ratio']:.2f}, target={target_japanese_ratio:.2f}, "
-        f"ratio_error={ratio_error:.2f}"
+        f"ratio_error={ratio_error:.2f}, tolerance={ratio_tolerance:.2f}"
     )
     return ok, summary
 

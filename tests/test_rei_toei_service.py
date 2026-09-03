@@ -1102,6 +1102,24 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
     assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
 
 
+def test_bilingual_mix_requires_configured_ratio_within_one_line():
+    """A 50% target must reject a strongly Japanese-skewed bilingual draft."""
+    from services.rei_toei._suno_pipeline import _bilingual_mix_ok
+
+    skewed_payload = {
+        "verse_1": "データが走る\n回路が光る\nノイズを超える\n夜を再起動する\nSignal wakes",
+        "chorus": "境界を越える\nPulse remains",
+        "verse_2": "コードが踊る\n未来を描く",
+        "bridge": "We hold the line",
+    }
+
+    mix_ok, summary = _bilingual_mix_ok(skewed_payload, target_japanese_ratio=0.5)
+
+    assert not mix_ok
+    assert "jp_ratio=0.70" in summary
+    assert "tolerance=0.10" in summary
+
+
 def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_knowledge_data):
     """Test assemble_suno_prompt rewrites Japanese-first bilingual lines to English-first."""
 
