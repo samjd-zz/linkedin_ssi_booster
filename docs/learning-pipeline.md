@@ -453,7 +453,7 @@ These filters run **before** spaCy NLP and deduplication, so only genuinely info
 
 ## What spaCy Actually Extracts
 
-spaCy runs at four points: pre-filter summarization, theme extraction into `entities` / `tags`, semantic near-duplicate suppression, and the truth gate similarity floors. Language routing picks the English or Japanese model by character set. Full detail — scoring weights, the `ExtractedFact` schema written to disk, the three dedup layers, [Japanese-specific behaviour](spacy-extraction.md#japanese-language-behaviour), and every tuning knob — lives in **[spacy-extraction.md](spacy-extraction.md)**.
+spaCy runs at four points: pre-filter summarization, theme extraction into `entities` / `tags` (split by source — NER spans vs noun chunks), semantic near-duplicate suppression, and the truth gate similarity floors. Language routing picks the English or Japanese model by character set. Full detail — scoring weights, the `ExtractedFact` schema written to disk, the three dedup layers, [Japanese-specific behaviour](spacy-extraction.md#japanese-language-behaviour), and every tuning knob — lives in **[spacy-extraction.md](spacy-extraction.md)**.
 
 ---
 

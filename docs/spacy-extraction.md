@@ -34,14 +34,16 @@ Top-scoring sentences are re-sorted into original document order and joined.
 - **Named entities** with labels `PERSON`, `ORG`, `GPE`, `PRODUCT`, `EVENT`, `WORK_OF_ART`, `LAW`, `LANGUAGE`, `NORP`, `FAC`, `LOC`, `DATE`, `TIME`
 - **Noun chunks** kept when they are 2+ words, 5+ characters, or detected as Japanese
 
-The combined set is lowercased, deduplicated, sorted, then split purely by token count:
+The combined set is lowercased and deduplicated, then split **by source** — named entities go to `entities`, noun chunks go to `concepts` (stored as `tags`):
 
-| Field      | Rule                            | Cap |
-| ---------- | ------------------------------- | --- |
-| `entities` | themes with **>1** token        | 5   |
-| `tags`     | themes with **exactly 1** token | 8   |
+| Field      | Source                             | Cap |
+| ---------- | ---------------------------------- | --- |
+| `entities` | spaCy NER spans (labels above)     | 5   |
+| `tags`     | noun chunks not already an entity  | 8   |
 
-This is a mechanical word-count split, not a semantic one. A single-token organisation name lands in `tags`, and a multi-word noun chunk lands in `entities`.
+Splitting by source is language-agnostic. The previous rule split on `str.split()` token count, which silently filed **every** Japanese theme as a tag — Japanese is written without spaces, so `entities` only ever caught strings containing an ASCII space, which in practice meant scraper fragments like `'04 00:00 imase'`.
+
+Within each group, themes are ranked **longest-first** so that truncation keeps the most specific ones, and `DATE`/`TIME` entities are ranked last. Both matter: the old code sorted alphabetically before truncating, which let digit-leading strings win the cap, and plain longest-first is not enough either because Japanese dates (`2027年1月16日`) are longer than most concept themes.
 
 **Fallback:** when spaCy is unavailable the extractor drops to regex — capitalized words become `entities`, 4+ character lowercase words become `tags`, and `extraction_method` is stamped `regex_fallback` instead of `spacy_nlp` so the two are distinguishable on disk.
 
@@ -49,7 +51,7 @@ This is a mechanical word-count split, not a semantic one. A single-token organi
 
 Within a single article, each candidate sentence is compared against facts already collected from the same URL. Similarity `>= 0.93` marks it a near-paraphrase and it is dropped. This catches tense and wording variants that produce different content hashes but identical meaning.
 
-This check uses the **primary** model (`SPACY_MODEL`), not the language-routed model — Japanese sentences are compared using English vectors, so the threshold is effectively much harder to reach on Japanese text.
+This check routes through the same language-matched model as the rest of the pipeline, so Japanese sentences are compared with Japanese vectors.
 
 ### 4. Truth gate similarity floors
 
@@ -93,15 +95,17 @@ When a listed model is missing, the loader logs a warning and silently falls bac
 
 ### Japanese-language behaviour
 
-Japanese extraction works, but three characteristics differ from the English path and are worth knowing before reading the output.
+Japanese extraction works. One characteristic still differs from the English path and is worth knowing before reading the output.
 
-**Sentence splitting does not fire.** The fact extractor splits on `re.split(r"(?<=[.!?])\s+", text)`. Japanese terminates sentences with `。` and does not use spaces between them, so a Japanese article typically survives as a **single** very long statement rather than a set of discrete facts. The summarization step (which uses `doc.sents` and does handle `。`) is the only thing keeping statement length bounded.
+**Noise filters do not apply.** Every filter in the [noise filtering table](learning-pipeline.md#noise-filtering-continual-learning) is an English regex. Japanese site chrome — navigation menus, share buttons, footer links, category lists — passes straight through and is stored inside the statement text alongside real content. Japanese facts are therefore higher-recall and lower-precision than English ones: useful as retrieval evidence, noisier per fact.
 
-**Noise filters do not apply.** Every filter in the [noise filtering table](learning-pipeline.md#noise-filtering-continual-learning) is an English regex. Japanese site chrome — navigation menus, share buttons, footer links, category lists — passes straight through and is stored inside the statement text alongside real content.
+#### Previously documented as limitations, now fixed
 
-**Noun chunks are unavailable.** The `ja_core_news_md` pipeline does not implement `noun_chunks`; the extractor catches the `NotImplementedError` and continues. Japanese themes therefore come from NER only, which is why Japanese `tags` skew toward dates, times, and numeric tokens (`10月2日`, `2027年1月16日`, `18:00`) rather than concepts.
+Three claims that appeared in earlier versions of this document were wrong or have since been corrected:
 
-Net effect: Japanese facts are currently high-recall and low-precision. They are useful as retrieval evidence and for exercising the multi-language path, but they are noisier per-fact than English facts. Raising `min_sentence_len` does not help — the statements are long, not short.
+- **`noun_chunks` is implemented.** Verified on spaCy 3.8.16: `spacy/lang/ja/syntax_iterators.py` ships a `noun_chunks` iterator, and `ja_core_news_md` returns chunks normally. No `ja-ginza` dependency is required.
+- **Sentence splitting fires.** The splitter is now `(?<=[。！？])\s*|(?<=[.!?])\s+` — the zero-width branch handles Japanese, which uses no space after `。`, while the ASCII branch keeps its whitespace requirement so decimals like `3.5` are not split.
+- **Themes are no longer whitespace-classified.** See the entities/tags table above.
 
 ---
 

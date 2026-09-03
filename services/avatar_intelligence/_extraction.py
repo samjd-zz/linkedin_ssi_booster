@@ -188,7 +188,9 @@ def extract_and_append_knowledge(
         nlp_engine = None
         spacy_available = False
 
-    sentences = re.split(r"(?<=[.!?])\s+", clean_text)
+    # Japanese ends sentences with 。！？ and uses no trailing space, so the ASCII
+    # branch below (which requires whitespace) never fires on JP text.
+    sentences = re.split(r"(?<=[\u3002\uff01\uff1f])\s*|(?<=[.!?])\s+", clean_text)
     new_facts: list[ExtractedFact] = []
     extracted_at = datetime.now(timezone.utc).isoformat()
 
@@ -723,7 +725,7 @@ def extract_and_append_knowledge(
         # Catches tense/wording variants that produce different hashes but identical meaning.
         if spacy_available and nlp_engine is not None and new_facts:
             try:
-                _raw_nlp = nlp_engine._ensure_model()
+                _raw_nlp = nlp_engine.get_model_for_text(sentence)
                 if _raw_nlp is not None:
                     _this_doc = _raw_nlp(sentence)
                     _is_near_dup = False
@@ -746,9 +748,9 @@ def extract_and_append_knowledge(
         tags: list[str] = []
         if spacy_available and nlp_engine is not None:
             try:
-                raw_themes = nlp_engine.extract_themes(sentence)
-                tags = [t for t in raw_themes if len(t.split()) == 1][:8]
-                entities = [t for t in raw_themes if len(t.split()) > 1][:5]
+                groups = nlp_engine.extract_theme_groups(sentence)
+                entities = groups["entities"][:5]
+                tags = groups["concepts"][:8]
             except Exception as exc:
                 logger.debug(
                     "extract_and_append_knowledge: spaCy extraction error — %s", exc

@@ -43,12 +43,12 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Status          |
 | ----------- | ------- | ------- | ------ | --------------- |
-| **848**     | **848** | **0**   | **0**  | ✅ **All pass** |
+| **864**     | **864** | **0**   | **0**  | ✅ **All pass** |
 
 - **Latest Run Date:** September 3, 2026
-- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Japanese spaCy fallback routing, and curator extra-feed/keyword append coverage.
+- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Japanese spaCy fallback routing, curator extra-feed/keyword append, and language-agnostic theme grouping coverage.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. All 848 tests pass.
+- **Notes:** 0 skipped, 0 failed. All 864 tests pass.
 
 ### Test Suite Breakdown
 
@@ -188,6 +188,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_confidence_scoring.py`                        | Tests extracted heuristic signals, routing rules, and execution scoring boundaries.                                                                                                                                                                                                                   |
 | `tests/test_content_curator.py`                           | Drives RSS fetch pipelines, keyword screening constraints, SSI adaptive category shifts, and module routing layouts.                                                                                                                                                                                  |
 | `tests/test_curator_extra_feeds.py`                       | Verifies `CURATOR_RSS_FEEDS_EXTRA` / `CURATOR_KEYWORDS_EXTRA` append semantics, URL/keyword dedup, and that built-in defaults are never mutated.                                                                                                                                                       |
+| `tests/test_spacy_theme_groups.py`                        | Covers source-based entity/concept grouping, temporal-entity demotion, Japanese `。！？` sentence splitting, ASCII decimal preservation, and graceful degradation when a pipeline lacks `noun_chunks`.                                                                                              |
 | `tests/test_continual_learning.py`                        | Orchestrates comprehensive noise filtering regression, multi-source ingestion constraints, structural text normalization, and multi-URL exact statement uniqueness checks.                                                                                                                            |
 | `tests/test_derivative_of_truth.py`                       | Evaluates gradient equations, factual annotation workflows, programmatic uncertainty logic, and core PLN evaluations.                                                                                                                                                                                 |
 | `tests/test_evidence_mapping.py`                          | Targets factual ID tracking consistency, retrieval prioritization fallback loops, and conversational reasoning reporting.                                                                                                                                                                             |

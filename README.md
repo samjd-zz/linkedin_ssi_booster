@@ -35,7 +35,9 @@
 - **固有表現抽出・要約・重複排除** — 抽出された事実は知識グラフに統合され、生成時の根拠として再利用されます
 - **発表・新・開発・公開・導入** — 要約スコアリングは日本語の告知表現を加点対象として認識します
 
-**現状の制約も明記しています。** 日本語は句点「。」で文を区切り空白を用いないため文分割が効かず、ノイズフィルタは英語正規表現のみ、`ja_core_news_md` は `noun_chunks` 未実装です。そのため日本語の抽出は**再現率が高く適合率が低い**状態です。詳細は [docs/spacy-extraction.md](docs/spacy-extraction.md) を参照してください。
+**現状の制約も明記しています。** ノイズフィルタは英語正規表現のみのため、日本語サイトのナビゲーションやフッターが本文に混入します。そのため日本語の抽出は英語より**再現率が高く適合率が低い**状態です。
+
+なお、以前制約として記載していた以下は修正済みです——`ja_core_news_md` は `noun_chunks` を**実装しています**（spaCy 3.8.16 で検証済み）。文分割は `。！？` で正しく動作し、entities／tags の分類は空白ではなく抽出元（NER か名詞句か）で行います。詳細は [docs/spacy-extraction.md](docs/spacy-extraction.md) を参照してください。
 
 ### クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
 
@@ -67,7 +69,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-848%20passed-16A34A.svg" alt="Tests 848 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-864%20passed-16A34A.svg" alt="Tests 864 passed"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-98%25-brightgreen.svg" alt="Coverage 98%"></a>
 </p>
 
@@ -341,7 +343,9 @@ The curator ships with 8 Japanese-language music feeds covering the Shinjuku/Tok
 
 Routing is automatic — `detect_language()` checks for Hiragana, Katakana, or Kanji and picks the matching model from `SPACY_MODELS`. Keyword filtering is substring-based, so Japanese feeds need Japanese keywords; `CURATOR_KEYWORDS_EXTRA` appends them without discarding the English defaults.
 
-**Known limitations, stated plainly:** Japanese terminates sentences with `。` and uses no spaces, so the regex sentence splitter does not fire and articles arrive as single long statements. Every noise filter is an English regex, so Japanese site chrome passes through. And `ja_core_news_md` does not implement `noun_chunks`, so Japanese themes come from NER alone — which is why their tags skew toward dates and times. Net: Japanese extraction is high-recall, low-precision today. Useful as retrieval evidence, noisier per fact than English.
+**Known limitations, stated plainly:** Every noise filter is an English regex, so Japanese site chrome (nav menus, share buttons, footer links) still passes through into statement text. Japanese extraction is therefore higher-recall and lower-precision than English — useful as retrieval evidence, noisier per fact.
+
+Previously documented here as a limitation, now fixed: `ja_core_news_md` **does** implement `noun_chunks` (verified on spaCy 3.8.16), sentence splitting now fires on `。！？`, and entities/tags are split by source (NER vs noun chunks) rather than by ASCII whitespace — the old whitespace rule filed every Japanese theme as a tag because Japanese is written without spaces.
 
 Full breakdown in [docs/spacy-extraction.md](docs/spacy-extraction.md).
 
@@ -416,7 +420,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (848 collected; 848 passed, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (864 collected; 864 passed, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

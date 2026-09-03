@@ -33,6 +33,26 @@ _SPACY_AVAILABLE: bool | None = None
 
 _JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]")
 
+_THEME_ENTITY_LABELS: frozenset[str] = frozenset({
+    "PERSON", "ORG", "GPE", "PRODUCT", "EVENT", "WORK_OF_ART",
+    "LAW", "LANGUAGE", "NORP", "FAC", "LOC", "DATE", "TIME",
+})
+
+# Kept as themes, but ranked last: dates are long in Japanese and would otherwise
+# win a longest-first cap and crowd out every named entity.
+_TEMPORAL_ENTITY_LABELS: frozenset[str] = frozenset({"DATE", "TIME"})
+
+
+def _rank_themes(themes: set[str], demoted: set[str] | None = None) -> list[str]:
+    """Order themes longest-first so truncation keeps the most specific ones.
+
+    Alphabetical ordering biases truncation toward digit-leading strings, and
+    plain longest-first favours Japanese date strings over concept themes, so
+    anything in *demoted* is sorted to the end.
+    """
+    demoted = demoted or set()
+    return sorted(themes, key=lambda t: (t in demoted, -len(t), t))
+
 
 def detect_language(text: str) -> str:
     """Basic character-set language detection.
@@ -210,6 +230,61 @@ class SpacyNLP:
 
         return self._ensure_model()
 
+    def extract_theme_groups(
+        self, text: str, lang: str | None = None
+    ) -> dict[str, list[str]]:
+        """Extract themes split by source: NER entities vs noun-chunk concepts.
+
+        Returns ``{"entities": [...], "concepts": [...]}``, each lowercased,
+        deduplicated, and ordered longest-first so that truncating the lists
+        keeps the most specific themes rather than the alphabetically-first ones.
+
+        Splitting by source is language-agnostic. Splitting on whitespace is not —
+        Japanese writes without spaces, so every JP theme looks like a single word.
+        """
+        nlp = self.get_model_for_text(text, lang=lang)
+        if nlp is None:
+            logger.debug("spacy_nlp: extract_theme_groups fallback (spaCy unavailable)")
+            return {"entities": [], "concepts": []}
+
+        try:
+            doc = nlp(text)
+        except Exception as exc:
+            logger.warning("spacy_nlp: extract_theme_groups failed: %s", exc)
+            return {"entities": [], "concepts": []}
+
+        entities: set[str] = set()
+        temporal: set[str] = set()
+        for ent in doc.ents:
+            if ent.label_ in _THEME_ENTITY_LABELS:
+                cleaned = ent.text.lower().strip()
+                if not cleaned:
+                    continue
+                entities.add(cleaned)
+                if ent.label_ in _TEMPORAL_ENTITY_LABELS:
+                    temporal.add(cleaned)
+
+        concepts: set[str] = set()
+        try:
+            for chunk in doc.noun_chunks:
+                chunk_text = chunk.text.lower().strip()
+                if not chunk_text or chunk_text in entities:
+                    continue
+                if (
+                    len(chunk_text.split()) >= 2
+                    or len(chunk_text) >= 5
+                    or detect_language(chunk_text) == "ja"
+                ):
+                    concepts.add(chunk_text)
+        except (NotImplementedError, AttributeError) as exc:
+            # Some language pipelines ship no noun_chunks syntax iterator.
+            logger.debug("spacy_nlp: noun_chunks unavailable for this pipeline: %s", exc)
+
+        return {
+            "entities": _rank_themes(entities, demoted=temporal),
+            "concepts": _rank_themes(concepts),
+        }
+
     def extract_themes(self, text: str, lang: str | None = None) -> list[str]:
         """Extract themes/topics from text using NER and noun chunks.
 
@@ -227,53 +302,8 @@ class SpacyNLP:
         Returns:
             List of extracted theme strings
         """
-        nlp = self.get_model_for_text(text, lang=lang)
-        if nlp is None:
-            logger.debug("spacy_nlp: extract_themes fallback (spaCy unavailable)")
-            return []
-
-        try:
-            doc = nlp(text)
-            themes: set[str] = set()
-
-            # Extract named entities
-            for ent in doc.ents:
-                if ent.label_ in {
-                    "PERSON",
-                    "ORG",
-                    "GPE",
-                    "PRODUCT",
-                    "EVENT",
-                    "WORK_OF_ART",
-                    "LAW",
-                    "LANGUAGE",
-                    "NORP",
-                    "FAC",
-                    "LOC",
-                    "DATE",
-                    "TIME",
-                }:
-                    themes.add(ent.text.lower().strip())
-
-            # Safely extract noun chunks (some language models like Japanese may not implement noun_chunks)
-            try:
-                if hasattr(doc, "noun_chunks"):
-                    for chunk in doc.noun_chunks:
-                        chunk_text = chunk.text.lower().strip()
-                        if (
-                            len(chunk_text.split()) >= 2
-                            or len(chunk_text) >= 5
-                            or detect_language(chunk_text) == "ja"
-                        ):
-                            themes.add(chunk_text)
-            except (NotImplementedError, AttributeError, Exception):
-                pass
-
-            return sorted(themes)
-
-        except Exception as exc:
-            logger.warning("spacy_nlp: extract_themes failed: %s", exc)
-            return []
+        groups = self.extract_theme_groups(text, lang=lang)
+        return _rank_themes(set(groups["entities"]) | set(groups["concepts"]))
 
     def compute_similarity(
         self, text1: str, text2: str, lang: str | None = None
