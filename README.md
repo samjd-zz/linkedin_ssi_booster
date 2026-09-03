@@ -26,6 +26,17 @@
 3. **ディープインデキシング & 検索**: Elasticsearch, Neo4j, ベクトル検索 (kNN) を組み合わせた多層フォールバックにより、サブ500msの低遅延検索を実現。
 4. **エンタープライズ & イベントストリーミング**: Java/JMSを用いた高スループットなエンタープライズシステム構築実績。
 
+### 日本語のNLPと継続学習 (Japanese NLP & Continual Learning)
+
+本システムは**日本語の記事から直接学習**します。新宿・東京の音楽シーンを中心に8つの日本語RSSフィード（Real Sound 音楽、CINRA、Spincoaster、FNMNL、Arban（新宿ピットイン系ジャズ）、block.fm、Higher Frequency、Qetic）を取り込み、spaCyの日本語パイプラインで解析します。
+
+- **自動言語ルーティング** — 文字種（ひらがな・カタカナ・漢字）を検出し、`ja_core_news_md` と `en_core_web_md` を自動で切り替え
+- **形態素解析** — SudachiPy（`spacy[ja]`）による日本語トークナイズ。Dockerイメージにモデルを同梱済み
+- **固有表現抽出・要約・重複排除** — 抽出された事実は知識グラフに統合され、生成時の根拠として再利用されます
+- **発表・新・開発・公開・導入** — 要約スコアリングは日本語の告知表現を加点対象として認識します
+
+**現状の制約も明記しています。** 日本語は句点「。」で文を区切り空白を用いないため文分割が効かず、ノイズフィルタは英語正規表現のみ、`ja_core_news_md` は `noun_chunks` 未実装です。そのため日本語の抽出は**再現率が高く適合率が低い**状態です。詳細は [docs/spacy-extraction.md](docs/spacy-extraction.md) を参照してください。
+
 ### クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
 
 AIシステム設計に加え、ウィリアム・ギブスンのSF小説『アイドル（Idoru）』にインスパイアされたバーチャルペルソナ・アバター**「Rei Toei（東江麗）」**を通じて、VocaloidやSuno等を活用したサイバーポップ／インダストリアル音響のAI音声・音楽制作を行っています。
@@ -56,7 +67,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-837%20passed-16A34A.svg" alt="Tests 837 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-848%20passed-16A34A.svg" alt="Tests 848 passed"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-98%25-brightgreen.svg" alt="Coverage 98%"></a>
 </p>
 
@@ -73,7 +84,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ##### Why this is smarter than "AI writes posts"
 
-- **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md`). Preprocessing filters boilerplate before fact storage. See [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
+- **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md` with the SudachiPy tokenizer). The curator ships 8 Japanese-language music feeds out of the box, so the Japanese pipeline learns from real native-language sources rather than translated text. Preprocessing filters boilerplate before fact storage. See [docs/spacy-extraction.md](docs/spacy-extraction.md) and [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
 - **Model2Vec static embedding classification** — ultra-fast article categorisation (`minishlab/potion-base-8M`, 30MB, zero API deps) mapped to 10 SSI categories; results boost selection-learning rankings and stamp extracted facts with `primary_category` and `primary_ssi_component`.
 - **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
 - **Hybrid RAG + agent pipeline** — BM25 retrieval, deterministic validation, multi-step orchestration, and a BM25+graph reranker for high factuality and variety.
@@ -324,6 +335,16 @@ Use `--learn` during curation to populate the knowledge base. Inside a running c
 
 A multi-layer noise filter (first-person narration, truncated RSS fragments, navigation blobs, zero-signal sentences, and more) runs before spaCy NLP to keep the knowledge graph clean. Voice synthesis is available via Wyoming Piper (enable with `CONSOLE_USE_VOICE=true`).
 
+### 🇯🇵 Learning from Japanese sources
+
+The curator ships with 8 Japanese-language music feeds covering the Shinjuku/Tokyo scene — Real Sound 音楽, CINRA, Spincoaster, FNMNL, Arban (jazz / 新宿ピットイン), block.fm, Higher Frequency, and Qetic. These are real native-language sources, not translations, so the `ja_core_news_md` pipeline gets exercised end to end: SudachiPy tokenization, NER, semantic similarity, and fact extraction into the same knowledge graph English articles feed.
+
+Routing is automatic — `detect_language()` checks for Hiragana, Katakana, or Kanji and picks the matching model from `SPACY_MODELS`. Keyword filtering is substring-based, so Japanese feeds need Japanese keywords; `CURATOR_KEYWORDS_EXTRA` appends them without discarding the English defaults.
+
+**Known limitations, stated plainly:** Japanese terminates sentences with `。` and uses no spaces, so the regex sentence splitter does not fire and articles arrive as single long statements. Every noise filter is an English regex, so Japanese site chrome passes through. And `ja_core_news_md` does not implement `noun_chunks`, so Japanese themes come from NER alone — which is why their tags skew toward dates and times. Net: Japanese extraction is high-recall, low-precision today. Useful as retrieval evidence, noisier per fact than English.
+
+Full breakdown in [docs/spacy-extraction.md](docs/spacy-extraction.md).
+
 See [docs/features/continual-learning/idea.md](docs/features/continual-learning/idea.md) for the full noise filter catalogue, schema, and NLP writing principles.
 
 ---
@@ -395,7 +416,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (822 collected; 820 passed, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (848 collected; 848 passed, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 
@@ -425,6 +446,7 @@ See [docs/docker-deployment.md](docs/docker-deployment.md) for complete setup gu
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install "spacy[ja]"                   # required for Japanese: SudachiPy tokenizer
 python -m spacy download en_core_web_md
 python -m spacy download ja_core_news_md  # recommended: Japanese multi-language NLP
 cp .env.example .env
