@@ -387,6 +387,10 @@ For Japanese, `ja_core_news_md` is the recommended balanced model. Set `ja_core_
 SPACY_MODELS=en_core_web_md,ja_core_news_md
 ```
 
+Listing a model here does not install it. Japanese additionally requires the `spacy[ja]` extra for the SudachiPy tokenizer — see [setup.md](setup.md#prerequisites) for local installs and [docker-deployment.md](docker-deployment.md#spacy-language-models-in-the-image) for the container. When a listed model is missing, the loader logs `model 'X' not found` and falls back to the English pipeline, which silently degrades Japanese NER and fact extraction to noise.
+
+For what each model actually contributes to extraction, and the known Japanese-language limitations, see [spacy-extraction.md](spacy-extraction.md).
+
 ---
 
 ## Model2Vec Classification

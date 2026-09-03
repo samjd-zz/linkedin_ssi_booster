@@ -447,7 +447,13 @@ Before sentences are stored as extracted knowledge, a multi-layer quality filter
 | Navigation / contributor blobs | Sentences ≥12 words where >45% of tokens start with uppercase (HuggingFace menus, author lists)                        |
 | Zero-signal sentences          | Sentences with no digit, no 2+-char acronym, and no consecutive title-case words — pure filler                         |
 
-These filters run **before** spaCy NLP and deduplication, so only genuinely informative domain sentences reach the knowledge graph.
+These filters run **before** spaCy NLP and deduplication, so only genuinely informative domain sentences reach the knowledge graph. Every filter is an English-language regex — Japanese source text passes through all of them untouched.
+
+---
+
+## What spaCy Actually Extracts
+
+spaCy runs at four points: pre-filter summarization, theme extraction into `entities` / `tags`, semantic near-duplicate suppression, and the truth gate similarity floors. Language routing picks the English or Japanese model by character set. Full detail — scoring weights, the `ExtractedFact` schema written to disk, the three dedup layers, [Japanese-specific behaviour](spacy-extraction.md#japanese-language-behaviour), and every tuning knob — lives in **[spacy-extraction.md](spacy-extraction.md)**.
 
 ---
 
@@ -471,17 +477,7 @@ AVATAR_LEARNING_ENABLED=true  # Enable narrative memory
 
 ### Moderation Events
 
-Every truth gate removal, confidence decision, and routing outcome is logged as a **moderation event**.
-
-**Logged fields:**
-
-- `timestamp` — When event occurred
-- `sentence` — Removed sentence text
-- `reason_code` — `weak_evidence_bm25`, `weak_dot_gradient`, etc.
-- `bm25_score` — BM25 evidence score
-- `dot_score` — DoT gradient score
-- `spacy_sim` — spaCy similarity score
-- `routed_to` — Final routing destination
+Every truth gate removal, confidence decision, and routing outcome is logged as a **moderation event** with these fields: `timestamp`, `sentence` (the removed text), `reason_code` (`weak_evidence_bm25`, `weak_dot_gradient`, etc.), `bm25_score`, `dot_score`, `spacy_sim`, and `routed_to`.
 
 **Used for:**
 
@@ -492,6 +488,7 @@ Every truth gate removal, confidence decision, and routing outcome is logged as 
 
 ## See Also
 
+- [spaCy Extraction](spacy-extraction.md) — what is learned from each article and how it is tuned
 - [Derivative of Truth](derivative-of-truth.md) — Full DoT mathematical framework
 - [Persona and Avatar Intelligence](persona-and-avatar.md) — Persona design and grounding
 - [Environment Variables Reference](environment-variables.md) — All truth gate and learning thresholds

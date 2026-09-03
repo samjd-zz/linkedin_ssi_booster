@@ -30,8 +30,9 @@ COPY requirements-core.txt .
 
 RUN python -m pip install --upgrade pip && \
     python -m pip install --no-cache-dir -r requirements-core.txt && \
-    python -m pip install spacy && \
-    python -m spacy download en_core_web_md
+    python -m pip install "spacy[ja]" && \
+    python -m spacy download en_core_web_md && \
+    python -m spacy download ja_core_news_md
 
 COPY . .
 RUN mkdir -p data/avatar data/selection yt-vid-data

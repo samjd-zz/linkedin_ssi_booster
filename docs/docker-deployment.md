@@ -44,7 +44,27 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 | `postgres`             | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                  |
 | `flux-init`            | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it           |
 | `flux_capacitor`       | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
-| `app`                  | `core`, `full` | SSI Booster application — Python 3.11 + spaCy (`core_base` Dockerfile stage)                                      |
+| `app`                  | `core`, `full` | SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md` (`core_base` Dockerfile stage) |
+
+### spaCy language models in the image
+
+The `core_base` stage installs `spacy[ja]` (which pulls the SudachiPy tokenizer Japanese requires) and downloads both `en_core_web_md` and `ja_core_news_md`. These are baked into the image, not the mounted volumes, so changing `SPACY_MODELS` in `.env` to a model that was never downloaded will not work at runtime — the loader warns and falls back to the English pipeline.
+
+Model downloads sit in a cached Docker layer. After changing the spaCy install line in the `Dockerfile`, rebuild without cache or the old layer is reused:
+
+```bash
+docker compose --profile core build --no-cache app
+```
+
+Verify the Japanese pipeline is actually live in the container:
+
+```bash
+docker compose --profile core run --rm app \
+  python -c "import spacy; nlp=spacy.load('ja_core_news_md'); \
+d=nlp('新宿LOFTでライブを観た'); print([(t.text, t.pos_) for t in d]); print(d.ents)"
+```
+
+Correct output splits the string into separate tokens (`新宿`, `LOFT`, `ライブ`, …). A single unsegmented token means SudachiPy is missing and the English tokenizer is handling the text.
 
 ---
 

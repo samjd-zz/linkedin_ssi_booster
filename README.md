@@ -263,8 +263,9 @@ Use unique per-client values for `IDEAS_CACHE_PATH`, `GENERATED_CONTENT_DIR`, an
 - **Ranking** — candidates ranked by acceptance priors × BM25 scores, continuously adapting to your preferences.
 - **Signal flow** — truth gate reason codes → confidence scorer (`post`/`idea`/`block`) → Buffer reconciliation → priors update. Sources that reliably produce clean, grounded posts rise; sources that trigger heavy filtering sink.
 - **Deterministic grounding** — BM25Okapi retrieves persona/domain facts for every generation; prompts forbid invented stats, dates, or companies. The four-layer truth gate enforces this post-generation.
+- **Multi-language extraction** — spaCy routes text to `en_core_web_md` or `ja_core_news_md` by character set, then summarizes, extracts entities/tags, and de-duplicates before writing facts to the knowledge graph.
 
-See [docs/learning-pipeline.md](docs/learning-pipeline.md) · [docs/selection-learning.md](docs/selection-learning.md) · [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
+See [docs/learning-pipeline.md](docs/learning-pipeline.md) · [docs/spacy-extraction.md](docs/spacy-extraction.md) · [docs/selection-learning.md](docs/selection-learning.md) · [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
 
 ---
 
@@ -370,6 +371,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 - [Architecture guide](docs/architecture.md) — learning pipeline, grounding flow, truth gate, and curation ranking
 - [Learning pipeline](docs/learning-pipeline.md) — truth gate layers, confidence scoring, routing policies, and explainability features
+- [spaCy extraction](docs/spacy-extraction.md) — what each article teaches the avatar, the `ExtractedFact` schema, language routing, and tuning knobs
 - [Persona and Avatar Intelligence](docs/persona-and-avatar.md) — persona graph, system prompt, memory, confidence, and continual learning
 - [Derivative of Truth (DoT) framework](docs/derivative-of-truth.md) — mathematical model, five-layer truth gate pipeline, DoT vs spaCy comparison, and scoring
 - [Selection learning](docs/selection-learning.md) — candidate logging, reconciliation, and acceptance priors

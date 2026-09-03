@@ -10,11 +10,24 @@ The setup flow uses a Python virtual environment, package installation from `req
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+pip install "spacy[ja]"                  # required for Japanese: pulls the SudachiPy tokenizer
 python -m spacy download en_core_web_md  # recommended for English: includes word vectors
 python -m spacy download ja_core_news_md # optional for Japanese: multi-language NLP pack
 ```
 
+Japanese needs the `spacy[ja]` extra, not just the model. spaCy has no built-in Japanese tokenizer — it delegates to SudachiPy (`sudachipy` + `sudachidict_core`), which only ships via that extra. Installing `ja_core_news_md` without it raises an import error at load time. Verify both are present:
+
+```bash
+python -c "import sudachipy; import spacy; spacy.load('ja_core_news_md'); print('ja OK')"
+```
+
 If disk space is constrained, `en_core_web_sm` and `ja_core_news_sm` also work; `ja_core_news_lg` is available when higher-resource Japanese analysis is appropriate. Configure the exact installed models with `SPACY_MODEL` and `SPACY_MODELS` (for example, `SPACY_MODELS=en_core_web_md,ja_core_news_md`). The application loads only the names configured there and does not probe missing optional Japanese models.
+
+When a model listed in `SPACY_MODELS` is missing, the loader logs a warning and silently falls back to the English pipeline. Japanese text tokenized by the English pipeline produces meaningless spans, so NER and fact extraction return nothing useful. Treat this warning as a hard failure rather than noise:
+
+```
+[WARN] spacy_nlp: model 'ja_core_news_md' not found — run 'python -m spacy download ja_core_news_md'
+```
 
 ## Environment file
 
