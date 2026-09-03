@@ -10,16 +10,17 @@ The setup flow uses a Python virtual environment, package installation from `req
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-pip install "spacy[ja]"                  # required for Japanese: pulls the SudachiPy tokenizer
 python -m spacy download en_core_web_md  # recommended for English: includes word vectors
 python -m spacy download ja_core_news_md # optional for Japanese: multi-language NLP pack
 ```
 
-Japanese needs the `spacy[ja]` extra, not just the model. spaCy has no built-in Japanese tokenizer — it delegates to SudachiPy (`sudachipy` + `sudachidict_core`), which only ships via that extra. Installing `ja_core_news_md` without it raises an import error at load time. Verify both are present:
+Japanese needs the SudachiPy tokenizer, not just the model. spaCy has no built-in Japanese tokenizer — it delegates to SudachiPy (`sudachipy` + `sudachidict_core`), which arrives via the `spacy[ja]` extra declared in `requirements-core.txt`. Verify both the tokenizer and the model are present:
 
 ```bash
 python -c "import sudachipy; import spacy; spacy.load('ja_core_news_md'); print('ja OK')"
 ```
+
+The spaCy pin is `spacy[ja]>=3.8.0,<3.9.0`. The upper bound is not arbitrary: `ja_core_news_md` 3.8.0 declares `spacy_version: >=3.8.0,<3.9.0`, so a looser floor lets a fresh environment resolve a spaCy the model refuses to load.
 
 If disk space is constrained, `en_core_web_sm` and `ja_core_news_sm` also work; `ja_core_news_lg` is available when higher-resource Japanese analysis is appropriate. Configure the exact installed models with `SPACY_MODEL` and `SPACY_MODELS` (for example, `SPACY_MODELS=en_core_web_md,ja_core_news_md`). The application loads only the names configured there and does not probe missing optional Japanese models.
 

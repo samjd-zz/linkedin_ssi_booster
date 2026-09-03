@@ -450,7 +450,6 @@ See [docs/docker-deployment.md](docs/docker-deployment.md) for complete setup gu
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pip install "spacy[ja]"                   # required for Japanese: SudachiPy tokenizer
 python -m spacy download en_core_web_md
 python -m spacy download ja_core_news_md  # recommended: Japanese multi-language NLP
 cp .env.example .env

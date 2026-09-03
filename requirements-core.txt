@@ -1,6 +1,8 @@
 # --- SEARCH, NLP & INTELLIGENCE ---
 rank_bm25>=0.2.2
-spacy>=3.7.0
+# Upper bound tracks ja_core_news_md, which declares spacy>=3.8.0,<3.9.0.
+# The [ja] extra pulls SudachiPy — spaCy has no built-in Japanese tokenizer.
+spacy[ja]>=3.8.0,<3.9.0
 networkx>=3.2
 trafilatura>=2.0.0
 model2vec>=0.1.0

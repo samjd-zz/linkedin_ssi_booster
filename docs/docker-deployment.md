@@ -48,7 +48,7 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 
 ### spaCy language models in the image
 
-The `core_base` stage installs `spacy[ja]` (which pulls the SudachiPy tokenizer Japanese requires) and downloads both `en_core_web_md` and `ja_core_news_md`. These are baked into the image, not the mounted volumes, so changing `SPACY_MODELS` in `.env` to a model that was never downloaded will not work at runtime — the loader warns and falls back to the English pipeline.
+The `core_base` stage installs `requirements-core.txt` (which declares `spacy[ja]`, pulling the SudachiPy tokenizer Japanese requires) and downloads both `en_core_web_md` and `ja_core_news_md`. These are baked into the image, not the mounted volumes, so changing `SPACY_MODELS` in `.env` to a model that was never downloaded will not work at runtime — the loader warns and falls back to the English pipeline.
 
 Model downloads sit in a cached Docker layer. After changing the spaCy install line in the `Dockerfile`, rebuild without cache or the old layer is reused:
 
