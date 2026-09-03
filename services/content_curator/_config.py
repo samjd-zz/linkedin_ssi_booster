@@ -59,7 +59,16 @@ _DEFAULT_RSS_FEEDS: list = [
 ]
 
 _rss_env = os.getenv("CURATOR_RSS_FEEDS", "")
-RSS_FEEDS: list = json.loads(_rss_env) if _rss_env.strip() else _DEFAULT_RSS_FEEDS
+RSS_FEEDS: list = json.loads(_rss_env) if _rss_env.strip() else list(_DEFAULT_RSS_FEEDS)
+
+# CURATOR_RSS_FEEDS_EXTRA appends to whichever list is active instead of replacing it.
+_rss_extra_env = os.getenv("CURATOR_RSS_FEEDS_EXTRA", "")
+if _rss_extra_env.strip():
+    _seen_urls = {f.get("url") for f in RSS_FEEDS}
+    for _feed in json.loads(_rss_extra_env):
+        if _feed.get("url") not in _seen_urls:
+            RSS_FEEDS.append(_feed)
+            _seen_urls.add(_feed.get("url"))
 
 # ---------------------------------------------------------------------------
 # Keywords — override via CURATOR_KEYWORDS in .env as a comma-separated list
@@ -94,7 +103,20 @@ _DEFAULT_KEYWORDS: list = [
 ]
 
 _kw_env = os.getenv("CURATOR_KEYWORDS", "")
-KEYWORDS: list = [k.strip() for k in _kw_env.split(",") if k.strip()] if _kw_env.strip() else _DEFAULT_KEYWORDS
+KEYWORDS: list = (
+    [k.strip() for k in _kw_env.split(",") if k.strip()]
+    if _kw_env.strip()
+    else list(_DEFAULT_KEYWORDS)
+)
+
+# CURATOR_KEYWORDS_EXTRA appends to whichever list is active instead of replacing it.
+_kw_extra_env = os.getenv("CURATOR_KEYWORDS_EXTRA", "")
+if _kw_extra_env.strip():
+    _seen_kw = {k.lower() for k in KEYWORDS}
+    for _kw in (k.strip() for k in _kw_extra_env.split(",")):
+        if _kw and _kw.lower() not in _seen_kw:
+            KEYWORDS.append(_kw)
+            _seen_kw.add(_kw.lower())
 
 # ---------------------------------------------------------------------------
 # SSI post-type focus weights and topic hints

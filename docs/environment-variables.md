@@ -1058,6 +1058,37 @@ Comma-separated list of keywords for RSS article filtering during curation. Arti
 CURATOR_KEYWORDS=artificial intelligence,machine learning,llm,retrieval,rag,vector search,semantic search,prompt engineering,ai agent
 ```
 
+### `CURATOR_RSS_FEEDS_EXTRA`
+
+JSON array of `{"name": "...", "url": "..."}` objects that is **appended** to the active feed list (built-in defaults, or `CURATOR_RSS_FEEDS` when set). Duplicate URLs are skipped. Use this instead of `CURATOR_RSS_FEEDS` when you want to add sources without discarding the defaults.
+
+### `CURATOR_KEYWORDS_EXTRA`
+
+Comma-separated keywords **appended** to the active keyword list (case-insensitive dedup). Required when adding non-English feeds — keyword matching is plain substring matching against the article title and summary, so English keywords never match Japanese article text.
+
+#### Japanese (Shinjuku / Tokyo) music feed set
+
+Adds Japanese-language music media so the `ja_core_news_md` spaCy pipeline gets exercised end-to-end (NER, similarity, fact extraction) during `--curate --learn`.
+
+| Source                                | Feed URL                            | Focus                                    |
+| ------------------------------------- | ----------------------------------- | ---------------------------------------- |
+| Real Sound 音楽                       | `https://realsound.jp/music/feed`    | Broad JP music news, reviews, interviews |
+| CINRA                                 | `https://www.cinra.net/feed`         | Music + culture, Tokyo scene coverage    |
+| Spincoaster                           | `https://spincoaster.com/feed`       | Indie / new-release curation             |
+| FNMNL                                 | `https://fnmnl.tv/feed`              | Tokyo hip-hop and club culture           |
+| Arban                                 | `https://www.arban-mag.com/feed`     | Jazz — Shinjuku Pit Inn / live-house beat |
+| block.fm                              | `https://block.fm/feed`              | Tokyo dance music and DJ culture         |
+| Higher Frequency                      | `https://higher-frequency.com/feed`  | Club / DJ gear and electronic scene      |
+| Qetic                                 | `https://qetic.jp/feed`              | Music, festivals, interviews             |
+
+```bash
+CURATOR_RSS_FEEDS_EXTRA=[{"name":"Real Sound 音楽","url":"https://realsound.jp/music/feed"},{"name":"CINRA","url":"https://www.cinra.net/feed"},{"name":"Spincoaster","url":"https://spincoaster.com/feed"},{"name":"FNMNL","url":"https://fnmnl.tv/feed"},{"name":"Arban (ジャズ / 新宿ピットイン)","url":"https://www.arban-mag.com/feed"},{"name":"block.fm","url":"https://block.fm/feed"},{"name":"Higher Frequency","url":"https://higher-frequency.com/feed"},{"name":"Qetic","url":"https://qetic.jp/feed"}]
+
+CURATOR_KEYWORDS_EXTRA=新宿,歌舞伎町,ライブハウス,新宿LOFT,ピットイン,クラブ,DJ,音楽,ライブ,フェス,テクノ,ハウス,ジャズ,アルバム,リリース,レーベル,シンセ,サウンド,生成AI,音楽AI
+```
+
+Make sure `SPACY_MODELS` includes `ja_core_news_md` so Japanese text is parsed with the Japanese pipeline rather than the English one.
+
 ---
 
 ## Curation dedup cache
