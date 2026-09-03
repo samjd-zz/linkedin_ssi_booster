@@ -333,9 +333,9 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
 
     has_both_languages = japanese_presence >= min_presence and english_presence >= min_presence
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
-    # Accept normal generative and line-level rounding variation, but reject
-    # material language drift such as a largely English-only lyric.
-    ratio_tolerance = max(0.05, 1.0 / total_lines) if total_lines else 0.0
+    # Music lyrics can naturally vary around their target, while still
+    # rejecting material language drift such as a largely English-only lyric.
+    ratio_tolerance = max(0.20, 1.0 / total_lines) if total_lines else 0.0
     ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
@@ -1041,12 +1041,12 @@ Each field should contain the complete lyrics for that section, including any se
 {final_rule}"""
     
     try:
-        max_attempts = 2 if lyric_language == "bilingual" else 1
+        max_attempts = 3 if lyric_language == "bilingual" else 1
         response_data: Dict[str, Any] = {}
 
         for attempt in range(1, max_attempts + 1):
             attempt_user_prompt = user_prompt
-            if lyric_language == "bilingual" and attempt > 1:
+            if lyric_language == "bilingual" and attempt == 2:
                 attempt_user_prompt += (
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
                     f"- Target {japanese_target_percent}% lyric lines containing Japanese script and "
@@ -1057,6 +1057,25 @@ Each field should contain the complete lyrics for that section, including any se
                     "- Distribute both languages across multiple sections (not just one block).\n"
                     "- Keep the full song bilingual; do not output a single-language lyric."
                 )
+            elif lyric_language == "bilingual" and attempt == 3:
+                prior_stats = _bilingual_mix_stats(response_data)
+                total_lines = int(prior_stats["total"])
+                japanese_lines = int(prior_stats["japanese_only"] + prior_stats["mixed"])
+                target_lines = round(total_lines * japanese_mix_ratio)
+                lines_to_change = abs(target_lines - japanese_lines)
+                replacement_language = (
+                    "Japanese-only" if japanese_lines < target_lines else "English-only"
+                )
+                attempt_user_prompt = f"""Repair the following bilingual lyric JSON.
+
+The previous draft has {japanese_lines} Japanese-script lyric lines out of {total_lines};
+the target is {target_lines} Japanese-script lines ({japanese_target_percent}%).
+Convert approximately {lines_to_change} lyric lines to {replacement_language} lines.
+Preserve the existing JSON keys, section markers, narrative, and Suno formatting.
+Return only a complete JSON object. Do not add commentary or markdown.
+
+Previous lyric JSON:
+{json.dumps(response_data, ensure_ascii=False)}"""
 
             response_text = ollama._chat(
                 system_prompt,
@@ -1077,7 +1096,7 @@ Each field should contain the complete lyrics for that section, including any se
                 mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
                 if not mix_ok and attempt < max_attempts:
                     logger.warning(
-                        "Bilingual mix constraints not met on attempt %s (%s). Retrying with stricter prompt.",
+                        "Bilingual mix constraints not met on attempt %s (%s). Retrying.",
                         attempt,
                         mix_summary,
                     )

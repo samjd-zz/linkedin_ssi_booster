@@ -771,7 +771,7 @@ Controls the language policy for Rei's generated lyrics.
 - `japanese` — Always generate full Japanese lyrics; the probability setting is ignored.
 - `english` — Always generate full English lyrics; the probability setting is ignored.
 
-When bilingual mode is enabled, `REI_JAPANESE_LYRIC_PROBABILITY` is used as a target ratio of lyric lines containing Japanese script during lyric composition. Rei retries an out-of-target draft with explicit Japanese-only and English-only line instructions. A draft is accepted within normal line-level rounding, with a minimum tolerance of 5 percentage points.
+When bilingual mode is enabled, `REI_JAPANESE_LYRIC_PROBABILITY` is used as a target ratio of lyric lines containing Japanese script during lyric composition. Rei retries an out-of-target draft with explicit Japanese-only and English-only line instructions. A draft is accepted within normal line-level rounding, with a minimum tolerance of 20 percentage points.
 
 ```bash
 REI_LYRIC_LANGUAGE=bilingual
@@ -787,7 +787,7 @@ Target ratio of lyric lines containing Japanese script when `REI_LYRIC_LANGUAGE=
 
 This setting is ignored when `REI_LYRIC_LANGUAGE=japanese` or `REI_LYRIC_LANGUAGE=english`.
 
-For example, `0.50` targets a roughly even bilingual song. A result from 45% to 55% Japanese-script lyric lines is accepted; materially out-of-range drafts are retried once and then rejected before the song can be saved or submitted to Suno.
+For example, `0.50` targets a roughly even bilingual song. A result from 30% to 70% Japanese-script lyric lines is accepted; materially out-of-range drafts are regenerated once, then receive one measured line-repair attempt before being rejected prior to saving or Suno submission.
 
 ```bash
 REI_JAPANESE_LYRIC_PROBABILITY=0.25

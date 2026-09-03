@@ -1088,7 +1088,7 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
             "verse_1": "データの波が走る\nSignal wakes inside the core",
             "chorus": "SIGNALを超えて\nBreak the circuit now",
             "verse_2": "境界線を越えていく\nWe rewrite the night in code",
-            "bridge": "次のステップへ\nHold the pulse and never slow",
+            "bridge": "次のステップへ\n未来へ進む",
         },
         ensure_ascii=False,
     )
@@ -1147,34 +1147,38 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
             "verse_1": "データの波が走る\n回路の熱が踊る\n境界線を越えていく\nSignal wakes inside the core",
             "chorus": "信号を追いかける\nBreak the circuit now",
             "verse_2": "ノイズが光になる\n未来を再起動する",
-            "bridge": "次のステップへ\nHold the pulse and never slow",
+            "bridge": "次のステップへ\n未来へ進む",
         },
         ensure_ascii=False,
     )
 
-    with patch.object(OllamaService, "_chat", side_effect=[out_of_target_response, out_of_target_response]) as mock_chat:
+    with patch.object(
+        OllamaService,
+        "_chat",
+        side_effect=[out_of_target_response, out_of_target_response, out_of_target_response],
+    ) as mock_chat:
         with pytest.raises(RuntimeError, match="Bilingual lyric mix constraints"):
             compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 2
+    assert mock_chat.call_count == 3
 
 
-def test_bilingual_mix_requires_configured_ratio_within_one_line():
+def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
     """A 50% target must reject a strongly Japanese-skewed bilingual draft."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
 
     skewed_payload = {
-        "verse_1": "データが走る\n回路が光る\nノイズを超える\n夜を再起動する\nSignal wakes",
-        "chorus": "境界を越える\nPulse remains",
-        "verse_2": "コードが踊る\n未来を描く",
-        "bridge": "We hold the line",
+        "verse_1": "データが走る\n回路が光る\nノイズを超える\n夜を再起動する\n境界を越える",
+        "chorus": "未来を描く\nコードが踊る",
+        "verse_2": "コードが踊る\nWe hold the line",
+        "bridge": "Pulse remains",
     }
 
     mix_ok, summary = _bilingual_mix_ok(skewed_payload, target_japanese_ratio=0.5)
 
     assert not mix_ok
-    assert "jp_ratio=0.70" in summary
-    assert "tolerance=0.10" in summary
+    assert "jp_ratio=0.80" in summary
+    assert "tolerance=0.20" in summary
 
 
 def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
@@ -1194,12 +1198,12 @@ def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
     assert "jp_ratio=0.50" in summary
 
 
-def test_bilingual_mix_accepts_a_five_percent_rounding_variation():
-    """A 46% Japanese-line result is within the practical 50% target band."""
+def test_bilingual_mix_accepts_the_twenty_percent_target_boundary():
+    """A 70% Japanese-line result is within the configured 50% target band."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
 
     payload = {
-        "verse_1": ("日本語の歌詞\n" * 23) + ("English lyric line\n" * 27),
+        "verse_1": ("日本語の歌詞\n" * 7) + ("English lyric line\n" * 3),
         "chorus": "",
         "verse_2": "",
         "bridge": "",
@@ -1208,8 +1212,8 @@ def test_bilingual_mix_accepts_a_five_percent_rounding_variation():
     mix_ok, summary = _bilingual_mix_ok(payload, target_japanese_ratio=0.5)
 
     assert mix_ok
-    assert "jp_ratio=0.46" in summary
-    assert "tolerance=0.05" in summary
+    assert "jp_ratio=0.70" in summary
+    assert "tolerance=0.20" in summary
 
 
 def test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values():
