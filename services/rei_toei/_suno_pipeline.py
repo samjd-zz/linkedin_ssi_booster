@@ -157,7 +157,7 @@ def _parse_llm_json_payload(response_text: str) -> Dict[str, Any]:
     for candidate in candidates:
         for variant in _json_normalization_variants(candidate):
             try:
-                parsed = json.loads(variant)
+                parsed = json.loads(variant, strict=False)
             except json.JSONDecodeError as exc:
                 last_error = exc
                 continue
@@ -313,14 +313,13 @@ def _bilingual_mix_stats(section_payload: Dict[str, Any]) -> Dict[str, float]:
             english_only += 1
 
     total = japanese_only + english_only + mixed
-    effective_japanese = japanese_only + (0.5 * mixed)
-    effective_japanese_ratio = (effective_japanese / total) if total else 0.0
+    japanese_line_ratio = ((japanese_only + mixed) / total) if total else 0.0
     return {
         "japanese_only": float(japanese_only),
         "english_only": float(english_only),
         "mixed": float(mixed),
         "total": float(total),
-        "effective_japanese_ratio": effective_japanese_ratio,
+        "effective_japanese_ratio": japanese_line_ratio,
     }
 
 
@@ -334,9 +333,9 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
 
     has_both_languages = japanese_presence >= min_presence and english_presence >= min_presence
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
-    # A lyric line contributes at least one discrete unit to the mix, so allow
-    # one line of rounding error instead of a fixed, overly permissive range.
-    ratio_tolerance = 1.0 / total_lines if total_lines else 0.0
+    # Accept normal generative and line-level rounding variation, but reject
+    # material language drift such as a largely English-only lyric.
+    ratio_tolerance = max(0.05, 1.0 / total_lines) if total_lines else 0.0
     ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
@@ -1050,7 +1049,11 @@ Each field should contain the complete lyrics for that section, including any se
             if lyric_language == "bilingual" and attempt > 1:
                 attempt_user_prompt += (
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
-                    "- Include at least 4 lines containing Japanese script and at least 4 lines containing English words.\n"
+                    f"- Target {japanese_target_percent}% lyric lines containing Japanese script and "
+                    f"{100 - japanese_target_percent}% English-only lyric lines.\n"
+                    "- Write roughly every second lyric line in Japanese only; do not put an English translation on that line.\n"
+                    "- Use natural kana/kanji Japanese, not Romaji, for the Japanese-only lines.\n"
+                    "- Keep the final Japanese-line ratio within one lyric line of the target.\n"
                     "- Distribute both languages across multiple sections (not just one block).\n"
                     "- Keep the full song bilingual; do not output a single-language lyric."
                 )
@@ -1080,9 +1083,9 @@ Each field should contain the complete lyrics for that section, including any se
                     )
                     continue
                 if not mix_ok:
-                    logger.warning(
-                        "Bilingual mix constraints still not met after retry (%s). Keeping best-effort output.",
-                        mix_summary,
+                    raise RuntimeError(
+                        "Bilingual lyric mix constraints were not met after retry "
+                        f"({mix_summary}). Refusing to submit an out-of-target song."
                     )
             break
         

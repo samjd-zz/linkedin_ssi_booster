@@ -1097,9 +1097,66 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
     assert mock_chat.call_count == 2
+    assert "Target 50% lyric lines containing Japanese script" in mock_chat.call_args_list[1].args[1]
+    assert "roughly every second lyric line in Japanese only" in mock_chat.call_args_list[1].args[1]
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "Signal" in merged or "Break" in merged or "rewrite" in merged
     assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
+
+
+def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Bilingual mode must not silently submit a lyric mix that misses its target."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.5")
+
+    concept = SongConcept(
+        song_id="song_004",
+        title="Rejected Bilingual Mix",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    out_of_target_response = json.dumps(
+        {
+            "verse_1": "データの波が走る\n回路の熱が踊る\n境界線を越えていく\nSignal wakes inside the core",
+            "chorus": "信号を追いかける\nBreak the circuit now",
+            "verse_2": "ノイズが光になる\n未来を再起動する",
+            "bridge": "次のステップへ\nHold the pulse and never slow",
+        },
+        ensure_ascii=False,
+    )
+
+    with patch.object(OllamaService, "_chat", side_effect=[out_of_target_response, out_of_target_response]) as mock_chat:
+        with pytest.raises(RuntimeError, match="Bilingual lyric mix constraints"):
+            compose_lyrics(concept, persona, domain_knowledge)
+
+    assert mock_chat.call_count == 2
 
 
 def test_bilingual_mix_requires_configured_ratio_within_one_line():
@@ -1118,6 +1175,52 @@ def test_bilingual_mix_requires_configured_ratio_within_one_line():
     assert not mix_ok
     assert "jp_ratio=0.70" in summary
     assert "tolerance=0.10" in summary
+
+
+def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
+    """A mixed English/Japanese line meets the Japanese-line target."""
+    from services.rei_toei._suno_pipeline import _bilingual_mix_ok
+
+    mixed_payload = {
+        "verse_1": "Signal wakes (信号が目覚める)\nPulse turns (脈拍が回る)",
+        "chorus": "Data blooms (データが咲く)\nCode rises (コードが上がる)",
+        "verse_2": "English only line\nAnother English line",
+        "bridge": "One more English line\nFinal English line",
+    }
+
+    mix_ok, summary = _bilingual_mix_ok(mixed_payload, target_japanese_ratio=0.5)
+
+    assert mix_ok
+    assert "jp_ratio=0.50" in summary
+
+
+def test_bilingual_mix_accepts_a_five_percent_rounding_variation():
+    """A 46% Japanese-line result is within the practical 50% target band."""
+    from services.rei_toei._suno_pipeline import _bilingual_mix_ok
+
+    payload = {
+        "verse_1": ("日本語の歌詞\n" * 23) + ("English lyric line\n" * 27),
+        "chorus": "",
+        "verse_2": "",
+        "bridge": "",
+    }
+
+    mix_ok, summary = _bilingual_mix_ok(payload, target_japanese_ratio=0.5)
+
+    assert mix_ok
+    assert "jp_ratio=0.46" in summary
+    assert "tolerance=0.05" in summary
+
+
+def test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values():
+    """LLM lyric JSON may contain literal line breaks instead of escaped newlines."""
+    from services.rei_toei._suno_pipeline import _parse_llm_json_payload
+
+    payload = '{"verse_1": "Signal wakes\n信号が目覚める", "chorus": "Pulse"}'
+
+    parsed = _parse_llm_json_payload(payload)
+
+    assert parsed["verse_1"] == "Signal wakes\n信号が目覚める"
 
 
 def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_knowledge_data):

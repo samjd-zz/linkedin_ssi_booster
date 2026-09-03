@@ -439,6 +439,23 @@ SUNO_MODEL=V4_5
 STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
 ```
 
+### Bilingual Lyric Mix
+
+Set the language policy and desired Japanese-script line ratio for Suno vocal lyrics:
+
+```bash
+REI_LYRIC_LANGUAGE=bilingual
+REI_JAPANESE_LYRIC_PROBABILITY=0.50
+```
+
+`0.50` targets an even mix: approximately half of non-label lyric lines contain Japanese script, and the remainder are English-only. If an initial draft misses the target, Rei retries once with alternating Japanese-only and English-only line guidance. The target accepts normal line-level rounding with a 5-percentage-point minimum tolerance, so a 50% target accepts 45% through 55%; a draft outside that band is rejected before it is saved or submitted to Suno.
+
+Use `--rei-preview` to inspect a generated song without saving it or calling Suno:
+
+```bash
+python main.py --rei-generate --rei-preview
+```
+
 ### Example: Strict Truth Validation
 
 For academic or educational content, use stricter validation:

@@ -43,17 +43,17 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Status          |
 | ----------- | ------- | ------- | ------ | --------------- |
-| **837**     | **837** | **0**   | **0**  | ✅ **All pass** |
+| **842**     | **842** | **0**   | **0**  | ✅ **All pass** |
 
-- **Latest Run Date:** September 1, 2026
-- **Latest Run Scope:** Multi-language spaCy NLP language packs (`ja_core_news_md`), Sam Japanese teacher chat persona, and console Japanese artwork auto-rendering integration via FLUX.1.
+- **Latest Run Date:** September 3, 2026
+- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, and generated-JSON parsing coverage.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. All 837 tests pass.
+- **Notes:** 0 skipped, 0 failed. All 842 tests pass.
 
 ### Test Suite Breakdown
 
 - **565** Original core logic assertions
-- **101** Rei Toei validation tests (Phases 1A–1E + console LLM behavior + Romaji music hooks)
+- **106** Rei Toei validation tests (Phases 1A–1E + console LLM behavior + Romaji music hooks)
 - _27 Foundation | 26 Suno | 20 Strudel | 18 Console Mode | 8 CLI Integration Flags + 2 fallback paths_
 
 - **6** Continuous knowledge extraction quality assertions
@@ -81,6 +81,10 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 ### Console/CLI Rei Toei lyric-language misalignment — `_rei_console.py` and `_suno_pipeline.py`
 
 The console's direct-LLM song fallback (`_handle_llm_song_generation` → `_build_rei_system_prompt`), used when no extracted knowledge/themes are available, built its own system prompt with no reference to `REI_LYRIC_LANGUAGE` / `REI_JAPANESE_LYRIC_PROBABILITY`, so it silently ignored the language-mix policy that `--rei-generate` (CLI) always applied via `compose_lyrics`. Fixed by injecting the same `resolve_lyric_language()`-derived language instruction into `_build_rei_system_prompt`. Separately, `assemble_suno_prompt` unconditionally forced the chorus to ALL-CAPS regardless of `concept.lyric_language`, uppercasing Japanese/bilingual chorus text that should preserve natural script and casing; fixed to only uppercase when `lyric_language == "english"`. Covered by `test_assemble_suno_prompt_flips_japanese_first_bilingual_lines` in `tests/test_rei_toei_service.py`.
+
+### Bilingual Japanese-line target enforcement — `_suno_pipeline.py`
+
+`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft that misses its configured target is retried with explicit Japanese-only and English-only line guidance. Generated JSON accepts literal lyric line breaks, and a failed retry is rejected before artifact persistence or Suno submission instead of falling back to English-only lyrics. The 50% target accepts the practical 45%–55% band. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_a_five_percent_rounding_variation`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`.
 
 ### `next(get_session())` anti-pattern — `_confidence.py` and `_learning.py`
 
