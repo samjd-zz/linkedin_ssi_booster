@@ -65,6 +65,22 @@ _LEARNING_PLACEHOLDER_RE = re.compile(
     r"\[(?:english meaning|actual english meaning)\](?::\s*.*)?$",
     re.IGNORECASE,
 )
+_ROMAJI_MARKER_RE = re.compile(
+    r"(?:\b(?:wa|ga|o|wo|ni|de|no|to|kara|made|e|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_romaji_cue(text: str) -> bool:
+    """Return True for parenthetical romanized Japanese learner cues."""
+    stripped = text.strip()
+    if not stripped or _JAPANESE_CHAR_RE.search(stripped):
+        return False
+    if not _ENGLISH_CHAR_RE.search(stripped):
+        return False
+    if _is_sound_cue_phrase(stripped):
+        return False
+    return bool(_ROMAJI_MARKER_RE.search(stripped))
 
 
 def _strip_markdown_fences(value: str) -> str:
@@ -310,6 +326,17 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
             normalized_segment = _normalize_learning_annotation_order(segment)
             if not normalized_segment:
                 continue
+            if (
+                normalized_segment.startswith("(")
+                and normalized_segment.endswith(")")
+                and normalized_lines
+                and _JAPANESE_CHAR_RE.search(normalized_lines[-1])
+            ):
+                parenthetical_text = normalized_segment[1:-1].strip()
+                if _looks_like_romaji_cue(parenthetical_text):
+                    normalized_lines.append(f"[{parenthetical_text}]")
+                    previous_blank = False
+                    continue
             normalized_lines.append(_normalize_bilingual_translation_order(normalized_segment))
             previous_blank = False
 
@@ -419,17 +446,36 @@ def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int
                 japanese_lines += 1
                 if index + 1 >= len(lines):
                     continue
-                match = _LEARNING_CUE_RE.fullmatch(lines[index + 1])
-                if not match:
+                next_line = lines[index + 1]
+                match = _LEARNING_CUE_RE.fullmatch(next_line)
+                if match:
+                    romaji, meaning = match.groups()
+                    if _ENGLISH_CHAR_RE.search(romaji) and _ENGLISH_CHAR_RE.search(meaning):
+                        annotation_pairs += 1
                     continue
-                romaji, meaning = match.groups()
-                if _ENGLISH_CHAR_RE.search(romaji) and _ENGLISH_CHAR_RE.search(meaning):
-                    annotation_pairs += 1
+                if next_line.startswith("[") and next_line.endswith("]"):
+                    romaji = next_line.strip("[]")
+                    if _looks_like_romaji_cue(romaji):
+                        annotation_pairs += 1
+                    continue
+                if next_line.startswith("(") and next_line.endswith(")"):
+                    romaji = next_line.strip("()")
+                    if _looks_like_romaji_cue(romaji):
+                        annotation_pairs += 1
 
     return {
         "japanese_lines": japanese_lines,
         "annotation_pairs": annotation_pairs,
     }
+
+
+def _required_learning_annotation_pairs(japanese_lines: int) -> int:
+    """Choose a song-friendly learner cue target for Japanese lyric lines."""
+    if japanese_lines <= 0:
+        return 0
+    if japanese_lines < 6:
+        return 1
+    return min(6, max(3, round(japanese_lines / 4)))
 
 
 def _learning_annotations_ok(
@@ -442,7 +488,7 @@ def _learning_annotations_ok(
     if lyric_language not in {"japanese", "bilingual"} or japanese_lines == 0:
         return True, "no Japanese learner annotations required"
 
-    required_pairs = 2 if japanese_lines >= 6 else 1
+    required_pairs = _required_learning_annotation_pairs(japanese_lines)
     actual_pairs = stats["annotation_pairs"]
     ok = actual_pairs >= required_pairs
     return ok, (
@@ -1033,8 +1079,8 @@ def compose_lyrics(
             "Use standard Hepburn-style Romaji in cues: prefer o for を and macrons such as ō, ū, and ā when appropriate. "
             "Use Japanese kanji and kana, not Chinese-only glyphs or literal machine-translated phrasing. "
             "Let Japanese carry the narrative, emotional arc, and hook meaning. "
-            "For learner support, include 1-3 selected important lines with a separate cue line: "
-            "[actual pronunciation] [actual English meaning]. Always place the Japanese lyric first, then the cue line. "
+            "For learner support, add pronunciation cues to roughly one out of every four Japanese lines, capped at six cues per song. "
+            "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
             "Do not put Romaji in parentheses or mix the cue into the Japanese lyric line. Do not annotate every line. "
             "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
             "These cues are instructional annotations, not sung lyrics. "
@@ -1053,7 +1099,8 @@ def compose_lyrics(
             "Distribute Japanese across verses, chorus, bridge, and outro so it is structurally integrated. "
             "For selected hooks or emotionally important lines, a Japanese phrase may be followed by a concise natural English sung echo on the next line. "
             "Use bilingual echoes selectively, not as a literal translation after every Japanese line. "
-            "For learner support, include 1-3 selected important Japanese lines with a separate cue line: [actual pronunciation] [actual English meaning]. "
+            "For learner support, add pronunciation cues to roughly one out of every four Japanese lines, capped at six cues per song. "
+            "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
             "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. Do not annotate every line. "
             "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
             "These learning cues are annotations, not sung lyrics, and should never replace the Japanese line. "
@@ -1089,7 +1136,8 @@ def compose_lyrics(
                "Use standard Hepburn-style Romaji in cues: prefer o for を and macrons such as ō, ū, and ā when appropriate. "
                "Use Japanese kanji and kana, not Chinese-only glyphs or literal machine-translated phrasing. "
                "Japanese must carry the narrative and emotional meaning, not merely decorate an English technical concept. "
-               "Annotate 1-3 selected important Japanese lines with a separate cue line: [actual pronunciation] [actual English meaning]. "
+               "Annotate roughly one out of every four Japanese lines, capped at six cues per song. "
+               "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
                "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. "
                "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
                "Do not annotate every line. "
@@ -1101,7 +1149,8 @@ def compose_lyrics(
                f"Aim for approximately {japanese_target_percent}% Japanese content; allow natural variation for musical phrasing and do not force rigid line alternation. "
                "A selected Japanese hook or emotional line may be followed by a concise natural English sung echo on the next line. "
                "Use echoes selectively; do not translate every Japanese line. "
-               "When learner support helps, add annotations to 1-3 selected important Japanese lines on a separate cue line: [actual pronunciation] [actual English meaning]. "
+               "When learner support helps, add annotations to roughly one out of every four Japanese lines, capped at six cues per song. "
+               "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
                "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. "
                "Do not annotate every Japanese line. "
                "These annotations are not sung lyrics. Never put learning translations in parentheses. "
@@ -1189,12 +1238,24 @@ Each field should contain the complete lyrics for that section, including any se
 {final_rule}"""
     
     try:
-        max_attempts = 3 if lyric_language == "bilingual" else 1
+        max_attempts = 3 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
+        learning_retry_summary: Optional[str] = None
 
         for attempt in range(1, max_attempts + 1):
             attempt_user_prompt = user_prompt
-            if lyric_language == "bilingual" and attempt == 2:
+            if learning_retry_summary:
+                attempt_user_prompt = f"""Repair the following lyric JSON by adding more Japanese learning cues.
+
+The previous draft had sparse learner support: {learning_retry_summary}.
+Preserve the existing JSON keys, section markers, language mix, narrative, and Suno formatting.
+Add enough Japanese-first cue lines to meet the learner-support target without annotating every Japanese line.
+Each cue must go immediately after its Japanese lyric line: first the real pronunciation in brackets, then the real English meaning in brackets.
+Do not use placeholder labels. Do not put Romaji in parentheses. Return only a complete JSON object.
+
+Previous lyric JSON:
+{json.dumps(response_data, ensure_ascii=False)}"""
+            elif lyric_language == "bilingual" and attempt == 2:
                 attempt_user_prompt += (
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
                     f"- Aim for approximately {japanese_target_percent}% Japanese lyrical content, allowing natural variation for musical phrasing.\n"
@@ -1204,7 +1265,8 @@ Each field should contain the complete lyrics for that section, including any se
                     "- Use natural kana/kanji Japanese, not Romaji, for Japanese lines.\n"
                     "- Selected Japanese hooks or emotional lines may be followed by concise natural English sung echoes on the next line.\n"
                     "- Use bilingual echoes selectively, not as literal translations after every Japanese line.\n"
-                    "- Add learner cues to 1-3 selected important Japanese lines on a separate cue line: [actual pronunciation] [actual English meaning].\n"
+                    "- Add learner cues to roughly one out of every four Japanese lines, capped at six cues per song.\n"
+                    "- Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets.\n"
                     "- Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line.\n"
                     "- Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue.\n"
                     "- Do not annotate every Japanese line.\n"
@@ -1268,8 +1330,15 @@ Previous lyric JSON:
                 response_data, lyric_language
             )
             if not learning_ok:
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Japanese learner annotations were sparse (%s). Retrying.",
+                        learning_summary,
+                    )
+                    learning_retry_summary = learning_summary
+                    continue
                 logger.warning(
-                    "Japanese learner annotations were not included (%s); continuing with lyrics.",
+                    "Japanese learner annotations remain sparse (%s); continuing with lyrics.",
                     learning_summary,
                 )
             break

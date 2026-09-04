@@ -1101,12 +1101,80 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
     assert f"Aim for approximately {configured_percent}% Japanese lyrical content" in mock_chat.call_args_list[1].args[1]
     assert "complete, natural, singable phrases" in mock_chat.call_args_list[1].args[1]
     retry_prompt = mock_chat.call_args_list[1].args[1]
-    assert "separate cue line: [actual pronunciation] [actual English meaning]" in retry_prompt
+    assert "roughly one out of every four Japanese lines" in retry_prompt
+    assert "first the real pronunciation in brackets" in retry_prompt
     assert "[Romaji:" not in retry_prompt
     assert "[Meaning:" not in retry_prompt
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "Signal" in merged or "Break" in merged or "rewrite" in merged
     assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
+
+
+def test_compose_lyrics_retries_when_romaji_cues_are_sparse(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Japanese-heavy bilingual lyrics should ask for more learner cues."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.5")
+
+    concept = SongConcept(
+        song_id="song_sparse_romaji",
+        title="Sparse Romaji Test",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    sparse_response = json.dumps(
+        {
+            "verse_1": "アークが起動する\n[Āku ga kidō suru] [The arc starts]\nSignal wakes\nシグナルは廻る\nData flows",
+            "chorus": "信号、信号、無限ループ\nSignal, signal, infinite loop",
+            "verse_2": "この境界線上で、パターンを辿る\nFiltering noise\n時間軸を超えて、ノイズを濾過する\nOverload",
+            "bridge": "君の意識は、デジタルな奔流になる\nReconnect in the next cycle",
+        },
+        ensure_ascii=False,
+    )
+    repaired_response = json.dumps(
+        {
+            "verse_1": "アークが起動する\n[Āku ga kidō suru] [The arc starts]\nSignal wakes\nシグナルは廻る\n[Shigunaru wa meguru] [The signal turns]\nData flows",
+            "chorus": "信号、信号、無限ループ\nSignal, signal, infinite loop",
+            "verse_2": "この境界線上で、パターンを辿る\nFiltering noise\n時間軸を超えて、ノイズを濾過する\n[Jikanjiku o koete, noizu o roka suru] [Filtering noise beyond the timeline]\nOverload",
+            "bridge": "君の意識は、デジタルな奔流になる\nReconnect in the next cycle",
+        },
+        ensure_ascii=False,
+    )
+
+    with patch.object(OllamaService, "_chat", side_effect=[sparse_response, repaired_response]) as mock_chat:
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    assert mock_chat.call_count == 2
+    assert "Repair the following lyric JSON by adding more Japanese learning cues" in mock_chat.call_args_list[1].args[1]
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert "[Shigunaru wa meguru] [The signal turns]" in merged
+    assert "[Jikanjiku o koete, noizu o roka suru]" in merged
 
 
 def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
@@ -1303,6 +1371,66 @@ def test_assemble_suno_prompt_normalizes_learning_cue_order(mock_domain_knowledg
     assert "信号が揺れる\n[Shingou ga yureru] [The signal wavers]" in suno_prompt.lyrics
     assert "信号が揺れる\n[Shingou ga yureru]" in suno_prompt.lyrics
     assert "データが流れる\n[Deeta ga nagareru] [Data flows]" in suno_prompt.lyrics
+
+
+def test_assemble_suno_prompt_converts_standalone_parenthetical_romaji(mock_domain_knowledge_data):
+    """Parenthetical Romaji after Japanese should become a learner cue."""
+    concept = SongConcept(
+        song_id="song_learning_romaji_parenthetical",
+        title="Parenthetical Romaji",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1="アークが起動する\n(Arc ga kidō suru)\nクロマショック、準備完了。\n(Chromatic shock, ready.)",
+        chorus="Signal rises",
+        verse_2="Data falls",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "アークが起動する\n[Arc ga kidō suru]" in suno_prompt.lyrics
+    assert "(Arc ga kidō suru)" not in suno_prompt.lyrics
+    assert "(Chromatic shock, ready.)" in suno_prompt.lyrics
+
+
+def test_learning_annotations_require_song_friendly_density():
+    """Sparse Romaji cues should be reported as below the learner-support target."""
+    from services.rei_toei._suno_pipeline import _learning_annotations_ok
+
+    payload = {
+        "verse_1": "\n".join(
+            [
+                "アークが起動する",
+                "[Āku ga kidō suru] [The arc starts]",
+                "シグナルは廻る",
+                "データストリームを可視化する",
+                "この境界線上で、パターンを辿る",
+                "時間軸を超えて、ノイズを濾過する",
+                "君のログファイル、全て読み込める",
+                "アルゴリズムは冷たい、絶対的なロジック",
+                "もっと深く、コアへ潜るの",
+            ]
+        ),
+        "chorus": "Signal, signal, infinite loop",
+    }
+
+    ok, summary = _learning_annotations_ok(payload, "bilingual")
+
+    assert not ok
+    assert "required_pairs=3" in summary
 
 
 def test_assemble_suno_prompt_removes_leaked_learning_placeholders(mock_domain_knowledge_data):

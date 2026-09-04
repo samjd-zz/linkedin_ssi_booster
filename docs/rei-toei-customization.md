@@ -452,14 +452,18 @@ The value is the source of truth for the bilingual target; it is not hardcoded i
 
 Rei's bilingual instructions require Japanese to carry emotional, narrative, or hook meaning in complete singable phrases. English provides contrast and momentum. Selected Japanese hooks may be followed by a concise English sung echo on the next line, but Rei must not translate every Japanese line.
 
-For learning support, selected important Japanese lines may receive square-bracket annotations in this order:
+Japanese-only mode follows the same language-quality rules: contemporary idiomatic Japanese, natural particles and verb forms, selective kanji, and mora-aware phrasing. Rei avoids literal technical translations, unnecessary katakana jargon, isolated English words inside Japanese grammar, and Chinese-only glyphs. Technical loanwords are used only when they sound natural in Japanese music.
+
+For learning support, Rei targets square-bracket annotations on roughly one out of every four Japanese lyric lines, capped at six cues per song. Use this order:
 
 ```text
 接続はまだ終わらない
 [Setsuzoku wa mada owaranai] [The connection is not over yet]
 ```
 
-These annotations are optional and selective. They are instructional text, not sung lyrics. Parentheses remain reserved for vocalizations and production cues such as `(Ahh ahh ahh)` or `(bass drop)`.
+Use standard Hepburn-style Romaji in the first bracket, including `o` for を and macrons such as `ō`, `ū`, and `ā` when appropriate. Keep the Japanese lyric first, then put the cue on its own line. These annotations are selective enough to keep the result song-like, but dense enough for language learning. They are instructional text, not sung lyrics. Parentheses remain reserved for vocalizations and production cues such as `(Ahh ahh ahh)` or `(bass drop)`.
+
+The final Suno formatter normalizes common model variations such as `Japanese (Romaji) [Meaning]`, standalone parenthetical Romaji after a Japanese line, and `Romaji (Japanese)` into the Japanese-first learning format. It also removes leaked instructional placeholders such as `[actual pronunciation] [actual English meaning]` before saving or submitting lyrics.
 
 If an initial draft drifts materially from the configured target or becomes single-language, Rei retries with the same environment-derived target. A draft that still falls outside the configured tolerance is rejected before it is saved or submitted to Suno.
 
