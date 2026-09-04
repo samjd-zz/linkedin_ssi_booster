@@ -1101,7 +1101,7 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
     assert f"Aim for approximately {configured_percent}% Japanese lyrical content" in mock_chat.call_args_list[1].args[1]
     assert "complete, natural, singable phrases" in mock_chat.call_args_list[1].args[1]
     retry_prompt = mock_chat.call_args_list[1].args[1]
-    assert "first [romaji pronunciation], then [English meaning]" in retry_prompt
+    assert "separate cue line: [actual pronunciation] [actual English meaning]" in retry_prompt
     assert "[Romaji:" not in retry_prompt
     assert "[Meaning:" not in retry_prompt
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
@@ -1187,7 +1187,7 @@ def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
 
 
 def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
-    """A mixed English/Japanese line meets the Japanese-line target."""
+    """Mixed English/Japanese lines contribute partial Japanese content."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
 
     mixed_payload = {
@@ -1200,7 +1200,7 @@ def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
     mix_ok, summary = _bilingual_mix_ok(mixed_payload, target_japanese_ratio=0.5)
 
     assert mix_ok
-    assert "jp_ratio=0.50" in summary
+    assert "jp_ratio=0.25" in summary
 
 
 def test_bilingual_mix_accepts_the_twenty_percent_target_boundary():
@@ -1270,6 +1270,72 @@ def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_k
 
     assert "Signal enters the field (フィールドにサインが混じる)" in suno_prompt.lyrics
     assert "Cascade flow, it opens now (カスケード・フロー、今、開く)" in suno_prompt.lyrics
+
+
+def test_assemble_suno_prompt_normalizes_learning_cue_order(mock_domain_knowledge_data):
+    """Learning cues are normalized to Japanese, then separate bracket cues."""
+    concept = SongConcept(
+        song_id="song_learning_001",
+        title="Learning Cue Order",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1="信号が揺れる (Shingou ga yureru) [The signal wavers]",
+        chorus="Shingou ga yureru (信号が揺れる)",
+        verse_2="データが流れる [Deeta ga nagareru] [Data flows]",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "信号が揺れる\n[Shingou ga yureru] [The signal wavers]" in suno_prompt.lyrics
+    assert "信号が揺れる\n[Shingou ga yureru]" in suno_prompt.lyrics
+    assert "データが流れる\n[Deeta ga nagareru] [Data flows]" in suno_prompt.lyrics
+
+
+def test_assemble_suno_prompt_removes_leaked_learning_placeholders(mock_domain_knowledge_data):
+    """Prompt labels must never appear as visible lyric content."""
+    concept = SongConcept(
+        song_id="song_learning_002",
+        title="Placeholder Guard",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1="もっと、もっと、解き明かして\n[romaji pronunciation] [English meaning]: Tell me more, unlock it.",
+        chorus="Enzan funou! (演算不能!)\n[romaji pronunciation] [English meaning]: Calculation impossible!",
+        verse_2="Signal rises",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "[romaji pronunciation]" not in suno_prompt.lyrics.lower()
+    assert "[english meaning]" not in suno_prompt.lyrics.lower()
+    assert "もっと、もっと、解き明かして" in suno_prompt.lyrics
 
 
 def test_validate_lyrics_with_dot_enabled(mock_extracted_knowledge, monkeypatch):
