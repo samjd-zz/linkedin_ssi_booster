@@ -5,7 +5,7 @@ This module provides the main service orchestrator for Rei Toei music generation
 coordinating between Suno and Strudel pipelines with lazy-loaded knowledge.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import logging

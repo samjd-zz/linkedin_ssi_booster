@@ -13,7 +13,7 @@ Prompt precedence (highest → lowest):
   5. Post/concept/topic context
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import logging

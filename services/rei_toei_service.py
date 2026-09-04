@@ -16,7 +16,7 @@ All existing imports will continue to work:
     from services.rei_toei_service import get_rei_service, ReiToeiConfig, etc.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 # Re-export entire package API for backward compatibility

@@ -4,7 +4,7 @@ Rei Toei Loader Functions
 Functions to load Rei's persona, domain knowledge, and pattern library from JSON files.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import json

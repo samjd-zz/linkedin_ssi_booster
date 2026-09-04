@@ -18,7 +18,7 @@ Typical usage (schedule/curate flows)::
         print("Image saved to", result.image_path)
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import logging

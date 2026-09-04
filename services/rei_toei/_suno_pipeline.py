@@ -5,7 +5,7 @@ This module provides pipeline functions for transforming technical themes into
 Suno-ready song prompts with lyrics, validation, and submission orchestration.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import asyncio

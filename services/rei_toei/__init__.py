@@ -6,7 +6,7 @@ curated technical knowledge into original music compositions via both Suno (voca
 and Strudel (algorithmic patterns).
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 # Re-export public API for backward compatibility with services.rei_toei_service

@@ -15,7 +15,7 @@ When DATABASE_ENABLED=true the local-artifact state is also mirrored as a
 secondary index row in generated_content_records.  Local files remain canonical.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import hashlib

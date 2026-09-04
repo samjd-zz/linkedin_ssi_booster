@@ -8,7 +8,7 @@ This agent provides Strudel pattern generation via MCP stdio JSON-RPC with prope
 - Graceful degradation when services are unavailable
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.2.7
+Version: alpha-v0.0.3.5
 """
 
 import asyncio
