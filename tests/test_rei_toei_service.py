@@ -3,7 +3,6 @@ Unit tests for Rei Toei service
 
 Tests cover:
 - Loader functions for persona, domain knowledge, and pattern library
-    assert "Aim for approximately 50% Japanese lyrical content" in mock_chat.call_args_list[1].args[1]
 - Service initialization and lazy loading
 - Helper methods (BPM, synth selection, pattern matching)
 - ID generation
