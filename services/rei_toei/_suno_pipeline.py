@@ -61,7 +61,8 @@ _ROMAJI_FIRST_RE = re.compile(
     r"\((?P<japanese>[^()]*(?:[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f])[^()]*)\)$"
 )
 _LEARNING_PLACEHOLDER_RE = re.compile(
-    r"^\[romaji pronunciation\]\s+\[english meaning\](?::\s*.*)?$",
+    r"^\[(?:romaji pronunciation|actual pronunciation)\]\s+"
+    r"\[(?:english meaning|actual english meaning)\](?::\s*.*)?$",
     re.IGNORECASE,
 )
 
@@ -279,6 +280,12 @@ def _normalize_learning_annotation_order(line: str) -> str:
         romaji = romaji_first_match.group("romaji").strip()
         japanese = romaji_first_match.group("japanese").strip()
         return f"{japanese}\n[{romaji}]"
+
+    # Remove cue-like annotations that contain no Japanese lyric line to attach to.
+    if stripped.startswith("[") and "]" in stripped and ":" in stripped:
+        label = stripped.split("]", 1)[0].lstrip("[").strip().lower()
+        if label in {"romaji pronunciation", "actual pronunciation"}:
+            return ""
 
     return stripped
 

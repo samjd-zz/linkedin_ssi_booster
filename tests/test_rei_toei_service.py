@@ -1338,6 +1338,38 @@ def test_assemble_suno_prompt_removes_leaked_learning_placeholders(mock_domain_k
     assert "もっと、もっと、解き明かして" in suno_prompt.lyrics
 
 
+def test_assemble_suno_prompt_removes_actual_cue_placeholder(mock_domain_knowledge_data):
+    """The newer descriptive cue placeholders must not reach Suno lyrics."""
+    concept = SongConcept(
+        song_id="song_learning_003",
+        title="Actual Cue Guard",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1="再構築の淵で\n[actual pronunciation] [actual English meaning]",
+        chorus="Signal rises",
+        verse_2="Data falls",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "[actual pronunciation]" not in suno_prompt.lyrics.lower()
+    assert "再構築の淵で" in suno_prompt.lyrics
+
+
 def test_validate_lyrics_with_dot_enabled(mock_extracted_knowledge, monkeypatch):
     """Test validate_lyrics_with_dot validates claims against knowledge"""
     monkeypatch.setenv("REI_TOEI_DOT_VALIDATION_ENABLED", "true")
