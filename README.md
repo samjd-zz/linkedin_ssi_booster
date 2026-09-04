@@ -130,7 +130,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 **Current capabilities:**
 
 - **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
-- **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, Japanese-first normalization, and Vocaloid-oriented delivery rules
+- **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, messy inline-cue cleanup, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
 - **Controlled lyric language selection** — `bilingual` mode is the default; `REI_JAPANESE_LYRIC_PROBABILITY` controls the Japanese lyrical-content target at runtime, while explicit `english` or `japanese` modes are deterministic
 - **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs for grounded study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
 - **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)

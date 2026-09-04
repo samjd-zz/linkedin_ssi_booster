@@ -1406,6 +1406,74 @@ def test_assemble_suno_prompt_converts_standalone_parenthetical_romaji(mock_doma
     assert "(Chromatic shock, ready.)" in suno_prompt.lyrics
 
 
+def test_assemble_suno_prompt_splits_inline_learning_cue_with_sung_tail(mock_domain_knowledge_data):
+    """Messy Japanese/Romaji/meaning lines should become Japanese-first cue blocks."""
+    concept = SongConcept(
+        song_id="song_learning_inline_tail",
+        title="Inline Cue Tail",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1=(
+            "解析する、このノイズの層を (kaiseki suru, kono noizu no sō o) "
+            "[analyze, this layer of noise] a fragile map of where I must go."
+        ),
+        chorus="どこまで進む？さあ、もっと (Doko made susumu? Saa, motto) [How far will we go? Come on, more].",
+        verse_2="Data falls",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "解析する、このノイズの層を\n[kaiseki suru, kono noizu no sō o] [analyze, this layer of noise]\na fragile map of where I must go." in suno_prompt.lyrics
+    assert "どこまで進む？さあ、もっと\n[Doko made susumu? Saa, motto] [How far will we go? Come on, more]" in suno_prompt.lyrics
+    assert "[How far will we go? Come on, more]." not in suno_prompt.lyrics
+
+
+def test_assemble_suno_prompt_repairs_stray_non_japanese_script(mock_domain_knowledge_data):
+    """Japanese lyric lines should not retain stray non-Japanese script glyphs."""
+    concept = SongConcept(
+        song_id="song_script_hygiene",
+        title="Script Hygiene",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1="データ・サーಜ್・パルス, リフレイン・ループ",
+        chorus="Signal rises",
+        verse_2="Data falls",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "データ・サージ・パルス" in suno_prompt.lyrics
+    assert "ಜ" not in suno_prompt.lyrics
+
+
 def test_learning_annotations_require_song_friendly_density():
     """Sparse Romaji cues should be reported as below the learner-support target."""
     from services.rei_toei._suno_pipeline import _learning_annotations_ok
@@ -1431,6 +1499,30 @@ def test_learning_annotations_require_song_friendly_density():
 
     assert not ok
     assert "required_pairs=3" in summary
+
+
+def test_learning_annotations_count_normalizable_inline_cues():
+    """Inline Romaji/meaning cue forms should count before retry decisions."""
+    from services.rei_toei._suno_pipeline import _learning_annotations_ok
+
+    payload = {
+        "verse_1": "\n".join(
+            [
+                "解析する、このノイズの層を (kaiseki suru, kono noizu no sō o) [analyze, this layer of noise] a fragile map",
+                "記憶の境界線, 越えてみせるよ (kioku no kyōkaisen, koete miseru yo) [memory's boundary line, I will cross it]",
+                "データ・サージ・パルス, リフレイン・ループ",
+                "信号処理の果てへ, アクセス・ビーム (Shingō shori no hate e, akusesu bīmu) [To the end of signal processing, access beam]",
+                "意味の層が剥がれ落ちる、真実が姿を現す (imi no sō ga hagareochiru, shinjitsu ga sugata o arawasu) [the layer of meaning peels off, truth reveals itself]",
+                "言葉のノイズを越えて、二人だけ",
+            ]
+        ),
+        "chorus": "Signal, signal, infinite loop",
+    }
+
+    ok, summary = _learning_annotations_ok(payload, "bilingual")
+
+    assert ok
+    assert "annotation_pairs=4" in summary
 
 
 def test_assemble_suno_prompt_removes_leaked_learning_placeholders(mock_domain_knowledge_data):

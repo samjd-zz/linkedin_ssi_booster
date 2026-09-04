@@ -50,7 +50,7 @@ _SOUND_CUE_PHRASES = {"bass drop", "silence", "glitch noise", "chaos"}
 _LEARNING_CUE_RE = re.compile(r"^\[([^\[\]]+)\]\s+\[([^\[\]]+)\]$")
 _INLINE_LEARNING_CUE_RE = re.compile(
     r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
-    r"\((?P<romaji>[^()]*)\)\s+\[(?P<meaning>[^\[\]]+)\]$"
+    r"\((?P<romaji>[^()]*)\)\s+\[(?P<meaning>[^\[\]]+)\](?P<tail>.*)$"
 )
 _BRACKET_LEARNING_CUE_RE = re.compile(
     r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
@@ -69,6 +69,13 @@ _ROMAJI_MARKER_RE = re.compile(
     r"(?:\b(?:wa|ga|o|wo|ni|de|no|to|kara|made|e|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
     re.IGNORECASE,
 )
+_NON_JAPANESE_SCRIPT_CONTAMINATION_RE = re.compile(r"[\u0900-\u0d7f]+")
+_SCRIPT_CONTAMINATION_REPLACEMENTS = {
+    "サーಜ್": "サージ",
+    "サーಜ": "サージ",
+    "ಜ್": "ジ",
+    "ಜ": "ジ",
+}
 
 
 def _looks_like_romaji_cue(text: str) -> bool:
@@ -81,6 +88,28 @@ def _looks_like_romaji_cue(text: str) -> bool:
     if _is_sound_cue_phrase(stripped):
         return False
     return bool(_ROMAJI_MARKER_RE.search(stripped))
+
+
+def _clean_learning_tail(text: str) -> str:
+    """Return a trailing sung echo after an inline learner cue, if meaningful."""
+    cleaned = text.strip()
+    cleaned = cleaned.lstrip(" .,;:!?。、，；：！？")
+    if not _ENGLISH_CHAR_RE.search(cleaned):
+        return ""
+    return cleaned
+
+
+def _clean_script_contamination(text: str) -> str:
+    """Remove stray non-Japanese script fragments from Japanese lyric lines."""
+    cleaned_lines: List[str] = []
+    for line in text.splitlines():
+        cleaned = line
+        if _JAPANESE_CHAR_RE.search(cleaned):
+            for old, new in _SCRIPT_CONTAMINATION_REPLACEMENTS.items():
+                cleaned = cleaned.replace(old, new)
+            cleaned = _NON_JAPANESE_SCRIPT_CONTAMINATION_RE.sub("", cleaned)
+        cleaned_lines.append(cleaned)
+    return "\n".join(cleaned_lines)
 
 
 def _strip_markdown_fences(value: str) -> str:
@@ -282,7 +311,11 @@ def _normalize_learning_annotation_order(line: str) -> str:
         japanese = inline_match.group("japanese").strip()
         romaji = inline_match.group("romaji").strip()
         meaning = inline_match.group("meaning").strip()
-        return f"{japanese}\n[{romaji}] [{meaning}]"
+        normalized = f"{japanese}\n[{romaji}] [{meaning}]"
+        tail = _clean_learning_tail(inline_match.group("tail"))
+        if tail:
+            normalized = f"{normalized}\n{tail}"
+        return normalized
 
     bracket_match = _BRACKET_LEARNING_CUE_RE.fullmatch(stripped)
     if bracket_match:
@@ -326,6 +359,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
             normalized_segment = _normalize_learning_annotation_order(segment)
             if not normalized_segment:
                 continue
+            normalized_segment = _clean_script_contamination(normalized_segment)
             if (
                 normalized_segment.startswith("(")
                 and normalized_segment.endswith(")")
@@ -444,6 +478,11 @@ def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int
                 continue
             if _JAPANESE_CHAR_RE.search(line):
                 japanese_lines += 1
+                inline_match = _INLINE_LEARNING_CUE_RE.fullmatch(line)
+                bracket_match = _BRACKET_LEARNING_CUE_RE.fullmatch(line)
+                if inline_match or bracket_match:
+                    annotation_pairs += 1
+                    continue
                 if index + 1 >= len(lines):
                     continue
                 next_line = lines[index + 1]
