@@ -920,22 +920,26 @@ def compose_lyrics(
     )
     language_instruction = {
         "japanese": (
-            "Write the performance lyrics in natural contemporary Japanese with optional Romaji vocaloid hooks or echoes. "
-            "Use kana-forward phrasing, selective kanji, Romaji chant phrases where effective, and mora-aware line lengths. "
+            "Write the performance lyrics in natural contemporary Japanese. "
+            "Use kana-forward phrasing, selective kanji, and mora-aware line lengths. "
+            "For learner support, follow important Japanese lines with optional square-bracket cues: "
+            "[Romaji: ...] and [Meaning: ...]. These cues are instructional annotations, not sung lyrics. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
         "bilingual": (
-            "Write one bilingual song that mixes Japanese (including Romaji vocaloid hooks/echoes) and English within the same lyrics. "
-            f"Target approximately {japanese_target_percent}% Japanese/Romaji lines and "
+            "Write one genuinely bilingual song that alternates natural Japanese and English within the same lyrics. "
+            f"Target approximately {japanese_target_percent}% Japanese-script lyric lines and "
             f"{100 - japanese_target_percent}% English lines across sections. "
-            "Preserve natural code-switching and do not translate every line. "
-            "Keep hooks memorable in both languages using Romaji or Kana/Kanji and avoid block-wise segregation by language. "
-            "When a line includes both languages, put the spoken English first and keep the Japanese translation in parentheses. "
-            "Do not place the sung English inside parentheses. "
+            "Japanese must carry meaning in complete singable phrases or full lines, not isolated nouns, labels, or decorative vocabulary. "
+            "Use natural kana/kanji Japanese; do not use Romaji as a substitute for Japanese lines. "
+            "For learner support, follow important Japanese lines with optional square-bracket cues: [Romaji: ...] and [Meaning: ...]. "
+            "These learning cues are annotations, not sung lyrics, and should never replace the Japanese line. "
+            "Distribute Japanese across multiple sections and let it carry narrative or hook meaning. "
+            "Do not hide learning translations in parentheses. Parentheses are reserved only for Suno vocalizations and sound cues. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
-        "english": "Write the performance lyrics in English with optional Romaji/Japanese vocaloid hook phrases or chant accents.",
-    }.get(lyric_language, "Write the performance lyrics in English with optional Romaji vocaloid hook phrases.")
+        "english": "Write the performance lyrics in English with optional natural Japanese hook phrases or chant accents.",
+    }.get(lyric_language, "Write the performance lyrics in English with optional natural Japanese hook phrases.")
 
     chorus_case_rule = (
         "4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity"
@@ -956,8 +960,11 @@ def compose_lyrics(
         "Preserve Japanese script and do not force-uppercase Japanese text. "
         "Do not spell out numbers or invent quantities (\"fifteen\", \"nineteen\", \"seventeen\") as a filler device \u2014 use imagery, not counting."
         if lyric_language == "english"
-        else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
-               "When a line is bilingual, the English vocal line must appear outside parentheses and the Japanese translation must stay inside parentheses. "
+         else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
+               "For bilingual lyrics, use complete Japanese phrases or lines that carry meaning. "
+               "When learner support helps, add square-bracket annotations immediately below the Japanese line: [Romaji: ...] and [Meaning: ...]. "
+               "These annotations are not sung lyrics. Never put learning translations in parentheses. "
+               "Use parentheses only for vocalizations and sound cues such as (Ahh ahh ahh) or (bass drop). "
                "Do not force-uppercase bilingual or Japanese lines. "
                "Do not spell out numbers or invent quantities as a filler device \u2014 use imagery, not counting."
     )
@@ -1051,8 +1058,12 @@ Each field should contain the complete lyrics for that section, including any se
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
                     f"- Target {japanese_target_percent}% lyric lines containing Japanese script and "
                     f"{100 - japanese_target_percent}% English-only lyric lines.\n"
-                    "- Write roughly every second lyric line in Japanese only; do not put an English translation on that line.\n"
-                    "- Use natural kana/kanji Japanese, not Romaji, for the Japanese-only lines.\n"
+                    "- Japanese lines must be complete, natural, singable phrases that carry narrative or hook meaning.\n"
+                    "- Do not use isolated Japanese nouns, labels, or vocabulary inserts as decoration.\n"
+                    "- Use natural kana/kanji Japanese, not Romaji, for Japanese lines.\n"
+                    "- Add optional learner cues immediately below important Japanese lines using [Romaji: ...] and [Meaning: ...].\n"
+                    "- These square-bracket cues are instructional annotations, not sung lyrics.\n"
+                    "- Do not add learning translations in parentheses; parentheses are only for vocalizations and sound cues.\n"
                     "- Keep the final Japanese-line ratio within one lyric line of the target.\n"
                     "- Distribute both languages across multiple sections (not just one block).\n"
                     "- Keep the full song bilingual; do not output a single-language lyric."

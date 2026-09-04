@@ -1098,7 +1098,8 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
 
     assert mock_chat.call_count == 2
     assert "Target 50% lyric lines containing Japanese script" in mock_chat.call_args_list[1].args[1]
-    assert "roughly every second lyric line in Japanese only" in mock_chat.call_args_list[1].args[1]
+    assert "complete, natural, singable phrases" in mock_chat.call_args_list[1].args[1]
+    assert "[Romaji: ...] and [Meaning: ...]" in mock_chat.call_args_list[1].args[1]
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "Signal" in merged or "Break" in merged or "rewrite" in merged
     assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
