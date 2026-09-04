@@ -441,14 +441,27 @@ STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"
 
 ### Bilingual Lyric Mix
 
-Set the language policy and desired Japanese-script line ratio for Suno vocal lyrics:
+Set the language policy and desired Japanese lyrical-content target for Suno vocal lyrics:
 
 ```bash
 REI_LYRIC_LANGUAGE=bilingual
-REI_JAPANESE_LYRIC_PROBABILITY=0.50
+REI_JAPANESE_LYRIC_PROBABILITY=0.33
 ```
 
-`0.50` targets an even mix: approximately half of non-label lyric lines contain Japanese script, and the remainder are English-only. If an initial draft misses the target, Rei regenerates it with alternating Japanese-only and English-only line guidance; a second miss receives one measured line-repair attempt. The target accepts normal line-level rounding with a 20-percentage-point minimum tolerance, so a 50% target accepts 30% through 70%; a draft outside that band is rejected before it is saved or submitted to Suno.
+The value is the source of truth for the bilingual target; it is not hardcoded in the prompt. `0.33` asks for approximately 33% Japanese lyrical content, while `0.50` asks for approximately 50%. The target is flexible for musical phrasing rather than a rigid alternating-line pattern.
+
+Rei's bilingual instructions require Japanese to carry emotional, narrative, or hook meaning in complete singable phrases. English provides contrast and momentum. Selected Japanese hooks may be followed by a concise English sung echo on the next line, but Rei must not translate every Japanese line.
+
+For learning support, selected important Japanese lines may receive square-bracket annotations in this order:
+
+```text
+接続はまだ終わらない
+[Setsuzoku wa mada owaranai] [The connection is not over yet]
+```
+
+These annotations are optional and selective. They are instructional text, not sung lyrics. Parentheses remain reserved for vocalizations and production cues such as `(Ahh ahh ahh)` or `(bass drop)`.
+
+If an initial draft drifts materially from the configured target or becomes single-language, Rei retries with the same environment-derived target. A draft that still falls outside the configured tolerance is rejected before it is saved or submitted to Suno.
 
 Use `--rei-preview` to inspect a generated song without saving it or calling Suno:
 
