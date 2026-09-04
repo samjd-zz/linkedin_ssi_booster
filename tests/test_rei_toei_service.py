@@ -12,6 +12,7 @@ Version: alpha-v0.0.3.5
 """
 
 import json
+import logging
 import os
 import pytest
 from pathlib import Path
@@ -1177,6 +1178,67 @@ def test_compose_lyrics_retries_when_romaji_cues_are_sparse(
     assert "[Jikanjiku o koete, noizu o roka suru]" in merged
 
 
+def test_compose_lyrics_keeps_last_valid_draft_when_repair_json_is_malformed(
+    mock_domain_knowledge_data,
+    monkeypatch,
+    caplog,
+):
+    """Malformed repair JSON should not force the English fallback lyrics."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.5")
+
+    concept = SongConcept(
+        song_id="song_malformed_repair",
+        title="Malformed Repair Test",
+        theme="River Protocol",
+        mood="bratty_bounce",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    sparse_but_valid_response = json.dumps(
+        {
+            "verse_1": "川のプロトコルが目覚める\nEnglish current rises\n土の信号を読み取る\nData maps the flow",
+            "chorus": "流れろ、流れろ、テラフロー\nRiver pulse, never stop",
+            "verse_2": "境界線が泥に溶ける\nWe rewrite the channel\n記憶の層を越えていく\nSignal returns",
+            "bridge": "次の岸へ接続する\nAcross the divide",
+        },
+        ensure_ascii=False,
+    )
+    malformed_repair_response = '{"verse_1": "川のプロトコルが目覚める\n[Kawa no purotokoru ga mezameru]'
+
+    with caplog.at_level(logging.WARNING):
+        with patch.object(OllamaService, "_chat", side_effect=[sparse_but_valid_response, malformed_repair_response]) as mock_chat:
+            lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    assert mock_chat.call_count == 2
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert "川のプロトコルが目覚める" in merged
+    assert "EXECUTE THE RIVER PROTOCOL STREAM" not in merged
+    assert "Using the last valid lyric draft instead of fallback lyrics" in caplog.text
+
+
 def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
     mock_domain_knowledge_data,
     monkeypatch,
@@ -1442,6 +1504,80 @@ def test_assemble_suno_prompt_splits_inline_learning_cue_with_sung_tail(mock_dom
     assert "[How far will we go? Come on, more]." not in suno_prompt.lyrics
 
 
+def test_assemble_suno_prompt_splits_bracket_romaji_parenthetical_meaning(mock_domain_knowledge_data):
+    """Japanese [Romaji] (Meaning) cues should become bracket cue lines."""
+    concept = SongConcept(
+        song_id="song_learning_bracket_parenthetical",
+        title="Bracket Parenthetical Cue",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1=(
+            "Sample rate too high. この甘さがノイズなの？ [Kono amasa ga noizu na no?] "
+            "(Is this sweetness noise?)"
+        ),
+        chorus=(
+            "シグナルは溢れる [Shigunaru wa afureru] (The signal overflows)\n"
+            "データは溶ける [Dēta wa tokeru] (The data melts)"
+        ),
+        verse_2="Data falls",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "Sample rate too high\nこの甘さがノイズなの？\n[Kono amasa ga noizu na no?] [Is this sweetness noise?]" in suno_prompt.lyrics
+    assert "シグナルは溢れる\n[Shigunaru wa afureru] [The signal overflows]" in suno_prompt.lyrics
+    assert "データは溶ける\n[Dēta wa tokeru] [The data melts]" in suno_prompt.lyrics
+    assert "[Kono amasa ga noizu na no?] (Is this sweetness noise?)" not in suno_prompt.lyrics
+
+
+def test_assemble_suno_prompt_preserves_trailing_echo_after_parenthetical_meaning(mock_domain_knowledge_data):
+    """English tails after Japanese [Romaji] (Meaning) stay as sung echoes."""
+    concept = SongConcept(
+        song_id="song_learning_bracket_tail",
+        title="Bracket Cue Tail",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1=(
+            "次の位相へ、シフトチェンジする [Tsugi no isō e, shifuto chenji suru] "
+            "(To the next phase, shifting change) this rave is real"
+        ),
+        chorus="Signal rises",
+        verse_2="Data falls",
+        bridge="境界を越える",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "次の位相へ、シフトチェンジする\n[Tsugi no isō e, shifuto chenji suru] [To the next phase, shifting change]\nthis rave is real" in suno_prompt.lyrics
+
+
 def test_assemble_suno_prompt_repairs_stray_non_japanese_script(mock_domain_knowledge_data):
     """Japanese lyric lines should not retain stray non-Japanese script glyphs."""
     concept = SongConcept(
@@ -1523,6 +1659,30 @@ def test_learning_annotations_count_normalizable_inline_cues():
 
     assert ok
     assert "annotation_pairs=4" in summary
+
+
+def test_learning_annotations_count_bracket_romaji_parenthetical_meanings():
+    """Japanese [Romaji] (Meaning) cue forms should count before retry decisions."""
+    from services.rei_toei._suno_pipeline import _learning_annotations_ok
+
+    payload = {
+        "verse_1": "\n".join(
+            [
+                "この甘さがノイズなの？ [Kono amasa ga noizu na no?] (Is this sweetness noise?)",
+                "ねじれたパターン、解析する [Nejireta patān, kaiseki suru] (Warped patterns, analyzing)",
+                "膜を破り出す、さあ [Maku o yabidasu, sā] (Breaching the membrane, come on)",
+                "シグナルは溢れる [Shigunaru wa afureru] (The signal overflows)",
+                "データは溶ける [Dēta wa tokeru] (The data melts)",
+                "過負荷で、燃えて消える熱",
+            ]
+        ),
+        "chorus": "Pulp Matrix, overload circuit",
+    }
+
+    ok, summary = _learning_annotations_ok(payload, "bilingual")
+
+    assert ok
+    assert "annotation_pairs=5" in summary
 
 
 def test_assemble_suno_prompt_removes_leaked_learning_placeholders(mock_domain_knowledge_data):

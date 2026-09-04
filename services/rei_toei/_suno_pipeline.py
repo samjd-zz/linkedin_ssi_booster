@@ -56,6 +56,10 @@ _BRACKET_LEARNING_CUE_RE = re.compile(
     r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
     r"\[(?P<romaji>[^\[\]]+)\]\s+\[(?P<meaning>[^\[\]]+)\]$"
 )
+_BRACKET_PAREN_LEARNING_CUE_RE = re.compile(
+    r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
+    r"\[(?P<romaji>[^\[\]]+)\]\s+\((?P<meaning>[^()]*)\)(?P<tail>.*)$"
+)
 _ROMAJI_FIRST_RE = re.compile(
     r"^(?P<romaji>[A-Za-z][A-Za-z'\-\sāīūēōĀĪŪĒŌ]+?)\s+"
     r"\((?P<japanese>[^()]*(?:[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f])[^()]*)\)$"
@@ -97,6 +101,40 @@ def _clean_learning_tail(text: str) -> str:
     if not _ENGLISH_CHAR_RE.search(cleaned):
         return ""
     return cleaned
+
+
+def _split_english_lead_from_japanese(text: str) -> tuple[str, str]:
+    """Split a leading English sung phrase from an inline Japanese cue line."""
+    stripped = text.strip()
+    japanese_match = _JAPANESE_CHAR_RE.search(stripped)
+    if not japanese_match:
+        return "", stripped
+
+    prefix = stripped[:japanese_match.start()].strip()
+    japanese = stripped[japanese_match.start():].strip()
+    if not prefix or not _ENGLISH_CHAR_RE.search(prefix):
+        return "", stripped
+    return prefix.rstrip(" .,!?:;"), japanese
+
+
+def _format_learning_cue_block(
+    japanese: str,
+    romaji: str,
+    meaning: str,
+    *,
+    prefix: str = "",
+    tail: str = "",
+) -> str:
+    """Format a Japanese learner cue with optional sung lines around it."""
+    lines: List[str] = []
+    if prefix:
+        lines.append(prefix)
+    lines.append(japanese.strip())
+    lines.append(f"[{romaji.strip()}] [{meaning.strip()}]")
+    cleaned_tail = _clean_learning_tail(tail)
+    if cleaned_tail:
+        lines.append(cleaned_tail)
+    return "\n".join(lines)
 
 
 def _clean_script_contamination(text: str) -> str:
@@ -308,21 +346,36 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
     inline_match = _INLINE_LEARNING_CUE_RE.fullmatch(stripped)
     if inline_match:
-        japanese = inline_match.group("japanese").strip()
+        prefix, japanese = _split_english_lead_from_japanese(inline_match.group("japanese"))
         romaji = inline_match.group("romaji").strip()
         meaning = inline_match.group("meaning").strip()
-        normalized = f"{japanese}\n[{romaji}] [{meaning}]"
-        tail = _clean_learning_tail(inline_match.group("tail"))
-        if tail:
-            normalized = f"{normalized}\n{tail}"
-        return normalized
+        return _format_learning_cue_block(
+            japanese,
+            romaji,
+            meaning,
+            prefix=prefix,
+            tail=inline_match.group("tail"),
+        )
 
     bracket_match = _BRACKET_LEARNING_CUE_RE.fullmatch(stripped)
     if bracket_match:
-        japanese = bracket_match.group("japanese").strip()
+        prefix, japanese = _split_english_lead_from_japanese(bracket_match.group("japanese"))
         romaji = bracket_match.group("romaji").strip()
         meaning = bracket_match.group("meaning").strip()
-        return f"{japanese}\n[{romaji}] [{meaning}]"
+        return _format_learning_cue_block(japanese, romaji, meaning, prefix=prefix)
+
+    bracket_paren_match = _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(stripped)
+    if bracket_paren_match:
+        prefix, japanese = _split_english_lead_from_japanese(bracket_paren_match.group("japanese"))
+        romaji = bracket_paren_match.group("romaji").strip()
+        meaning = bracket_paren_match.group("meaning").strip()
+        return _format_learning_cue_block(
+            japanese,
+            romaji,
+            meaning,
+            prefix=prefix,
+            tail=bracket_paren_match.group("tail"),
+        )
 
     romaji_first_match = _ROMAJI_FIRST_RE.fullmatch(stripped)
     if romaji_first_match:
@@ -480,7 +533,8 @@ def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int
                 japanese_lines += 1
                 inline_match = _INLINE_LEARNING_CUE_RE.fullmatch(line)
                 bracket_match = _BRACKET_LEARNING_CUE_RE.fullmatch(line)
-                if inline_match or bracket_match:
+                bracket_paren_match = _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(line)
+                if inline_match or bracket_match or bracket_paren_match:
                     annotation_pairs += 1
                     continue
                 if index + 1 >= len(lines):
@@ -1279,6 +1333,7 @@ Each field should contain the complete lyrics for that section, including any se
     try:
         max_attempts = 3 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
+        last_valid_response_data: Dict[str, Any] = {}
         learning_retry_summary: Optional[str] = None
 
         for attempt in range(1, max_attempts + 1):
@@ -1343,12 +1398,32 @@ Previous lyric JSON:
             )
             logger.debug(f"Ollama lyrics response (attempt {attempt}): {response_text[:200]}...")
 
-            response_data = _parse_llm_json_payload(response_text)
+            try:
+                response_data = _parse_llm_json_payload(response_text)
+            except json.JSONDecodeError as exc:
+                if last_valid_response_data:
+                    logger.warning(
+                        "Ollama lyric repair response was malformed on attempt %s (%s). "
+                        "Using the last valid lyric draft instead of fallback lyrics.",
+                        attempt,
+                        exc,
+                    )
+                    response_data = last_valid_response_data
+                    break
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Ollama lyrics response was malformed on attempt %s (%s). Retrying.",
+                        attempt,
+                        exc,
+                    )
+                    continue
+                raise
 
             required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
             for field in required_fields:
                 if field not in response_data:
                     raise ValueError(f"Missing required field: {field}")
+            last_valid_response_data = dict(response_data)
 
             if lyric_language == "bilingual":
                 mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
