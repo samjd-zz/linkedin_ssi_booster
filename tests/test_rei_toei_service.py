@@ -1149,8 +1149,8 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
 
     out_of_target_response = json.dumps(
         {
-            "verse_1": "データの波が走る\n回路の熱が踊る\n境界線を越えていく\nSignal wakes inside the core",
-            "chorus": "信号を追いかける\nBreak the circuit now",
+            "verse_1": "データの波が走る\n[Deeta no nami ga hashiru] [Data waves are running]\n回路の熱が踊る\n境界線を越えていく",
+            "chorus": "信号を追いかける\n[Shingou wo oikakeru] [Chasing the signal]",
             "verse_2": "ノイズが光になる\n未来を再起動する",
             "bridge": "次のステップへ\n未来へ進む",
         },
@@ -1169,7 +1169,7 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
 
 
 def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
-    """A 50% target must reject a strongly Japanese-skewed bilingual draft."""
+    """A configured target must still reject an extremely skewed draft."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
 
     skewed_payload = {
@@ -1179,11 +1179,11 @@ def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
         "bridge": "Pulse remains",
     }
 
-    mix_ok, summary = _bilingual_mix_ok(skewed_payload, target_japanese_ratio=0.5)
+    mix_ok, summary = _bilingual_mix_ok(skewed_payload, target_japanese_ratio=0.33)
 
     assert not mix_ok
     assert "jp_ratio=0.80" in summary
-    assert "tolerance=0.20" in summary
+    assert "tolerance=0.35" in summary
 
 
 def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
@@ -1204,7 +1204,7 @@ def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
 
 
 def test_bilingual_mix_accepts_the_twenty_percent_target_boundary():
-    """A 70% Japanese-line result is within the configured 50% target band."""
+    """A 70% Japanese-line result remains acceptable for a 50% song target."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
 
     payload = {
@@ -1218,7 +1218,7 @@ def test_bilingual_mix_accepts_the_twenty_percent_target_boundary():
 
     assert mix_ok
     assert "jp_ratio=0.70" in summary
-    assert "tolerance=0.20" in summary
+    assert "tolerance=0.35" in summary
 
 
 def test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values():

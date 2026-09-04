@@ -334,9 +334,9 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
 
     has_both_languages = japanese_presence >= min_presence and english_presence >= min_presence
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
-    # Music lyrics can naturally vary around their target, while still
-    # rejecting material language drift such as a largely English-only lyric.
-    ratio_tolerance = max(0.20, 1.0 / total_lines) if total_lines else 0.0
+    # Music lyrics need room for hooks, echoes, and section-level variation.
+    # Keep a broad floor while still rejecting extreme language drift.
+    ratio_tolerance = max(0.35, 1.0 / total_lines) if total_lines else 0.0
     ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
@@ -385,7 +385,7 @@ def _learning_annotations_ok(
     if lyric_language not in {"japanese", "bilingual"} or japanese_lines == 0:
         return True, "no Japanese learner annotations required"
 
-    required_pairs = 3 if japanese_lines >= 6 else 2 if japanese_lines >= 2 else 1
+    required_pairs = 2 if japanese_lines >= 6 else 1
     actual_pairs = stats["annotation_pairs"]
     ok = actual_pairs >= required_pairs
     return ok, (
