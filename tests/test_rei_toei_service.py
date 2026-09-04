@@ -1084,9 +1084,9 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
 
     second_response = json.dumps(
         {
-            "verse_1": "データの波が走る\nSignal wakes inside the core",
+            "verse_1": "データの波が走る\n[Deeta no nami ga hashiru] [Data waves are running]\nSignal wakes inside the core",
             "chorus": "SIGNALを超えて\nBreak the circuit now",
-            "verse_2": "境界線を越えていく\nWe rewrite the night in code",
+            "verse_2": "境界線を越えていく\n[Kyoukaisen wo koete iku] [Crossing the boundary]\nWe rewrite the night in code",
             "bridge": "次のステップへ\n未来へ進む",
         },
         ensure_ascii=False,
