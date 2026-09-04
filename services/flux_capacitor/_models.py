@@ -11,7 +11,7 @@ Version: alpha-v0.0.3.5
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -98,7 +98,7 @@ class ArtAvatarRequest:
     source_mode: SourceMode
     style_profile: str  # name of a StylePreset key
     ollama_priority_context: bool  # True if Ollama is currently active
-    requested_at: datetime = field(default_factory=datetime.utcnow)
+    requested_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Content — one of these must be provided
     post_text: Optional[str] = None
@@ -190,6 +190,6 @@ class GPUJobSlot:
 
     job_id: str
     job_type: str  # "ollama" or "flux"
-    started_at: datetime = field(default_factory=datetime.utcnow)
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: Optional[datetime] = None
     priority: int = 0  # lower = higher priority (0 = Ollama, 1 = FLUX)

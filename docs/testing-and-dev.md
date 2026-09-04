@@ -48,7 +48,7 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - **Latest Run Date:** September 4, 2026
 - **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Romaji learner cue density, parenthetical Romaji normalization, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, and language-routed spaCy search tokenization and batch similarity coverage.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed. All 891 tests pass.
+- **Notes:** 0 skipped, 0 failed, 0 warnings. All 891 tests pass cleanly.
 
 ### Test Suite Breakdown
 

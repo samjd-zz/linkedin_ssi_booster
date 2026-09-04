@@ -25,7 +25,7 @@ import socket
 import time
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from threading import Lock
 from typing import Generator, Optional
 from urllib.parse import urlparse
@@ -118,7 +118,7 @@ class GPUOrchestrator:
         with self._lock:
             self._ollama_active = False
             if self._active_job and self._active_job.job_type == "ollama":
-                self._active_job.completed_at = datetime.utcnow()
+                self._active_job.completed_at = datetime.now(UTC)
                 self._active_job = None
         logger.debug("GPU orchestrator: Ollama job done (id=%s)", job_id)
 
@@ -176,7 +176,7 @@ class GPUOrchestrator:
         """Release a previously acquired FLUX GPU slot."""
         with self._lock:
             if self._active_job and self._active_job.job_id == request_id:
-                self._active_job.completed_at = datetime.utcnow()
+                self._active_job.completed_at = datetime.now(UTC)
                 self._active_job = None
                 logger.debug(
                     "GPU gate: FLUX slot released (request_id=%s)", request_id
@@ -416,7 +416,7 @@ def run_art_avatar(
         run_id=request.run_id or request.request_id,
         source_mode=request.source_mode.value,
         render_status=final_render_status,
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(UTC),
         candidate_id=request.candidate_id,
         channel=request.source_channel,
         ssi_component=request.ssi_component,

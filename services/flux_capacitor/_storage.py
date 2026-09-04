@@ -22,7 +22,7 @@ import hashlib
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -53,7 +53,7 @@ def _make_slug(text: str, length: int = 8) -> str:
 
 
 def _timestamp() -> str:
-    return datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    return datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
 
 def build_image_path(
@@ -122,7 +122,7 @@ def save_story_artifact(
         "source_title": source_title,
         "image_path": image_path,
         "story_path": str(story_path),
-        "saved_at": datetime.utcnow().isoformat(),
+        "saved_at": datetime.now(UTC).isoformat(),
     }
 
     try:
@@ -170,7 +170,7 @@ def save_image_metadata(
         "render_duration_seconds": render_duration_seconds,
         "evidence_ids": evidence_ids,
         "story_path": story_path,
-        "saved_at": datetime.utcnow().isoformat(),
+        "saved_at": datetime.now(UTC).isoformat(),
         "image_path": str(image_path),
     }
     try:

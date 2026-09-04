@@ -87,8 +87,8 @@ class MockSpacyNLP:
         return " ".join(important_lines[:max_sentences])
 
 
-def test_extraction_without_summarization(tmp_path):
-    """Baseline: extract facts from noisy article without spaCy preprocessing."""
+def _measure_extraction_without_summarization(tmp_path: Path) -> tuple[int, int]:
+    """Measure fact extraction from noisy article without spaCy preprocessing."""
     output_path = tmp_path / "extracted_knowledge_baseline.json"
     
     facts = extract_and_append_knowledge(
@@ -116,8 +116,16 @@ def test_extraction_without_summarization(tmp_path):
     return len(facts), boilerplate_count
 
 
-def test_extraction_with_summarization(tmp_path):
-    """Test: extract facts with spaCy summarization preprocessing."""
+def test_extraction_without_summarization(tmp_path):
+    """Baseline: extract facts from noisy article without spaCy preprocessing."""
+    facts_count, boilerplate_count = _measure_extraction_without_summarization(tmp_path)
+
+    assert facts_count > 0, "Should extract at least some facts"
+    assert boilerplate_count >= 0
+
+
+def _measure_extraction_with_summarization(tmp_path: Path) -> tuple[int, int]:
+    """Measure fact extraction with spaCy summarization preprocessing."""
     output_path = tmp_path / "extracted_knowledge_with_summary.json"
     
     mock_spacy = MockSpacyNLP()
@@ -158,10 +166,15 @@ def test_extraction_with_summarization(tmp_path):
     return len(facts), boilerplate_count
 
 
+def test_extraction_with_summarization(tmp_path):
+    """Test: extract facts with spaCy summarization preprocessing."""
+    _measure_extraction_with_summarization(tmp_path)
+
+
 def test_summarization_comparison(tmp_path):
     """Compare extraction quality with and without summarization."""
-    facts_without_summary, boilerplate_without = test_extraction_without_summarization(tmp_path)
-    facts_with_summary, boilerplate_with = test_extraction_with_summarization(tmp_path)
+    facts_without_summary, boilerplate_without = _measure_extraction_without_summarization(tmp_path)
+    facts_with_summary, boilerplate_with = _measure_extraction_with_summarization(tmp_path)
     
     print("\n" + "="*60)
     print("📊 COMPARISON SUMMARY")
