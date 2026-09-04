@@ -3,7 +3,7 @@ Unit tests for Rei Toei service
 
 Tests cover:
 - Loader functions for persona, domain knowledge, and pattern library
-- Configuration parsing from environment variables
+    assert "Aim for approximately 50% Japanese lyrical content" in mock_chat.call_args_list[1].args[1]
 - Service initialization and lazy loading
 - Helper methods (BPM, synth selection, pattern matching)
 - ID generation
@@ -1097,7 +1097,9 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
     assert mock_chat.call_count == 2
-    assert "Target 50% lyric lines containing Japanese script" in mock_chat.call_args_list[1].args[1]
+    configured_ratio = ReiToeiConfig().japanese_lyric_probability
+    configured_percent = int(round(configured_ratio * 100))
+    assert f"Aim for approximately {configured_percent}% Japanese lyrical content" in mock_chat.call_args_list[1].args[1]
     assert "complete, natural, singable phrases" in mock_chat.call_args_list[1].args[1]
     retry_prompt = mock_chat.call_args_list[1].args[1]
     assert "first [romaji pronunciation], then [English meaning]" in retry_prompt
