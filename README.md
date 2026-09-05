@@ -26,7 +26,7 @@
 3. **ディープインデキシング & 検索**: Elasticsearch, Neo4j, ベクトル検索 (kNN) を組み合わせた多層フォールバックにより、サブ500msの低遅延検索を実現。
 4. **エンタープライズ & イベントストリーミング**: Java/JMSを用いた高スループットなエンタープライズシステム構築実績。
 
-### 🇯🇵🔮 日本語のNLPと継続学習 (Japanese NLP & Continual Learning)
+### 🇯🇵 日本語のNLPと継続学習 (Japanese NLP & Continual Learning)
 
 本システムは**日本語の記事から直接学習**します。新宿・東京の音楽シーンを中心に8つの日本語RSSフィード（Real Sound 音楽、CINRA、Spincoaster、FNMNL、Arban（新宿ピットイン系ジャズ）、block.fm、Higher Frequency、Qetic）を取り込み、spaCyの日本語パイプラインで解析します。
 
@@ -34,18 +34,18 @@
 - 🧩 **形態素解析** — SudachiPy（`spacy[ja]`）による日本語トークナイズ。Dockerイメージにモデルを同梱済み
 - 🔎 **固有表現抽出・要約・重複排除** — 抽出された事実は知識グラフに統合され、生成時の根拠として再利用されます
 - 🔤 **決定論的な発音支援** — `pykakasi` で漢字・かなをHepburn式ローマ字に変換し、LLMが生成した不正確なローマ字を補正します。Rei Toeiのバイリンガル歌詞だけでなく、学習用の発音キューにも利用されます
-- 🔮🈶 **ドメイン知識に基づく漢字学習** — Samに漢字を教えるよう依頼すると、読み方（Hepburn）、意味、出典ノートを読み込んだ日本語ドメイン知識から組み立てます。一般的なLLM知識だけに依存しません
+- 🔮 **ドメイン知識に基づく漢字学習** — Samに漢字を教えるよう依頼すると、読み方（Hepburn）、意味、出典ノートを読み込んだ日本語ドメイン知識から組み立てます。一般的なLLM知識だけに依存しません
 - 📣 **発表・新・開発・公開・導入** — 要約スコアリングは日本語の告知表現を加点対象として認識します
 
 **現状の制約も明記しています。** ノイズフィルタは英語正規表現のみのため、日本語サイトのナビゲーションやフッターが本文に混入します。そのため日本語の抽出は英語より**再現率が高く適合率が低い**状態です。
 
 なお、以前制約として記載していた以下は修正済みです——`ja_core_news_md` は `noun_chunks` を**実装しています**（spaCy 3.8.16 で検証済み）。文分割は `。！？` で正しく動作し、entities／tags の分類は空白ではなく抽出元（NER か名詞句か）で行います。詳細は [docs/spacy-extraction.md](docs/spacy-extraction.md) を参照してください。
 
-### 🎶🌙 クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
+### 🎶 クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
 
 AIシステム設計に加え、ウィリアム・ギブスンのSF小説『アイドル（Idoru）』にインスパイアされたバーチャルペルソナ・アバター**「Rei Toei（東江麗）」**を通じて、VocaloidやSuno等を活用したサイバーポップ／インダストリアル音響のAI音声・音楽制作を行っています。
 
-> ✨🪄 **Anime-opening energy, grounded in real knowledge:** technical ideas become cyberpop hooks, Japanese learner cues, and Vocaloid-inspired performances with a neon Tokyo pulse.
+> ✨ **Anime-opening energy, grounded in real knowledge:** technical ideas become cyberpop hooks, Japanese learner cues, and Vocaloid-inspired performances with a neon Tokyo pulse.
 
 - 👤 **LinkedIn:** [Shawn Jackson-Dyck](https://linkedin.com/in/shawn-jackson-dyck-52aa74358/)
 - 🎶 **Suno (Rei Toei):** [@samjd42](https://suno.com/@samjd42)
@@ -94,7 +94,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - ⚡ **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity. Strong semantic matches can rescue valid paraphrases that lexical BM25 or spaCy checks would otherwise under-score, without API or GPU requirements.
 - 🇯🇵 **Japanese language intelligence** — pykakasi provides deterministic Kanji/Kana → Hepburn conversion for Rei Toei learner cues, correcting invalid LLM Romaji and generating reliable pronunciation aids for bilingual lyrics.
 - 🈶 **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
-- 🪄🎨 **Multimodal teaching with FLUX Capacitor** — Sam lessons stay text-first by default, then hand the grounded reply to FLUX.1 for a visual when the request includes `draw`/`render` or when `/art [topic]` is used. Enable with `FLUX_CAPACITOR_ENABLED=true` for the full Kanji-to-visual learning loop.
+- 🎨 **Multimodal teaching with FLUX Capacitor** — Sam lessons stay text-first by default, then hand the grounded reply to FLUX.1 for a visual when the request includes `draw`/`render` or when `/art [topic]` is used. Enable with `FLUX_CAPACITOR_ENABLED=true` for the full Kanji-to-visual learning loop.
 - 🧬 **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
 - 🧠 **Avatar intelligence and continuity** — confidence scoring, moderation learning, narrative memory, explainability reports, and policy routing turn the persona into a learning digital representative rather than a static prompt.
 - 🕸️ **Hybrid RAG + agent pipeline** — BM25 retrieval, Model2Vec semantic similarity, graph proximity, claim support, deterministic validation, and multi-step orchestration work together for high factuality and variety.
@@ -125,7 +125,7 @@ The SSI Booster is feature-complete for its core workflows and is now focused on
 
 ---
 
-## 🎵🌙 Rei Toei - AI Music Avatar
+## 🎵 Rei Toei - AI Music Avatar
 
 <p align="center">
   <img src="media/rei-selfie1.jpg" alt="Rei Toei Selfie" width="320">
