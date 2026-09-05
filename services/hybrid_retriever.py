@@ -1,7 +1,7 @@
 """Hybrid Retriever — BM25 + Knowledge Graph reranking layer.
 
 Implements persona-aware hybrid scoring:
-  final = 0.7 × bm25 + 0.2 × graph_proximity + 0.1 × claim_support
+    final = 0.6 × bm25 + 0.15 × semantic + 0.15 × graph_proximity + 0.1 × claim_support
 
 BM25 (rank_bm25) remains the primary candidate selector; the knowledge graph
 adds graph proximity and claim-support signals on top.
@@ -24,8 +24,9 @@ from typing import Any, Optional, Sequence, Union
 logger = logging.getLogger(__name__)
 
 # Weights for hybrid scoring
-_W_BM25 = 0.7
-_W_GRAPH_PROXIMITY = 0.2
+_W_SEMANTIC = 0.15
+_W_BM25 = 0.6
+_W_GRAPH_PROXIMITY = 0.15
 _W_CLAIM_SUPPORT = 0.1
 
 try:
@@ -111,6 +112,7 @@ class HybridRetriever:
         kg: Optional["KnowledgeGraphManager"] = None,
         persona_id: Optional[str] = None,
         bm25_weight: float = _W_BM25,
+        semantic_weight: float = _W_SEMANTIC,
         graph_weight: float = _W_GRAPH_PROXIMITY,
         claim_weight: float = _W_CLAIM_SUPPORT,
     ) -> None:
@@ -120,6 +122,7 @@ class HybridRetriever:
             or (kg._persona_id if kg is not None else None)
         )
         self._w_bm25 = bm25_weight
+        self._w_semantic = semantic_weight
         self._w_graph = graph_weight
         self._w_claim = claim_weight
 
@@ -232,16 +235,26 @@ class HybridRetriever:
         """Compute hybrid score for each candidate."""
         graph_scores = self._graph_scores(candidates)
         claim_scores = self._claim_scores(candidates)
+        semantic_scores = self._semantic_scores(query, candidates)
 
         result = []
         for i, fact in enumerate(candidates):
             hybrid = (
                 self._w_bm25 * bm25_scores[i]
+                + self._w_semantic * semantic_scores[i]
                 + self._w_graph * graph_scores[i]
                 + self._w_claim * claim_scores[i]
             )
             result.append((hybrid, fact))
         return result
+
+    def _semantic_scores(self, query: str, candidates: Sequence[Any]) -> list[float]:
+        """Return Model2Vec semantic scores in candidate order."""
+        from services.model2vec_service import get_model2vec_service
+
+        return get_model2vec_service().batch_semantic_similarity(
+            query, [_fact_text(fact) for fact in candidates]
+        )
 
     # ------------------------------------------------------------------
     # Diagnostics
@@ -262,6 +275,7 @@ class HybridRetriever:
         bm25_scores = self._bm25_scores(query, candidates)
         graph_scores = self._graph_scores(candidates)
         claim_scores = self._claim_scores(candidates)
+        semantic_scores = self._semantic_scores(query, candidates)
 
         # Attempt to compute truth gradient for each candidate using KG facts
         dot_results: list[Optional[dict[str, Any]]] = [None] * len(candidates)
@@ -292,12 +306,14 @@ class HybridRetriever:
         for i, fact in enumerate(candidates):
             hybrid = (
                 self._w_bm25 * bm25_scores[i]
+                + self._w_semantic * semantic_scores[i]
                 + self._w_graph * graph_scores[i]
                 + self._w_claim * claim_scores[i]
             )
             entry: dict[str, Any] = {
                 "fact_id": getattr(fact, "evidence_id", str(i)),
                 "bm25": round(bm25_scores[i], 4),
+                "semantic": round(semantic_scores[i], 4),
                 "graph_proximity": round(graph_scores[i], 4),
                 "claim_support": round(claim_scores[i], 4),
                 "hybrid": round(hybrid, 4),

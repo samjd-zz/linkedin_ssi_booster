@@ -127,6 +127,25 @@ def test_classify_text_empty_input_returns_empty():
     assert result.text_hash == ""
 
 
+def test_semantic_similarity_uses_model_embeddings():
+    import services.model2vec_service as svc_mod
+
+    svc = svc_mod.Model2VecService()
+    svc._model = _make_mock_model()
+    svc._initialized = True
+
+    score = svc.semantic_similarity("machine learning", "machine learning")
+
+    assert 0.0 <= score <= 1.0
+    assert score > 0.0
+
+
+def test_batch_semantic_similarity_degrades_when_model_unavailable():
+    svc = _make_service(enabled=False, model_available=False)
+
+    assert svc.batch_semantic_similarity("query", ["one", "two"]) == [0.0, 0.0]
+
+
 def test_batch_classify_empty_list_returns_empty():
     import services.model2vec_service as svc_mod
 

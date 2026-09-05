@@ -479,6 +479,7 @@ class TestHybridRetrieverNullKG:
         assert len(breakdown) == 2
         for row in breakdown:
             assert "bm25" in row
+            assert "semantic" in row
             assert "graph_proximity" in row
             assert "claim_support" in row
             assert "hybrid" in row
@@ -539,8 +540,9 @@ class TestHybridRetrieverWithKG:
 
     def test_hybrid_score_weights_sum_to_one(self) -> None:
         hr = HybridRetriever(kg=None,
-                             bm25_weight=0.7, graph_weight=0.2, claim_weight=0.1)
-        assert abs(hr._w_bm25 + hr._w_graph + hr._w_claim - 1.0) < 1e-9
+                             bm25_weight=0.6, semantic_weight=0.15,
+                             graph_weight=0.15, claim_weight=0.1)
+        assert abs(hr._w_bm25 + hr._w_semantic + hr._w_graph + hr._w_claim - 1.0) < 1e-9
 
     def test_explain_fact_usage_with_kg(self) -> None:
         hr, facts = self._make_hr()

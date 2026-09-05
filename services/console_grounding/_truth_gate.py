@@ -38,6 +38,29 @@ from services.console_grounding._models import ProjectFact, TruthGateMeta
 logger = logging.getLogger(__name__)
 
 
+def _get_model2vec_service():
+    """Return the optional shared Model2Vec service."""
+    try:
+        from services.model2vec_service import get_model2vec_service
+
+        return get_model2vec_service()
+    except Exception as exc:
+        logger.debug("Model2Vec truth-gate service skipped: %s", exc)
+        return None
+
+
+def _model2vec_similarity(left: str, right: str) -> float:
+    """Return optional Model2Vec similarity without affecting degraded mode."""
+    service = _get_model2vec_service()
+    if service is None:
+        return 0.0
+    try:
+        return service.semantic_similarity(left, right)
+    except Exception as exc:
+        logger.debug("Model2Vec truth-gate similarity skipped: %s", exc)
+        return 0.0
+
+
 def _is_project_like_org_mention(sentence: str, org_phrase: str) -> bool:
     """Return True when an ORG-like phrase is used as a project or event reference.
 
@@ -244,7 +267,9 @@ def truth_gate_result(
                 _sim = spacy_nlp.compute_similarity(sentence, article_text)
                 spacy_sim_scores[sentence] = _sim
                 if 0.0 < _sim < spacy_sim_floor:
-                    reason = f"low_semantic_similarity: sim={_sim:.3f} < floor={spacy_sim_floor:.2f}"
+                    model2vec_sim = _model2vec_similarity(sentence, article_text)
+                    if model2vec_sim < spacy_sim_floor:
+                        reason = f"low_semantic_similarity: sim={_sim:.3f} < floor={spacy_sim_floor:.2f}"
 
         # Part E: spaCy semantic similarity vs persona/domain fact pool (all contexts)
         # Computes best similarity across all facts individually; works in console mode too.
@@ -255,7 +280,15 @@ def truth_gate_result(
                     _best_fact_sim = max(_sims) if _sims else 0.0
                     fact_sim_scores[sentence] = _best_fact_sim
                     if 0.0 < _best_fact_sim < fact_sim_floor:
-                        reason = f"low_fact_similarity: sim={_best_fact_sim:.3f} < floor={fact_sim_floor:.2f}"
+                        model2vec_service = _get_model2vec_service()
+                        model2vec_sims = (
+                            model2vec_service.batch_semantic_similarity(sentence, _fact_texts)
+                            if model2vec_service is not None
+                            else []
+                        )
+                        model2vec_best = max(model2vec_sims) if model2vec_sims else 0.0
+                        if model2vec_best < fact_sim_floor:
+                            reason = f"low_fact_similarity: sim={_best_fact_sim:.3f} < floor={fact_sim_floor:.2f}"
                 except Exception as _fsim_exc:
                     logger.debug("Fact-pool spaCy sim failed: %s", _fsim_exc)
 

@@ -824,6 +824,34 @@ class TestPartEFactPoolSpacySim:
         assert meta.removed_count >= 1
         assert "low_fact_similarity" in meta.reason_codes
 
+    def test_model2vec_semantic_similarity_can_rescue_low_spacy_fact_similarity(self) -> None:
+        """A strong Model2Vec match prevents a false low-spaCy rejection."""
+        fact = make_fact(details="Built RAG pipeline with BM25 and vector search")
+        text = "The weather is nice today."
+        mock_nlp = self._make_spacy_nlp(0.01)
+
+        with (
+            patch("services.console_grounding.get_domain_facts_from_avatar_state", return_value=[]),
+            patch("services.console_grounding._score_sentence_bm25", return_value=10.0),
+            patch(self._PATCH_NLP, return_value=mock_nlp),
+            patch(
+                "services.console_grounding._truth_gate._get_model2vec_service",
+                return_value=MagicMock(
+                    batch_semantic_similarity=MagicMock(return_value=[0.85])
+                ),
+            ),
+            patch.dict("os.environ", {"TRUTH_GATE_FACT_SIM_FLOOR": "0.50"}),
+        ):
+            filtered, meta = truth_gate_result(
+                text=text,
+                article_text="",
+                facts=[fact],
+                interactive=False,
+            )
+
+        assert filtered == text
+        assert "low_fact_similarity" not in meta.reason_codes
+
     def test_zero_fact_sim_not_flagged(self) -> None:
         """A fact sim of exactly 0.0 (vectors unavailable) is not flagged."""
         fact = make_fact(details="Built RAG pipeline")

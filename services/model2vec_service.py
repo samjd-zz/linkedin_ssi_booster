@@ -369,6 +369,36 @@ class Model2VecService:
                 processing_time_ms=round(elapsed_ms, 2),
             )
 
+    def semantic_similarity(self, left: str, right: str) -> float:
+        """Return Model2Vec cosine similarity for two texts, or zero if unavailable."""
+        if not left.strip() or not right.strip():
+            return 0.0
+        if not self._load_model() or self._model is None:
+            return 0.0
+        try:
+            embeddings = self._model.encode([left[:2000], right[:2000]])
+            return max(0.0, min(1.0, self._cosine_similarity(embeddings[0], embeddings[1])))
+        except Exception as exc:
+            logger.debug("Model2Vec: semantic_similarity failed: %s", exc)
+            return 0.0
+
+    def batch_semantic_similarity(self, query: str, texts: list[str]) -> list[float]:
+        """Return query-to-text similarities in input order with graceful fallback."""
+        if not query.strip() or not texts:
+            return [0.0] * len(texts)
+        if not self._load_model() or self._model is None:
+            return [0.0] * len(texts)
+        try:
+            embeddings = self._model.encode([query[:2000], *[text[:2000] for text in texts]])
+            query_embedding = embeddings[0]
+            return [
+                max(0.0, min(1.0, self._cosine_similarity(query_embedding, embedding)))
+                for embedding in embeddings[1:]
+            ]
+        except Exception as exc:
+            logger.debug("Model2Vec: batch_semantic_similarity failed: %s", exc)
+            return [0.0] * len(texts)
+
     def batch_classify(
         self, texts: list[str], top_k: int = 1
     ) -> list[ClassificationResult]:
@@ -588,6 +618,7 @@ class CategoryAlignmentResult:
     ssi_match: bool
     alignment_score: float  # 0.0 = no alignment, 1.0 = perfect alignment
     flagged: bool
+    semantic_score: float = 0.0
     flag_reason: str = ""
 
 
@@ -630,6 +661,7 @@ def validate_category_alignment(
     post_result = svc.classify_text(post_text[:2000], top_k=3)
     post_category = post_result.primary_category
     post_ssi = post_result.primary_ssi_component
+    semantic_score = svc.semantic_similarity(post_text, article_text)
 
     # Get article category — use provided values or re-classify
     if not article_category and article_text:
@@ -656,6 +688,8 @@ def validate_category_alignment(
         else:
             alignment_score = 0.0
 
+    # Semantic agreement can rescue category drift when both texts express the same idea.
+    alignment_score = max(alignment_score, round(semantic_score * 0.7, 4))
     flagged = alignment_score < 0.4
     flag_reason = ""
     if flagged:
@@ -678,6 +712,7 @@ def validate_category_alignment(
         category_match=category_match,
         ssi_match=ssi_match,
         alignment_score=alignment_score,
+        semantic_score=round(semantic_score, 4),
         flagged=flagged,
         flag_reason=flag_reason,
     )

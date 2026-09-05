@@ -69,7 +69,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-914%20passed-16A34A.svg" alt="Tests 914 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-917%20passed-16A34A.svg" alt="Tests 917 passed"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-66%25-yellow.svg" alt="Coverage 66%"></a>
 </p>
 
@@ -87,7 +87,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 ##### Why this is smarter than "AI writes posts"
 
 - **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md` with the SudachiPy tokenizer). The curator ships 8 Japanese-language music feeds out of the box, so the Japanese pipeline learns from real native-language sources rather than translated text. Preprocessing filters boilerplate before fact storage. See [docs/spacy-extraction.md](docs/spacy-extraction.md) and [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
-- **Model2Vec static embedding classification** — ultra-fast article categorisation (`minishlab/potion-base-8M`, 30MB, zero API deps) mapped to 10 SSI categories; results boost selection-learning rankings and stamp extracted facts with `primary_category` and `primary_ssi_component`.
+- **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity without API or GPU requirements.
 - **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
 - **Hybrid RAG + agent pipeline** — BM25 retrieval, deterministic validation, multi-step orchestration, and a BM25+graph reranker for high factuality and variety.
 - **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
@@ -420,7 +420,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (914 collected; 914 passed, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (917 collected; 917 passed, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 
