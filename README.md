@@ -33,6 +33,8 @@
 - **自動言語ルーティング** — 文字種（ひらがな・カタカナ・漢字）を検出し、`ja_core_news_md` と `en_core_web_md` を自動で切り替え
 - **形態素解析** — SudachiPy（`spacy[ja]`）による日本語トークナイズ。Dockerイメージにモデルを同梱済み
 - **固有表現抽出・要約・重複排除** — 抽出された事実は知識グラフに統合され、生成時の根拠として再利用されます
+- **決定論的な発音支援** — `pykakasi` で漢字・かなをHepburn式ローマ字に変換し、LLMが生成した不正確なローマ字を補正します。Rei Toeiのバイリンガル歌詞だけでなく、学習用の発音キューにも利用されます
+- **ドメイン知識に基づく漢字学習** — Samに漢字を教えるよう依頼すると、読み方（Hepburn）、意味、出典ノートを読み込んだ日本語ドメイン知識から組み立てます。一般的なLLM知識だけに依存しません
 - **発表・新・開発・公開・導入** — 要約スコアリングは日本語の告知表現を加点対象として認識します
 
 **現状の制約も明記しています。** ノイズフィルタは英語正規表現のみのため、日本語サイトのナビゲーションやフッターが本文に混入します。そのため日本語の抽出は英語より**再現率が高く適合率が低い**状態です。
@@ -87,12 +89,13 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 ##### Why this is smarter than "AI writes posts"
 
 - **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md` with the SudachiPy tokenizer). The curator ships 8 Japanese-language music feeds out of the box, so the Japanese pipeline learns from real native-language sources rather than translated text. Preprocessing filters boilerplate before fact storage. See [docs/spacy-extraction.md](docs/spacy-extraction.md) and [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
-- **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity without API or GPU requirements.
-- **pykakasi Hepburn Romaji** — deterministic Kanji/Kana → Hepburn conversion corrects or generates learner-cue Romaji for Rei Toei bilingual lyrics whenever LLM-provided Romaji fails validation.
+- **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity. Strong semantic matches can rescue valid paraphrases that lexical BM25 or spaCy checks would otherwise under-score, without API or GPU requirements.
+- **Japanese language intelligence** — pykakasi provides deterministic Kanji/Kana → Hepburn conversion for Rei Toei learner cues, correcting invalid LLM Romaji and generating reliable pronunciation aids for bilingual lyrics.
+- **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
 - **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
-- **Hybrid RAG + agent pipeline** — BM25 retrieval, deterministic validation, multi-step orchestration, and a BM25+graph reranker for high factuality and variety.
+- **Hybrid RAG + agent pipeline** — BM25 retrieval, Model2Vec semantic similarity, graph proximity, claim support, deterministic validation, and multi-step orchestration work together for high factuality and variety.
 - **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
-- **Truth gate** — four-layer post-generation filter: BM25 evidence scoring → Derivative of Truth gradient → spaCy semantic similarity floor → spaCy NER org-name validation. Removes unsupported claims before anything reaches Buffer. See [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
+- **Truth gate** — four-layer post-generation filter: BM25 evidence scoring → Derivative of Truth gradient → spaCy semantic similarity floor with Model2Vec fallback → spaCy NER org-name validation. Removes unsupported claims while preserving semantically grounded paraphrases before anything reaches Buffer. See [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
 - **Confidence scoring & policy routing** — grounding, novelty, and repetition score routes each post to `post`, `idea`, or `block`.
 - **DoT + Probabilistic Logic Networks** — probabilistic logic scoring with truth trajectory tracking (`dT/dt`) and dual-mode comparison. Use `--dot-report` for full gradient and evidence breakdowns.
 - **Memory & repetition penalty** — recent themes and claims penalised to keep your feed fresh.
@@ -133,7 +136,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 - **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
 - **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, messy inline-cue cleanup for bracket or parenthetical meaning forms, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
 - **Controlled lyric language selection** — `bilingual` mode is the default; `REI_JAPANESE_LYRIC_PROBABILITY` controls the Japanese lyrical-content target at runtime, while explicit `english` or `japanese` modes are deterministic
-- **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs for grounded study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
+- **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
 - **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
 - **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
 - **Docker Audio Patch Path** — Default Docker command uses `scripts/strudel_mcp_patched.sh` to patch an upstream media-routing issue that can cause silent browser playback
