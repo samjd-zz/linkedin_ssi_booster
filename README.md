@@ -2,7 +2,7 @@
   <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
-# SSI Booster - :muscle: POWERED by Buffer.com!
+# SSI Booster - 🦄 :muscle: POWERED by Buffer.com!
 
 <details>
 <summary>🇯🇵 <b>日本語の概要はこちら (Click to expand Japanese summary)</b></summary>
@@ -108,7 +108,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - 🔍 **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
 - 🏠 **No cloud AI keys required** — all generation runs locally via Ollama.
 
-✨ **Result:** A self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
+✨🦄 **Result:** A self-improving, persona-driven content engine 🦄 that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
 
 ---
 
