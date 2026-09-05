@@ -30,12 +30,12 @@
 
 本システムは**日本語の記事から直接学習**します。新宿・東京の音楽シーンを中心に8つの日本語RSSフィード（Real Sound 音楽、CINRA、Spincoaster、FNMNL、Arban（新宿ピットイン系ジャズ）、block.fm、Higher Frequency、Qetic）を取り込み、spaCyの日本語パイプラインで解析します。
 
-- **自動言語ルーティング** — 文字種（ひらがな・カタカナ・漢字）を検出し、`ja_core_news_md` と `en_core_web_md` を自動で切り替え
-- **形態素解析** — SudachiPy（`spacy[ja]`）による日本語トークナイズ。Dockerイメージにモデルを同梱済み
-- **固有表現抽出・要約・重複排除** — 抽出された事実は知識グラフに統合され、生成時の根拠として再利用されます
-- **決定論的な発音支援** — `pykakasi` で漢字・かなをHepburn式ローマ字に変換し、LLMが生成した不正確なローマ字を補正します。Rei Toeiのバイリンガル歌詞だけでなく、学習用の発音キューにも利用されます
-- **ドメイン知識に基づく漢字学習** — Samに漢字を教えるよう依頼すると、読み方（Hepburn）、意味、出典ノートを読み込んだ日本語ドメイン知識から組み立てます。一般的なLLM知識だけに依存しません
-- **発表・新・開発・公開・導入** — 要約スコアリングは日本語の告知表現を加点対象として認識します
+- 🧭 **自動言語ルーティング** — 文字種（ひらがな・カタカナ・漢字）を検出し、`ja_core_news_md` と `en_core_web_md` を自動で切り替え
+- 🧩 **形態素解析** — SudachiPy（`spacy[ja]`）による日本語トークナイズ。Dockerイメージにモデルを同梱済み
+- 🔎 **固有表現抽出・要約・重複排除** — 抽出された事実は知識グラフに統合され、生成時の根拠として再利用されます
+- 🔤 **決定論的な発音支援** — `pykakasi` で漢字・かなをHepburn式ローマ字に変換し、LLMが生成した不正確なローマ字を補正します。Rei Toeiのバイリンガル歌詞だけでなく、学習用の発音キューにも利用されます
+- 🈶 **ドメイン知識に基づく漢字学習** — Samに漢字を教えるよう依頼すると、読み方（Hepburn）、意味、出典ノートを読み込んだ日本語ドメイン知識から組み立てます。一般的なLLM知識だけに依存しません
+- 📣 **発表・新・開発・公開・導入** — 要約スコアリングは日本語の告知表現を加点対象として認識します
 
 **現状の制約も明記しています。** ノイズフィルタは英語正規表現のみのため、日本語サイトのナビゲーションやフッターが本文に混入します。そのため日本語の抽出は英語より**再現率が高く適合率が低い**状態です。
 
@@ -44,6 +44,8 @@
 ### クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
 
 AIシステム設計に加え、ウィリアム・ギブスンのSF小説『アイドル（Idoru）』にインスパイアされたバーチャルペルソナ・アバター**「Rei Toei（東江麗）」**を通じて、VocaloidやSuno等を活用したサイバーポップ／インダストリアル音響のAI音声・音楽制作を行っています。
+
+> ✨ **Anime-opening energy, grounded in real knowledge:** technical ideas become cyberpop hooks, Japanese learner cues, and Vocaloid-inspired performances with a neon Tokyo pulse.
 
 - 👤 **LinkedIn:** [Shawn Jackson-Dyck](https://linkedin.com/in/shawn-jackson-dyck-52aa74358/)
 - 🎶 **Suno (Rei Toei):** [@samjd42](https://suno.com/@samjd42)
@@ -133,14 +135,14 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 
 **Current capabilities:**
 
-- **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
-- **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, messy inline-cue cleanup for bracket or parenthetical meaning forms, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
-- **Controlled lyric language selection** — `bilingual` mode is the default; `REI_JAPANESE_LYRIC_PROBABILITY` controls the Japanese lyrical-content target at runtime, while explicit `english` or `japanese` modes are deterministic
-- **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
-- **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
-- **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
-- **Docker Audio Patch Path** — Default Docker command uses `scripts/strudel_mcp_patched.sh` to patch an upstream media-routing issue that can cause silent browser playback
-- **Knowledge Grounding** — Every lyric is validated via Derivative of Truth for factual accuracy
+- 🎤 **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
+- 🇯🇵 **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, messy inline-cue cleanup for bracket or parenthetical meaning forms, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
+- 🎚️ **Controlled lyric language selection** — `bilingual` mode is the default; `REI_JAPANESE_LYRIC_PROBABILITY` controls the Japanese lyrical-content target at runtime, while explicit `english` or `japanese` modes are deterministic
+- 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
+- 🎛️ **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
+- 🛡️ **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
+- 🔊 **Docker Audio Patch Path** — Default Docker command uses `scripts/strudel_mcp_patched.sh` to patch an upstream media-routing issue that can cause silent browser playback
+- 🧠 **Knowledge Grounding** — Every lyric is validated via Derivative of Truth for factual accuracy
 
 **Access in console:**
 
