@@ -54,10 +54,10 @@ from services.rei_toei._suno_pipeline import (
     resolve_lyric_language,
     generate_song_concept,
     compose_lyrics,
-    validate_lyrics_with_dot,
     assemble_suno_prompt,
-    submit_to_suno,
 )
+from services.rei_toei._suno_submission import submit_to_suno
+from services.rei_toei._suno_validation import validate_lyrics_with_dot
 
 # Strudel Pipeline Functions
 from services.rei_toei._strudel_pipeline import (

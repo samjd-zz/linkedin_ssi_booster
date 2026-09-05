@@ -8,7 +8,6 @@ Author: Shawn Jackson Dyck
 Version: alpha-v0.0.3.5
 """
 
-import asyncio
 import json
 import logging
 import os
@@ -34,7 +33,8 @@ from ._models import (
     ReiDomainKnowledge
 )
 from ._config import ReiToeiConfig
-from ._suno_client import generate_music_api, query_status_api
+from ._suno_submission import submit_to_suno
+from ._suno_validation import validate_lyrics_with_dot
 
 logger = logging.getLogger(__name__)
 
@@ -737,6 +737,67 @@ def _build_suno_description_prompt(concept: SongConcept) -> str:
     )
     # V4.5+ style field supports up to 1000 chars — use richer conversational form.
     return base[:800].strip()
+
+
+def _select_suno_template_key(concept: SongConcept) -> str:
+    """Select the Suno style template key from generated genre tags."""
+    template_key = "industrial_techno_template"
+    if any("cyberpop" in tag.lower() for tag in concept.genre_tags):
+        template_key = "cyberpunk_electro_template"
+    elif any("synthwave" in tag.lower() for tag in concept.genre_tags):
+        template_key = "dark_synthwave_template"
+    elif any("glitch" in tag.lower() for tag in concept.genre_tags):
+        template_key = "glitch_industrial_template"
+    return template_key
+
+
+def _append_normalized_section(
+    lyric_blocks: List[str],
+    text: Optional[str],
+    label: str,
+    *,
+    uppercase_body: bool = False,
+) -> str:
+    """Normalize and append a Suno lyric section when it has content."""
+    block = _normalize_suno_section(text, label, uppercase_body=uppercase_body)
+    if block:
+        lyric_blocks.append(block)
+    return block
+
+
+def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
+    """Compile normalized lyric blocks in the repeated Suno song structure."""
+    lyric_blocks: List[str] = []
+
+    _append_normalized_section(lyric_blocks, lyrics.intro, "Instrumental Build")
+    _append_normalized_section(lyric_blocks, lyrics.verse_1, "Verse 1")
+    pre_chorus_block = _append_normalized_section(lyric_blocks, lyrics.pre_chorus, "Pre-Chorus")
+
+    uppercase_chorus = concept.lyric_language.strip().lower() == "english"
+    chorus_block = _append_normalized_section(
+        lyric_blocks,
+        lyrics.chorus,
+        "Chorus",
+        uppercase_body=uppercase_chorus,
+    )
+
+    _append_normalized_section(lyric_blocks, lyrics.verse_2, "Verse 2")
+
+    if pre_chorus_block:
+        lyric_blocks.append(pre_chorus_block)
+    if chorus_block:
+        lyric_blocks.append(chorus_block)
+
+    _append_normalized_section(lyric_blocks, lyrics.drop, "Drop")
+    _append_normalized_section(lyric_blocks, lyrics.bridge, "Bridge")
+    _append_normalized_section(lyric_blocks, lyrics.solo, "Solo")
+    _append_normalized_section(lyric_blocks, lyrics.breakdown, "Breakdown")
+
+    if chorus_block:
+        lyric_blocks.append(chorus_block)
+
+    _append_normalized_section(lyric_blocks, lyrics.outro, "Outro")
+    return lyric_blocks
 
 
 def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
@@ -1562,186 +1623,6 @@ Previous lyric JSON:
         return fallback_lyrics
 
 
-def validate_lyrics_with_dot(
-    lyrics: Lyrics,
-    extracted_facts: "List[ExtractedEvidenceFact]",
-) -> LyricsValidationResult:
-    """
-    Validate lyrics against extracted knowledge using Derivative of Truth (DoT) scoring.
-
-    Follows the same pattern as curator.py: accepts a flat list of ExtractedEvidenceFact
-    objects (the normalized form returned by normalize_extracted_facts()), not the raw
-    ExtractedKnowledgeGraph container.
-
-    Args:
-        lyrics: The structured lyrics to validate
-        extracted_facts: List of ExtractedEvidenceFact objects from normalize_extracted_facts()
-
-    Returns:
-        LyricsValidationResult: Validation result with flagged claims and truth scores
-    """
-    from services.derivative_of_truth._scoring import score_claim_with_truth_gradient
-    from services.derivative_of_truth._models import EvidencePath
-
-    logger.info("Validating lyrics with Derivative of Truth")
-
-    config = ReiToeiConfig()
-
-    # If DoT validation is disabled, return passing result
-    if not config.dot_validation_enabled:
-        logger.info("DoT validation disabled - skipping")
-        return LyricsValidationResult(
-            valid=True,
-            flagged_claims=[],
-            truth_gradients={},
-            overall_truth_score=1.0,
-            warnings=["DoT validation disabled"]
-        )
-
-    # Combine all lyric sections into sentences
-    all_text = "\n".join([
-        lyrics.intro or "",
-        lyrics.verse_1,
-        lyrics.pre_chorus or "",
-        lyrics.chorus,
-        lyrics.verse_2,
-        lyrics.drop or "",
-        lyrics.bridge,
-        lyrics.solo or "",
-        lyrics.outro or ""
-    ])
-
-    sentences = [s.strip() for s in all_text.split("\n") if s.strip()]
-
-    # Filter for sentences with technical vocabulary (indicators of factual claims)
-    technical_keywords = [
-        "algorithm", "data", "system", "process", "code", "compile",
-        "execute", "buffer", "cache", "thread", "async", "parallel",
-        "neural", "model", "train", "inference", "optimize", "kernel",
-        "memory", "cpu", "gpu", "bandwidth", "latency", "throughput"
-    ]
-
-    claims = []
-    for sentence in sentences:
-        sentence_lower = sentence.lower()
-        if any(keyword in sentence_lower for keyword in technical_keywords):
-            if not any(metaphor in sentence_lower for metaphor in [
-                "collide", "fade", "whisper", "echo", "shimmer", "pulse"
-            ]):
-                claims.append(sentence)
-
-    if not claims:
-        logger.info("No technical claims found in lyrics - validation passed")
-        return LyricsValidationResult(
-            valid=True,
-            flagged_claims=[],
-            truth_gradients={},
-            overall_truth_score=1.0,
-            warnings=["No technical claims detected in lyrics"]
-        )
-
-    logger.info(f"Validating {len(claims)} technical claims from lyrics")
-
-    flagged_claims = []
-    truth_gradients: Dict[str, float] = {}
-
-    for claim in claims:
-        # Find relevant facts from the normalized extracted facts list
-        relevant_facts = []
-        claim_lower = claim.lower()
-
-        for fact in extracted_facts:
-            fact_statement = getattr(fact, "statement", "") or ""
-            fact_keywords = set(fact_statement.lower().split())
-            claim_keywords = set(claim_lower.split())
-
-            overlap = len(fact_keywords & claim_keywords)
-            if overlap >= 2:
-                relevant_facts.append((fact, overlap))
-
-        relevant_facts.sort(key=lambda x: x[1], reverse=True)
-
-        # Build evidence paths (limit to top 5 most relevant facts)
-        evidence_paths = []
-        for fact, overlap in relevant_facts[:5]:
-            credibility_map = {"high": 0.9, "medium": 0.7, "low": 0.5}
-            fact_confidence = getattr(fact, "confidence", "medium")
-            credibility = credibility_map.get(fact_confidence, 0.7)
-
-            fact_statement = getattr(fact, "statement", "") or ""
-            total_keywords = len(set(claim_lower.split()) | set(fact_statement.lower().split()))
-            alignment = overlap / total_keywords if total_keywords > 0 else 0.0
-
-            # Use evidence_id as the stable reference (matches curator pattern)
-            fact_ref = getattr(fact, "evidence_id", None) or getattr(fact, "source_fact_id", "unknown")
-
-            evidence_path = EvidencePath(
-                source=f"extracted_fact_{fact_ref}",
-                evidence_type="external_source",
-                reasoning_type="direct_evidence",
-                credibility=credibility,
-                uncertainty=0.1,
-                chain_length=1,
-                conflicts_with=[],
-                overlap=alignment
-            )
-            evidence_paths.append(evidence_path)
-        
-        # Score claim with DoT
-        if evidence_paths:
-            result = score_claim_with_truth_gradient(
-                claim=claim,
-                evidence_paths=evidence_paths,
-                raw_confidence=0.5
-            )
-            
-            truth_gradients[claim] = result.truth_gradient
-            
-            # Flag if below threshold
-            if result.flagged:
-                flagged_claims.append(claim)
-                logger.warning(
-                    f"Claim flagged (gradient={result.truth_gradient:.3f}): {claim[:80]}..."
-                )
-        else:
-            # No evidence found - flag claim
-            truth_gradients[claim] = 0.0
-            flagged_claims.append(claim)
-            logger.warning(f"No evidence found for claim: {claim[:80]}...")
-    
-    # Calculate overall truth score (average of all gradients)
-    overall_truth_score = (
-        sum(truth_gradients.values()) / len(truth_gradients)
-        if truth_gradients else 0.0
-    )
-    
-    # Determine if valid (overall score above threshold, or no flagged claims)
-    valid = overall_truth_score >= config.dot_min_truth_gradient or not flagged_claims
-    
-    warnings = []
-    if flagged_claims:
-        warnings.append(
-            f"{len(flagged_claims)} claim(s) flagged with low truth gradient "
-            f"(threshold: {config.dot_min_truth_gradient})"
-        )
-    
-    result = LyricsValidationResult(
-        valid=valid,
-        flagged_claims=flagged_claims,
-        truth_gradients=truth_gradients,
-        overall_truth_score=overall_truth_score,
-        warnings=warnings
-    )
-    
-    logger.info(
-        f"Lyrics validation complete: valid={valid}, "
-        f"overall_score={overall_truth_score:.3f}, "
-        f"flagged={len(flagged_claims)}"
-    )
-    
-    return result
-
-
 def assemble_suno_prompt(
     concept: SongConcept,
     lyrics: Lyrics,
@@ -1762,16 +1643,9 @@ def assemble_suno_prompt(
         SunoPrompt: Complete prompt ready for Suno API submission
     """
     logger.info(f"Assembling Suno prompt for: '{concept.title}'")
-    
-    # Determine which template to use based on genre tags
-    template_key = "industrial_techno_template"  # Default
-    if any("cyberpop" in tag.lower() for tag in concept.genre_tags):
-        template_key = "cyberpunk_electro_template"
-    elif any("synthwave" in tag.lower() for tag in concept.genre_tags):
-        template_key = "dark_synthwave_template"
-    elif any("glitch" in tag.lower() for tag in concept.genre_tags):
-        template_key = "glitch_industrial_template"
-    
+
+    template_key = _select_suno_template_key(concept)
+
     # Build richer Suno tags string (genre, BPM, texture, production hints)
     suno_tags = _build_rich_suno_tags(concept, domain_knowledge, template_key)
     
@@ -1779,59 +1653,8 @@ def assemble_suno_prompt(
     if len(suno_tags) > 220:
         logger.warning(f"Suno style tags string length ({len(suno_tags)}) is high. Potential truncation risk.")
 
-    # Compile normalized lyric blocks with deterministic section labels.
-    lyric_blocks: List[str] = []
+    lyric_blocks = _build_suno_lyric_blocks(concept, lyrics)
 
-    intro_block = _normalize_suno_section(lyrics.intro, "Instrumental Build")
-    if intro_block:
-        lyric_blocks.append(intro_block)
-
-    verse_1_block = _normalize_suno_section(lyrics.verse_1, "Verse 1")
-    if verse_1_block:
-        lyric_blocks.append(verse_1_block)
-
-    pre_chorus_block = _normalize_suno_section(lyrics.pre_chorus, "Pre-Chorus")
-    if pre_chorus_block:
-        lyric_blocks.append(pre_chorus_block)
-
-    # Only force ALL-CAPS chorus for English lyrics; Japanese/bilingual keep natural script/casing.
-    uppercase_chorus = concept.lyric_language.strip().lower() == "english"
-    chorus_block = _normalize_suno_section(lyrics.chorus, "Chorus", uppercase_body=uppercase_chorus)
-    if chorus_block:
-        lyric_blocks.append(chorus_block)
-
-    verse_2_block = _normalize_suno_section(lyrics.verse_2, "Verse 2")
-    if verse_2_block:
-        lyric_blocks.append(verse_2_block)
-
-    if pre_chorus_block:
-        lyric_blocks.append(pre_chorus_block)
-    if chorus_block:
-        lyric_blocks.append(chorus_block)
-
-    drop_block = _normalize_suno_section(lyrics.drop, "Drop")
-    if drop_block:
-        lyric_blocks.append(drop_block)
-
-    bridge_block = _normalize_suno_section(lyrics.bridge, "Bridge")
-    if bridge_block:
-        lyric_blocks.append(bridge_block)
-
-    solo_block = _normalize_suno_section(lyrics.solo, "Solo")
-    if solo_block:
-        lyric_blocks.append(solo_block)
-
-    breakdown_block = _normalize_suno_section(lyrics.breakdown, "Breakdown")
-    if breakdown_block:
-        lyric_blocks.append(breakdown_block)
-
-    if chorus_block:
-        lyric_blocks.append(chorus_block)
-
-    outro_block = _normalize_suno_section(lyrics.outro, "Outro")
-    if outro_block:
-        lyric_blocks.append(outro_block)
-            
     # Join structural blocks cleanly with double line breaks
     formatted_lyrics = "\n\n".join(lyric_blocks)
     
@@ -1868,118 +1691,3 @@ def assemble_suno_prompt(
     
     logger.info(f"Assembled Suno prompt: '{suno_prompt.title}' ({len(suno_prompt.lyrics)} chars lyrics)")
     return suno_prompt
-
-
-async def submit_to_suno(
-    suno_prompt: SunoPrompt,
-    wait_for_completion: bool = False,
-    api_key: Optional[str] = None,
-    poll_interval_seconds: int = 5,
-    max_wait_seconds: int = 300
-) -> SunoTask:
-    """
-    Submit song to Suno API and optionally wait for completion
-    
-    This orchestration function calls generate_music_api() to submit the song,
-    then optionally polls query_status_api() until completion or timeout.
-    
-    Args:
-        suno_prompt: Complete prompt ready for Suno submission
-        wait_for_completion: If True, poll until status is 'complete' or 'error'
-        api_key: Suno API key (defaults to SUNO_API_KEY env var)
-        poll_interval_seconds: How often to check status (default: 5s)
-        max_wait_seconds: Maximum time to wait before giving up (default: 300s = 5min)
-        
-    Returns:
-        SunoTask: Final task with status and optional audio_url
-        
-    Raises:
-        ValueError: If API key is missing
-        TimeoutError: If wait_for_completion=True and max wait time exceeded
-        Exception: If API call fails
-    """
-    logger.info(f"Submitting song to Suno: '{suno_prompt.title}'")
-    
-    # Submit to Suno API
-    response = await generate_music_api(
-        title=suno_prompt.title,
-        tags=suno_prompt.suno_prompt,
-        prompt=suno_prompt.metadata.get("suno_description_prompt", suno_prompt.metadata.get("narrative_arc", "")),
-        lyrics=suno_prompt.lyrics,
-        api_key=api_key
-    )
-    
-    # Extract task IDs from response
-    task_ids = [task["id"] for task in response.get("data", [])]
-    
-    if not task_ids:
-        raise Exception("Suno API returned no task IDs")
-    
-    logger.info(f"Suno API returned {len(task_ids)} task IDs: {task_ids}")
-    
-    # If not waiting, return immediately with submitted status
-    if not wait_for_completion:
-        # Create basic task object with submitted status
-        return SunoTask(
-            id=task_ids[0],
-            title=suno_prompt.title,
-            status="submitted",
-            tags=suno_prompt.suno_prompt,
-            created_at=datetime.now().isoformat()
-        )
-    
-    # Poll until completion
-    logger.info(f"Polling for completion (max wait: {max_wait_seconds}s, interval: {poll_interval_seconds}s)")
-    
-    start_time = datetime.now()
-    elapsed = 0
-    poll_count = 0
-    
-    while elapsed < max_wait_seconds:
-        # Poll status
-        tasks = await query_status_api(task_ids, api_key=api_key)
-        
-        if not tasks:
-            raise Exception("Suno API query returned no tasks")
-        
-        # Check primary task (first one)
-        primary_task = tasks[0]
-        poll_count += 1
-
-        logger.info(
-            f"[Poll #{poll_count}] Task {primary_task.id}: status={primary_task.status!r}"
-            f" (elapsed {int(elapsed)}s / {max_wait_seconds}s)"
-        )
-        
-        # Check if complete or failed
-        if primary_task.status == "complete":
-            logger.info(f"Song complete! Audio URL: {primary_task.audio_url}")
-            return primary_task
-        
-        if primary_task.status == "error":
-            logger.error(f"Suno generation failed for task {primary_task.id}")
-            return primary_task
-        
-        # Wait before next poll
-        await asyncio.sleep(poll_interval_seconds)
-        
-        elapsed = (datetime.now() - start_time).total_seconds()
-    
-    # Timeout exceeded
-    logger.warning(f"Suno generation timed out after {elapsed}s")
-    
-    # Get final status
-    final_tasks = await query_status_api(task_ids, api_key=api_key)
-    final_task = final_tasks[0] if final_tasks else SunoTask(
-        id=task_ids[0],
-        title=suno_prompt.title,
-        status="timeout",
-        tags=suno_prompt.suno_prompt,
-        created_at=datetime.now().isoformat()
-    )
-    
-    raise TimeoutError(
-        f"Suno generation did not complete within {max_wait_seconds}s. "
-        f"Final status: {final_task.status}. "
-        f"You can check status later using task ID: {final_task.id}"
-    )

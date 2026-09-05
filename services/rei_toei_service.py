@@ -9,6 +9,8 @@ rei_toei package API. The actual implementation has been split into:
 - services/rei_toei/_loaders.py - Loader functions
 - services/rei_toei/_suno_client.py - Suno HTTP client
 - services/rei_toei/_suno_pipeline.py - Suno generation pipeline
+- services/rei_toei/_suno_submission.py - Suno API submission orchestration
+- services/rei_toei/_suno_validation.py - DoT lyric validation
 - services/rei_toei/_strudel_pipeline.py - Strudel generation pipeline
 - services/rei_toei/service.py - Main service class
 
