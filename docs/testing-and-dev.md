@@ -46,13 +46,13 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Source Coverage | Status          |
 | ----------- | ------- | ------- | ------ | --------------- | --------------- |
-| **917**     | **917** | **0**   | **0**  | **66%**         | ✅ **All pass** |
+| **921**     | **921** | **0**   | **0**  | **66%**         | ✅ **All pass** |
 
 - **Latest Run Date:** September 5, 2026
-- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, language-routed spaCy search tokenization and batch similarity coverage, Model2Vec semantic scoring, Strudel WebSocket bridge message handling, database dual-write persistence, and Suno submission orchestration.
+- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, deterministic pykakasi Hepburn Romaji correction/generation for learner cues, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, language-routed spaCy search tokenization and batch similarity coverage, Model2Vec semantic scoring, Strudel WebSocket bridge message handling, database dual-write persistence, and Suno submission orchestration.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
-- **Notes:** 0 skipped, 0 failed. All 917 tests pass cleanly. Source coverage is 66%; the previous 98% README badge was a static/manual value without a reproducible coverage command or dependency in the project.
+- **Notes:** 0 skipped, 0 failed. All 921 tests pass cleanly. Source coverage is 66%; the previous 98% README badge was a static/manual value without a reproducible coverage command or dependency in the project.
 
 ### Test Suite Breakdown
 

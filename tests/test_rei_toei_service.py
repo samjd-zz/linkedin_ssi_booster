@@ -1435,6 +1435,49 @@ def test_assemble_suno_prompt_normalizes_learning_cue_order(mock_domain_knowledg
     assert "データが流れる\n[Deeta ga nagareru] [Data flows]" in suno_prompt.lyrics
 
 
+def test_generate_hepburn_romaji_converts_kanji_to_expected_hepburn():
+    """pykakasi conversion produces correct, deterministic Hepburn Romaji."""
+    from services.rei_toei._suno_pipeline import _generate_hepburn_romaji
+
+    romaji = _generate_hepburn_romaji("回路")
+
+    assert romaji == "kairo"
+
+
+def test_generate_hepburn_romaji_empty_input_returns_empty_string():
+    from services.rei_toei._suno_pipeline import _generate_hepburn_romaji
+
+    assert _generate_hepburn_romaji("") == ""
+
+
+def test_format_learning_cue_block_corrects_garbled_llm_romaji():
+    """A non-Romaji or gibberish LLM cue is replaced with real Hepburn Romaji."""
+    from services.rei_toei._suno_pipeline import _format_learning_cue_block
+
+    block = _format_learning_cue_block(
+        japanese="回路が焼ける",
+        romaji="xkjqz garbage",
+        meaning="The circuit burns",
+    )
+
+    assert "回路が焼ける" in block
+    assert "xkjqz garbage" not in block
+    assert "[kairo ga yake ru] [The circuit burns]" in block
+
+
+def test_format_learning_cue_block_keeps_valid_llm_romaji():
+    """Well-formed LLM Romaji is preserved rather than overwritten."""
+    from services.rei_toei._suno_pipeline import _format_learning_cue_block
+
+    block = _format_learning_cue_block(
+        japanese="回路が焼ける",
+        romaji="Kairo ga yakeru",
+        meaning="The circuit burns",
+    )
+
+    assert "[Kairo ga yakeru] [The circuit burns]" in block
+
+
 def test_assemble_suno_prompt_converts_standalone_parenthetical_romaji(mock_domain_knowledge_data):
     """Parenthetical Romaji after Japanese should become a learner cue."""
     concept = SongConcept(

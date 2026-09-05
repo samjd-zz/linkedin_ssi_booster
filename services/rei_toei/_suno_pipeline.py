@@ -38,6 +38,14 @@ from ._suno_validation import validate_lyrics_with_dot
 
 logger = logging.getLogger(__name__)
 
+try:
+    import pykakasi
+    _PYKAKASI_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _PYKAKASI_AVAILABLE = False
+
+_KAKASI_INSTANCE: Optional[Any] = None
+
 _SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balances richness vs safety
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
 _BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
@@ -94,6 +102,36 @@ def _looks_like_romaji_cue(text: str) -> bool:
     return bool(_ROMAJI_MARKER_RE.search(stripped))
 
 
+def _get_kakasi() -> Optional[Any]:
+    """Lazily construct the shared pykakasi converter instance."""
+    global _KAKASI_INSTANCE
+    if not _PYKAKASI_AVAILABLE:
+        return None
+    if _KAKASI_INSTANCE is None:
+        _KAKASI_INSTANCE = pykakasi.kakasi()
+    return _KAKASI_INSTANCE
+
+
+def _generate_hepburn_romaji(japanese_text: str) -> str:
+    """Convert Japanese text to Hepburn Romaji via pykakasi; empty string on failure."""
+    kakasi = _get_kakasi()
+    if kakasi is None or not japanese_text.strip():
+        return ""
+    try:
+        chunks = kakasi.convert(japanese_text)
+    except Exception as exc:
+        logger.debug("pykakasi conversion failed: %s", exc)
+        return ""
+
+    words: List[str] = [chunk["hepburn"] for chunk in chunks if chunk.get("hepburn")]
+    if not words:
+        return ""
+    # Join words with spaces, then tighten spacing before closing punctuation.
+    romaji = " ".join(words)
+    romaji = re.sub(r"\s+([,.!?])", r"\1", romaji)
+    return romaji.strip()
+
+
 def _clean_learning_tail(text: str) -> str:
     """Return a trailing sung echo after an inline learner cue, if meaningful."""
     cleaned = text.strip()
@@ -126,11 +164,20 @@ def _format_learning_cue_block(
     tail: str = "",
 ) -> str:
     """Format a Japanese learner cue with optional sung lines around it."""
+    japanese = japanese.strip()
+    romaji = romaji.strip()
+    if not _looks_like_romaji_cue(romaji):
+        # LLM-provided Romaji is garbled or missing; fall back to a real
+        # Hepburn conversion instead of surfacing bad data to the listener.
+        corrected = _generate_hepburn_romaji(japanese)
+        if corrected:
+            romaji = corrected
+
     lines: List[str] = []
     if prefix:
         lines.append(prefix)
-    lines.append(japanese.strip())
-    lines.append(f"[{romaji.strip()}] [{meaning.strip()}]")
+    lines.append(japanese)
+    lines.append(f"[{romaji}] [{meaning.strip()}]")
     cleaned_tail = _clean_learning_tail(tail)
     if cleaned_tail:
         lines.append(cleaned_tail)
