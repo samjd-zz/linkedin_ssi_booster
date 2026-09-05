@@ -88,21 +88,21 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 ##### Why this is smarter than "AI writes posts"
 
-- **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md` with the SudachiPy tokenizer). The curator ships 8 Japanese-language music feeds out of the box, so the Japanese pipeline learns from real native-language sources rather than translated text. Preprocessing filters boilerplate before fact storage. See [docs/spacy-extraction.md](docs/spacy-extraction.md) and [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
-- **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity. Strong semantic matches can rescue valid paraphrases that lexical BM25 or spaCy checks would otherwise under-score, without API or GPU requirements.
-- **Japanese language intelligence** — pykakasi provides deterministic Kanji/Kana → Hepburn conversion for Rei Toei learner cues, correcting invalid LLM Romaji and generating reliable pronunciation aids for bilingual lyrics.
-- **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
-- **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
-- **Hybrid RAG + agent pipeline** — BM25 retrieval, Model2Vec semantic similarity, graph proximity, claim support, deterministic validation, and multi-step orchestration work together for high factuality and variety.
-- **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
-- **Truth gate** — four-layer post-generation filter: BM25 evidence scoring → Derivative of Truth gradient → spaCy semantic similarity floor with Model2Vec fallback → spaCy NER org-name validation. Removes unsupported claims while preserving semantically grounded paraphrases before anything reaches Buffer. See [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
-- **Confidence scoring & policy routing** — grounding, novelty, and repetition score routes each post to `post`, `idea`, or `block`.
-- **DoT + Probabilistic Logic Networks** — probabilistic logic scoring with truth trajectory tracking (`dT/dt`) and dual-mode comparison. Use `--dot-report` for full gradient and evidence breakdowns.
-- **Memory & repetition penalty** — recent themes and claims penalised to keep your feed fresh.
-- **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
-- **No cloud AI keys required** — all generation runs locally via Ollama.
+- 🧠 **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md` with the SudachiPy tokenizer). The curator ships 8 Japanese-language music feeds out of the box, so the Japanese pipeline learns from real native-language sources rather than translated text. Preprocessing filters boilerplate before fact storage. See [docs/spacy-extraction.md](docs/spacy-extraction.md) and [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
+- ⚡ **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity. Strong semantic matches can rescue valid paraphrases that lexical BM25 or spaCy checks would otherwise under-score, without API or GPU requirements.
+- 🇯🇵 **Japanese language intelligence** — pykakasi provides deterministic Kanji/Kana → Hepburn conversion for Rei Toei learner cues, correcting invalid LLM Romaji and generating reliable pronunciation aids for bilingual lyrics.
+- 🈶 **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
+- 🧬 **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
+- 🕸️ **Hybrid RAG + agent pipeline** — BM25 retrieval, Model2Vec semantic similarity, graph proximity, claim support, deterministic validation, and multi-step orchestration work together for high factuality and variety.
+- 🔄 **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
+- 🛡️ **Truth gate** — four-layer post-generation filter: BM25 evidence scoring → Derivative of Truth gradient → spaCy semantic similarity floor with Model2Vec fallback → spaCy NER org-name validation. Removes unsupported claims while preserving semantically grounded paraphrases before anything reaches Buffer. See [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
+- 🎯 **Confidence scoring & policy routing** — grounding, novelty, and repetition score routes each post to `post`, `idea`, or `block`.
+- 📐 **DoT + Probabilistic Logic Networks** — probabilistic logic scoring with truth trajectory tracking (`dT/dt`) and dual-mode comparison. Use `--dot-report` for full gradient and evidence breakdowns.
+- 🧠 **Memory & repetition penalty** — recent themes and claims penalised to keep your feed fresh.
+- 🔍 **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
+- 🏠 **No cloud AI keys required** — all generation runs locally via Ollama.
 
-**Result:** A self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
+✨ **Result:** A self-improving, persona-driven content engine that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
 
 ---
 
