@@ -9,24 +9,24 @@
 
 <br />
 
-### 概要 (Overview)
+### 🗾 概要 (Overview)
 
 本ポートフォリオは、高い信頼性と決定論的な設計（Deterministic Engineering）に基づいた、実践的なAI/知能システムの構築原則を示しています。単なるプロンプト生成にとどまらず、検証可能なロジック、耐障害性マルチエージェント、および高精度なハイブリッド検索（BM25 + kNN）を備えたシステムを開発・運用しています。
 
-### 主要プロジェクト (Featured Architectures)
+### 🏗️ 主要プロジェクト (Featured Architectures)
 
 - **LinkedIn SSI Booster**: 真偽検証ゲート（Truth-Gated）と継続的学習機能を備えた自動化エージェント。BM25、NetworkX、spaCyを統合し、ハルシネーション（幻覚）を防止。
 - **Regulatory Intelligence Assistant (RIA)**: G7 GovAI Grand Challenge向け多層検索アーキテクチャ。Elasticsearch、Neo4jグラフトラバーサル、ベクトル検索により、カナダ連邦法データを高精度に解析。
 - **Answer42**: 学術研究分析のための9エージェントパイプライン。Spring Batchによるフォールバック処理とサーキットブレーカーを備え、クラウドAPIからローカルOllamaへ自動切り替え。
 
-### コア技術 (Key Technical Pillars)
+### ⚙️ コア技術 (Key Technical Pillars)
 
 1. **ハイブリッドRAG & 応答検証**: BM25によるキーワードスコアリング、NetworkXの構造解析、spaCyの意味検証を融合した多段階検証レイヤー（Truth Gate）。
 2. **マルチエージェントオーケストレーション**: Spring管理の耐障害性、MCP/FastMCPプロトコルによるサービス間連携、ハードウェア制約に配慮したローカルルーティング。
 3. **ディープインデキシング & 検索**: Elasticsearch, Neo4j, ベクトル検索 (kNN) を組み合わせた多層フォールバックにより、サブ500msの低遅延検索を実現。
 4. **エンタープライズ & イベントストリーミング**: Java/JMSを用いた高スループットなエンタープライズシステム構築実績。
 
-### 日本語のNLPと継続学習 (Japanese NLP & Continual Learning)
+### 🇯🇵 日本語のNLPと継続学習 (Japanese NLP & Continual Learning)
 
 本システムは**日本語の記事から直接学習**します。新宿・東京の音楽シーンを中心に8つの日本語RSSフィード（Real Sound 音楽、CINRA、Spincoaster、FNMNL、Arban（新宿ピットイン系ジャズ）、block.fm、Higher Frequency、Qetic）を取り込み、spaCyの日本語パイプラインで解析します。
 
@@ -41,7 +41,7 @@
 
 なお、以前制約として記載していた以下は修正済みです——`ja_core_news_md` は `noun_chunks` を**実装しています**（spaCy 3.8.16 で検証済み）。文分割は `。！？` で正しく動作し、entities／tags の分類は空白ではなく抽出元（NER か名詞句か）で行います。詳細は [docs/spacy-extraction.md](docs/spacy-extraction.md) を参照してください。
 
-### クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
+### 🎶 クリエイティブ & 音楽ノード (Creative Node: Rei Toei)
 
 AIシステム設計に加え、ウィリアム・ギブスンのSF小説『アイドル（Idoru）』にインスパイアされたバーチャルペルソナ・アバター**「Rei Toei（東江麗）」**を通じて、VocaloidやSuno等を活用したサイバーポップ／インダストリアル音響のAI音声・音楽制作を行っています。
 
@@ -217,18 +217,18 @@ SSI decays if you go quiet — LinkedIn penalises inconsistency. Manually writin
 
 This tool handles the repeatable parts:
 
-- **Consistent cadence** — scheduled content is added to your Buffer queue, where Buffer owns publish cadence and posting times
-- **On-brand content** — every post is grounded in your real projects, real numbers, and real technical voice via a detailed persona prompt
-- **All four SSI pillars** — the content calendar and curator rotate across all four components so no single pillar is neglected
-- **Curation pipeline** — fetches today's AI/GovTech news, filters by your niche, and generates commentary that you can either:
+- 📅 **Consistent cadence** — scheduled content is added to your Buffer queue, where Buffer owns publish cadence and posting times
+- ✍️ **On-brand content** — every post is grounded in your real projects, real numbers, and real technical voice via a detailed persona prompt
+- 🏆 **All four SSI pillars** — the content calendar and curator rotate across all four components so no single pillar is neglected
+- 📰 **Curation pipeline** — fetches today's AI/GovTech news, filters by your niche, and generates commentary that you can either:
   - route to Buffer Ideas for review under the default balanced confidence policy, or
   - schedule directly as posts to your Buffer queue when confidence is high enough and `--type post` is used
 
 **`--learn`** extracts and persists knowledge from curated articles into `extracted_knowledge.json`. Three modes:
 
-- **Knowledge-only** (`--curate --learn`) — bulk-loads knowledge, skips generation and Buffer. No post cap — processes all relevant articles.
-- **Generation preview** (`--curate --dry-run`) — generates posts in dry-run mode (no Buffer writes).
-- **Live generation** (`--curate`) — generates posts and routes to Buffer according to `--type` and confidence policy.
+- 🧠 **Knowledge-only** (`--curate --learn`) — bulk-loads knowledge, skips generation and Buffer. No post cap — processes all relevant articles.
+- 👀 **Generation preview** (`--curate --dry-run`) — generates posts in dry-run mode (no Buffer writes).
+- ⚡ **Live generation** (`--curate`) — generates posts and routes to Buffer according to `--type` and confidence policy.
 
 For the full flag reference (`--classify`, `--dot-report`, `--avatar-explain`, `--avatar-learn-report`, `--add-category`, etc.) see [docs/cli-reference.md](docs/cli-reference.md).
 
@@ -242,10 +242,10 @@ The SSI Booster integrates with **Buffer for seamless social scheduling**. Sched
 
 **Why Buffer?**
 
-- Optimal posting times for maximum reach
-- Multi-channel management (LinkedIn, Twitter, etc.)
-- Queue management and performance analytics
-- Full integration with SSI Booster's confidence routing (post → ideas → block)
+- ⏱️ **Optimal posting times** for maximum reach
+- 🌐 **Multi-channel management** (LinkedIn, Twitter, etc.)
+- 📊 **Queue management and performance analytics**
+- 🔗 **Full integration with SSI Booster**'s confidence routing (post → ideas → block)
 
 **Support the project:** Use our [Buffer partner link](https://join.buffer.com/samjd42) to help fund development while getting started with Buffer scheduling!
 
@@ -277,12 +277,12 @@ Use unique per-client values for `IDEAS_CACHE_PATH`, `GENERATED_CONTENT_DIR`, an
 
 ## 🔍 Learning, Grounding, and Explainability Pipeline
 
-- **Candidate logging** — every post and article candidate is logged with full metadata for a complete audit trail.
-- **Reconciliation & priors** — Buffer publication outcomes update Beta-smoothed acceptance priors per source/topic/SSI component; well-performing sources float upward over time.
-- **Ranking** — candidates ranked by acceptance priors × BM25 scores, continuously adapting to your preferences.
-- **Signal flow** — truth gate reason codes → confidence scorer (`post`/`idea`/`block`) → Buffer reconciliation → priors update. Sources that reliably produce clean, grounded posts rise; sources that trigger heavy filtering sink.
-- **Deterministic grounding** — BM25Okapi retrieves persona/domain facts for every generation; prompts forbid invented stats, dates, or companies. The four-layer truth gate enforces this post-generation.
-- **Multi-language extraction** — spaCy routes text to `en_core_web_md` or `ja_core_news_md` by character set, then summarizes, extracts entities/tags, and de-duplicates before writing facts to the knowledge graph.
+- 🧾 **Candidate logging** — every post and article candidate is logged with full metadata for a complete audit trail.
+- 🔁 **Reconciliation & priors** — Buffer publication outcomes update Beta-smoothed acceptance priors per source/topic/SSI component; well-performing sources float upward over time.
+- 🥇 **Ranking** — candidates ranked by acceptance priors × BM25 scores, continuously adapting to your preferences.
+- 🌊 **Signal flow** — truth gate reason codes → confidence scorer (`post`/`idea`/`block`) → Buffer reconciliation → priors update. Sources that reliably produce clean, grounded posts rise; sources that trigger heavy filtering sink.
+- 📌 **Deterministic grounding** — BM25Okapi retrieves persona/domain facts for every generation; prompts forbid invented stats, dates, or companies. The four-layer truth gate enforces this post-generation.
+- 🌍 **Multi-language extraction** — spaCy routes text to `en_core_web_md` or `ja_core_news_md` by character set, then summarizes, extracts entities/tags, and de-duplicates before writing facts to the knowledge graph.
 
 See [docs/learning-pipeline.md](docs/learning-pipeline.md) · [docs/spacy-extraction.md](docs/spacy-extraction.md) · [docs/selection-learning.md](docs/selection-learning.md) · [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
 
@@ -359,7 +359,7 @@ See [docs/features/continual-learning/idea.md](docs/features/continual-learning/
 
 ---
 
-## Database Integration (PostgreSQL)
+## 🗄️ Database Integration (PostgreSQL)
 
 > **Status:** PostgreSQL dual-write covers selection-learning candidate logging and published-record reconciliation. File-based storage (JSON/JSONL) remains the recommended default.
 
@@ -386,19 +386,19 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 ## 🗺️ Docs map
 
-### Quick Start & Setup
+### 🚦 Quick Start & Setup
 
 - [Setup guide](docs/setup.md) — environment, dependencies, persona graph, and calendar setup
 - [Usage guide](docs/usage-schedule-curate-console.md) — scheduling, curation, console mode, channels, and CLI examples
 - [CLI reference](docs/cli-reference.md) — complete command-line flag reference for schedule, curate, console, and reporting modes
 
-### Deployment & Configuration
+### 🚢 Deployment & Configuration
 
 - [Docker deployment](docs/docker-deployment.md) — Docker Compose profiles, GPU passthrough, services overview, and production deployment
 - [Environment variables](docs/environment-variables.md) — comprehensive reference for all configuration options (Buffer, Ollama, truth gate, Model2Vec, voice, image gen, database)
 - [Multi-client runbook](docs/multi-client-runbook.md) — one-repo workflow for managing multiple client accounts with per-client env files and helper scripts
 
-### Core Intelligence & Learning
+### 🧠 Core Intelligence & Learning
 
 - [Architecture guide](docs/architecture.md) — learning pipeline, grounding flow, truth gate, and curation ranking
 - [Learning pipeline](docs/learning-pipeline.md) — truth gate layers, confidence scoring, routing policies, and explainability features
@@ -407,7 +407,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [Derivative of Truth (DoT) framework](docs/derivative-of-truth.md) — mathematical model, five-layer truth gate pipeline, DoT vs spaCy comparison, and scoring
 - [Selection learning](docs/selection-learning.md) — candidate logging, reconciliation, and acceptance priors
 
-### Knowledge & Data
+### 🗃️ Knowledge & Data
 
 - [Knowledge graph](docs/knowledge-graph.md) — NetworkX architecture, hybrid BM25+graph retrieval, graph operations, and Neo4j expansion path
 - [Domain Knowledge Graph](docs/domain-knowledge.md) — domain-level expertise that isn't tied to specific projects
@@ -415,13 +415,13 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [Katzilla integration](docs/katzilla-integration.md) — US government datasets API, truth gate wiring, budget controls, and console `/katzilla` command
 - [Database Integration](docs/features/database/idea.md) — PostgreSQL schema (17 tables), migration strategy, dual-write mode, and performance benchmarks
 
-### Multimodal Features
+### 🎭 Multimodal Features
 
 - [Multimodal features](docs/multimodal-features.md) — FLUX.1-schnell image generation, Rei Toei AI music avatar (Suno + Strudel), and Buffer MCP agent
 - [FLUX art avatar](docs/flux-art-avatar.md) — configuration, style presets, terminal display, GPU sequencing, and flow integration
 - [Rei Toei Implementation](docs/features/rei-toei/plan.md) — AI music avatar architecture, Suno song generation, Strudel pattern execution, console integration, and CLI flags
 
-### Strategy & Development
+### 🧪 Strategy & Development
 
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
