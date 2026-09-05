@@ -94,6 +94,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - ⚡ **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity. Strong semantic matches can rescue valid paraphrases that lexical BM25 or spaCy checks would otherwise under-score, without API or GPU requirements.
 - 🇯🇵 **Japanese language intelligence** — pykakasi provides deterministic Kanji/Kana → Hepburn conversion for Rei Toei learner cues, correcting invalid LLM Romaji and generating reliable pronunciation aids for bilingual lyrics.
 - 🈶 **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
+- 🎨 **Multimodal teaching with FLUX Capacitor** — Sam lessons stay text-first by default, then hand the grounded reply to FLUX.1 for a visual when the request includes `draw`/`render` or when `/art [topic]` is used. Enable with `FLUX_CAPACITOR_ENABLED=true` for the full Kanji-to-visual learning loop.
 - 🧬 **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
 - 🕸️ **Hybrid RAG + agent pipeline** — BM25 retrieval, Model2Vec semantic similarity, graph proximity, claim support, deterministic validation, and multi-step orchestration work together for high factuality and variety.
 - 🔄 **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
@@ -148,12 +149,17 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 
 ```bash
 python main.py --console
+Sam> Teach me the kanji 夢 from the loaded domain knowledge
+Sam> Teach me the kanji 夢 and draw it in golden calligraphy
+Sam> /art "kanji 夢 in golden calligraphy"
 Sam> /rei-toei                    # Switch to Rei's persona
 Rei> What concept should we sonify today?
 You> Generate a song about async programming
 Rei> [Generates song with Suno prompt and evidence IDs]
 You> /sam                         # Switch back to Sam when you're done
 ```
+
+Sam's normal Kanji-teaching response is text-first and uses domain-backed meanings plus deterministic Hepburn readings. Add `draw`, `render`, or another image request verb to auto-trigger FLUX, or run `/art [topic]` afterward to turn the latest Sam lesson into a visual. FLUX rendering must be enabled with `FLUX_CAPACITOR_ENABLED=true` and is normally run through the Docker `full` profile.
 
 After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console.
 

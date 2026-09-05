@@ -125,6 +125,8 @@ _Example queries:_
 
 The art avatar does not have its own separate persona graph. The FLUX prompt is based on the previous assistant reply, then refined with the active style preset, style system prompt, and optional realism hint / topic hint.
 
+**Teaching plus visuals:** a normal `teach me kanji ...` request stays text-first and uses Sam's domain-backed Kanji context with deterministic Hepburn readings. Combine the lesson with an image verb, such as `Teach me 夢 and draw it in golden calligraphy`, to trigger FLUX in the same turn. Alternatively, run `/art "kanji 夢 in golden calligraphy"` after the lesson; `/art` uses the latest assistant reply as source text and the quoted topic as the visual hint. These paths require `FLUX_CAPACITOR_ENABLED=true`; without it, Sam still teaches in text and the art path degrades to the configured text-only/unavailable behavior.
+
 #### Console Commands
 
 Console mode supports the following slash commands:

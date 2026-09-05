@@ -58,7 +58,9 @@ The art avatar does not pull a separate visual persona from the persona graph. T
 - The optional `FLUX_CAPACITOR_REALISM_HINT` or per-request `realism_hint`
 - The optional `knowledge_context` provided by the caller, such as a console topic hint
 
-For console `/art`, the source story is the most recent assistant reply in the current session. The topic hint becomes both the visual theme and the short knowledge context passed into the optimizer.
+For console `/art`, the source story is the most recent assistant reply in the current session. The topic hint becomes both the visual theme and the short knowledge context passed into the optimizer. This gives Sam's Kanji-teaching flow a clean multimodal handoff: a normal lesson remains text-first, while `/art "kanji 夢 in golden calligraphy"` turns the latest grounded lesson into a FLUX visual. A teaching request that also contains an image verb (`draw`, `render`, `depict`, and similar) triggers the same render automatically.
+
+FLUX remains disabled by default, so enable `FLUX_CAPACITOR_ENABLED=true` and use the full GPU-capable profile before expecting an image.
 
 ---
 
