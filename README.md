@@ -69,7 +69,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-921%20passed-16A34A.svg" alt="Tests 921 passed"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-924%20passed-16A34A.svg" alt="Tests 924 passed"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-66%25-yellow.svg" alt="Coverage 66%"></a>
 </p>
 
@@ -421,7 +421,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (921 collected; 921 passed, 0 failed)
+- [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (924 collected; 924 passed, 0 failed)
 
 ## 🐳 Docker Compose (Recommended)
 

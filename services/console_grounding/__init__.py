@@ -30,6 +30,7 @@ from services.console_grounding._profile_parser import (
 )
 
 # Retrieval / grounded-reply builders
+from services.console_grounding._kanji import build_kanji_teaching_context
 from services.console_grounding._retrieval import (
     build_deterministic_grounded_reply,
     build_grounding_facts_block,
@@ -87,6 +88,7 @@ __all__ = [
     "_extract_tags",
     "parse_profile_project_facts",
     # retrieval
+    "build_kanji_teaching_context",
     "build_deterministic_grounded_reply",
     "build_grounding_facts_block",
     "build_katzilla_citation_reply",

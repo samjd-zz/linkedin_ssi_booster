@@ -54,6 +54,7 @@ class QueryConstraints:
     search_learned_knowledge: bool = False  # User asks to search learned knowledge
     has_image_request: bool = False  # User asks for an image / artwork / drawing
     is_japanese_art_request: bool = False  # Request is specifically for Japanese character or art
+    is_kanji_teaching_request: bool = False  # User asks Sam to teach Japanese kanji
     art_subject_hint: str = ""  # Extracted subject or character name for image render
     route_mode: str = "llm_with_context"  # "llm_with_context", "deterministic_citation", "learned_context"
 

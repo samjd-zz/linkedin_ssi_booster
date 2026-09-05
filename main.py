@@ -580,6 +580,7 @@ from services.console_grounding import (
     get_latest_extracted_knowledge,
     build_learned_knowledge_context,
     build_grounding_facts_block,
+    build_kanji_teaching_context,
 )
 from services.ollama_service import OllamaService
 from services.github_service import build_github_profile_context
@@ -1257,6 +1258,19 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             used_external = []
 
         facts_context = build_grounding_facts_block(facts, limit=8)
+        if constraints.is_kanji_teaching_request:
+            teaching_facts = [
+                fact for fact in facts
+                if fact.source.startswith("domain:") or fact.company == "Domain Knowledge"
+            ]
+            if not teaching_facts:
+                teaching_facts = [
+                    fact for fact in _profile_facts
+                    if fact.source.startswith("domain:") or fact.company == "Domain Knowledge"
+                ]
+            kanji_context = build_kanji_teaching_context(teaching_facts)
+            if kanji_context:
+                facts_context = f"{facts_context}\n\n{kanji_context}".strip()
         history.append({"role": "user", "content": user_input})
         if len(history) > max_turns * 2:
             history = history[-max_turns * 2 :]

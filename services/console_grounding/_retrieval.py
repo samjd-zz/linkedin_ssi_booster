@@ -99,6 +99,12 @@ def parse_query_constraints(
         has_japanese_subject
         or any(k in q for k in ["japanese", "kanji", "hiragana", "katakana", "romaji", "kana", "anime", "manga", "glyph", "letter", "symbol", "syllabary"])
     )
+    teaching_intent = any(phrase in q for phrase in (
+        "teach me", "teach", "lesson", "learn", "study", "practice",
+    ))
+    is_kanji_teaching_request = teaching_intent and any(
+        term in q for term in ("kanji", "japanese character", "characters", "stroke order")
+    )
 
     art_subject_hint = ""
     if has_image_request:
@@ -139,6 +145,7 @@ def parse_query_constraints(
         search_learned_knowledge=search_learned_knowledge,
         has_image_request=has_image_request,
         is_japanese_art_request=is_japanese_art_request,
+        is_kanji_teaching_request=is_kanji_teaching_request,
         art_subject_hint=art_subject_hint,
         route_mode=route_mode,
     )

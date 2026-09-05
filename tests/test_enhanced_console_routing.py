@@ -6,6 +6,7 @@ import pytest
 
 from services.console_grounding import (
     build_deterministic_grounded_reply,
+    build_kanji_teaching_context,
     parse_query_constraints,
     get_latest_extracted_knowledge,
     build_learned_knowledge_context,
@@ -260,8 +261,37 @@ class TestExtractedKnowledgeHelpers:
         assert "don't have any learned knowledge" in context
 
 
+def test_kanji_teaching_context_combines_domain_fact_and_hepburn_reading():
+    facts = [
+        ProjectFact(
+            project="Kanji Core",
+            company="Domain Knowledge",
+            years="general",
+            details="一 is a core high-frequency kanji meaning one; teach via words.",
+            source="domain:k200-001",
+            tags={"一", "one", "core kanji"},
+        )
+    ]
+
+    context = build_kanji_teaching_context(facts)
+
+    assert "Kanji teaching aids from loaded domain knowledge" in context
+    assert "一 | Hepburn: ichi" in context
+    assert "Domain meaning: is a core high-frequency kanji meaning one" in context
+
+
 class TestBackwardCompatibility:
     """Test that existing functionality still works."""
+
+    def test_kanji_teaching_request_is_detected(self):
+        constraints = parse_query_constraints("Sam, teach me kanji from your domain knowledge")
+
+        assert constraints.is_kanji_teaching_request is True
+
+    def test_plain_kanji_question_is_not_teaching_request(self):
+        constraints = parse_query_constraints("What is kanji?")
+
+        assert constraints.is_kanji_teaching_request is False
 
     def test_tech_tags_still_extracted(self):
         """Test that tech tags are still extracted from queries."""
