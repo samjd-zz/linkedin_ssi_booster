@@ -96,7 +96,10 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - 🈶 **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
 - 🎨 **Multimodal teaching with FLUX Capacitor** — Sam lessons stay text-first by default, then hand the grounded reply to FLUX.1 for a visual when the request includes `draw`/`render` or when `/art [topic]` is used. Enable with `FLUX_CAPACITOR_ENABLED=true` for the full Kanji-to-visual learning loop.
 - 🧬 **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
+- 🧠 **Avatar intelligence and continuity** — confidence scoring, moderation learning, narrative memory, explainability reports, and policy routing turn the persona into a learning digital representative rather than a static prompt.
 - 🕸️ **Hybrid RAG + agent pipeline** — BM25 retrieval, Model2Vec semantic similarity, graph proximity, claim support, deterministic validation, and multi-step orchestration work together for high factuality and variety.
+- 🛰️ **Katzilla evidence intelligence** — optional access to cited government datasets through a bounded `/katzilla` console route, with source URLs, retrieval timestamps, licenses, hashes, credibility tiers, and daily budget controls.
+- 🗄️ **Local-first data durability** — optional PostgreSQL dual-write across 17 tables adds queryable persistence and migration tooling while preserving JSON/JSONL storage as a non-breaking rollback path.
 - 🔄 **Curation learning loop** — Beta-smoothed acceptance priors per source/topic/SSI component; the system learns from what you actually publish.
 - 🛡️ **Truth gate** — four-layer post-generation filter: BM25 evidence scoring → Derivative of Truth gradient → spaCy semantic similarity floor with Model2Vec fallback → spaCy NER org-name validation. Removes unsupported claims while preserving semantically grounded paraphrases before anything reaches Buffer. See [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
 - 🎯 **Confidence scoring & policy routing** — grounding, novelty, and repetition score routes each post to `post`, `idea`, or `block`.
@@ -410,6 +413,8 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [Learning pipeline](docs/learning-pipeline.md) — truth gate layers, confidence scoring, routing policies, and explainability features
 - [spaCy extraction](docs/spacy-extraction.md) — what each article teaches the avatar, the `ExtractedFact` schema, language routing, and tuning knobs
 - [Persona and Avatar Intelligence](docs/persona-and-avatar.md) — persona graph, system prompt, memory, confidence, and continual learning
+- [Avatar Intelligence feature plan](docs/features/avatar-intelligence-learning/plan.md) — confidence policy, moderation learning, narrative continuity, and explainability implementation
+- [Model2Vec NLP enhancement](docs/features/model2Vec-nlp-enhancement/design.md) — local semantic classification, reranking, category alignment, and grounding integration
 - [Derivative of Truth (DoT) framework](docs/derivative-of-truth.md) — mathematical model, five-layer truth gate pipeline, DoT vs spaCy comparison, and scoring
 - [Selection learning](docs/selection-learning.md) — candidate logging, reconciliation, and acceptance priors
 
