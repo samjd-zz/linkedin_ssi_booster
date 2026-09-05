@@ -10,10 +10,13 @@ To set up your environment and execute tests, use the following standard command
 
 ```bash
 # Install test dependencies
-source .venv/bin/activate && pip install pytest
+source .venv/bin/activate && pip install pytest pytest-cov
 
 # Run full test suite with verbose output
 source .venv/bin/activate && python -m pytest tests/ -v
+
+# Run full test suite with source coverage
+source .venv/bin/activate && python -m pytest --cov=services --cov=agents --cov=main --cov=scheduler --cov=content_calendar --cov-report=term-missing:skip-covered -q
 
 ```
 
@@ -41,14 +44,15 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 ### Summary Metrics
 
-| Total Tests | Passed  | Skipped | Failed | Status          |
-| ----------- | ------- | ------- | ------ | --------------- |
-| **898**     | **898** | **0**   | **0**  | ✅ **All pass** |
+| Total Tests | Passed  | Skipped | Failed | Source Coverage | Status          |
+| ----------- | ------- | ------- | ------ | --------------- | --------------- |
+| **910**     | **910** | **0**   | **0**  | **65%**         | ✅ **All pass** |
 
-- **Latest Run Date:** September 4, 2026
-- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, and language-routed spaCy search tokenization and batch similarity coverage.
+- **Latest Run Date:** September 5, 2026
+- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, language-routed spaCy search tokenization and batch similarity coverage, Strudel WebSocket bridge message handling, and database dual-write persistence.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Notes:** 0 skipped, 0 failed, 0 warnings. All 898 tests pass cleanly.
+- **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
+- **Notes:** 0 skipped, 0 failed. All 910 tests pass cleanly. Source coverage is 65%; the previous 98% README badge was a static/manual value without a reproducible coverage command or dependency in the project.
 
 ### Test Suite Breakdown
 
@@ -72,6 +76,8 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 - **17** MCP agent unit tests (new)
 - _9 Buffer MCP agent tests + 8 Strudel MCP agent tests_
+- **6** Strudel WebSocket bridge tests (new)
+- **6** Database writer dual-write tests (new)
 - **4** Singleton concurrency tests (new)
 - _3 Database engine/session singleton lifecycle + 1 Flux service singleton under concurrent access_
 
@@ -201,6 +207,8 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_model2vec_service.py`                         | Evaluates lazy model loads, graceful degradation on missing runtimes, metadata analytics, and item prioritization scoring within selection learning.                                                                                                                                                  |
 | `tests/test_buffer_mcp_agent.py`                          | Verifies Buffer MCP agent health checks, Ollama request generation/parsing, MCP initialize handshake, tool-call payload wrapping, and JSON-RPC passthrough behavior.                                                                                                                                  |
 | `tests/test_strudel_mcp_agent.py`                         | Verifies Strudel MCP agent JSON-RPC stdio flow, health-check tool discovery, tool-envelope parsing, and success/error handling for init/edit/playback tool calls.                                                                                                                                     |
+| `tests/test_strudel_ws_bridge.py`                         | Verifies WebSocket bridge message parsing, ping/pong health checks, eval validation, MCP success acknowledgments, and MCP execution failure envelopes.                                                                                                                                                |
+| `tests/test_database_writers.py`                           | Verifies persona graph, domain knowledge, extracted knowledge, and narrative memory database writers, including dual-write file persistence and relationship mapping.                                                                                                                                 |
 | `tests/test_flux_capacitor_pipeline.py`                   | Config validation, model contracts, style preset clamping, prompt assembly, GPU orchestrator state machine, pipeline disabled/deferred/FAILED paths, DNS-unreachable FLUX service TEXT_ONLY fallback, story artifact persistence, service singleton.                                                  |
 | `tests/test_gpu_orchestration_policy.py`                  | Ollama-first queue ordering, TEXT_ONLY timeout fallback, slot acquire/release lifecycle, exception-safe context manager, concurrency safety with multiple FLUX requests.                                                                                                                              |
 | `tests/test_flux_capacitor_schedule_integration.py`       | Schedule-flow wiring: skips YouTube channel, records rendered metadata, catches and wraps exceptions as failed result.                                                                                                                                                                                |
