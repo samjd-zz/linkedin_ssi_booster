@@ -16,8 +16,6 @@
 ### 🏗️ 主要プロジェクト (Featured Architectures)
 
 - **LinkedIn SSI Booster**: 真偽検証ゲート（Truth-Gated）と継続的学習機能を備えた自動化エージェント。BM25、NetworkX、spaCyを統合し、ハルシネーション（幻覚）を防止。
-- **Regulatory Intelligence Assistant (RIA)**: G7 GovAI Grand Challenge向け多層検索アーキテクチャ。Elasticsearch、Neo4jグラフトラバーサル、ベクトル検索により、カナダ連邦法データを高精度に解析。
-- **Answer42**: 学術研究分析のための9エージェントパイプライン。Spring Batchによるフォールバック処理とサーキットブレーカーを備え、クラウドAPIからローカルOllamaへ自動切り替え。
 
 ### ⚙️ コア技術 (Key Technical Pillars)
 
