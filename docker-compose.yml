@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       target: core_base
     container_name: ssi_booster_strudel_ws_bridge
-    profiles: [ "core", "full" ]
+    profiles: [ "full" ]
     depends_on:
       ollama:
         condition: service_healthy
@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile
       target: core_base
     container_name: ssi_booster_strudel_agent
-    profiles: [ "core", "full" ]
+    profiles: [ "full" ]
     depends_on:
       ollama:
         condition: service_healthy
@@ -72,7 +72,7 @@ services:
       dockerfile: Dockerfile
       target: core_base
     container_name: ssi_booster_buffer_mcp_agent
-    profiles: [ "core", "full" ]
+    profiles: [ "full" ]
     depends_on:
       ollama:
         condition: service_healthy
@@ -228,7 +228,7 @@ services:
   piper:
     image: rhasspy/wyoming-piper:latest
     container_name: ssi_booster_piper
-    profiles: [ "core", "full" ]
+    profiles: [ "full" ]
     restart: unless-stopped
     ports:
       - "10200:10200"
@@ -259,11 +259,13 @@ services:
         condition: service_healthy
       strudel-ws-bridge:
         condition: service_started
+        required: false # Strudel is available only under --profile full
       piper:
         condition: service_started
+        required: false # Piper TTS is available only under --profile full
       flux-app:
         condition: service_started
-        required: false # only present under --profile full; ignored under --profile core
+        required: false # FLUX is available only under --profile full
     env_file: .env
     environment:
       - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native

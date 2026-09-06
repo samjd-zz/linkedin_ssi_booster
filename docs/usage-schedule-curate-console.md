@@ -7,7 +7,8 @@ The CLI centers on three main workflows: scheduling from a private content calen
 The recommended way to run all commands is via Docker Compose using `run.sh`, which automatically exports your `USER_UID` for PulseAudio passthrough (voice output).
 
 ```bash
-# Start the core stack (Ollama + Piper TTS + app) in the background
+# Start the core stack (Ollama + app) in the background
+# Piper TTS, FLUX, and MCP agents are available in the full profile.
 bash run.sh --profile core up -d
 
 # Run any one-shot command against the running stack
@@ -17,11 +18,11 @@ docker compose --profile core run --rm app python main.py --schedule --week 1 --
 # Interactive console (TTY required for stdin)
 docker compose --profile core run --rm -it app python main.py --console
 
-# Full mode — adds FLUX image generation
+# Full mode — adds Piper TTS, FLUX image generation, and MCP agents (Buffer + Strudel)
 bash run.sh --profile full up -d
 ```
 
-> **Voice note:** `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket so `CONSOLE_USE_VOICE=true` works inside the container. Running `docker compose` directly without `run.sh` will work but audio output will be silent unless your shell already has `USER_UID` exported.
+> **Voice note:** Piper TTS runs in the `full` profile. `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket so `CONSOLE_USE_VOICE=true` works inside the full stack. Running `docker compose` directly without `run.sh` will work but audio output will be silent unless your shell already has `USER_UID` exported.
 
 ## Main commands
 

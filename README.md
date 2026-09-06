@@ -143,7 +143,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 - 🇯🇵 **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, messy inline-cue cleanup for bracket or parenthetical meaning forms, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
 - 🎚️ **Controlled lyric language selection** — `bilingual` mode is the default; `REI_JAPANESE_LYRIC_PROBABILITY` controls the Japanese lyrical-content target at runtime, while explicit `english` or `japanese` modes are deterministic
 - 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
-- 🎛️ **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅)
+- 🎛️ **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅; Docker `full` profile)
 - 🛡️ **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
 - 🔊 **Docker Audio Patch Path** — Default Docker command uses `scripts/strudel_mcp_patched.sh` to patch an upstream media-routing issue that can cause silent browser playback
 - 🧠 **Knowledge Grounding** — Every lyric is validated via Derivative of Truth for factual accuracy
@@ -258,7 +258,7 @@ The SSI Booster integrates with **Buffer for seamless social scheduling**. Sched
 
 **Support the project:** Use our [Buffer partner link](https://join.buffer.com/samjd42) to help fund development while getting started with Buffer scheduling!
 
-**Roadmap Focus:** See [ROADMAP.md](ROADMAP.md) for next steps on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, Docker service active, unit tests added; live endpoint validation and consumer wiring pending).
+**Roadmap Focus:** See [ROADMAP.md](ROADMAP.md) for next steps on the **Ollama Buffer MCP Agent** — a natural language interface to Buffer operations powered by Gemma 4 (code complete, available in the Docker `full` profile, unit tests added; live endpoint validation and consumer wiring pending).
 
 ## 👥 Multi-Client Operations (one repo, many clients)
 
@@ -441,15 +441,15 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 ## 🐳 Docker Compose (Recommended)
 
-Run the full stack with a single command — Ollama LLM server + Wyoming Piper TTS + SSI Booster app. The stack uses **Docker Profiles** (`core` vs `full`) to manage hardware resources.
+Run the stack with Docker Profiles: `core` provides Ollama + the SSI Booster app, while `full` adds Piper TTS, FLUX image generation, and MCP agents for Buffer and Strudel.
 
 **Quick Start:**
 
 ```bash
-# Standard mode — LLM + TTS + analytics (daily use)
+# Standard mode — LLM + app + analytics (daily use)
 bash run.sh --profile core up -d
 
-# Full mode — adds FLUX image generation
+# Full mode — adds Piper TTS, FLUX image generation, and MCP agents
 bash run.sh --profile full up -d
 
 # Run commands

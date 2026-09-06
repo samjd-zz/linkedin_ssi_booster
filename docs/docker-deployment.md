@@ -38,9 +38,9 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 | ---------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `ollama`               | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume                                     |
 | `ollama-init`          | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits                               |
-| `piper`                | `core`, `full` | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                   |
-| `strudel-mcp-agent`    | `core`, `full` | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server             |
-| `buffer-mcp-agent`     | `core`, `full` | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server           |
+| `piper`                | `full`       | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                   |
+| `strudel-mcp-agent`    | `full`       | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server             |
+| `buffer-mcp-agent`     | `full`       | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server           |
 | `postgres`             | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                  |
 | `flux-init`            | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it           |
 | `flux_capacitor`       | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
@@ -146,10 +146,10 @@ docker compose --profile full up -d
 
 1. **`ollama-init`** pulls `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` from Ollama registry
 2. **`ollama`** starts LLM server on port `11434`
-3. **`piper`** downloads voice model (if not cached) and starts TTS server on port `10200`
+3. **`piper`** (full profile only) downloads voice model (if not cached) and starts TTS server on port `10200`
 4. **`flux-init`** (full profile only) downloads FLUX GGUF weights from Civitai
 5. **`flux_capacitor`** (full profile only) compiles `llama-cpp-python` with GPU support and starts inference service
-6. **`strudel-mcp-agent`** and **`buffer-mcp-agent`** start autonomous agent services
+6. **`strudel-mcp-agent`** and **`buffer-mcp-agent`** (full profile) start autonomous agent services
 7. **`postgres`** (if `DATABASE_ENABLED=true`) starts PostgreSQL database on port `5432`
 8. **`app`** starts SSI Booster application
 
@@ -188,7 +188,7 @@ docker compose --profile core run --rm app python -m services.database.migrate_d
 
 ## Agent Services
 
-### Strudel Music Agent
+### Strudel Music Agent (Full Profile)
 
 Monitor agent logs:
 
@@ -199,7 +199,7 @@ docker compose logs -f strudel-mcp-agent
 Run agent with custom prompt (one-off):
 
 ```bash
-docker compose --profile core run --rm strudel-mcp-agent python agents/strudel_mcp_agent.py
+docker compose --profile full run --rm strudel-mcp-agent python agents/strudel_mcp_agent.py
 ```
 
 Edit agent code:
@@ -210,7 +210,7 @@ nano agents/strudel_mcp_agent.py
 docker compose restart strudel-mcp-agent
 ```
 
-### Buffer MCP Agent
+### Buffer MCP Agent (Full Profile)
 
 Monitor agent logs:
 
@@ -221,7 +221,7 @@ docker compose logs -f buffer-mcp-agent
 Run agent with custom prompt (one-off):
 
 ```bash
-docker compose --profile core run --rm buffer-mcp-agent python agents/buffer_mcp_agent.py
+docker compose --profile full run --rm buffer-mcp-agent python agents/buffer_mcp_agent.py
 ```
 
 ---
