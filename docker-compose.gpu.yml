@@ -1,0 +1,31 @@
+# GPU override — merged on top of docker-compose.yml only when run.sh detects
+# a working NVIDIA + nvidia-container-toolkit setup. Do not apply manually on
+# hosts without a GPU; `docker compose` will fail with "could not select device
+# driver nvidia".
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+
+  ollama-init:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+
+  app:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]

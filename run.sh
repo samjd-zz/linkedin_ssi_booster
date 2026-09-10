@@ -13,6 +13,19 @@ if [ ! -S "$PULSE_RUNTIME_DIR/native" ]; then
     echo "Audio might not work in the container."
 fi
 
-# 3. Launch Docker Compose with the profile you want
+# 3. Auto-detect a usable NVIDIA GPU + container runtime and layer in GPU reservations
+COMPOSE_FILES=(-f docker-compose.yml)
+if command -v nvidia-smi >/dev/null 2>&1 && docker info 2>/dev/null | grep -qi nvidia; then
+    if docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi >/dev/null 2>&1; then
+        echo "🎮 NVIDIA GPU detected — enabling GPU passthrough."
+        COMPOSE_FILES+=(-f docker-compose.gpu.yml)
+    else
+        echo "⚠️  nvidia-smi/runtime found but GPU passthrough test failed — falling back to CPU-only."
+    fi
+else
+    echo "ℹ️  No NVIDIA GPU/runtime detected — running CPU-only."
+fi
+
+# 4. Launch Docker Compose with the profile you want
 # You can pass arguments to this script, like './run.sh --profile full'
-docker compose "$@"
+docker compose "${COMPOSE_FILES[@]}" "$@"

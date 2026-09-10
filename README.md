@@ -451,6 +451,10 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 Run the stack with Docker Profiles: `core` provides Ollama + the SSI Booster app, while `full` adds Piper TTS, FLUX image generation, and MCP agents for Buffer and Strudel.
 
+`run.sh` auto-detects a usable NVIDIA GPU + container runtime and layers in `docker-compose.gpu.yml`
+for GPU passthrough; on hosts without a GPU/driver it falls back to CPU-only automatically — no flags
+needed. `flux-init`/`flux_capacitor` (full profile) always require a GPU.
+
 **Quick Start:**
 
 ```bash
@@ -460,9 +464,9 @@ bash run.sh --profile core up -d
 # Full mode — adds Piper TTS, FLUX image generation, and MCP agents
 bash run.sh --profile full up -d
 
-# Run commands
-docker compose --profile core run --rm -it app python main.py --console
-docker compose --profile core run --rm app python main.py --curate
+# Run commands (prefer run.sh over bare `docker compose` for GPU auto-detection)
+bash run.sh --profile core run --rm -it app python main.py --console
+bash run.sh --profile core run --rm app python main.py --curate
 ```
 
 See [docs/docker-deployment.md](docs/docker-deployment.md) for complete setup guide, prerequisites (NVIDIA Container Toolkit, CUDA 12.4+, GPU requirements), service details, and troubleshooting.

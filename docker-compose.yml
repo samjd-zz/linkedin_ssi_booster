@@ -175,15 +175,8 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
-    # P3 Note: GPU reservation is safe because OLLAMA_NUM_PARALLEL=1 ensures sequential LLM calls.
-    # No concurrent GPU operations occur even in --profile full (FLUX runs separately via --avatar-generate).
+    # No GPU reservation: Ollama runs CPU-only by default so --profile core works on non-GPU hosts.
+    # If an NVIDIA GPU + nvidia-container-toolkit are available, add a deploy.resources.reservations block back.
     healthcheck:
       test: [ "CMD", "ollama", "list" ]
       interval: 10s
@@ -203,13 +196,6 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_NUM_PARALLEL: 1
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
     entrypoint: >
       sh -c "
         MODEL=$${OLLAMA_MODEL:-llama3.2}
@@ -289,13 +275,7 @@ services:
     tty: true
     command: [ "python", "main.py", "--help" ]
     restart: "no"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
+    # No GPU reservation: app talks to ollama/flux-app over HTTP and doesn't touch the GPU directly.
     group_add:
       - audio
     extra_hosts:

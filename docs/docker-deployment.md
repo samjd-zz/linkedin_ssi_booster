@@ -11,6 +11,10 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 - **`core` profile:** Lightweight daily operations (Ollama LLM + Wyoming Piper TTS + app)
 - **`full` profile:** Includes FLUX.1-schnell image generation (requires RTX 3060 12GB or better)
 
+`ollama`, `ollama-init`, and `app` run **CPU-only by default** (no GPU required for `core`). `run.sh`
+auto-detects a usable NVIDIA GPU + container runtime and layers in `docker-compose.gpu.yml` to add
+GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See [GPU Passthrough](#gpu-passthrough).
+
 ---
 
 ## Prerequisites
@@ -34,17 +38,17 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 
 ## Services Overview
 
-| Service                | Profile        | Description                                                                                                       |
-| ---------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `ollama`               | `core`, `full` | Ollama LLM server — GPU-accelerated, persisted via named `ollama_data` volume                                     |
-| `ollama-init`          | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits                               |
-| `piper`                | `full`       | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                   |
-| `strudel-mcp-agent`    | `full`       | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server             |
-| `buffer-mcp-agent`     | `full`       | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server           |
-| `postgres`             | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                  |
-| `flux-init`            | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it           |
-| `flux_capacitor`       | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete |
-| `app`                  | `core`, `full` | SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md` (`core_base` Dockerfile stage) |
+| Service             | Profile        | Description                                                                                                                                  |
+| ------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ollama`            | `core`, `full` | Ollama LLM server — CPU-only by default, GPU-accelerated when `run.sh` detects a usable NVIDIA GPU; persisted via named `ollama_data` volume |
+| `ollama-init`       | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits                                                          |
+| `piper`             | `full`         | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                                              |
+| `strudel-mcp-agent` | `full`         | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server                                        |
+| `buffer-mcp-agent`  | `full`         | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server                                      |
+| `postgres`          | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                                             |
+| `flux-init`         | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it                                |
+| `flux_capacitor`    | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete                            |
+| `app`               | `core`, `full` | SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md` (`core_base` Dockerfile stage)                          |
 
 ### spaCy language models in the image
 
@@ -228,14 +232,28 @@ docker compose --profile full run --rm buffer-mcp-agent python agents/buffer_mcp
 
 ## GPU Passthrough
 
+### Auto-detection (recommended: `run.sh`)
+
+`run.sh` probes for `nvidia-smi` plus a working `docker run --gpus all ... nvidia-smi` test before
+every command. If detection succeeds, it merges `docker-compose.gpu.yml` on top of `docker-compose.yml`
+to add GPU reservations to `ollama`, `ollama-init`, and `app`. If no GPU/driver is found (or the
+passthrough test fails), it runs CPU-only and prints a warning — no manual flags needed:
+
+```bash
+bash run.sh --profile core up -d      # GPU used automatically if detected, CPU-only otherwise
+```
+
+`flux-init` and `flux_capacitor` (full profile only) always require a GPU and are not affected by
+this toggle — they keep a hardcoded `nvidia` reservation in `docker-compose.yml`.
+
 ### Linux
 
 Requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
 
-Verify GPU access:
+Verify GPU access (after `run.sh` has enabled the GPU override):
 
 ```bash
-docker compose --profile core run --rm app nvidia-smi
+bash run.sh --profile core run --rm app nvidia-smi
 ```
 
 ### Windows (WSL 2)
@@ -245,12 +263,14 @@ Docker Desktop handles GPU passthrough automatically via WSL 2. No manual toolki
 Verify:
 
 ```bash
-docker compose --profile core run --rm app nvidia-smi
+bash run.sh --profile core run --rm app nvidia-smi
 ```
 
 ### Service GPU Configuration
 
-All GPU services use `deploy.resources.reservations.devices` in `docker-compose.yml`:
+`ollama`, `ollama-init`, and `app` have no GPU reservation in `docker-compose.yml` (CPU-only baseline).
+`docker-compose.gpu.yml` adds it back via `deploy.resources.reservations.devices` and is merged in
+automatically by `run.sh` when a GPU is detected:
 
 ```yaml
 deploy:
@@ -258,9 +278,13 @@ deploy:
     reservations:
       devices:
         - driver: nvidia
-          count: 1
+          count: all
           capabilities: [gpu]
 ```
+
+If you call `docker compose` directly instead of `run.sh` on a GPU-less host, you get CPU-only
+behavior automatically — no `nvidia` driver error. To force GPU passthrough without `run.sh`, add the
+override explicitly: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile core up -d`.
 
 ---
 
@@ -274,15 +298,15 @@ deploy:
 
 ### Bind Mounts
 
-| Host Path               | Container Path          | Purpose                                |
-| ----------------------- | ----------------------- | -------------------------------------- |
-| `./data/`               | `/app/data/`            | Persona, domain, learning data         |
+| Host Path               | Container Path          | Purpose                                           |
+| ----------------------- | ----------------------- | ------------------------------------------------- |
+| `./data/`               | `/app/data/`            | Persona, domain, learning data                    |
 | `./yt-vid-data/`        | `/app/yt-vid-data/`     | Generated-content root (images/scripts/artifacts) |
-| `./agents/`             | `/app/agents/`          | Agent source code (read-only)          |
-| `./models/flux/`        | `/app/models/flux/`     | FLUX GGUF weights (read-only)          |
-| `~/.pulse/`             | `/home/appuser/.pulse/` | PulseAudio socket (via `run.sh`)       |
-| `./strudel-mcp-server/` | `/app/strudel/`         | Strudel MCP server repo (auto-cloned)  |
-| `./postgres-data/`      | `/var/lib/postgresql/`  | PostgreSQL database files (if enabled) |
+| `./agents/`             | `/app/agents/`          | Agent source code (read-only)                     |
+| `./models/flux/`        | `/app/models/flux/`     | FLUX GGUF weights (read-only)                     |
+| `~/.pulse/`             | `/home/appuser/.pulse/` | PulseAudio socket (via `run.sh`)                  |
+| `./strudel-mcp-server/` | `/app/strudel/`         | Strudel MCP server repo (auto-cloned)             |
+| `./postgres-data/`      | `/var/lib/postgresql/`  | PostgreSQL database files (if enabled)            |
 
 **Key Points:**
 
@@ -491,6 +515,7 @@ docker compose --profile full run --rm flux-init
 
 Generated artifacts are saved under `./yt-vid-data/` on the host.
 Examples:
+
 - YouTube scripts: `./yt-vid-data/youtube_scripts/`
 - Rei Toei outputs: `./yt-vid-data/rei_toei/`
 - FLUX art-avatar images: `./yt-vid-data/flux_capacitor/`
@@ -515,15 +540,20 @@ Examples:
 2. Verify environment variables in `.env`
 3. Ensure required files exist: `persona_graph.json`, `domain_knowledge.json`, `narrative_memory.json`
 
-### GPU Not Detected
+### GPU Not Detected / "could not select device driver nvidia"
 
-**Problem:** `nvidia-smi` fails inside container.
+**Problem:** `nvidia-smi` fails inside container, or `docker compose` errors with
+`could not select device driver "nvidia" with capabilities: [[gpu]]`.
 
 **Solution:**
 
+- Use `bash run.sh ...` instead of calling `docker compose` directly — it auto-detects GPU
+  availability and only applies `docker-compose.gpu.yml` when a GPU actually works, falling back
+  to CPU-only otherwise.
 - **Linux:** Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
 - **Windows:** Enable WSL 2 in Docker Desktop settings
 - Verify CUDA drivers: `nvidia-smi` on host should work
+- `flux-init`/`flux_capacitor` (full profile) always require a GPU; `ollama`/`app` (core profile) run fine CPU-only.
 
 ### Ollama Models Not Loading
 
