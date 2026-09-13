@@ -1922,8 +1922,10 @@ def main():
         except KeyboardInterrupt:
             print("\nRei Toei generation cancelled.")
         except Exception as _rei_err:
-            logger.error("Rei Toei CLI error: %s", _rei_err)
-            print(str(Fore.RED) + f"\n\u274c  Rei Toei error: {_rei_err}" + str(Style.RESET_ALL))
+            logger.error("Rei Toei CLI error: %s", _rei_err, exc_info=True)
+            cause = _rei_err.__cause__
+            detail = f"{_rei_err} (caused by: {cause})" if cause else str(_rei_err)
+            print(str(Fore.RED) + f"\n\u274c  Rei Toei error: {detail}" + str(Style.RESET_ALL))
         return
 
     if args.curate:

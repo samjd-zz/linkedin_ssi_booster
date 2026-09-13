@@ -16,6 +16,7 @@ import time
 import logging
 from typing import Any, Optional, Literal
 
+import httpx
 import ollama
 
 import json
@@ -28,6 +29,19 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL = "llama3.2"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_NUM_CTX = 16384
+
+
+def _describe_ollama_error(exc: Exception, base_url: str) -> str:
+    """Return a message that only claims 'unreachable' for genuine connection failures.
+
+    httpx raises ConnectError/ConnectTimeout when the socket itself cannot be
+    established. Any other exception (JSON parsing, validation, server-side
+    errors after a response was already received, etc.) is surfaced as-is so
+    real failures are never masked as a connectivity problem.
+    """
+    if isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout, ConnectionError)):
+        return f"Could not reach Ollama at {base_url}. Is it running? Try: ollama serve"
+    return f"Ollama request failed ({type(exc).__name__}): {exc}"
 
 
 def _load_ollama_think() -> bool | Literal['low', 'medium', 'high'] | None:
@@ -154,8 +168,7 @@ class OllamaService:
                 raise RuntimeError(f"Ollama API error (fallback model={fallback}): {fe}") from fe
             except Exception as fe:
                 raise RuntimeError(
-                    f"Could not reach Ollama at {self.base_url} (fallback '{fallback}'). "
-                    "Is it running? Try: ollama serve"
+                    f"{_describe_ollama_error(fe, self.base_url)} (fallback '{fallback}')"
                 ) from fe
 
         try:
@@ -167,10 +180,7 @@ class OllamaService:
         except Exception as e:
             if use_fallback:
                 return _run_fallback(f"unreachable: {e}")
-            raise RuntimeError(
-                f"Could not reach Ollama at {self.base_url}. "
-                "Is it running? Try: ollama serve"
-            ) from e
+            raise RuntimeError(_describe_ollama_error(e, self.base_url)) from e
 
         if not text and use_fallback:
             return _run_fallback("returned empty output")
@@ -268,10 +278,7 @@ You are in interactive console chat mode.
         except ollama.ResponseError as e:
             raise RuntimeError(f"Ollama API error (model={self.model}): {e}") from e
         except Exception as e:
-            raise RuntimeError(
-                f"Could not reach Ollama at {self.base_url}. "
-                "Is it running? Try: ollama serve"
-            ) from e
+            raise RuntimeError(_describe_ollama_error(e, self.base_url)) from e
 
     def generate_linkedin_post(
         self,
