@@ -1621,6 +1621,47 @@ def test_assemble_suno_prompt_preserves_trailing_echo_after_parenthetical_meanin
     assert "次の位相へ、シフトチェンジする\n[Tsugi no isō e, shifuto chenji suru] [To the next phase, shifting change]\nthis rave is real" in suno_prompt.lyrics
 
 
+def test_assemble_suno_prompt_strips_prompt_schema_leakage(mock_domain_knowledge_data):
+    """Prompt instructions and character cap notes from small models are scrubbed."""
+    concept = SongConcept(
+        song_id="song_leakage_cleanup",
+        title="Leakage Cleanup Test",
+        theme="Synaptic Overload",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        intro="then\n[Ahh ahh ahh] on its own line as a vocalization primer, then\nデータの始まりに、心が焦れる\n[Instrumental Build] (Character Cap: 400 chars)",
+        verse_1="Two stanzas of technical narrative.\n\nデータが上昇します、信号が混乱する\n[Verse 1] (Character Cap: 600 chars)",
+        chorus="Synaptic overload, the system's awake\n[Chorus] (Character Cap: 400 chars)",
+        verse_2="Two stanzas of deep technical narrative building on Verse 1 themes.\n\nデータが下落します\n[Verse 2] (Character Cap: 600 chars)",
+        bridge="A new world is born\n[Bridge] (Character Cap: 400 chars)",
+        solo="followed by 3-4 lines describing the instrumental solo moment (total).\n[Ah ahh ahh]",
+        outro="followed by 4 lines of atmospheric resolution and fade text (total).\nデータの終わりに、心が静まり\n[Outro] (Character Cap: 400 chars)",
+        evidence_ids=[],
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "Character Cap" not in suno_prompt.lyrics
+    assert "Two stanzas of technical narrative" not in suno_prompt.lyrics
+    assert "Two stanzas of deep technical narrative" not in suno_prompt.lyrics
+    assert "followed by 3-4 lines" not in suno_prompt.lyrics
+    assert "followed by 4 lines" not in suno_prompt.lyrics
+    assert "vocalization primer" not in suno_prompt.lyrics
+    assert "データの始まりに、心が焦れる" in suno_prompt.lyrics
+    assert "データが上昇します、信号が混乱する" in suno_prompt.lyrics
+
+
 def test_assemble_suno_prompt_repairs_stray_non_japanese_script(mock_domain_knowledge_data):
     """Japanese lyric lines should not retain stray non-Japanese script glyphs."""
     concept = SongConcept(

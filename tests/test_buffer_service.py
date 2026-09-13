@@ -1,12 +1,13 @@
+import logging
 import os
 import pytest
+import requests
 from services.buffer_service import (
     BufferService,
     BufferQueueFullError,
     BufferChannelNotConnectedError,
 )
 
-import logging
 logging.basicConfig(level=logging.INFO)
 
 @pytest.fixture
@@ -17,7 +18,7 @@ def buffer_service():
     svc = BufferService(api_key)
     try:
         svc.get_channels()  # Verify key has channel-level access; skip if FORBIDDEN
-    except RuntimeError as exc:
+    except (RuntimeError, requests.exceptions.RequestException) as exc:
         pytest.skip(f"Buffer API not accessible: {exc}")
     return svc
 
@@ -73,7 +74,8 @@ def test_create_scheduled_post_x_preserves_full_url(monkeypatch):
     captured: dict = {}
 
     def fake_query(_query, variables=None):
-        captured["text"] = variables["input"]["text"]
+        vars_dict = variables or {}
+        captured["text"] = vars_dict["input"]["text"]
         return {"createPost": {"post": {"id": "1", "text": captured["text"], "status": "scheduled"}}}
 
     monkeypatch.setattr(service, "_query", fake_query)

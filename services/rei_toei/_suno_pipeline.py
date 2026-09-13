@@ -77,6 +77,17 @@ _LEARNING_PLACEHOLDER_RE = re.compile(
     r"\[(?:english meaning|actual english meaning)\](?::\s*.*)?$",
     re.IGNORECASE,
 )
+_PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
+    r"(?:"
+    r"\(Character Cap:\s*\d+\s*chars\)|"
+    r"Two stanzas of (?:deep )?technical narrative(?: building on [^\n]+)?\.?|"
+    r"followed by \d+(?:-\d+)? lines (?:describing|of)[^\n]*|"
+    r"(?:then )?on its own line as a vocalization primer(?:, then)?|"
+    r"then a blank line, then[^\n]*|"
+    r"^\s*then\s*$"
+    r")",
+    re.IGNORECASE,
+)
 _ROMAJI_MARKER_RE = re.compile(
     r"(?:\b(?:wa|ga|o|wo|ni|de|no|to|kara|made|e|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
     re.IGNORECASE,
@@ -201,15 +212,15 @@ def _strip_markdown_fences(value: str) -> str:
     """Strip markdown fences and return inner content when present."""
     text = value.strip()
     if "```" not in text:
-        return text
+        return str(text)
 
-    fenced_blocks = re.findall(r"```(?:json)?\s*([\s\S]*?)```", text, flags=re.IGNORECASE)
+    fenced_blocks: List[str] = re.findall(r"```(?:json)?\s*([\s\S]*?)```", text, flags=re.IGNORECASE)
     if fenced_blocks:
-        merged = "\n".join(block.strip() for block in fenced_blocks if block.strip())
+        merged = "\n".join(str(block).strip() for block in fenced_blocks if str(block).strip())
         if merged:
-            return merged.strip()
+            return str(merged).strip()
 
-    return text.replace("```json", "").replace("```", "").strip()
+    return str(text.replace("```json", "").replace("```", "").strip())
 
 
 def _extract_balanced_json_fragment(value: str) -> Optional[str]:
@@ -454,6 +465,11 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 normalized_lines.append("")
             previous_blank = True
             continue
+        if _PROMPT_SCHEMA_LEAKAGE_RE.search(stripped):
+            cleaned_stripped = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", stripped).strip()
+            if not cleaned_stripped:
+                continue
+            stripped = cleaned_stripped
         expanded_segments = _expand_inline_lyric_separators(stripped)
         for segment in expanded_segments:
             normalized_segment = _normalize_learning_annotation_order(segment)
