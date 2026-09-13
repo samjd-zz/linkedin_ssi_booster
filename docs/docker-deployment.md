@@ -237,7 +237,7 @@ docker compose --profile full run --rm buffer-mcp-agent python agents/buffer_mcp
 `run.sh` probes for GPU availability in tiered order before every command:
 
 1. **NVIDIA GPUs (Linux / WSL 2):** Checks for `nvidia-smi` + working container GPU passthrough. When detected, it merges `docker-compose.gpu.yml` for full GPU compute (`ollama`, `ollama-init`, `app`).
-2. **Intel GPUs / iGPUs (Iris Xe / Arc / Core Ultra on Linux or WSL 2):** Checks for `/dev/dri` or `/dev/dxg`. When detected, it merges `docker-compose.intel.yml` to accelerate Ollama LLM inference via Level Zero / OneAPI (SYCL). Heavy generative image models (FLUX) remain restricted to NVIDIA full profile.
+2. **Intel GPUs / iGPUs (Iris Xe / Arc / Core Ultra):** Checks for `/dev/dri` (native Linux) or `/dev/dxg` (Windows WSL 2). When detected, it merges `docker-compose.intel.yml` (Linux) or `docker-compose.intel-wsl.yml` (WSL 2) to accelerate Ollama LLM inference via the official `intelanalytics/ipex-llm-inference-cpp-xpu` image over Level Zero / OneAPI (SYCL). Heavy generative image models (FLUX) remain restricted to NVIDIA full profile.
 3. **CPU-only Fallback:** When no GPU runtime is present, runs standard CPU-only without raising device driver errors.
 
 ```bash
@@ -262,7 +262,7 @@ bash run.sh --profile core run --rm app nvidia-smi
 Docker Desktop handles GPU passthrough automatically via WSL 2.
 
 - For NVIDIA cards, WSL 2 exposes GPU capabilities directly through the NVIDIA driver.
-- For Intel Iris Xe / Arc graphics, WSL 2 maps GPU acceleration through `/dev/dxg` and `/dev/dri`, which `run.sh` auto-detects for Ollama acceleration.
+- For Intel Iris Xe / Arc graphics, WSL 2 maps GPU acceleration through `/dev/dxg`, which `run.sh` auto-detects and layers in `docker-compose.intel-wsl.yml`. This override runs the container `privileged` and mounts `/usr/lib/wsl` in addition to `/dev/dri`, which the WSL 2 GPU bridge requires.
 
 Verify:
 
@@ -275,13 +275,14 @@ bash run.sh --profile core config
 `ollama`, `ollama-init`, and `app` have no GPU reservation in `docker-compose.yml` (CPU-only baseline).
 
 - `docker-compose.gpu.yml` adds NVIDIA reservations (`capabilities: [gpu]`).
-- `docker-compose.intel.yml` mounts `/dev/dri` and enables Level Zero/SYCL Intel compute runtimes for Ollama.
+- `docker-compose.intel.yml` (native Linux) and `docker-compose.intel-wsl.yml` (Windows WSL 2) switch the `ollama`/`ollama-init` image to `intelanalytics/ipex-llm-inference-cpp-xpu:latest`, mount `/dev/dri`, and run `ipex-llm-init --gpu --device iGPU` before `init-ollama` to start the SYCL/Level-Zero accelerated server. Do not add `group_add: [video, render]` to these overrides — this image's `/etc/group` has no such entries and Docker will refuse to start the container; device passthrough alone is sufficient.
 
 If you call `docker compose` directly instead of `run.sh` on a GPU-less host, you get CPU-only
 behavior automatically — no `nvidia` driver error. To force a specific GPU profile manually without `run.sh`:
 
 - NVIDIA: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile core up -d`
-- Intel: `docker compose -f docker-compose.yml -f docker-compose.intel.yml --profile core up -d`
+- Intel (Linux): `docker compose -f docker-compose.yml -f docker-compose.intel.yml --profile core up -d`
+- Intel (WSL 2): `docker compose -f docker-compose.yml -f docker-compose.intel-wsl.yml --profile core up -d`
 
 ---
 

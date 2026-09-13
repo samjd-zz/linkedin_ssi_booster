@@ -451,10 +451,11 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 Run the stack with Docker Profiles: `core` provides Ollama + the SSI Booster app, while `full` adds Piper TTS, FLUX image generation, and MCP agents for Buffer and Strudel.
 
-`run.sh` auto-detects GPU availability (NVIDIA CUDA or Intel Iris Xe/Arc via Level Zero on Linux & WSL 2)
-and layers in the appropriate Compose override (`docker-compose.gpu.yml` or `docker-compose.intel.yml`);
-on hosts without GPU acceleration it falls back to CPU-only automatically — no flags needed.
-`flux-init`/`flux_capacitor` (full profile) always require an NVIDIA GPU.
+`run.sh` auto-detects GPU availability (NVIDIA CUDA, or Intel Iris Xe/Arc via the official
+`intelanalytics/ipex-llm-inference-cpp-xpu` image over Level Zero, on native Linux & Windows WSL 2)
+and layers in the appropriate Compose override (`docker-compose.gpu.yml`, `docker-compose.intel.yml`,
+or `docker-compose.intel-wsl.yml`); on hosts without GPU acceleration it falls back to CPU-only
+automatically — no flags needed. `flux-init`/`flux_capacitor` (full profile) always require an NVIDIA GPU.
 
 **Quick Start:**
 

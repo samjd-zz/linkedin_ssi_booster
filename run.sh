@@ -29,7 +29,7 @@ elif [ -d "/dev/dri" ] || [ -e "/dev/dxg" ] || [ "${INTEL_GPU:-false}" = "true" 
         COMPOSE_FILES+=(-f docker-compose.intel.yml)
     elif [ -e "/dev/dxg" ]; then
         echo "⚡ Windows WSL 2 GPU detected (/dev/dxg) — enabling Intel GPU acceleration for Ollama."
-        COMPOSE_FILES+=(-f docker-compose.intel.yml)
+        COMPOSE_FILES+=(-f docker-compose.intel-wsl.yml)
     fi
 else
     echo "ℹ️  No NVIDIA or Intel GPU detected — running CPU-only."

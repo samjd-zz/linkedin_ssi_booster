@@ -1,14 +1,15 @@
-# Intel GPU override — merged on top of docker-compose.yml when run.sh detects
-# an Intel GPU (Iris Xe / Arc / Core Ultra iGPU) on Linux or Windows WSL 2.
-# Offloads Ollama LLM operations to Intel GPU via Level Zero / OneAPI (SYCL).
-# Heavy generative image workloads (FLUX) remain restricted to NVIDIA full profile.
+# Intel GPU override for Windows WSL 2 / Docker Desktop.
+# The WSL GPU bridge requires privileged access and the /usr/lib/wsl runtime.
 services:
   ollama:
     image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
+    privileged: true
     devices:
       - "/dev/dri:/dev/dri"
+    volumes:
+      - /usr/lib/wsl:/usr/lib/wsl
     # No group_add: this image's /etc/group has no video/render entries;
-    # /dev/dri device passthrough is sufficient for GPU access.
+    # privileged + /dev/dri passthrough is sufficient for GPU access.
     environment:
       - DEVICE=iGPU
       - OLLAMA_NUM_GPU=999
@@ -18,10 +19,10 @@ services:
       - /bin/bash
       - -c
       - |
-        source ipex-llm-init --gpu --device iGPU && \
-        mkdir -p /llm/ollama && \
-        cd /llm/ollama && \
-        init-ollama && \
+        source ipex-llm-init --gpu --device iGPU &&
+        mkdir -p /llm/ollama &&
+        cd /llm/ollama &&
+        init-ollama &&
         ./ollama serve
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1" ]
@@ -32,8 +33,11 @@ services:
 
   ollama-init:
     image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
+    privileged: true
     devices:
       - "/dev/dri:/dev/dri"
+    volumes:
+      - /usr/lib/wsl:/usr/lib/wsl
     environment:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_NUM_PARALLEL: 1
