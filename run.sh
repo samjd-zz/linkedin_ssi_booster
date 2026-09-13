@@ -13,17 +13,26 @@ if [ ! -S "$PULSE_RUNTIME_DIR/native" ]; then
     echo "Audio might not work in the container."
 fi
 
-# 3. Auto-detect a usable NVIDIA GPU + container runtime and layer in GPU reservations
+# 3. Auto-detect a usable GPU (NVIDIA or Intel) and layer in the appropriate Compose override
 COMPOSE_FILES=(-f docker-compose.yml)
 if command -v nvidia-smi >/dev/null 2>&1 && docker info 2>/dev/null | grep -qi nvidia; then
     if docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi >/dev/null 2>&1; then
-        echo "🎮 NVIDIA GPU detected — enabling GPU passthrough."
+        echo "🎮 NVIDIA GPU detected — enabling NVIDIA GPU passthrough."
         COMPOSE_FILES+=(-f docker-compose.gpu.yml)
     else
         echo "⚠️  nvidia-smi/runtime found but GPU passthrough test failed — falling back to CPU-only."
     fi
+elif [ -d "/dev/dri" ] || [ -e "/dev/dxg" ] || [ "${INTEL_GPU:-false}" = "true" ]; then
+    # Intel Iris Xe / Arc / Core Ultra iGPU on native Linux or Windows WSL 2
+    if [ -d "/dev/dri" ]; then
+        echo "⚡ Intel GPU detected (/dev/dri) — enabling Intel GPU acceleration for Ollama."
+        COMPOSE_FILES+=(-f docker-compose.intel.yml)
+    elif [ -e "/dev/dxg" ]; then
+        echo "⚡ Windows WSL 2 GPU detected (/dev/dxg) — enabling Intel GPU acceleration for Ollama."
+        COMPOSE_FILES+=(-f docker-compose.intel.yml)
+    fi
 else
-    echo "ℹ️  No NVIDIA GPU/runtime detected — running CPU-only."
+    echo "ℹ️  No NVIDIA or Intel GPU detected — running CPU-only."
 fi
 
 # 4. Launch Docker Compose with the profile you want

@@ -1,0 +1,23 @@
+# Intel GPU override — merged on top of docker-compose.yml when run.sh detects
+# an Intel GPU (Iris Xe / Arc / Core Ultra iGPU) on Linux or Windows WSL 2.
+# Offloads Ollama LLM operations to Intel GPU via Level Zero / OneAPI (SYCL).
+# Heavy generative image workloads (FLUX) remain restricted to NVIDIA full profile.
+services:
+  ollama:
+    image: intelanalytics/ipex-llm-ollama:latest
+    devices:
+      - "/dev/dri:/dev/dri"
+    group_add:
+      - video
+      - render
+    environment:
+      - ONEAPI_DEVICE_SELECTOR=level_zero:gpu
+      - ZES_ENABLE_SYSMAN=1
+
+  ollama-init:
+    image: intelanalytics/ipex-llm-ollama:latest
+    devices:
+      - "/dev/dri:/dev/dri"
+    group_add:
+      - video
+      - render
