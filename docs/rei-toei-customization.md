@@ -477,6 +477,23 @@ Use `--rei-preview` to inspect a generated song without saving it or calling Sun
 python main.py --rei-generate --rei-preview
 ```
 
+### Verified Intel WSL2 Laptop Workflow
+
+For the Windows WSL2 Intel iGPU setup, rebuild the application image after
+source changes, then run the preview through the core profile:
+
+```bash
+bash run.sh --profile core build app
+bash run.sh --profile core run --rm app \
+  python main.py --rei-generate --rei-preview \
+  --rei-theme "intel laptop gpu activated"
+```
+
+This uses the local Ollama service with the configured `qwen2.5:3b` primary
+model and `llama3.2:3b` fallback. Preview mode prints the generated Suno song
+without saving it or submitting it to Suno. `run.sh` detects WSL2 through
+`/dev/dxg` and applies the Intel Ollama runtime override automatically.
+
 ### Example: Strict Truth Validation
 
 For academic or educational content, use stricter validation:
