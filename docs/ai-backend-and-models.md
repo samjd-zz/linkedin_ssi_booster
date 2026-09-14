@@ -25,23 +25,29 @@ Use the same command with whichever model name you loaded in your Ollama instanc
 
 The README recommends `gemma4:26b` for best post quality, and lists `qwen2.5:14b`, `llama3.2`, and `mistral-nemo` as smaller or faster alternatives. It also characterizes `qwen2.5:14b` as a strong fallback when VRAM is constrained and `llama3.2` as the fastest but lower-quality option.
 
-| Model          | Positioning                                                     |
-| -------------- | --------------------------------------------------------------- |
-| `gemma4:26b`   | Recommended for best quality and stronger long-prompt behavior. |
-| `qwen2.5:14b`  | Strong fallback with lower memory requirements.                 |
-| `llama3.2`     | Fastest option with lower output quality.                       |
-| `mistral-nemo` | Additional supported alternative.                               |
+| Model          | Positioning                                                                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gemma4:26b`   | Recommended for best quality and stronger long-prompt behavior.                                                                                                              |
+| `qwen2.5:14b`  | Strong fallback with lower memory requirements.                                                                                                                              |
+| `qwen2.5:7b`   | Stronger multilingual instruction-following; ~2x slower than `qwen2.5:3b` on an Intel iGPU.                                                                                  |
+| `qwen2.5:3b`   | Good speed/quality fit for Intel iGPU laptops running bilingual JP/EN Rei Toei lyric generation — noticeably stronger at real Japanese than `llama3.2:3b` at a similar size. |
+| `llama3.2`     | Fastest option with lower output quality; weak at generating real Japanese script.                                                                                           |
+| `mistral-nemo` | Additional supported alternative.                                                                                                                                            |
+
+**Do not use `qwen2.5-coder`** for creative/ghostwriting or Rei Toei lyric generation — it is code-specialized and a poor fit for that workload. Use a base `qwen2.5` model instead.
+
+**Qwen-family Chinese-script leakage risk:** Qwen models are heavily trained on Chinese text and can leak Simplified Chinese script into "Japanese" bilingual lyric output (e.g. via the fullwidth comma `，` or the particle `的`) instead of genuine Japanese kana/kanji. `services/rei_toei/_suno_pipeline.py` detects this (`_has_chinese_leakage`) and retries or falls back to hand-authored Japanese lyrics rather than submitting Chinese-mislabeled-as-Japanese content. See [rei-toei-customization.md](rei-toei-customization.md#bilingual-lyric-mix) for details.
 
 ## Fallback model for YouTube Short scripts
 
 If the main Ollama model fails to generate a YouTube Short script (e.g., due to model limitations, VRAM exhaustion, or empty output), the system will automatically retry with a fallback model specified in the `.env` file:
 
 ```dotenv
-# Fallback model to use if the main model fails to generate a YouTube Short script (optional)
-OLLAMA_MODEL_FALLBACK=qwen2.5:14b
+# Laptop-sized fallback for the qwen2.5:3b Rei Toei setup
+OLLAMA_MODEL_FALLBACK=llama3.2:3b
 ```
 
-This variable is optional, but recommended if your primary model is large (e.g., `gemma4:26b`) and you want a reliable backup for time-sensitive or resource-constrained runs. The fallback model should be pre-pulled and available in your Ollama instance. If unset, the fallback defaults to `qwen2.5:14b`.
+For the Intel iGPU laptop profile, keep both `qwen2.5:3b` and `llama3.2:3b` pulled in the Ollama container. The fallback is used for empty responses or API errors; Rei Toei also has its own bounded lyric validation and Japanese-aware fallback when the model emits unusable JSON or language/script artifacts.
 
 **Tip:** You can use any supported Ollama model as a fallback, but choose one that fits your hardware and quality needs.
 
@@ -61,5 +67,5 @@ docker compose --profile core run --rm -e OLLAMA_MODEL=llama3.2 app python main.
 
 ```bash
 docker exec -it ssi_booster_ollama ollama list
-docker exec -it ssi_booster_ollama ollama rm llama3.2:latest
+docker exec -it ssi_booster_ollama ollama rm <unused-model>
 ```

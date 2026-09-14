@@ -465,7 +465,11 @@ Use standard Hepburn-style Romaji in the first bracket, including `o` for を an
 
 The final Suno formatter normalizes common model variations such as `Japanese (Romaji) [Meaning]`, `Japanese [Romaji] (Meaning)`, either form with an extra English sung echo, standalone parenthetical Romaji after a Japanese line, and `Romaji (Japanese)` into the Japanese-first learning format. Leading or trailing English text around an inline cue is preserved as its own sung line. The formatter also repairs known non-Japanese script contamination in Japanese lyric lines, such as `サーಜ್` becoming `サージ`, and removes leaked instructional placeholders such as `[actual pronunciation] [actual English meaning]` before saving or submitting lyrics.
 
+Small local models can also echo the JSON field instructions into lyric text. The formatter removes bare character-cap notes such as `400 chars` or `600 chars`, prose such as `on its own line`, `Kanji:`/`English:` metadata parentheticals, and cue instructions such as `then '(bass drop)' on its own line` while preserving the actual `(bass drop)` cue.
+
 If an initial draft drifts materially from the configured target or becomes single-language, Rei retries with the same environment-derived target. A draft that still falls outside the configured tolerance is rejected before it is saved or submitted to Suno.
+
+**Chinese-script leakage detection:** Kanji and Chinese hanzi share Unicode codepoints, so CJK character presence alone cannot confirm genuine Japanese. Some models (notably the Qwen family, which is heavily trained on Chinese text) can generate Simplified Chinese and label it as "Japanese" bilingual lyrics — recognizable by markers like the fullwidth comma `，`, the particle `的`, or long unbroken ideograph runs with no hiragana/katakana. Validation runs in this order for every attempt: (1) require kana or kanji present at all, (2) reject Chinese-script leakage, (3) check the bilingual JP/EN line-ratio target. A draft that fails any of these retries, then falls back to hand-authored Japanese-aware lyrics rather than submitting Chinese-mislabeled-as-Japanese or English-only content.
 
 Use `--rei-preview` to inspect a generated song without saving it or calling Suno:
 

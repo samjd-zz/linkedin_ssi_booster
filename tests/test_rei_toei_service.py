@@ -1033,6 +1033,241 @@ def test_compose_lyrics_fallback_on_error(mock_domain_knowledge_data):
     assert "Test Theme" in lyrics.verse_1
 
 
+def test_compose_lyrics_bilingual_fallback_preserves_language_policy(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Malformed Ollama lyrics must not force bilingual requests into English."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.5")
+    concept = SongConcept(
+        song_id="song_fallback_bilingual",
+        title="Bilingual Fallback",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    with patch.object(OllamaService, "_chat", return_value='{"verse_1": "broken"}'):
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert "データ" in merged
+    assert "Signal" in merged or "BREAK" in merged
+
+
+def test_has_chinese_leakage_flags_simplified_chinese_disguised_as_japanese():
+    """Simplified Chinese output must not be accepted as Japanese lyric content."""
+    from services.rei_toei._suno_pipeline import _has_chinese_leakage
+
+    chinese_payload = {
+        "verse_1": "待つ、遅延の間",
+        "pre_chorus": "脉冲加速，激活核心",
+        "chorus": "启动！核心启动",
+        "bridge": "无限的循环，穿越数字空间",
+    }
+
+    assert _has_chinese_leakage(chinese_payload) is True
+
+
+def test_has_chinese_leakage_allows_genuine_japanese_with_hiragana():
+    """Real Japanese lines with hiragana/particles must not be flagged as Chinese."""
+    from services.rei_toei._suno_pipeline import _has_chinese_leakage
+
+    japanese_payload = {
+        "verse_1": "データの波が走る、冷たい光の中で。",
+        "chorus": "信号を追いかけて",
+        "bridge": "システムを再起動する。",
+    }
+
+    assert _has_chinese_leakage(japanese_payload) is False
+
+
+def test_compose_lyrics_rejects_chinese_leakage_disguised_as_bilingual_japanese(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """A Qwen-style Chinese-script response must fall back to real Japanese lyrics."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    concept = SongConcept(
+        song_id="song_chinese_leakage",
+        title="Core Boost",
+        theme="intel laptop gpu activated",
+        mood="playful_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    chinese_leakage_response = json.dumps(
+        {
+            "verse_1": "待つ、遅延の間",
+            "pre_chorus": "脉冲加速，激活核心",
+            "chorus": "启动！核心启动",
+            "verse_2": "优化的指令，加速运行",
+            "bridge": "无限的循环，穿越数字空间",
+        },
+        ensure_ascii=False,
+    )
+    with patch.object(OllamaService, "_chat", return_value=chinese_leakage_response):
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert "データ" in merged
+    assert "，" not in merged
+    assert "的" not in merged
+
+
+def test_compose_lyrics_rejects_romaji_only_bilingual_response(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Romaji-only output must use the Japanese-aware fallback."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    concept = SongConcept(
+        song_id="song_romaji_only",
+        title="Romaji Only",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    romaji_response = json.dumps(
+        {
+            "verse_1": "Data no koe ga tsuki ni hisomu",
+            "chorus": "Break the circuit now",
+            "verse_2": "Kokoro to shinshin no aida ni",
+            "bridge": "Signal wakes inside the core",
+        }
+    )
+    with patch.object(OllamaService, "_chat", return_value=romaji_response):
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert "データ" in merged
+    assert "Data no koe ga tsuki ni hisomu" not in merged
+
+
+def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Repeated English-only model output must finish with bilingual fallback lyrics."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    concept = SongConcept(
+        song_id="song_english_drift",
+        title="English Drift",
+        theme="Signal Cascade",
+        mood="aggressive_technical",
+        bpm=142,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=[],
+        generated_at="2026-05-19T12:00:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    english_response = json.dumps(
+        {
+            "verse_1": "Signal wakes inside the core",
+            "chorus": "BREAK THE CIRCUIT NOW",
+            "verse_2": "The buffer heartbeat starts to rise",
+            "bridge": "We find a voice inside the noise",
+        }
+    )
+    with patch.object(OllamaService, "_chat", side_effect=[english_response] * 3) as mock_chat:
+        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+
+    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
+    assert mock_chat.call_count == 3
+    assert "データ" in merged
+
+
 def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
     mock_domain_knowledge_data,
     monkeypatch,
@@ -1636,13 +1871,14 @@ def test_assemble_suno_prompt_strips_prompt_schema_leakage(mock_domain_knowledge
         lyric_language="bilingual",
     )
     lyrics = Lyrics(
-        intro="then\n[Ahh ahh ahh] on its own line as a vocalization primer, then\nデータの始まりに、心が焦れる\n[Instrumental Build] (Character Cap: 400 chars)",
-        verse_1="Two stanzas of technical narrative.\n\nデータが上昇します、信号が混乱する\n[Verse 1] (Character Cap: 600 chars)",
-        chorus="Synaptic overload, the system's awake\n[Chorus] (Character Cap: 400 chars)",
-        verse_2="Two stanzas of deep technical narrative building on Verse 1 themes.\n\nデータが下落します\n[Verse 2] (Character Cap: 600 chars)",
-        bridge="A new world is born\n[Bridge] (Character Cap: 400 chars)",
+        intro="then\n[Ahh ahh ahh] on its own line as a vocalization primer, then\nデータの始まりに、心が焦れる\n[Instrumental Build] 400 chars",
+        verse_1="Two stanzas of technical narrative.\n\nデータが上昇します、信号が混乱する\n[Verse 1] 600 chars",
+        chorus="Synaptic overload, the system's awake\n[Chorus] 400 chars",
+        verse_2="Two stanzas of deep technical narrative building on Verse 1 themes.\n\nデータが下落します\n[Verse 2] 600 chars",
+        bridge="A new world is born\n[Bridge] 400 chars",
+        drop="then '(bass drop)' on its own line as a Suno energy-shift cue, then\nデータが燃える",
         solo="followed by 3-4 lines describing the instrumental solo moment (total).\n[Ah ahh ahh]",
-        outro="followed by 4 lines of atmospheric resolution and fade text (total).\nデータの終わりに、心が静まり\n[Outro] (Character Cap: 400 chars)",
+        outro="followed by 4 lines of atmospheric resolution and fade text (total).\nデータの終わりに、心が静まり\n[Outro] 400 chars",
         evidence_ids=[],
     )
 
@@ -1658,6 +1894,10 @@ def test_assemble_suno_prompt_strips_prompt_schema_leakage(mock_domain_knowledge
     assert "followed by 3-4 lines" not in suno_prompt.lyrics
     assert "followed by 4 lines" not in suno_prompt.lyrics
     assert "vocalization primer" not in suno_prompt.lyrics
+    assert "400 chars" not in suno_prompt.lyrics
+    assert "600 chars" not in suno_prompt.lyrics
+    assert "on its own line" not in suno_prompt.lyrics
+    assert "(bass drop)" in suno_prompt.lyrics
     assert "データの始まりに、心が焦れる" in suno_prompt.lyrics
     assert "データが上昇します、信号が混乱する" in suno_prompt.lyrics
 

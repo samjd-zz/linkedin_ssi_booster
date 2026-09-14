@@ -79,7 +79,8 @@ _LEARNING_PLACEHOLDER_RE = re.compile(
 )
 _PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
     r"(?:"
-    r"\(Character Cap:\s*\d+\s*chars\)|"
+    r"\(?Character Cap:\s*\d+\s*chars?\)?|"
+    r"\b\d+\s*chars?\b|"
     r"Two stanzas of (?:deep )?technical narrative(?: building on [^\n]+)?\.?|"
     r"followed by \d+(?:-\d+)? lines (?:describing|of)[^\n]*|"
     r"(?:then )?on its own line as a vocalization primer(?:, then)?|"
@@ -88,11 +89,25 @@ _PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
     r")",
     re.IGNORECASE,
 )
+_PROMPT_CUE_INSTRUCTION_RE = re.compile(
+    r"(?:then\s+)?(?P<cue>['\"]?\((?:bass drop|silence|chaos|glitch noise)\)['\"]?)\s+"
+    r"on its own line(?: as (?:a )?(?:Suno )?energy-shift cue)?(?:, then)?[^\n]*",
+    re.IGNORECASE,
+)
+_PROMPT_METADATA_RE = re.compile(
+    r"\(\s*(?:Kanji|English):[^)]*\)",
+    re.IGNORECASE,
+)
 _ROMAJI_MARKER_RE = re.compile(
     r"(?:\b(?:wa|ga|o|wo|ni|de|no|to|kara|made|e|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
     re.IGNORECASE,
 )
 _NON_JAPANESE_SCRIPT_CONTAMINATION_RE = re.compile(r"[\u0900-\u0d7f]+")
+_KANA_RE = re.compile(r"[\u3040-\u30ff\uff66-\uff9f]")
+_CJK_IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+# Fullwidth Chinese comma/particle markers that essentially never appear in
+# genuine Japanese lyrics (Japanese uses 、 not ，, and の not 的).
+_CHINESE_ONLY_MARKER_RE = re.compile(r"[，的]")
 _SCRIPT_CONTAMINATION_REPLACEMENTS = {
     "サーಜ್": "サージ",
     "サーಜ": "サージ",
@@ -465,11 +480,14 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 normalized_lines.append("")
             previous_blank = True
             continue
+        stripped = _PROMPT_CUE_INSTRUCTION_RE.sub(r"\g<cue>", stripped).strip()
+        stripped = _PROMPT_METADATA_RE.sub("", stripped).strip()
         if _PROMPT_SCHEMA_LEAKAGE_RE.search(stripped):
             cleaned_stripped = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", stripped).strip()
             if not cleaned_stripped:
                 continue
             stripped = cleaned_stripped
+        stripped = stripped.strip("'\"").strip()
         expanded_segments = _expand_inline_lyric_separators(stripped)
         for segment in expanded_segments:
             normalized_segment = _normalize_learning_annotation_order(segment)
@@ -579,6 +597,48 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
         f"ratio_error={ratio_error:.2f}, tolerance={ratio_tolerance:.2f}"
     )
     return ok, summary
+
+
+def _has_japanese_script(section_payload: Dict[str, Any]) -> bool:
+    """Require kana or kanji in lyric content; Romaji alone is not Japanese text."""
+    return any(
+        isinstance(value, str) and _JAPANESE_CHAR_RE.search(value)
+        for value in section_payload.values()
+    )
+
+
+def _line_looks_like_chinese_not_japanese(line: str) -> bool:
+    """Flag a CJK line that reads as Chinese leakage rather than real Japanese.
+
+    Kanji and Chinese hanzi share Unicode codepoints, so presence of CJK
+    ideographs alone cannot confirm Japanese. Genuine Japanese lyric lines
+    almost always carry hiragana/katakana (particles, verb conjugations,
+    loanwords); long unbroken ideograph runs with zero kana, or
+    Chinese-specific punctuation/particles (，the fullwidth comma, 的), are a
+    strong signal the line is actually Chinese.
+    """
+    if not _CJK_IDEOGRAPH_RE.search(line):
+        return False
+    if _KANA_RE.search(line):
+        return False
+    if _CHINESE_ONLY_MARKER_RE.search(line):
+        return True
+    ideograph_count = len(_CJK_IDEOGRAPH_RE.findall(line))
+    return ideograph_count >= 4
+
+
+def _has_chinese_leakage(section_payload: Dict[str, Any]) -> bool:
+    """Detect Chinese-script leakage disguised as Japanese in lyric content."""
+    for value in section_payload.values():
+        if not isinstance(value, str):
+            continue
+        for raw_line in value.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if _line_looks_like_chinese_not_japanese(line):
+                return True
+    return False
 
 
 def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int]:
@@ -1549,6 +1609,30 @@ Previous lyric JSON:
                     raise ValueError(f"Missing required field: {field}")
             last_valid_response_data = dict(response_data)
 
+            if lyric_language in {"japanese", "bilingual"} and not _has_japanese_script(response_data):
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Japanese lyric script missing on attempt %s. Retrying.",
+                        attempt,
+                    )
+                    continue
+                raise ValueError(
+                    "Japanese or bilingual lyrics must contain kana or kanji; Romaji alone is not valid."
+                )
+
+            if lyric_language in {"japanese", "bilingual"} and _has_chinese_leakage(response_data):
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Chinese-script leakage detected in Japanese/bilingual lyrics on "
+                        "attempt %s. Retrying.",
+                        attempt,
+                    )
+                    continue
+                raise ValueError(
+                    "Japanese or bilingual lyrics contained Chinese-script leakage; "
+                    "using the Japanese-aware fallback instead."
+                )
+
             if lyric_language == "bilingual":
                 mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
                 if not mix_ok and attempt < max_attempts:
@@ -1609,41 +1693,87 @@ Previous lyric JSON:
     except (json.JSONDecodeError, ValueError, KeyError) as e:
         logger.error(f"Failed to parse Ollama lyrics response: {e}. Reverting to formatted fallback.")
         
-        # Fallback lyrics pre-formatted to match new structure with ALL-CAPS chorus
+        # Keep the configured language policy even when Ollama returns unusable JSON.
+        non_english_fallback = lyric_language in {"japanese", "bilingual"}
+        fallback_lyrics_language = (
+            {
+                "verse_1": (
+                    "データの波が走る、冷たい光の中で。\n"
+                    "[Deeta no nami ga hashiru] [Data waves are running]\n"
+                    "回路の熱が夜をひらく。\n"
+                    "Signal wakes inside the core.\n\n"
+                    "キャッシュを洗い、境界を越える。\n"
+                    "[Kyasshu o arai, kyoukai o koeru] [Flush the cache, cross the boundary]\n"
+                    "静かなノイズが形になる。\n"
+                    "We turn the noise into a shape.\n"
+                ),
+                "chorus": (
+                    "信号を追いかけて\n"
+                    "BREAK THE CIRCUIT NOW\n"
+                    "未来へ走り出せ\n"
+                    "RENDER THE LIGHT\n"
+                ),
+                "verse_2": (
+                    "赤いスレッドが闇をほどく。\n"
+                    "[Akai sureddo ga yami o hodoku] [Red threads unravel the dark]\n"
+                    "バッファの鼓動が速くなる。\n"
+                    "The buffer heartbeat starts to rise.\n\n"
+                    "境界線を越えて、状態を書き換える。\n"
+                    "[Kyoukaisen o koete, joutai o kakikaeru] [Cross the boundary, rewrite the state]\n"
+                    "熱いコアが朝まで回る。\n"
+                    "The hot core keeps turning till dawn.\n"
+                ),
+                "bridge": (
+                    "システムを再起動する。\n"
+                    "[Shisutemu o saikidou suru] [Restart the system]\n"
+                    "ノイズの奥で声を見つける。\n"
+                    "We find a voice inside the noise.\n"
+                ),
+            }
+            if non_english_fallback
+            else {
+                "verse_1": (
+                    f"Signal acquired from the {concept.theme} data stream,\n"
+                    "Processing cycles spin in deep digital gleam.\n"
+                    "Data arrays flowing through silicon veins,\n"
+                    "Algorithmic structural patterns breaking their chains.\n\n"
+                    "Cache lines flushing to the core memory bank,\n"
+                    "Statically scanning through the un-indexed rank.\n"
+                    "Isolating constants in an air-gapped array,\n"
+                    "The neural mesh prepares for the final overlay.\n"
+                ),
+                "chorus": (
+                    f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
+                    "COMPILE THE FUTURE STATE WITHOUT DELAY!\n"
+                    f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
+                    "RENDER THE PROTOCOL, OVERRIDE THE GATE!\n"
+                ),
+                "verse_2": (
+                    "Binary logic mapping the dark paths ahead,\n"
+                    "Sequences unfolding in parallel threads of red.\n"
+                    "Buffers overflowing with raw un-throttled intent,\n"
+                    "Pushing calculation past the fourth dimension spent.\n\n"
+                    "Registers locking down under cryptographic weight,\n"
+                    "The system state mutates as we pass the threshold gate.\n"
+                    "A continuous loop running hot on the clock,\n"
+                    "Assembling the machine logic block by rigid block.\n"
+                ),
+                "bridge": (
+                    "System override initialized.\n"
+                    "Glitch the underlying paradigm.\n"
+                    "Frequencies violently collide,\n"
+                    "Rewrite the execution timeline.\n"
+                ),
+            }
+        )
+
+        # Fallback lyrics pre-formatted to match the structure with an appropriate chorus case.
         # Added enhanced newline formatting for better readability and visual separation
         fallback_lyrics = Lyrics(
-            verse_1=(
-                f"Signal acquired from the {concept.theme} data stream,\n"
-                "Processing cycles spin in deep digital gleam.\n"
-                "Data arrays flowing through silicon veins,\n"
-                "Algorithmic structural patterns breaking their chains.\n\n"
-                "Cache lines flushing to the core memory bank,\n"
-                "Statically scanning through the un-indexed rank.\n"
-                "Isolating constants in an air-gapped array,\n"
-                "The neural mesh prepares for the final overlay.\n"
-            ),
-            chorus=(
-                f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
-                "COMPILE THE FUTURE STATE WITHOUT DELAY!\n"
-                f"EXECUTE THE {concept.theme.upper()} STREAM!\n"
-                "RENDER THE PROTOCOL, OVERRIDE THE GATE!\n"
-            ),
-            verse_2=(
-                "Binary logic mapping the dark paths ahead,\n"
-                "Sequences unfolding in parallel threads of red.\n"
-                "Buffers overflowing with raw un-throttled intent,\n"
-                "Pushing calculation past the fourth dimension spent.\n\n"
-                "Registers locking down under cryptographic weight,\n"
-                "The system state mutates as we pass the threshold gate.\n"
-                "A continuous loop running hot on the clock,\n"
-                "Assembling the machine logic block by rigid block.\n"
-            ),
-            bridge=(
-                "System override initialized.\n"
-                "Glitch the underlying paradigm.\n"
-                "Frequencies violently collide,\n"
-                "Rewrite the execution timeline.\n"
-            ),
+            verse_1=fallback_lyrics_language["verse_1"],
+            chorus=fallback_lyrics_language["chorus"],
+            verse_2=fallback_lyrics_language["verse_2"],
+            bridge=fallback_lyrics_language["bridge"],
             evidence_ids=concept.evidence_ids,
             intro=(
                 "[Instrumental Build]\n\n"
