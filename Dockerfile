@@ -1,5 +1,5 @@
 # --- STAGE 1: CORE (Lightweight) ---
-FROM nvidia/cuda:13.2.0-runtime-ubuntu22.04 AS core_base
+FROM ubuntu:22.04 AS core_base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -35,7 +35,9 @@ RUN python -m pip install --upgrade pip && \
 
 COPY . .
 RUN mkdir -p data/avatar data/selection yt-vid-data
+RUN chmod +x scripts/app-entrypoint.sh
 
+ENTRYPOINT ["/app/scripts/app-entrypoint.sh"]
 CMD ["python", "main.py", "--console"]
 
 # --- STAGE 2: FULL (The CPU Slammer) ---

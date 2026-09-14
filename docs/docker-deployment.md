@@ -16,7 +16,7 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 - **`core` profile:** Lightweight daily operations (Ollama LLM + Wyoming Piper TTS + app)
 - **`full` profile:** Includes FLUX.1-schnell image generation (requires RTX 3060 12GB or better)
 
-`ollama`, `ollama-init`, and `app` run **CPU-only by default** (no GPU required for `core`). `run.sh`
+`ollama` and `ollama-init` run **CPU-only by default** (no GPU required for `core`), while `app` is always GPU-neutral. `run.sh`
 auto-detects a usable NVIDIA GPU + container runtime and layers in `docker-compose.gpu.yml` to add
 GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See [GPU Passthrough](#gpu-passthrough).
 
@@ -28,9 +28,9 @@ GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See
 
 - **Docker Engine** (Linux) or **Docker Desktop** (Windows/Mac)
   - Windows: Enable **WSL 2** in Docker Desktop settings for GPU access
-- **NVIDIA Container Toolkit** (Linux only) — Docker Desktop handles GPU passthrough automatically on Windows/WSL 2
-- **CUDA 12.4.1+** drivers on the host
 - **PulseAudio** running on the host — required for voice output (`CONSOLE_USE_VOICE=true`)
+
+For NVIDIA acceleration or the full FLUX profile, also install the NVIDIA Container Toolkit on Linux and CUDA 12.4.1+ host drivers. Intel iGPU acceleration uses the Intel IPEX-LLM image and does not require CUDA.
 
 ### Hardware Recommendations
 
@@ -53,13 +53,15 @@ GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See
 | `postgres`          | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                                             |
 | `flux-init`         | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it                                |
 | `flux_capacitor`    | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete                            |
-| `app`               | `core`, `full` | SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md` (`core_base` Dockerfile stage)                          |
+| `app`               | `core`, `full` | GPU-neutral SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md`; calls accelerated services over HTTP       |
 
 The application source is copied into the `app` image rather than bind-mounted. `run.sh` therefore adds `--build` automatically to one-off `app` commands such as `run --rm app ...`, ensuring local source changes are present in the container. Docker reuses unchanged dependency layers, so normal rebuilds remain cached.
 
+At startup, the app image identifies itself as GPU-neutral and reports the supported backend acceleration choices: NVIDIA CUDA, Intel iGPU, or CPU. Hardware-specific runtime banners belong to the Ollama and FLUX service containers, not the application container.
+
 ### spaCy language models in the image
 
-The `core_base` stage installs `requirements-core.txt` (which declares `spacy[ja]`, pulling the SudachiPy tokenizer Japanese requires) and downloads both `en_core_web_md` and `ja_core_news_md`. These are baked into the image, not the mounted volumes, so changing `SPACY_MODELS` in `.env` to a model that was never downloaded will not work at runtime — the loader warns and falls back to the English pipeline.
+The Ubuntu-based, GPU-neutral `core_base` stage installs `requirements-core.txt` (which declares `spacy[ja]`, pulling the SudachiPy tokenizer Japanese requires) and downloads both `en_core_web_md` and `ja_core_news_md`. CUDA and Intel iGPU runtimes remain isolated to the Ollama and FLUX services that use them directly. The language models are baked into the app image, not the mounted volumes, so changing `SPACY_MODELS` in `.env` to a model that was never downloaded will not work at runtime — the loader warns and falls back to the English pipeline.
 
 Model downloads sit in a cached Docker layer. After changing the spaCy install line in the `Dockerfile`, rebuild without cache or the old layer is reused:
 
@@ -243,7 +245,7 @@ docker compose --profile full run --rm buffer-mcp-agent python agents/buffer_mcp
 
 `run.sh` probes for GPU availability in tiered order before every command:
 
-1. **NVIDIA GPUs (Linux / WSL 2):** Checks for `nvidia-smi` + working container GPU passthrough. When detected, it merges `docker-compose.gpu.yml` for full GPU compute (`ollama`, `ollama-init`, `app`).
+1. **NVIDIA GPUs (Linux / WSL 2):** Checks for `nvidia-smi` + working container GPU passthrough. When detected, it merges `docker-compose.gpu.yml` for Ollama compute (`ollama`, `ollama-init`). The full profile separately assigns NVIDIA acceleration to FLUX.
 2. **Intel GPUs / iGPUs (Iris Xe / Arc / Core Ultra):** Checks for `/dev/dri` (native Linux) or `/dev/dxg` (Windows WSL 2). When detected, it merges `docker-compose.intel.yml` (Linux) or `docker-compose.intel-wsl.yml` (WSL 2) to accelerate Ollama LLM inference via the official `intelanalytics/ipex-llm-inference-cpp-xpu` image over Level Zero / OneAPI (SYCL). Heavy generative image models (FLUX) remain restricted to NVIDIA full profile.
 3. **CPU-only Fallback:** When no GPU runtime is present, runs standard CPU-only without raising device driver errors.
 
@@ -279,7 +281,7 @@ bash run.sh --profile core config
 
 ### Service GPU Configuration
 
-`ollama`, `ollama-init`, and `app` have no GPU reservation in `docker-compose.yml` (CPU-only baseline).
+`ollama` and `ollama-init` have no GPU reservation in `docker-compose.yml` (CPU-only baseline). `app` remains GPU-neutral in every override because it calls Ollama and FLUX over HTTP.
 
 - `docker-compose.gpu.yml` adds NVIDIA reservations (`capabilities: [gpu]`).
 - `docker-compose.intel.yml` (native Linux) and `docker-compose.intel-wsl.yml` (Windows WSL 2) switch the `ollama`/`ollama-init` image to `intelanalytics/ipex-llm-inference-cpp-xpu:latest`, mount `/dev/dri`, and run `ipex-llm-init --gpu --device iGPU` before `init-ollama` to start the SYCL/Level-Zero accelerated server. Do not add `group_add: [video, render]` to these overrides — this image's `/etc/group` has no such entries and Docker will refuse to start the container; device passthrough alone is sufficient.
@@ -558,7 +560,7 @@ Examples:
 - **Linux:** Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
 - **Windows:** Enable WSL 2 in Docker Desktop settings
 - Verify CUDA drivers: `nvidia-smi` on host should work
-- `flux-init`/`flux_capacitor` (full profile) always require a GPU; `ollama`/`app` (core profile) run fine CPU-only.
+- `flux-init`/`flux_capacitor` (full profile) require NVIDIA; Ollama can use NVIDIA, Intel iGPU, or CPU, and `app` remains GPU-neutral.
 
 ### Ollama Models Not Loading
 
