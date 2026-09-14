@@ -55,6 +55,8 @@ GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See
 | `flux_capacitor`    | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete                            |
 | `app`               | `core`, `full` | SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md` (`core_base` Dockerfile stage)                          |
 
+The application source is copied into the `app` image rather than bind-mounted. `run.sh` therefore adds `--build` automatically to one-off `app` commands such as `run --rm app ...`, ensuring local source changes are present in the container. Docker reuses unchanged dependency layers, so normal rebuilds remain cached.
+
 ### spaCy language models in the image
 
 The `core_base` stage installs `requirements-core.txt` (which declares `spacy[ja]`, pulling the SudachiPy tokenizer Japanese requires) and downloads both `en_core_web_md` and `ja_core_news_md`. These are baked into the image, not the mounted volumes, so changing `SPACY_MODELS` in `.env` to a model that was never downloaded will not work at runtime — the loader warns and falls back to the English pipeline.

@@ -35,6 +35,38 @@ else
     echo "ℹ️  No NVIDIA or Intel GPU detected — running CPU-only."
 fi
 
-# 4. Launch Docker Compose with the profile you want
-# You can pass arguments to this script, like './run.sh --profile full'
-docker compose "${COMPOSE_FILES[@]}" "$@"
+# 4. Rebuild one-off app runs so they never execute stale source copied into an old image.
+COMPOSE_ARGS=("$@")
+for ((i = 0; i < ${#COMPOSE_ARGS[@]}; i++)); do
+    if [[ "${COMPOSE_ARGS[$i]}" != "run" ]]; then
+        continue
+    fi
+
+    has_build=false
+    service=""
+    for ((j = i + 1; j < ${#COMPOSE_ARGS[@]}; j++)); do
+        case "${COMPOSE_ARGS[$j]}" in
+            --build)
+                has_build=true
+                ;;
+            --*)
+                ;;
+            *)
+                service="${COMPOSE_ARGS[$j]}"
+                break
+                ;;
+        esac
+    done
+
+    if [[ "$service" == "app" && "$has_build" == "false" ]]; then
+        COMPOSE_ARGS=(
+            "${COMPOSE_ARGS[@]:0:$((i + 1))}"
+            --build
+            "${COMPOSE_ARGS[@]:$((i + 1))}"
+        )
+    fi
+    break
+done
+
+# 5. Launch Docker Compose with the selected profile and GPU override.
+docker compose "${COMPOSE_FILES[@]}" "${COMPOSE_ARGS[@]}"
