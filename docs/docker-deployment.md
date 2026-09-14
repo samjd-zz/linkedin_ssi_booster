@@ -2,6 +2,11 @@
 
 This document covers Docker Compose setup, profiles, GPU passthrough, and deployment best practices for the LinkedIn SSI Booster.
 
+> **Use `bash run.sh` as the main launcher.** It exports the runtime variables
+> needed by the stack, detects NVIDIA or Intel GPU support, selects the correct
+> Compose override, and falls back to CPU. Use bare `docker compose` only for
+> low-level maintenance or when you are intentionally reproducing those settings.
+
 ---
 
 ## Overview
@@ -57,13 +62,13 @@ The `core_base` stage installs `requirements-core.txt` (which declares `spacy[ja
 Model downloads sit in a cached Docker layer. After changing the spaCy install line in the `Dockerfile`, rebuild without cache or the old layer is reused:
 
 ```bash
-docker compose --profile core build --no-cache app
+bash run.sh --profile core build --no-cache app
 ```
 
 Verify the Japanese pipeline is actually live in the container:
 
 ```bash
-docker compose --profile core run --rm app \
+bash run.sh --profile core run --rm app \
   python -c "import spacy; nlp=spacy.load('ja_core_news_md'); \
 d=nlp('新宿LOFTでライブを観た'); print([(t.text, t.pos_) for t in d]); print(d.ents)"
 ```
@@ -134,16 +139,16 @@ bash run.sh --profile core up -d
 bash run.sh --profile full up -d
 ```
 
-### Using `docker compose` Directly
+### Using `run.sh` Directly
 
 Works but audio output will be silent unless `USER_UID` is already exported:
 
 ```bash
 # Core profile
-docker compose --profile core up -d
+bash run.sh --profile core up -d
 
 # Full profile
-docker compose --profile full up -d
+bash run.sh --profile full up -d
 ```
 
 ### First Start Sequence
@@ -167,25 +172,25 @@ All commands run inside the `app` container:
 
 ```bash
 # Interactive persona console (TTY required)
-docker compose --profile core run --rm -it app python main.py --console
+bash run.sh --profile core run --rm -it app python main.py --console
 
 # Console with DoT verification enabled
-docker compose --profile core run --rm -it app python main.py --console --verify
+bash run.sh --profile core run --rm -it app python main.py --console --verify
 
 # Dry-run schedule (no Buffer calls)
-docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
+bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
 
 # Curate AI news → Buffer Ideas
-docker compose --profile core run --rm app python main.py --curate
+bash run.sh --profile core run --rm app python main.py --curate
 
 # Curate with classification and learning
-docker compose --profile core run --rm app python main.py --curate --classify --learn
+bash run.sh --profile core run --rm app python main.py --curate --classify --learn
 
 # Record today's SSI scores
-docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
+bash run.sh --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
 
 # Database migration (file → PostgreSQL)
-docker compose --profile core run --rm app python -m services.database.migrate_data
+bash run.sh --profile core run --rm app python -m services.database.migrate_data
 ```
 
 ---

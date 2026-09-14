@@ -1,5 +1,9 @@
 # 🚀 LinkedIn SSI Booster — Quickstart Cheatsheet
 
+> **Recommended launcher:** use `bash run.sh` for Docker workflows. It detects
+> NVIDIA or Intel GPU support, applies the correct Compose override, exports
+> audio runtime variables, and falls back to CPU when needed.
+
 ## 1. Setup
 
 ```bash
@@ -19,19 +23,19 @@ cp content_calendar.example.py content_calendar.py
 - **Preview week 1 posts (no Buffer calls):**
 
   ```bash
-  python main.py --schedule --week 1 --dry-run
+  bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
   ```
 
 - **Schedule week 1 posts to Buffer (LinkedIn):**
 
   ```bash
-  python main.py --schedule --week 1
+  bash run.sh --profile core run --rm app python main.py --schedule --week 1
   ```
 
 - **Schedule to all channels:**
 
   ```bash
-  python main.py --schedule --week 1 --channel all
+  bash run.sh --profile core run --rm app python main.py --schedule --week 1 --channel all
   ```
 
 ## 3. Console Mode — Persona Chat & Tuning
@@ -39,7 +43,7 @@ cp content_calendar.example.py content_calendar.py
 - **Chat with your persona (no Buffer calls):**
 
   ```bash
-  python main.py --console
+  bash run.sh --profile core run --rm -it app python main.py --console
   ```
 
   - Test how well the system knows your background, projects, and skills.
@@ -54,19 +58,19 @@ cp content_calendar.example.py content_calendar.py
 - **Preview curation (no Buffer calls):**
 
   ```bash
-  python main.py --curate --dry-run
+  bash run.sh --profile core run --rm app python main.py --curate --dry-run
   ```
 
 - **Push curated ideas to Buffer (review before publishing):**
 
   ```bash
-  python main.py --curate
+  bash run.sh --profile core run --rm app python main.py --curate
   ```
 
 - **Schedule curated posts directly:**
 
   ```bash
-  python main.py --curate --type post --channel linkedin
+  bash run.sh --profile core run --rm app python main.py --curate --type post --channel linkedin
   ```
 
   - With the default balanced confidence policy, low-confidence output is routed to Buffer Ideas for review while medium and high confidence output can post directly.
@@ -77,19 +81,19 @@ cp content_calendar.example.py content_calendar.py
 - **Reconcile published posts (improves future curation ranking):**
 
   ```bash
-  python main.py --reconcile
+  bash run.sh --profile core run --rm app python main.py --reconcile
   ```
 
 - **Show grounding facts after each post:**
 
   ```bash
-  python main.py --curate --avatar-explain
+  bash run.sh --profile core run --rm app python main.py --curate --avatar-explain
   ```
 
 - **Print learning report from moderation events:**
 
   ```bash
-  python main.py --avatar-learn-report
+  bash run.sh --profile core run --rm app python main.py --avatar-learn-report
   ```
 
 ## 6. SSI Tracking
@@ -97,19 +101,29 @@ cp content_calendar.example.py content_calendar.py
 - **Record today's SSI scores:**
 
   ```bash
-  python main.py --save-ssi 10.49 9.69 11.0 12.15
+  bash run.sh --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
   ```
 
 - **Print SSI report:**
 
   ```bash
-  python main.py --report
+  bash run.sh --profile core run --rm app python main.py --report
   ```
 
 ## 7. Test Everything
 
 ```bash
+source .venv/bin/activate
 python -m pytest tests/ -v
+```
+
+Verified Intel WSL2 laptop Rei Toei preview:
+
+```bash
+bash run.sh --profile core build app
+bash run.sh --profile core run --rm app \
+  python main.py --rei-generate --rei-preview \
+  --rei-theme "intel laptop gpu activated"
 ```
 
 ---

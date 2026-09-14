@@ -394,10 +394,10 @@ Database integration is **optional** and **non-breaking** — set `DATABASE_ENAB
    POSTGRES_DB=linkedin_ssi_booster
    DATABASE_URL=postgresql://ssi_booster:your_password@postgres:5432/linkedin_ssi_booster
    ```
-2. Start PostgreSQL: `docker compose --profile core up -d postgres`
+2. Start PostgreSQL: `bash run.sh --profile core up -d postgres`
 3. Verify: `docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c "\dt"`
 
-**Migrate existing data:** `docker compose --profile core run --rm app python -m services.database.migrate_data`
+**Migrate existing data:** `bash run.sh --profile core run --rm app python -m services.database.migrate_data`
 
 The schema covers 17 tables across avatar intelligence, selection learning, truth gate learning, and DoT. Engine/session singletons use thread-safe double-checked locking. See [docs/features/database/idea.md](docs/features/database/idea.md) for full schema and architecture.
 
@@ -449,11 +449,11 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
 - [Testing and development](docs/testing-and-dev.md) — pytest coverage and project structure (924 collected; 924 passed, 0 failed)
 
-## 🐳 Docker Compose (Recommended)
+## 🐳 Docker via `run.sh` (Recommended)
 
 Run the stack with Docker Profiles: `core` provides Ollama + the SSI Booster app, while `full` adds Piper TTS, FLUX image generation, and MCP agents for Buffer and Strudel.
 
-`run.sh` auto-detects GPU availability (NVIDIA CUDA, or Intel Iris Xe/Arc via the official
+Use `run.sh` as the main launcher. It auto-detects GPU availability (NVIDIA CUDA, or Intel Iris Xe/Arc via the official
 `intelanalytics/ipex-llm-inference-cpp-xpu` image over Level Zero, on native Linux & Windows WSL 2)
 and layers in the appropriate Compose override (`docker-compose.gpu.yml`, `docker-compose.intel.yml`,
 or `docker-compose.intel-wsl.yml`); on hosts without GPU acceleration it falls back to CPU-only
@@ -471,6 +471,9 @@ bash run.sh --profile full up -d
 # Run commands (prefer run.sh over bare `docker compose` for GPU auto-detection)
 bash run.sh --profile core run --rm -it app python main.py --console
 bash run.sh --profile core run --rm app python main.py --curate
+
+# Rebuild after source changes
+bash run.sh --profile core build app
 ```
 
 See [docs/docker-deployment.md](docs/docker-deployment.md) for complete setup guide, prerequisites (NVIDIA Container Toolkit, CUDA 12.4+, GPU requirements), service details, and troubleshooting.
@@ -494,14 +497,19 @@ cp data/avatar/narrative_memory.example.json data/avatar/narrative_memory.json
 cp data/avatar/domain_knowledge_java.json data/avatar/domain_knowledge_java.json
 cp data/avatar/domain_knowledge_python.json data/avatar/domain_knowledge_python.json
 cp content_calendar.example.py content_calendar.py
-python main.py --schedule --week 1 --dry-run
+# Daily Docker workflow (recommended; enables GPU auto-detection)
+bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
 
 # Console mode (DoT scanning OFF by default)
-python main.py --console
+bash run.sh --profile core run --rm -it app python main.py --console
 
 # Console mode with DoT verification enabled
-python main.py --console --verify
+bash run.sh --profile core run --rm -it app python main.py --console --verify
 ```
+
+For direct local Python execution without Docker, activate `.venv` and use
+`python main.py ...` explicitly. Docker users should prefer `run.sh` so the
+same GPU, audio, and service-discovery settings are applied consistently.
 
 ### ⚙️ Environment Variables
 

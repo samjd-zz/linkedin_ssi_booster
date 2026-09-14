@@ -474,7 +474,7 @@ If an initial draft drifts materially from the configured target or becomes sing
 Use `--rei-preview` to inspect a generated song without saving it or calling Suno:
 
 ```bash
-python main.py --rei-generate --rei-preview
+bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview
 ```
 
 ### Verified Intel WSL2 Laptop Workflow

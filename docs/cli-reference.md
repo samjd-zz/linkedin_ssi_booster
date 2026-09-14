@@ -509,29 +509,30 @@ See [Database Integration](features/database/idea.md) for schema details.
 
 ## Docker Commands
 
-When running via Docker Compose, prefix commands with `docker compose --profile core run --rm app`:
+When running via Docker, use `run.sh` so GPU detection, audio passthrough, and
+the correct Compose override are applied consistently:
 
 ```bash
 # Interactive console (TTY required)
-docker compose --profile core run --rm -it app python main.py --console
+bash run.sh --profile core run --rm -it app python main.py --console
 
 # Console with verification
-docker compose --profile core run --rm -it app python main.py --console --verify
+bash run.sh --profile core run --rm -it app python main.py --console --verify
 
 # Dry-run schedule
-docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
+bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
 
 # Curate AI news → Buffer Ideas
-docker compose --profile core run --rm app python main.py --curate
+bash run.sh --profile core run --rm app python main.py --curate
 
 # Curate with classification and learning
-docker compose --profile core run --rm app python main.py --curate --classify --learn
+bash run.sh --profile core run --rm app python main.py --curate --classify --learn
 
 # Record SSI scores
-docker compose --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
+bash run.sh --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
 
 # Database migration
-docker compose --profile core run --rm app python -m services.database.migrate_data
+bash run.sh --profile core run --rm app python -m services.database.migrate_data
 ```
 
 See [Docker & Deployment Guide](docker-deployment.md) for full Docker documentation.

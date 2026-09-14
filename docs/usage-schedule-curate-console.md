@@ -2,9 +2,9 @@
 
 The CLI centers on three main workflows: scheduling from a private content calendar, curating from live RSS sources, and running a grounded interactive console. A `--dry-run` mode is available across flows to generate and inspect outputs without making Buffer API calls.
 
-## Running with Docker Compose
+## Running with Docker
 
-The recommended way to run all commands is via Docker Compose using `run.sh`, which automatically exports your `USER_UID` for PulseAudio passthrough (voice output).
+The recommended way to run commands is through `run.sh`, not bare `docker compose`. It detects NVIDIA or Intel GPU support, selects the matching Compose override, exports `USER_UID` and PulseAudio variables, and falls back to CPU-only execution when no usable GPU runtime is available.
 
 ```bash
 # Start the core stack (Ollama + app) in the background
@@ -12,29 +12,35 @@ The recommended way to run all commands is via Docker Compose using `run.sh`, wh
 bash run.sh --profile core up -d
 
 # Run any one-shot command against the running stack
-docker compose --profile core run --rm app python main.py --curate
-docker compose --profile core run --rm app python main.py --schedule --week 1 --dry-run
+bash run.sh --profile core run --rm app python main.py --curate
+bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
 
 # Interactive console (TTY required for stdin)
-docker compose --profile core run --rm -it app python main.py --console
+bash run.sh --profile core run --rm -it app python main.py --console
 
 # Full mode — adds Piper TTS, FLUX image generation, and MCP agents (Buffer + Strudel)
 bash run.sh --profile full up -d
 ```
 
-> **Voice note:** Piper TTS runs in the `full` profile. `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket so `CONSOLE_USE_VOICE=true` works inside the full stack. Running `docker compose` directly without `run.sh` will work but audio output will be silent unless your shell already has `USER_UID` exported.
+> **Voice and GPU note:** Piper TTS runs in the `full` profile. `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket. On WSL2 it detects `/dev/dxg` and enables the Intel Ollama runtime. Running `docker compose` directly is reserved for low-level maintenance and requires reproducing these settings yourself.
+
+After source changes, rebuild the app image before running it:
+
+```bash
+bash run.sh --profile core build app
+```
 
 ## Main commands
 
 ```bash
-python main.py --schedule --week 1 --dry-run
-python main.py --curate --dry-run
-python main.py --console
-python main.py --console --verify
-python main.py --console --avatar-explain
-python main.py --console --dot-report
-python main.py --report
-python main.py --save-ssi 10.49 9.69 11.0 12.15
+bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
+bash run.sh --profile core run --rm app python main.py --curate --dry-run
+bash run.sh --profile core run --rm -it app python main.py --console
+bash run.sh --profile core run --rm -it app python main.py --console --verify
+bash run.sh --profile core run --rm -it app python main.py --console --avatar-explain
+bash run.sh --profile core run --rm -it app python main.py --console --dot-report
+bash run.sh --profile core run --rm app python main.py --report
+bash run.sh --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.0 12.15
 ```
 
 `--schedule` uses `content_calendar.py`, `--curate` uses live RSS feeds filtered by niche keywords, and `--console` opens an interactive persona chat with deterministic grounding for factual project, career, and domain knowledge queries. Console mode supports flags for verification (`--verify`), avatar explanations (`--avatar-explain`), and DoT reports (`--dot-report`), or you can toggle these modes during a session using in-console commands.
