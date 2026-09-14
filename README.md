@@ -2,7 +2,7 @@
   <img src="media/favicons/logo1.png" alt="LinkedIn SSI Booster Logo" width="150">
 </p>
 
-# SSI Booster - 🦄 :muscle: POWERED by Buffer.com!
+# SSI Booster - 🦄 - POWERED - 💪 - by Buffer.com!
 
 <details>
 <summary>🇯🇵 <b>日本語の概要はこちら (Click to expand Japanese summary)</b></summary>
