@@ -67,6 +67,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-alpha--v0.0.3.5-F97316.svg" alt="Version alpha-v0.0.3.5"></a>
   <a href="https://developer.nvidia.com/cuda-toolkit"><img src="https://img.shields.io/badge/CUDA-13.2.0-76B900.svg?logo=nvidia" alt="CUDA 13.2.0"></a>
+  <a href="docs/docker-deployment.md#auto-detection-recommended-runsh"><img src="https://img.shields.io/badge/Intel-iGPU%20%2F%20WSL2-0071C5.svg?logo=intel&logoColor=white" alt="Intel iGPU and WSL2 support"></a>
   <a href="https://spacy.io/"><img src="https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white" alt="spaCy"></a>
   <a href="https://github.com/black-forest-labs/flux"><img src="https://img.shields.io/badge/FLUX.1-Image%20Gen-E85D75.svg" alt="FLUX.1"></a>
 </p>
@@ -115,6 +116,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - 🧠 **Memory & repetition penalty** — recent themes and claims penalised to keep your feed fresh.
 - 🔍 **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
 - 🏠 **No cloud AI keys required** — all generation runs locally via Ollama.
+- 💻 **Laptop-optimized local AI** — Intel iGPU acceleration is supported on native Linux and Windows WSL2 via `/dev/dri` or `/dev/dxg`, with automatic CPU fallback. The verified Rei Toei laptop workflow uses `qwen2.5:3b` with `llama3.2:3b` as fallback; see [docs/rei-toei-customization.md](docs/rei-toei-customization.md#verified-intel-wsl2-laptop-workflow).
 
 ✨🦄 **Result:** A self-improving, persona-driven content engine 🦄 that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
 
