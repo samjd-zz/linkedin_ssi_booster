@@ -345,6 +345,27 @@ def _parse_llm_json_payload(response_text: str) -> Dict[str, Any]:
     raise ValueError("Unable to parse JSON payload from LLM response")
 
 
+def _normalize_serialized_lyric_text(value: str) -> str:
+    """Convert JSON-like escape leakage into clean multiline lyric text."""
+    normalized = value.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\t", " ")
+    normalized = re.sub(r"\\([.,!?…])", r"\1", normalized)
+
+    cleaned_lines: List[str] = []
+    for line in normalized.splitlines():
+        cleaned = re.sub(r'^\s*"', "", line)
+        cleaned = re.sub(r'",?\s*$', "", cleaned)
+        cleaned_lines.append(cleaned.rstrip())
+    return "\n".join(cleaned_lines).strip()
+
+
+def _normalize_lyric_payload(section_payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize string fields in an LLM lyric payload before validation."""
+    return {
+        key: _normalize_serialized_lyric_text(value) if isinstance(value, str) else value
+        for key, value in section_payload.items()
+    }
+
+
 def _normalize_title(value: str) -> str:
     """Normalize a title string for uniqueness comparisons."""
     return re.sub(r"\W+", " ", value.lower()).strip()
@@ -467,7 +488,7 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
 def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: bool = False) -> str:
     """Normalize a lyric section into deterministic Suno-friendly section format."""
-    body = (text or "").strip()
+    body = _normalize_serialized_lyric_text(text or "")
     body = _SECTION_HEADER_RE.sub("", body, count=1)
 
     lines = [line.rstrip() for line in body.splitlines()]
@@ -588,7 +609,7 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
     # Music lyrics need room for hooks, echoes, and section-level variation.
     # Keep a broad floor while still rejecting extreme language drift.
-    ratio_tolerance = max(0.35, 1.0 / total_lines) if total_lines else 0.0
+    ratio_tolerance = max(0.20, 1.0 / total_lines) if total_lines else 0.0
     ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
@@ -1583,25 +1604,28 @@ Previous lyric JSON:
             logger.debug(f"Ollama lyrics response (attempt {attempt}): {response_text[:200]}...")
 
             try:
-                response_data = _parse_llm_json_payload(response_text)
+                response_data = _normalize_lyric_payload(
+                    _parse_llm_json_payload(response_text)
+                )
             except json.JSONDecodeError as exc:
                 if last_valid_response_data:
                     logger.warning(
                         "Ollama lyric repair response was malformed on attempt %s (%s). "
-                        "Using the last valid lyric draft instead of fallback lyrics.",
+                        "Revalidating the last valid lyric draft.",
                         attempt,
                         exc,
                     )
-                    response_data = last_valid_response_data
-                    break
+                    response_data = dict(last_valid_response_data)
                 if attempt < max_attempts:
-                    logger.warning(
-                        "Ollama lyrics response was malformed on attempt %s (%s). Retrying.",
-                        attempt,
-                        exc,
-                    )
-                    continue
-                raise
+                    if not last_valid_response_data:
+                        logger.warning(
+                            "Ollama lyrics response was malformed on attempt %s (%s). Retrying.",
+                            attempt,
+                            exc,
+                        )
+                        continue
+                elif not last_valid_response_data:
+                    raise
 
             required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
             for field in required_fields:

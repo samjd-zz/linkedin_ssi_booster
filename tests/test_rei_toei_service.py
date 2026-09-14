@@ -1464,14 +1464,22 @@ def test_compose_lyrics_keeps_last_valid_draft_when_repair_json_is_malformed(
     malformed_repair_response = '{"verse_1": "川のプロトコルが目覚める\n[Kawa no purotokoru ga mezameru]'
 
     with caplog.at_level(logging.WARNING):
-        with patch.object(OllamaService, "_chat", side_effect=[sparse_but_valid_response, malformed_repair_response]) as mock_chat:
+        with patch.object(
+            OllamaService,
+            "_chat",
+            side_effect=[
+                sparse_but_valid_response,
+                malformed_repair_response,
+                malformed_repair_response,
+            ],
+        ) as mock_chat:
             lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 2
+    assert mock_chat.call_count == 3
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "川のプロトコルが目覚める" in merged
     assert "EXECUTE THE RIVER PROTOCOL STREAM" not in merged
-    assert "Using the last valid lyric draft instead of fallback lyrics" in caplog.text
+    assert "Revalidating the last valid lyric draft" in caplog.text
 
 
 def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
@@ -1533,6 +1541,66 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
     assert mock_chat.call_count == 3
 
 
+def test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs(
+    mock_domain_knowledge_data,
+    monkeypatch,
+):
+    """Escaped newlines must not disguise an all-Japanese draft as mixed-language."""
+    from services.ollama_service import OllamaService
+
+    monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.25")
+
+    concept = SongConcept(
+        song_id="song_serialized_japanese",
+        title="Serialized Japanese Test",
+        theme="GPU Signal",
+        mood="aggressive_technical",
+        bpm=145,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-09-14T20:38:00Z",
+        lyric_language="bilingual",
+    )
+    persona = ReiPersonaGraph(
+        schema_version="1.0",
+        identity={"name": "Rei"},
+        personality_traits=[],
+        musical_expertise={},
+        production_knowledge={"lyrical_approach": {"themes": [], "style": [], "voice": "AI"}},
+        communication_style={"tone": "digital", "vocabulary": []},
+        knowledge_sources={},
+        creative_process={},
+        constraints={},
+        comparison_to_sam={},
+    )
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    serialized_japanese = json.dumps(
+        {
+            "verse_1": "信号が走る\\nGPUが光る\\n夜を越える",
+            "chorus": "データが踊る\\n未来を描く",
+            "verse_2": "回路が目覚める\\n境界線を越える",
+            "bridge": "新しい次元へ\\n信号は続く",
+        },
+        ensure_ascii=False,
+    )
+    malformed_repair = '{"verse_1": "信号が走る\\nGPUが光る"'
+
+    with patch.object(
+        OllamaService,
+        "_chat",
+        side_effect=[serialized_japanese, malformed_repair, malformed_repair],
+    ) as mock_chat:
+        with pytest.raises(RuntimeError, match="Bilingual lyric mix constraints"):
+            compose_lyrics(concept, persona, domain_knowledge)
+
+    assert mock_chat.call_count == 3
+
+
 def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
     """A configured target must still reject an extremely skewed draft."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
@@ -1548,7 +1616,7 @@ def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
 
     assert not mix_ok
     assert "jp_ratio=0.80" in summary
-    assert "tolerance=0.35" in summary
+    assert "tolerance=0.20" in summary
 
 
 def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
@@ -1559,13 +1627,13 @@ def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
         "verse_1": "Signal wakes (信号が目覚める)\nPulse turns (脈拍が回る)",
         "chorus": "Data blooms (データが咲く)\nCode rises (コードが上がる)",
         "verse_2": "English only line\nAnother English line",
-        "bridge": "One more English line\nFinal English line",
+        "bridge": "One more English line\n未来へ進む",
     }
 
     mix_ok, summary = _bilingual_mix_ok(mixed_payload, target_japanese_ratio=0.5)
 
     assert mix_ok
-    assert "jp_ratio=0.25" in summary
+    assert "jp_ratio=0.38" in summary
 
 
 def test_bilingual_mix_accepts_the_twenty_percent_target_boundary():
@@ -1583,7 +1651,7 @@ def test_bilingual_mix_accepts_the_twenty_percent_target_boundary():
 
     assert mix_ok
     assert "jp_ratio=0.70" in summary
-    assert "tolerance=0.35" in summary
+    assert "tolerance=0.20" in summary
 
 
 def test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values():
@@ -1595,6 +1663,39 @@ def test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values():
     parsed = _parse_llm_json_payload(payload)
 
     assert parsed["verse_1"] == "Signal wakes\n信号が目覚める"
+
+
+def test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts(mock_domain_knowledge_data):
+    """Suno output should contain real line breaks and no leaked JSON punctuation."""
+    concept = SongConcept(
+        song_id="song_serialized_formatting",
+        title="Formatting Test",
+        theme="GPU Signal",
+        mood="aggressive_technical",
+        bpm=145,
+        genre_tags=["industrial techno"],
+        narrative_arc="Build to release",
+        evidence_ids=["fact_001"],
+        generated_at="2026-09-14T20:38:00Z",
+        lyric_language="bilingual",
+    )
+    lyrics = Lyrics(
+        verse_1='信号が走る。\\nGPU wakes.\\n回路が光る。", \\n"Signal returns\\.\\.\\.',
+        chorus="データが踊る\\nDATA MOVES",
+        verse_2="境界線を越える\\nCross the line",
+        bridge="未来へ進む\\nMove ahead",
+        evidence_ids=["fact_001"],
+    )
+    with patch("pathlib.Path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
+            domain_knowledge = load_rei_domain_knowledge()
+
+    suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
+
+    assert "\\n" not in suno_prompt.lyrics
+    assert '\",' not in suno_prompt.lyrics
+    assert "\\." not in suno_prompt.lyrics
+    assert "信号が走る。\nGPU wakes.\n回路が光る。\nSignal returns..." in suno_prompt.lyrics
 
 
 def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_knowledge_data):

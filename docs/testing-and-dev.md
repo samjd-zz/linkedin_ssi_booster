@@ -46,9 +46,9 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Source Coverage | Status          |
 | ----------- | ------- | ------- | ------ | --------------- | --------------- |
-| **925**     | **923** | **2**   | **0**  | **66%**         | ✅ **All pass** |
+| **933**     | **931** | **2**   | **0**  | **66%**         | ✅ **All pass** |
 
-- **Latest Run Date:** September 13, 2026
+- **Latest Run Date:** September 14, 2026
 - **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, prompt schema leakage scrubbing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, deterministic pykakasi Hepburn Romaji correction/generation for learner cues, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, language-routed spaCy search tokenization and batch similarity coverage, Model2Vec semantic scoring, Strudel WebSocket bridge message handling, database dual-write persistence, and Suno submission orchestration.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
@@ -92,7 +92,7 @@ The console's direct-LLM song fallback (`_handle_llm_song_generation` → `_buil
 
 ### Bilingual Japanese-line target enforcement — `_suno_pipeline.py`
 
-`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft that misses its configured target is regenerated with explicit Japanese-only and English-only line guidance, then receives one measured repair attempt. Generated JSON accepts literal lyric line breaks, and a failed repair is rejected before artifact persistence or Suno submission instead of falling back to English-only lyrics. The 50% target accepts the practical 30%–70% band. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_twenty_percent_target_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`.
+`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft that misses its configured target is regenerated with explicit Japanese-only and English-only line guidance, then receives one measured repair attempt. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed repair revalidates the last parseable draft instead of bypassing the bilingual constraint. The 50% target accepts the practical 30%–70% band. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_twenty_percent_target_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`.
 
 ### Optional Japanese spaCy model warnings — `spacy_nlp.py`
 
