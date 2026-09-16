@@ -388,16 +388,19 @@ class SpacyNLP:
                 logger.debug("spacy_nlp: compute_similarity_batch fallback (no vectors)")
                 return [0.0] * len(candidates)
 
-            missing = [candidate for candidate in candidates if (model_key, candidate) not in cache]
-            if missing:
-                for candidate, doc in zip(missing, nlp.pipe(missing)):
-                    cache[(model_key, candidate)] = doc
-                while len(cache) > 256:
-                    cache.pop(next(iter(cache)))
+            if len(candidates) > 256:
+                candidate_docs = list(nlp.pipe(candidates))
+            else:
+                missing = [candidate for candidate in candidates if (model_key, candidate) not in cache]
+                if missing:
+                    for candidate, doc in zip(missing, nlp.pipe(missing)):
+                        cache[(model_key, candidate)] = doc
+                    while len(cache) > 256:
+                        cache.pop(next(iter(cache)))
+                candidate_docs = [cache[(model_key, candidate)] for candidate in candidates]
 
             scores: list[float] = []
-            for candidate in candidates:
-                doc = cache[(model_key, candidate)]
+            for doc in candidate_docs:
                 if not doc.has_vector:
                     scores.append(0.0)
                     continue
