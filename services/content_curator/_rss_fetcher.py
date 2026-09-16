@@ -7,6 +7,8 @@ import feedparser
 import logging
 import re
 import requests
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 try:
     import trafilatura as _trafilatura
@@ -227,9 +229,28 @@ def fetch_relevant_articles(
 
     articles = []
     skipped_count = 0
-    for feed_info in RSS_FEEDS:
+    try:
+        max_workers = max(1, min(len(RSS_FEEDS), int(os.getenv("CURATOR_RSS_FETCH_WORKERS", "8"))))
+    except ValueError:
+        max_workers = min(len(RSS_FEEDS), 8) or 1
+
+    def _fetch_feed(feed_info: dict) -> tuple[dict, Any | None, Exception | None]:
         try:
-            feed = feedparser.parse(feed_info["url"])
+            return feed_info, feedparser.parse(feed_info["url"]), None
+        except Exception as exc:
+            return feed_info, None, exc
+
+    with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="rss-fetch") as executor:
+        feed_results = list(executor.map(_fetch_feed, RSS_FEEDS))
+
+    for feed_info, feed, feed_error in feed_results:
+        if feed_error is not None:
+            logger.warning("Failed to fetch %s: %s", feed_info["name"], feed_error)
+            continue
+        if feed is None:
+            logger.warning("Feed parser returned no result for %s", feed_info["name"])
+            continue
+        try:
             for entry in feed.entries[:max_per_feed]:
                 title   = str(entry.get("title") or "")
                 summary = str(entry.get("summary") or "")
