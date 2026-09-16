@@ -1170,7 +1170,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             elif avatar_explain or dot_report:
                 if avatar_explain:
                     print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
-                _, _gate_meta = _tg_result(reply, "", learned_facts)
+                _, _gate_meta = _tg_result(reply, "", learned_facts, dot_facts=learned_facts)
             
             
             from services.shared import print_validation_reports
@@ -1304,7 +1304,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         elif avatar_explain or dot_report:
             if avatar_explain:
                 print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
-            _, _gate_meta = _tg_result(reply, "", facts)
+            _, _gate_meta = _tg_result(reply, "", facts, dot_facts=facts)
 
         from services.shared import print_validation_reports
         print_validation_reports(

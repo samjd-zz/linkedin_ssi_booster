@@ -153,6 +153,7 @@ def truth_gate_result(
     article_ref: str = "",
     channel: str = "linkedin",
     suggest_facts: bool = True,
+    dot_facts: list[ProjectFact] | None = None,
 ) -> tuple[str, TruthGateMeta]:
     """Truth gate that returns both the filtered text and scoring metadata.
 
@@ -466,7 +467,12 @@ def truth_gate_result(
         if _dot_score_fn is None:
             raise ImportError("DoT not imported")
         kept_text = " ".join(kept).strip()
-        ev_paths = _build_evidence_paths_for_sentence(kept_text, all_facts) if all_facts else []
+        _dot_evidence_facts = dot_facts if dot_facts is not None else all_facts
+        ev_paths = (
+            _build_evidence_paths_for_sentence(kept_text, _dot_evidence_facts)
+            if _dot_evidence_facts
+            else []
+        )
         _dot = _dot_score_fn(kept_text, ev_paths)
         meta.truth_gradient = _dot.truth_gradient
         meta.dot_uncertainty = _dot.uncertainty

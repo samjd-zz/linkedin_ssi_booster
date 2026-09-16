@@ -107,6 +107,7 @@ class OllamaService:
             grounding_facts or [],
             interactive=interactive,
             channel=channel,
+            dot_facts=grounding_facts or [],
         )
         self.last_truth_gate_text = text
 
@@ -379,6 +380,7 @@ Do NOT include hashtags in your output â€” they will be appended automatica
             grounding_facts or [],
             interactive=interactive,
             channel=channel,
+            dot_facts=grounding_facts or [],
         )
         self.last_truth_gate_text = text
 
