@@ -205,6 +205,7 @@ class Model2VecService:
         self._batch_size = batch_size
         self._model: "Optional[StaticModel]" = None  # type: ignore[name-defined]
         self._categories: dict[str, CategoryMetadata] = {}
+        self._embedding_cache: dict[str, Any] = {}
         self._initialized = False
 
         # Always register default categories regardless of model availability so that
@@ -376,7 +377,7 @@ class Model2VecService:
         if not self._load_model() or self._model is None:
             return 0.0
         try:
-            embeddings = self._model.encode([left[:2000], right[:2000]])
+            embeddings = self._encode_cached([left, right])
             return max(0.0, min(1.0, self._cosine_similarity(embeddings[0], embeddings[1])))
         except Exception as exc:
             logger.debug("Model2Vec: semantic_similarity failed: %s", exc)
@@ -389,7 +390,7 @@ class Model2VecService:
         if not self._load_model() or self._model is None:
             return [0.0] * len(texts)
         try:
-            embeddings = self._model.encode([query[:2000], *[text[:2000] for text in texts]])
+            embeddings = self._encode_cached([query, *texts])
             query_embedding = embeddings[0]
             return [
                 max(0.0, min(1.0, self._cosine_similarity(query_embedding, embedding)))
@@ -398,6 +399,17 @@ class Model2VecService:
         except Exception as exc:
             logger.debug("Model2Vec: batch_semantic_similarity failed: %s", exc)
             return [0.0] * len(texts)
+
+    def _encode_cached(self, texts: list[str]) -> list[Any]:
+        """Encode texts once and retain a bounded cache of their embeddings."""
+        normalized = [text[:2000] if text else "" for text in texts]
+        missing = list(dict.fromkeys(text for text in normalized if text not in self._embedding_cache))
+        if missing:
+            encoded = self._model.encode(missing)  # type: ignore[union-attr]
+            self._embedding_cache.update(zip(missing, encoded))
+            while len(self._embedding_cache) > 512:
+                self._embedding_cache.pop(next(iter(self._embedding_cache)))
+        return [self._embedding_cache[text] for text in normalized]
 
     def batch_classify(
         self, texts: list[str], top_k: int = 1

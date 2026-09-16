@@ -153,6 +153,7 @@ class SpacyNLP:
 
         self._nlp = None  # Cache for primary model (test compatibility)
         self._nlp_models: dict[str, Any] = {}
+        self._similarity_doc_cache: dict[tuple[int, str], Any] = {}
 
     def _ensure_model(self) -> Any:
         """Lazy load the primary spaCy model on first use."""
@@ -359,13 +360,30 @@ class SpacyNLP:
             return [0.0] * len(candidates)
 
         try:
-            base = nlp(text)
+            cache = getattr(self, "_similarity_doc_cache", None)
+            if cache is None:
+                cache = {}
+                self._similarity_doc_cache = cache
+            model_key = id(nlp)
+            base_key = (model_key, text)
+            base = cache.get(base_key)
+            if base is None:
+                base = nlp(text)
+                cache[base_key] = base
             if not base.has_vector:
                 logger.debug("spacy_nlp: compute_similarity_batch fallback (no vectors)")
                 return [0.0] * len(candidates)
 
+            missing = [candidate for candidate in candidates if (model_key, candidate) not in cache]
+            if missing:
+                for candidate, doc in zip(missing, nlp.pipe(missing)):
+                    cache[(model_key, candidate)] = doc
+                while len(cache) > 256:
+                    cache.pop(next(iter(cache)))
+
             scores: list[float] = []
-            for doc in nlp.pipe(candidates):
+            for candidate in candidates:
+                doc = cache[(model_key, candidate)]
                 if not doc.has_vector:
                     scores.append(0.0)
                     continue

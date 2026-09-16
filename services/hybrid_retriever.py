@@ -125,6 +125,8 @@ class HybridRetriever:
         self._w_semantic = semantic_weight
         self._w_graph = graph_weight
         self._w_claim = claim_weight
+        self._bm25_cache_key: tuple[str, ...] | None = None
+        self._bm25_cache: Any = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -183,8 +185,12 @@ class HybridRetriever:
         q_tokens = _tokenize(query)
 
         if _BM25_AVAILABLE and q_tokens:
-            corpus = [_tokenize(t) for t in texts]
-            bm25 = _BM25Okapi(corpus)
+            cache_key = tuple(texts)
+            if cache_key != self._bm25_cache_key:
+                corpus = [_tokenize(t) for t in texts]
+                self._bm25_cache = _BM25Okapi(corpus)
+                self._bm25_cache_key = cache_key
+            bm25 = self._bm25_cache
             raw: list[float] = bm25.get_scores(q_tokens).tolist()
         else:
             # Keyword fallback

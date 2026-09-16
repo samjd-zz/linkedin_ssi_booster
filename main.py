@@ -2199,10 +2199,7 @@ def main():
                         # Combine project and domain facts for retrieval
                         from services.avatar_intelligence import EvidenceFact, DomainEvidenceFact, normalize_extracted_facts
                         from services.console_grounding import truth_gate_result as _tgr_exp
-                        _all_facts = list(_gen_avatar_facts) + list(_gen_domain_facts)
-                        _ev_proj2 = int(os.getenv("EVIDENCE_PROJECT_COUNT", "3"))
-                        _ev_dom2 = int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
-                        _relevant = retrieve_evidence(grounding_query, _all_facts, limit=_ev_proj2 + _ev_dom2)  # type: ignore[arg-type]
+                        _relevant = relevant
                         
                         # Score and filter extracted facts by relevance (retrieve_evidence doesn't support ExtractedEvidenceFact type)
                         _gen_extracted_facts_all = normalize_extracted_facts(_gen_avatar_state)
@@ -2241,7 +2238,7 @@ def main():
                     # Release large per-topic structures before moving to next topic.
                     del all_facts, relevant, persona_facts, domain_facts, grounding_facts
                     if args.avatar_explain:
-                        del _all_facts, _relevant, _gen_extracted_facts_all, _scored_extracted, _relevant_extracted
+                        del _relevant, _gen_extracted_facts_all, _scored_extracted, _relevant_extracted
                     if _topic_idx % 2 == 0:
                         gc.collect()
 
