@@ -18,7 +18,7 @@ from typing import Any, Callable
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
-from services.shared import append_channel_footer, X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, get_youtube_scripts_dir
+from services.shared import append_channel_footer, X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, get_youtube_scripts_dir, KATZILLA_ENABLED
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
 from services.console_grounding import ProjectFact, truth_gate_result
 
@@ -149,15 +149,18 @@ class ContentCurator:
                 persona_hits_typed: list[EvidenceFact] = [f for f in ranked if isinstance(f, EvidenceFact)][:n_persona]
                 domain_hits_typed: list[DomainEvidenceFact] = [f for f in ranked if isinstance(f, DomainEvidenceFact)][:n_domain]
                 extracted_hits_typed: list[ExtractedEvidenceFact] = [f for f in ranked if isinstance(f, ExtractedEvidenceFact)][:n_extracted]
-                combined_hits = retrieve_evidence(
-                    query,
-                    list(self._avatar_facts) + list(self._domain_facts),
-                    limit=n_persona + n_domain + n_external,
-                    category_filter=ssi_component,
-                )
-                external_hits_typed: list[ExternalEvidenceFact] = [
-                    f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
-                ][:n_external]
+                if KATZILLA_ENABLED:
+                    combined_hits = retrieve_evidence(
+                        query,
+                        list(self._avatar_facts) + list(self._domain_facts),
+                        limit=n_persona + n_domain + n_external,
+                        category_filter=ssi_component,
+                    )
+                    external_hits_typed: list[ExternalEvidenceFact] = [
+                        f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
+                    ][:n_external]
+                else:
+                    external_hits_typed = []
             else:
                 persona_hits = retrieve_evidence(query, self._avatar_facts, limit=n_persona) if self._avatar_facts else []
                 domain_hits = retrieve_evidence(query, self._domain_facts, limit=n_domain) if self._domain_facts else []
@@ -180,15 +183,18 @@ class ContentCurator:
                 if not extracted_hits_typed:
                     extracted_hits_typed = list(self._extracted_facts)[:n_extracted]
 
-                combined_hits = retrieve_evidence(
-                    query,
-                    list(self._avatar_facts) + list(self._domain_facts),
-                    limit=n_persona + n_domain + n_external,
-                    category_filter=ssi_component,
-                )
-                external_hits_typed = [
-                    f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
-                ][:n_external]
+                if KATZILLA_ENABLED:
+                    combined_hits = retrieve_evidence(
+                        query,
+                        list(self._avatar_facts) + list(self._domain_facts),
+                        limit=n_persona + n_domain + n_external,
+                        category_filter=ssi_component,
+                    )
+                    external_hits_typed = [
+                        f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
+                    ][:n_external]
+                else:
+                    external_hits_typed = []
 
             persona_pf = evidence_facts_to_project_facts(persona_hits_typed)
             domain_pf = domain_facts_to_project_facts(domain_hits_typed)
