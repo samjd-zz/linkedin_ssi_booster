@@ -335,7 +335,9 @@ def print_validation_reports(
     if verify:
         # Minimalist inline verification bar logic
         try:
-            _, _meta = _tgr(post_text, context_text, grounding_facts)
+            if gate_meta is None:
+                _, gate_meta = _tgr(post_text, context_text, grounding_facts)
+            _meta = gate_meta
             dot = _meta.truth_gradient
             col = Fore.GREEN if dot >= 0.75 else (Fore.YELLOW if dot >= 0.45 else Fore.RED)
             bar = "█" * round(dot * 20) + "░" * (20 - round(dot * 20))

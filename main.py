@@ -739,7 +739,27 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             grounding_ctx = f"{grounding_ctx}\n\n{github_context}" if grounding_ctx else github_context
         return profile_facts, grounding_ctx, list(avatar_facts), domain_facts_raw, extracted_raw
 
+    def _index_profile_facts(profile_facts: list) -> tuple[dict, dict, dict]:
+        return (
+            {
+                fact.source.rsplit(":", 1)[-1]: fact
+                for fact in profile_facts
+                if fact.source.startswith("avatar:")
+            },
+            {
+                fact.source.rsplit(":", 1)[-1]: fact
+                for fact in profile_facts
+                if fact.source.startswith("domain:")
+            },
+            {
+                fact.source.rsplit(":", 1)[-1]: fact
+                for fact in profile_facts
+                if fact.source.startswith("extracted_knowledge:")
+            },
+        )
+
     _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
+    _avatar_facts_by_id, _domain_facts_by_id, _extracted_facts_by_id = _index_profile_facts(_profile_facts)
     logger.debug(
         "Console mode: loaded %d grounding facts (%d total)",
         len(_profile_facts),
@@ -1001,6 +1021,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             cmd = user_input.lower()
         if cmd == "/reload":
             _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
+            _avatar_facts_by_id, _domain_facts_by_id, _extracted_facts_by_id = _index_profile_facts(_profile_facts)
             print(
                 str(Fore.CYAN)
                 + f"Knowledge reloaded — {len(_profile_facts)} grounding facts now active."
@@ -1205,36 +1226,17 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             facts = []
             for f in facts_ranked:
                 if isinstance(f, EvidenceFact):
-                    # Find matching ProjectFact from _profile_facts
-                    matching = [
-                        pf
-                        for pf in _profile_facts
-                        if pf.source.startswith("avatar:")
-                        and (f.source_project_id and pf.source.endswith(f.source_project_id))
-                    ]
-                    facts.extend(matching[:1])  # Add first match
+                    matching = _avatar_facts_by_id.get(f.source_project_id)
+                    if matching is not None:
+                        facts.append(matching)
                 elif isinstance(f, DomainEvidenceFact):
-                    matching = [
-                        pf
-                        for pf in _profile_facts
-                        if pf.source.startswith("domain:")
-                        and (
-                            (f.source_fact_id and pf.source.endswith(f.source_fact_id))
-                            or f.evidence_id in pf.source
-                        )
-                    ]
-                    facts.extend(matching[:1])
+                    matching = _domain_facts_by_id.get(f.source_fact_id or f.evidence_id)
+                    if matching is not None:
+                        facts.append(matching)
                 elif isinstance(f, ExtractedEvidenceFact):
-                    matching = [
-                        pf
-                        for pf in _profile_facts
-                        if pf.source.startswith("extracted_knowledge:")
-                        and (
-                            (f.evidence_id and pf.source.endswith(f.evidence_id))
-                            or (f.source_fact_id and f.source_fact_id in pf.source)
-                        )
-                    ]
-                    facts.extend(matching[:1])
+                    matching = _extracted_facts_by_id.get(f.evidence_id or f.source_fact_id)
+                    if matching is not None:
+                        facts.append(matching)
             # Categorize only the top facts for the validation report
             # This ensures build_explain_output only sees what was actually used
             used_ev = [f for f in facts_ranked[:8] if isinstance(f, EvidenceFact)]
