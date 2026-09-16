@@ -472,6 +472,7 @@ def truth_gate_result(
         meta.dot_uncertainty = _dot.uncertainty
         meta.dot_flagged = _dot.flagged
         meta.dot_uncertainty_sources = _dot.uncertainty_sources
+        meta.dot_result = _dot
         if _dot.flagged:
             logger.warning(
                 "DoT: truth gradient %.3f below threshold — post flagged (channel=%s)",

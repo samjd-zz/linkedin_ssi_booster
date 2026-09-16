@@ -319,7 +319,8 @@ def print_validation_reports(
     avatar_explain: bool = False,
     dot_report: bool = False,
     channel: str = "general",
-    ssi_component: str = "general"
+    ssi_component: str = "general",
+    gate_meta=None,
 ) -> None:
     """Unified reporting engine for both Console and Curator."""
     from services.console_grounding import truth_gate_result as _tgr
@@ -345,14 +346,15 @@ def print_validation_reports(
     if avatar_explain:
         print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
         try:
-            _, _gate_meta = _tgr(post_text, context_text, grounding_facts)
+            if gate_meta is None:
+                _, gate_meta = _tgr(post_text, context_text, grounding_facts)
             _explain = build_explain_output(
                 evidence_facts=list(raw_evidence) + raw_domain,
                 article_ref=context_text[:100],
                 channel=channel,
                 ssi_component=ssi_component,
-                dot_per_sentence_scores=_gate_meta.dot_per_sentence_scores,
-                spacy_sim_scores=_gate_meta.spacy_sim_scores,
+                dot_per_sentence_scores=gate_meta.dot_per_sentence_scores,
+                spacy_sim_scores=gate_meta.spacy_sim_scores,
                 extracted_facts=raw_extracted,
                 external_facts=raw_external,
             )
@@ -380,7 +382,9 @@ def print_validation_reports(
                         credibility=credibility,
                     )
                 )
-            _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
+            _dot_result = getattr(gate_meta, "dot_result", None)
+            if _dot_result is None:
+                _dot_result = score_claim_with_truth_gradient(post_text, _dot_paths)
             _dot_report_dict = report_truth_gradient(post_text, _dot_result, verbose=True)
             print("\r" + " " * 45 + "\r", end="", flush=True)
             print(format_dot_report_header(f"DoT Report ({channel})"))

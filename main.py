@@ -802,7 +802,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
 
     from services.console_grounding import truth_gate_result as _tg_result
 
-    def _print_truth_score(reply: str) -> None:
+    def _print_truth_score(reply: str, facts: list) -> object | None:
         """Print a minimal 1-line DoT + fact-sim bar after a generated reply.
 
         spaCy article sim is intentionally excluded — it requires a source article
@@ -812,9 +812,9 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         Only runs when verify=True.
         """
         if not verify:
-            return
+            return None
         try:
-            _, _meta = _tg_result(reply, "", _profile_facts)
+            _, _meta = _tg_result(reply, "", facts)
             dot = _meta.truth_gradient
 
             if dot >= 0.75:
@@ -854,8 +854,9 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                     + _fsim_col + _fsim_bar + str(Style.RESET_ALL)
                 )
             print(_line)
+            return _meta
         except Exception:
-            pass  # never interrupt the conversation for a scoring failure
+            return None
 
     def print_graph_statistics(summary, domain_profiles=None):
         """Print graph and domain-knowledge diagnostics with aligned tables."""
@@ -1161,11 +1162,13 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             _print_console_reply("sam", reply)
             speak_text(reply)
             _auto_render_art_if_requested(ai, reply, constraints, user_input)
-            
+            _gate_meta = None
             if verify:
                 print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
-                _print_truth_score(reply)
+                _gate_meta = _print_truth_score(reply, learned_facts)
                 print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
+            elif avatar_explain or dot_report:
+                _, _gate_meta = _tg_result(reply, "", learned_facts)
             
             
             from services.shared import print_validation_reports
@@ -1181,7 +1184,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 facts_used_for_dot=learned_facts,
                 verify=verify,
                 avatar_explain=avatar_explain,
-                dot_report=dot_report
+                dot_report=dot_report,
+                gate_meta=_gate_meta
             )
 
             continue
@@ -1290,11 +1294,13 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         _print_console_reply("sam", reply)
         speak_text(reply)
         _auto_render_art_if_requested(ai, reply, constraints, user_input)
-        
+        _gate_meta = None
         if verify:
             print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
-            _print_truth_score(reply)
+            _gate_meta = _print_truth_score(reply, facts)
             print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
+        elif avatar_explain or dot_report:
+            _, _gate_meta = _tg_result(reply, "", facts)
 
         from services.shared import print_validation_reports
         print_validation_reports(
@@ -1308,7 +1314,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             facts_used_for_dot=facts,
             verify=verify,
             avatar_explain=avatar_explain,
-            dot_report=dot_report
+            dot_report=dot_report,
+            gate_meta=_gate_meta
         )
 
 def main():
@@ -2166,7 +2173,15 @@ def main():
                                 )
                                 for f in grounding_facts
                             ]
-                            _dot_result = score_claim_with_truth_gradient(post, _dot_paths)
+                            _cached_meta = getattr(ai, "last_truth_gate_meta", None)
+                            _cached_text = getattr(ai, "last_truth_gate_text", "")
+                            _dot_result = (
+                                getattr(_cached_meta, "dot_result", None)
+                                if _cached_meta is not None and _cached_text == post
+                                else None
+                            )
+                            if _dot_result is None:
+                                _dot_result = score_claim_with_truth_gradient(post, _dot_paths)
                             _dot_report_dict = report_truth_gradient(post, _dot_result, verbose=True)
                             _dot_colour = str(Fore.RED) if _dot_result.flagged else str(Fore.CYAN)
                             from services.derivative_of_truth._reporting import format_dot_report_header
@@ -2205,7 +2220,9 @@ def main():
                         if not _relevant_extracted and _gen_extracted_facts_all:
                             _relevant_extracted = list(_gen_extracted_facts_all)[:_ev_extracted]
                         
-                        _, _gate_meta = _tgr_exp(post, topic.get("angle", ""), grounding_facts)
+                        _gate_meta = ai.last_truth_gate_meta
+                        if _gate_meta is None:
+                            _, _gate_meta = _tgr_exp(post, topic.get("angle", ""), grounding_facts)
                         _explain = build_explain_output(
                             evidence_facts=_relevant,
                             article_ref=topic.get("title", ""),

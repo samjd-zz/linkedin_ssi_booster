@@ -39,6 +39,7 @@ class TruthGateMeta:
     dot_per_sentence_scores: list[float] = field(default_factory=list)
     spacy_sim_scores: dict[str, float] = field(default_factory=dict)
     fact_sim_scores: dict[str, float] = field(default_factory=dict)
+    dot_result: object | None = None
 
 
 @dataclass
