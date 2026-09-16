@@ -523,7 +523,7 @@ class ContentCurator:
             logger.info("🧠 --learn mode: extracting knowledge only — skipping generation%s", " (dry run)" if dry_run else "")
 
         prefetched_article_text: dict[str, str] = {}
-        if learn_only:
+        if learn or not dry_run:
             fetch_targets = [
                 article for article in articles
                 if len(article["summary"].strip()) < 800 and article["link"]
@@ -602,7 +602,7 @@ class ContentCurator:
                     from services.avatar_intelligence import extract_and_append_knowledge
                     _learn_text = article["summary"]
                     if len(_learn_text.strip()) < 800 and article["link"]:
-                        _fetched = self._fetch_article_text_with_summary(article["link"])
+                        _fetched = prefetched_article_text.get(article["link"], "")
                         if _fetched:
                             logger.debug("🧠 fetched full text for '%s' (%d chars)", article["title"][:60], len(_fetched))
                             _learn_text = _fetched
