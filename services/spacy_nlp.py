@@ -306,6 +306,20 @@ class SpacyNLP:
         groups = self.extract_theme_groups(text, lang=lang)
         return _rank_themes(set(groups["entities"]) | set(groups["concepts"]))
 
+    def _cached_similarity_doc(self, nlp: Any, text: str) -> Any:
+        cache = getattr(self, "_similarity_doc_cache", None)
+        if cache is None:
+            cache = {}
+            self._similarity_doc_cache = cache
+        key = (id(nlp), text)
+        doc = cache.get(key)
+        if doc is None:
+            doc = nlp(text)
+            cache[key] = doc
+        while len(cache) > 256:
+            cache.pop(next(iter(cache)))
+        return doc
+
     def compute_similarity(
         self, text1: str, text2: str, lang: str | None = None
     ) -> float:
@@ -328,8 +342,8 @@ class SpacyNLP:
             return 0.0
 
         try:
-            doc1 = nlp(text1)
-            doc2 = nlp(text2)
+            doc1 = self._cached_similarity_doc(nlp, text1)
+            doc2 = self._cached_similarity_doc(nlp, text2)
 
             # Check if vectors are available
             if not doc1.has_vector or not doc2.has_vector:
