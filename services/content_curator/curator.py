@@ -11,6 +11,7 @@ import re
 import requests
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
@@ -521,6 +522,26 @@ class ContentCurator:
         if learn_only:
             logger.info("🧠 --learn mode: extracting knowledge only — skipping generation%s", " (dry run)" if dry_run else "")
 
+        prefetched_article_text: dict[str, str] = {}
+        if learn_only:
+            fetch_targets = [
+                article for article in articles
+                if len(article["summary"].strip()) < 800 and article["link"]
+            ]
+            try:
+                fetch_workers = max(1, min(len(fetch_targets), int(os.getenv("CURATOR_LEARN_FETCH_WORKERS", "4"))))
+            except ValueError:
+                fetch_workers = min(len(fetch_targets), 4) or 1
+
+            with ThreadPoolExecutor(max_workers=fetch_workers, thread_name_prefix="learn-fetch") as executor:
+                fetched_texts = executor.map(
+                    lambda article: (article["link"], self._fetch_article_text_with_summary(article["link"])),
+                    fetch_targets,
+                )
+                prefetched_article_text = {
+                    link: text for link, text in fetched_texts if text
+                }
+
         articles_processed = 0
         for article in articles:
             if created_ideas is not None and not learn and articles_processed >= max_ideas:
@@ -535,7 +556,7 @@ class ContentCurator:
                     from services.avatar_intelligence import extract_and_append_knowledge
                     _learn_text = article["summary"]
                     if len(_learn_text.strip()) < 800 and article["link"]:
-                        _fetched = self._fetch_article_text_with_summary(article["link"])
+                        _fetched = prefetched_article_text.get(article["link"], "")
                         if _fetched:
                             logger.debug("🧠 fetched full text for '%s' (%d chars)", article["title"][:60], len(_fetched))
                             _learn_text = _fetched

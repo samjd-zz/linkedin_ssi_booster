@@ -264,9 +264,6 @@ def fetch_relevant_articles(
                     continue
 
                 if any(kw.lower() in content for kw in KEYWORDS):
-                    if len(summary.strip()) < 100 and link:
-                        logger.debug("RSS summary empty for '%s' — fetching URL", title[:50])
-                        summary = fetch_article_text(link, spacy_nlp=spacy_nlp)
                     articles.append({
                         "source":    feed_info["name"],
                         "title":     title,
@@ -279,6 +276,28 @@ def fetch_relevant_articles(
                     logger.info("  🧲 Matched: [%s] %s", feed_info["name"], title[:60])
         except Exception as exc:
             logger.warning("Failed to fetch %s: %s", feed_info["name"], exc)
+
+    short_article_targets = [
+        (index, article["link"], article["title"])
+        for index, article in enumerate(articles)
+        if len(article["summary"].strip()) < 100 and article["link"]
+    ]
+    try:
+        article_workers = max(1, min(len(short_article_targets), int(os.getenv("CURATOR_ARTICLE_FETCH_WORKERS", "4"))))
+    except ValueError:
+        article_workers = min(len(short_article_targets), 4) or 1
+
+    def _fetch_short_article(target: tuple[int, str, str]) -> tuple[int, str]:
+        index, link, title = target
+        logger.debug("RSS summary empty for '%s' — fetching URL", title[:50])
+        return index, fetch_article_text(link, spacy_nlp=spacy_nlp)
+
+    if short_article_targets:
+        with ThreadPoolExecutor(max_workers=article_workers, thread_name_prefix="article-fetch") as executor:
+            for index, summary in executor.map(_fetch_short_article, short_article_targets):
+                if summary:
+                    articles[index]["summary"] = summary
+
     logger.info("🗞️  Found %d relevant articles (%d skipped as already published) across %d feeds", len(articles), skipped_count, len(RSS_FEEDS))
 
     if _classify and articles:
