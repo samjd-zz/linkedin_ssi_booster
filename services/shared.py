@@ -344,7 +344,8 @@ def print_validation_reports(
 
     # 2. Avatar Explain
     if avatar_explain:
-        print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
+        if gate_meta is None:
+            print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
         try:
             if gate_meta is None:
                 _, gate_meta = _tgr(post_text, context_text, grounding_facts)

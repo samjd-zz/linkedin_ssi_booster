@@ -1168,6 +1168,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 _gate_meta = _print_truth_score(reply, learned_facts)
                 print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
             elif avatar_explain or dot_report:
+                if avatar_explain:
+                    print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
                 _, _gate_meta = _tg_result(reply, "", learned_facts)
             
             
@@ -1300,6 +1302,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             _gate_meta = _print_truth_score(reply, facts)
             print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
         elif avatar_explain or dot_report:
+            if avatar_explain:
+                print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
             _, _gate_meta = _tg_result(reply, "", facts)
 
         from services.shared import print_validation_reports
