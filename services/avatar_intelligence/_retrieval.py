@@ -24,6 +24,8 @@ try:
 except ImportError:  # pragma: no cover
     _BM25_AVAILABLE = False
 
+_BM25_INDEX_CACHE: dict[tuple[str, tuple[str, ...]], Any] = {}
+
 
 # ---------------------------------------------------------------------------
 # Token builders
@@ -52,6 +54,22 @@ def _domain_fact_tokens(fact: DomainEvidenceFact) -> list[str]:
     base = f"{fact.domain} {fact.statement}"
     tag_boost = " ".join(fact.tags * 3)  # repeat for IDF weight boost
     return re.findall(r"[a-zA-Z0-9_+#.-]{2,}", (base + " " + tag_boost).lower())
+
+
+def _get_bm25_index(kind: str, facts: list[Any], token_builder: Any) -> Any:
+    """Return a cached BM25 index for an unchanged evidence set."""
+    fact_ids = tuple(
+        str(getattr(fact, "evidence_id", getattr(fact, "id", id(fact))))
+        for fact in facts
+    )
+    cache_key = (kind, fact_ids)
+    index = _BM25_INDEX_CACHE.get(cache_key)
+    if index is None:
+        index = _BM25Okapi([token_builder(fact) for fact in facts])
+        _BM25_INDEX_CACHE[cache_key] = index
+        while len(_BM25_INDEX_CACHE) > 16:
+            _BM25_INDEX_CACHE.pop(next(iter(_BM25_INDEX_CACHE)))
+    return index
 
 
 # ---------------------------------------------------------------------------
@@ -218,8 +236,7 @@ def _retrieve_evidence_bm25(
     limit: int,
 ) -> list[EvidenceFact]:
     """BM25Okapi-backed retrieval path."""
-    corpus = [_fact_tokens(f) for f in facts]
-    bm25 = _BM25Okapi(corpus)
+    bm25 = _get_bm25_index("project", facts, _fact_tokens)
     q_tokens = re.findall(r"[a-zA-Z0-9_+#.-]{2,}", query.lower())
     scores: list[float] = bm25.get_scores(q_tokens).tolist()
 
@@ -272,8 +289,7 @@ def _retrieve_domain_evidence_bm25(
     limit: int,
 ) -> list[DomainEvidenceFact]:
     """BM25Okapi-backed retrieval path for domain evidence facts."""
-    corpus = [_domain_fact_tokens(f) for f in facts]
-    bm25 = _BM25Okapi(corpus)
+    bm25 = _get_bm25_index("domain", facts, _domain_fact_tokens)
     q_tokens = re.findall(r"[a-zA-Z0-9_+#.-]{2,}", query.lower())
     scores: list[float] = bm25.get_scores(q_tokens).tolist()
 
