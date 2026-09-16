@@ -16,7 +16,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
