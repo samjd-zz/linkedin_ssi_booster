@@ -65,7 +65,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 ##### <u>— Persona-Grounded Truth-Gated Adaptive-Continual-Learning Hybrid-RAG Multi-Avatar Content-Creation platform with Domain-Knowledge-Graph. Not your average [llm-wiki · GitHub](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 🤪
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-alpha--v0.0.3.5-F97316.svg" alt="Version alpha-v0.0.3.5"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-alpha--v0.0.3.6-F97316.svg" alt="Version alpha-v0.0.3.6"></a>
   <a href="https://developer.nvidia.com/cuda-toolkit"><img src="https://img.shields.io/badge/CUDA-13.2.0-76B900.svg?logo=nvidia" alt="CUDA 13.2.0"></a>
   <a href="docs/docker-deployment.md#auto-detection-recommended-runsh"><img src="https://img.shields.io/badge/Intel-iGPU%20%2F%20WSL2-0071C5.svg?logo=intel&logoColor=white" alt="Intel iGPU and WSL2 support"></a>
   <a href="https://spacy.io/"><img src="https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white" alt="spaCy"></a>
