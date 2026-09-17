@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from threading import Lock
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 _SPACY_NLP_MODELS: dict[str, Any] = {}
 _SPACY_NLP_MODEL: Any = None  # Alias for primary model (backward compatibility)
 _SPACY_AVAILABLE: bool | None = None
+_SPACY_MODEL_LOAD_LOCK = Lock()
 
 _JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]")
 
@@ -96,24 +98,27 @@ def _load_model(model_name: str = "en_core_web_sm") -> Any:
     if not _is_spacy_available():
         return None
 
-    try:
-        import spacy
+    with _SPACY_MODEL_LOAD_LOCK:
+        if model_name in _SPACY_NLP_MODELS:
+            return _SPACY_NLP_MODELS[model_name]
+        try:
+            import spacy
 
-        nlp = spacy.load(model_name)
-        _SPACY_NLP_MODELS[model_name] = nlp
-        _SPACY_NLP_MODEL = nlp
-        logger.info("spacy_nlp: loaded model '%s'", model_name)
-        return nlp
-    except OSError:
-        logger.warning(
-            "spacy_nlp: model '%s' not found — run 'python -m spacy download %s'",
-            model_name,
-            model_name,
-        )
-        return None
-    except Exception as exc:
-        logger.warning("spacy_nlp: failed to load model '%s': %s", model_name, exc)
-        return None
+            nlp = spacy.load(model_name)
+            _SPACY_NLP_MODELS[model_name] = nlp
+            _SPACY_NLP_MODEL = nlp
+            logger.info("spacy_nlp: loaded model '%s'", model_name)
+            return nlp
+        except OSError:
+            logger.warning(
+                "spacy_nlp: model '%s' not found — run 'python -m spacy download %s'",
+                model_name,
+                model_name,
+            )
+            return None
+        except Exception as exc:
+            logger.warning("spacy_nlp: failed to load model '%s': %s", model_name, exc)
+            return None
 
 
 class SpacyNLP:
