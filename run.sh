@@ -23,7 +23,7 @@ if command -v nvidia-smi >/dev/null 2>&1 && docker info 2>/dev/null | grep -qi n
         echo "⚠️  nvidia-smi/runtime found but GPU passthrough test failed — falling back to CPU-only."
     fi
 elif [ -d "/dev/dri" ] || [ -e "/dev/dxg" ] || [ "${INTEL_GPU:-false}" = "true" ]; then
-    # Intel Iris Xe / Arc / Core Ultra iGPU on native Linux or Windows WSL 2
+    # Intel Iris Xe / Arc / Core Ultra iGPU on native Linux or Windows WSL 2.
     if [ -d "/dev/dri" ]; then
         echo "⚡ Intel GPU detected (/dev/dri) — enabling Intel GPU acceleration for Ollama."
         COMPOSE_FILES+=(-f docker-compose.intel.yml)

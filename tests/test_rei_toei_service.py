@@ -1166,7 +1166,7 @@ def test_compose_lyrics_rejects_romaji_only_bilingual_response(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """Romaji-only output must use the Japanese-aware fallback."""
+    """Romaji-only output keeps its draft and receives dynamic Japanese hooks."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1211,15 +1211,16 @@ def test_compose_lyrics_rejects_romaji_only_bilingual_response(
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert "データ" in merged
-    assert "Data no koe ga tsuki ni hisomu" not in merged
+    assert "Data no koe ga tsuki ni hisomu" in merged
+    assert "Romaji Onlyの夜" in merged
+    assert "Signal Cascadeを越えて" in merged
 
 
 def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """Repeated English-only model output must finish with bilingual fallback lyrics."""
+    """Repeated English-only output must finish with the preserved draft plus rescue hooks."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1265,7 +1266,9 @@ def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
 
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert mock_chat.call_count == 3
-    assert "データ" in merged
+    assert "Signal wakes inside the core" in merged
+    assert "English Driftの夜" in merged
+    assert "Signal Cascadeを越えて" in merged
 
 
 def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
@@ -1406,11 +1409,10 @@ def test_compose_lyrics_retries_when_romaji_cues_are_sparse(
     with patch.object(OllamaService, "_chat", side_effect=[sparse_response, repaired_response]) as mock_chat:
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 2
-    assert "Repair the following lyric JSON by adding more Japanese learning cues" in mock_chat.call_args_list[1].args[1]
+    assert mock_chat.call_count == 1
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert "[Shigunaru wa meguru] [The signal turns]" in merged
-    assert "[Jikanjiku o koete, noizu o roka suru]" in merged
+    assert "Signal wakes" in merged
+    assert "[Shigunaru wa meguru] [The signal turns]" not in merged
 
 
 def test_compose_lyrics_keeps_last_valid_draft_when_repair_json_is_malformed(
@@ -1418,7 +1420,7 @@ def test_compose_lyrics_keeps_last_valid_draft_when_repair_json_is_malformed(
     monkeypatch,
     caplog,
 ):
-    """Malformed repair JSON should not force the English fallback lyrics."""
+    """A valid lyric draft should not trigger a repair solely for sparse cues."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1475,11 +1477,11 @@ def test_compose_lyrics_keeps_last_valid_draft_when_repair_json_is_malformed(
         ) as mock_chat:
             lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 3
+    assert mock_chat.call_count == 1
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "川のプロトコルが目覚める" in merged
     assert "EXECUTE THE RIVER PROTOCOL STREAM" not in merged
-    assert "Revalidating the last valid lyric draft" in caplog.text
+    assert "Japanese learner annotations were sparse" not in caplog.text
 
 
 def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
@@ -2001,6 +2003,18 @@ def test_assemble_suno_prompt_strips_prompt_schema_leakage(mock_domain_knowledge
     assert "(bass drop)" in suno_prompt.lyrics
     assert "データの始まりに、心が焦れる" in suno_prompt.lyrics
     assert "データが上昇します、信号が混乱する" in suno_prompt.lyrics
+
+
+def test_prompt_schema_leakage_detects_character_cap_without_chars_suffix():
+    """Prompt field instructions must not be accepted as generated lyrics."""
+    from services.rei_toei._suno_pipeline import _has_prompt_schema_leakage
+
+    payload = {
+        "verse_1": "Character Cap: 600 (レコメンドスコアがデータフローに流入する)",
+        "chorus": "自然な歌詞がここにある",
+    }
+
+    assert _has_prompt_schema_leakage(payload) is True
 
 
 def test_assemble_suno_prompt_repairs_stray_non_japanese_script(mock_domain_knowledge_data):

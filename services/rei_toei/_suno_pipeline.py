@@ -50,6 +50,10 @@ _SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balance
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
 _BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
 _SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
+_EMBEDDED_SECTION_LABEL_RE = re.compile(
+    r"\s*\[(?:Instrumental Build|Verse\s*\d*|Pre-Chorus|Chorus|Drop|Bridge|Solo|Breakdown|Outro)\]\s*",
+    re.IGNORECASE,
+)
 _INLINE_SLASH_SEPARATOR_RE = re.compile(r"(?:\s+/\s*|\s*/\s+)")
 _JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]")
 _ENGLISH_CHAR_RE = re.compile(r"[A-Za-z]")
@@ -79,7 +83,7 @@ _LEARNING_PLACEHOLDER_RE = re.compile(
 )
 _PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
     r"(?:"
-    r"\(?Character Cap:\s*\d+\s*chars?\)?|"
+    r"\(?Character Cap:\s*\d+\s*(?:chars?)?\)?|"
     r"\b\d+\s*chars?\b|"
     r"Two stanzas of (?:deep )?technical narrative(?: building on [^\n]+)?\.?|"
     r"followed by \d+(?:-\d+)? lines (?:describing|of)[^\n]*|"
@@ -366,6 +370,23 @@ def _normalize_lyric_payload(section_payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _has_prompt_schema_leakage(section_payload: Dict[str, Any]) -> bool:
+    """Detect prompt instructions returned as lyric content by a small model."""
+    leakage_markers = (
+        r"\bCharacter Cap\s*:",
+        r"\bon its own line\b",
+        r"\bfollowed by\s+\d+",
+        r"\btotal\)\s*\(Character Cap",
+        r"\bTwo stanzas of\b",
+        r"\b4-8 lines of\b",
+    )
+    combined = re.compile("|".join(leakage_markers), re.IGNORECASE)
+    return any(
+        isinstance(value, str) and combined.search(value)
+        for value in section_payload.values()
+    )
+
+
 def _normalize_title(value: str) -> str:
     """Normalize a title string for uniqueness comparisons."""
     return re.sub(r"\W+", " ", value.lower()).strip()
@@ -435,6 +456,8 @@ def _normalize_bilingual_translation_order(line: str) -> str:
 def _normalize_learning_annotation_order(line: str) -> str:
     """Put Japanese, pronunciation, and meaning cues in the canonical order."""
     stripped = line.strip()
+    if stripped in {"()", "（ ）", "（　）"}:
+        return ""
     if _LEARNING_PLACEHOLDER_RE.fullmatch(stripped):
         return ""
 
@@ -490,6 +513,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
     """Normalize a lyric section into deterministic Suno-friendly section format."""
     body = _normalize_serialized_lyric_text(text or "")
     body = _SECTION_HEADER_RE.sub("", body, count=1)
+    body = _EMBEDDED_SECTION_LABEL_RE.sub("\n", body)
 
     lines = [line.rstrip() for line in body.splitlines()]
     normalized_lines: List[str] = []
@@ -509,11 +533,20 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 continue
             stripped = cleaned_stripped
         stripped = stripped.strip("'\"").strip()
+        stripped = stripped.replace("**", "").replace("__", "")
+        stripped = stripped.replace("`", "")
         expanded_segments = _expand_inline_lyric_separators(stripped)
         for segment in expanded_segments:
             normalized_segment = _normalize_learning_annotation_order(segment)
             if not normalized_segment:
                 continue
+            if (
+                normalized_segment.startswith("(")
+                and normalized_segment.endswith(")")
+                and _JAPANESE_CHAR_RE.search(normalized_segment)
+                and not _looks_like_romaji_cue(normalized_segment[1:-1])
+            ):
+                normalized_segment = normalized_segment[1:-1].strip()
             normalized_segment = _clean_script_contamination(normalized_segment)
             if (
                 normalized_segment.startswith("(")
@@ -628,6 +661,33 @@ def _has_japanese_script(section_payload: Dict[str, Any]) -> bool:
     )
 
 
+def _add_bilingual_rescue_hooks(
+    section_payload: Dict[str, Any],
+    concept: SongConcept,
+    target_japanese_ratio: float,
+) -> None:
+    """Keep a bilingual draft when the small model omits Japanese script."""
+    title = concept.title.strip() or "signal"
+    theme = concept.theme.strip() or "signal"
+    hooks = [
+        f"{title}の夜、信号が走る。",
+        f"{theme}を越えて、光になる。",
+        f"{title}の鼓動、闇を照らす。",
+        f"{theme}の声を、明日へつなぐ。",
+        "この回路で、夢を描く。",
+        "新しい波が、空を揺らす。",
+        "静かな熱が、世界を変える。",
+        "まだ見ぬ朝へ、走り出す。",
+    ]
+
+    for hook in hooks:
+        if _bilingual_mix_ok(section_payload, target_japanese_ratio)[0]:
+            break
+        section_payload["bridge"] = (
+            f"{section_payload.get('bridge', '').rstrip()}\n{hook}"
+        )
+
+
 def _line_looks_like_chinese_not_japanese(line: str) -> bool:
     """Flag a CJK line that reads as Chinese leakage rather than real Japanese.
 
@@ -732,6 +792,18 @@ def _learning_annotations_ok(
         f"japanese_lines={japanese_lines}, annotation_pairs={actual_pairs}, "
         f"required_pairs={required_pairs}"
     )
+
+
+def _sections_are_distinct(section_payload: Dict[str, Any]) -> bool:
+    """Reject drafts where most lyric sections are copied from one another."""
+    fields = ("verse_1", "pre_chorus", "chorus", "verse_2", "drop", "bridge", "solo", "outro")
+    signatures = {
+        re.sub(r"[^\w\u3040-\u30ff\u3400-\u9fff]+", " ", str(section_payload.get(field, ""))).strip().lower()
+        for field in fields
+        if section_payload.get(field)
+    }
+    populated = sum(1 for field in fields if section_payload.get(field))
+    return populated < 4 or len(signatures) >= max(3, populated // 2)
 
 
 def _extract_string_phrases(value: Any, max_items: int = 4) -> List[str]:
@@ -910,15 +982,15 @@ def _append_normalized_section(
 
 
 def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
-    """Compile normalized lyric blocks in the repeated Suno song structure."""
+    """Compile each generated lyric section once in Suno song order."""
     lyric_blocks: List[str] = []
 
     _append_normalized_section(lyric_blocks, lyrics.intro, "Instrumental Build")
     _append_normalized_section(lyric_blocks, lyrics.verse_1, "Verse 1")
-    pre_chorus_block = _append_normalized_section(lyric_blocks, lyrics.pre_chorus, "Pre-Chorus")
+    _append_normalized_section(lyric_blocks, lyrics.pre_chorus, "Pre-Chorus")
 
     uppercase_chorus = concept.lyric_language.strip().lower() == "english"
-    chorus_block = _append_normalized_section(
+    _append_normalized_section(
         lyric_blocks,
         lyrics.chorus,
         "Chorus",
@@ -927,19 +999,10 @@ def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
 
     _append_normalized_section(lyric_blocks, lyrics.verse_2, "Verse 2")
 
-    if pre_chorus_block:
-        lyric_blocks.append(pre_chorus_block)
-    if chorus_block:
-        lyric_blocks.append(chorus_block)
-
     _append_normalized_section(lyric_blocks, lyrics.drop, "Drop")
     _append_normalized_section(lyric_blocks, lyrics.bridge, "Bridge")
     _append_normalized_section(lyric_blocks, lyrics.solo, "Solo")
     _append_normalized_section(lyric_blocks, lyrics.breakdown, "Breakdown")
-
-    if chorus_block:
-        lyric_blocks.append(chorus_block)
-
     _append_normalized_section(lyric_blocks, lyrics.outro, "Outro")
     return lyric_blocks
 
@@ -1377,9 +1440,9 @@ def compose_lyrics(
             "Use standard Hepburn-style Romaji in cues: prefer o for を and macrons such as ō, ū, and ā when appropriate. "
             "Use Japanese kanji and kana, not Chinese-only glyphs or literal machine-translated phrasing. "
             "Let Japanese carry the narrative, emotional arc, and hook meaning. "
-            "For learner support, add pronunciation cues to roughly one out of every four Japanese lines, capped at six cues per song. "
-            "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
-            "Do not put Romaji in parentheses or mix the cue into the Japanese lyric line. Do not annotate every line. "
+            "Learner pronunciation cues are optional; prioritize natural, singable lyrics over annotations. "
+            "If adding a cue, place it immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
+            "Do not put Romaji in parentheses or mix a cue into the Japanese lyric line. Never annotate every line. "
             "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
             "These cues are instructional annotations, not sung lyrics. "
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
@@ -1397,8 +1460,8 @@ def compose_lyrics(
             "Distribute Japanese across verses, chorus, bridge, and outro so it is structurally integrated. "
             "For selected hooks or emotionally important lines, a Japanese phrase may be followed by a concise natural English sung echo on the next line. "
             "Use bilingual echoes selectively, not as a literal translation after every Japanese line. "
-            "For learner support, add pronunciation cues to roughly one out of every four Japanese lines, capped at six cues per song. "
-            "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
+            "Learner pronunciation cues are optional; prioritize natural, singable lyrics over annotations. "
+            "If adding a cue, place it immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
             "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. Do not annotate every line. "
             "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
             "These learning cues are annotations, not sung lyrics, and should never replace the Japanese line. "
@@ -1434,8 +1497,8 @@ def compose_lyrics(
                "Use standard Hepburn-style Romaji in cues: prefer o for を and macrons such as ō, ū, and ā when appropriate. "
                "Use Japanese kanji and kana, not Chinese-only glyphs or literal machine-translated phrasing. "
                "Japanese must carry the narrative and emotional meaning, not merely decorate an English technical concept. "
-               "Annotate roughly one out of every four Japanese lines, capped at six cues per song. "
-               "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
+               "Learner pronunciation cues are optional; prioritize natural, singable lyrics over annotations. "
+               "If adding a cue, place it immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
                "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. "
                "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
                "Do not annotate every line. "
@@ -1447,8 +1510,8 @@ def compose_lyrics(
                f"Aim for approximately {japanese_target_percent}% Japanese content; allow natural variation for musical phrasing and do not force rigid line alternation. "
                "A selected Japanese hook or emotional line may be followed by a concise natural English sung echo on the next line. "
                "Use echoes selectively; do not translate every Japanese line. "
-               "When learner support helps, add annotations to roughly one out of every four Japanese lines, capped at six cues per song. "
-               "Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
+               "When learner support helps, pronunciation annotations are optional and should be sparse. "
+               "If used, place each cue immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
                "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. "
                "Do not annotate every Japanese line. "
                "These annotations are not sung lyrics. Never put learning translations in parentheses. "
@@ -1479,7 +1542,8 @@ Suno Formatting Rules:
 6. Start every Intro with a vocalization like (Ahh ahh ahh) on its own line right after the section label — this primes Suno to prioritize lyric rendering
 7. Use sound-cue parentheticals at high-energy transitions: '(bass drop)' before a Drop, '(silence)' for a breakdown pause, '(chaos)' before a chaotic breakdown
 8. Follow character caps per section for API parsing compliance
-9. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things."""
+9. Make every section materially distinct. Do not copy Verse 1 into the Chorus, Drop, Bridge, Solo, or Outro.
+10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -1539,22 +1603,10 @@ Each field should contain the complete lyrics for that section, including any se
         max_attempts = 3 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
-        learning_retry_summary: Optional[str] = None
 
         for attempt in range(1, max_attempts + 1):
             attempt_user_prompt = user_prompt
-            if learning_retry_summary:
-                attempt_user_prompt = f"""Repair the following lyric JSON by adding more Japanese learning cues.
-
-The previous draft had sparse learner support: {learning_retry_summary}.
-Preserve the existing JSON keys, section markers, language mix, narrative, and Suno formatting.
-Add enough Japanese-first cue lines to meet the learner-support target without annotating every Japanese line.
-Each cue must go immediately after its Japanese lyric line: first the real pronunciation in brackets, then the real English meaning in brackets.
-Do not use placeholder labels. Do not put Romaji in parentheses. Return only a complete JSON object.
-
-Previous lyric JSON:
-{json.dumps(response_data, ensure_ascii=False)}"""
-            elif lyric_language == "bilingual" and attempt == 2:
+            if lyric_language == "bilingual" and attempt == 2:
                 attempt_user_prompt += (
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
                     f"- Aim for approximately {japanese_target_percent}% Japanese lyrical content, allowing natural variation for musical phrasing.\n"
@@ -1598,7 +1650,7 @@ Previous lyric JSON:
             response_text = ollama._chat(
                 system_prompt,
                 attempt_user_prompt,
-                max_tokens=1536,
+                max_tokens=4096,
                 format="json",
             )
             logger.debug(f"Ollama lyrics response (attempt {attempt}): {response_text[:200]}...")
@@ -1631,6 +1683,16 @@ Previous lyric JSON:
             for field in required_fields:
                 if field not in response_data:
                     raise ValueError(f"Missing required field: {field}")
+
+            if _has_prompt_schema_leakage(response_data):
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Ollama returned lyric schema instructions as content on attempt %s. Retrying.",
+                        attempt,
+                    )
+                    continue
+                raise ValueError("Ollama returned lyric schema instructions as content")
+
             last_valid_response_data = dict(response_data)
 
             if lyric_language in {"japanese", "bilingual"} and not _has_japanese_script(response_data):
@@ -1640,9 +1702,20 @@ Previous lyric JSON:
                         attempt,
                     )
                     continue
-                raise ValueError(
-                    "Japanese or bilingual lyrics must contain kana or kanji; Romaji alone is not valid."
-                )
+                if lyric_language == "bilingual":
+                    logger.warning(
+                        "Japanese lyric script missing after retry; preserving the generated bilingual draft "
+                        "with dynamic Japanese rescue hooks."
+                    )
+                    _add_bilingual_rescue_hooks(
+                        response_data,
+                        concept,
+                        japanese_mix_ratio,
+                    )
+                else:
+                    raise ValueError(
+                        "Japanese lyrics must contain kana or kanji; Romaji alone is not valid."
+                    )
 
             if lyric_language in {"japanese", "bilingual"} and _has_chinese_leakage(response_data):
                 if attempt < max_attempts:
@@ -1672,21 +1745,14 @@ Previous lyric JSON:
                         f"({mix_summary}). Refusing to submit an out-of-target song."
                     )
 
-            learning_ok, learning_summary = _learning_annotations_ok(
-                response_data, lyric_language
-            )
-            if not learning_ok:
+            if not _sections_are_distinct(response_data):
                 if attempt < max_attempts:
                     logger.warning(
-                        "Japanese learner annotations were sparse (%s). Retrying.",
-                        learning_summary,
+                        "Lyric sections were too repetitive on attempt %s. Retrying.",
+                        attempt,
                     )
-                    learning_retry_summary = learning_summary
                     continue
-                logger.warning(
-                    "Japanese learner annotations remain sparse (%s); continuing with lyrics.",
-                    learning_summary,
-                )
+                raise ValueError("Lyric sections were too repetitive after retry")
             break
         
         # Enforce uppercase chorus processing programmatically as a safeguard
