@@ -21,6 +21,11 @@ class BufferQueueFullError(RuntimeError):
     pass
 
 
+class BufferAuthenticationError(RuntimeError):
+    """Raised when Buffer rejects the configured API token."""
+    pass
+
+
 class BufferRateLimitError(RuntimeError):
   """Raised when Buffer API responds with HTTP 429 rate limiting."""
   pass
@@ -53,6 +58,11 @@ class BufferService:
         logger.debug("Buffer API raw response [%s]: %s", response.status_code, response.text)
         if not response.ok:
             logger.error(f"Buffer API {response.status_code}: {response.text}")
+            if response.status_code in (401, 403):
+                raise BufferAuthenticationError(
+                    "Buffer authentication failed (HTTP "
+                    f"{response.status_code}). Refresh BUFFER_API_KEY."
+                )
             if response.status_code == 429:
                 retry_window = ""
                 detail = "Too many requests from this client. Please try again later."

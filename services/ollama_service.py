@@ -621,6 +621,7 @@ Balance rules (non-negotiable):
 - If you mention a specific project by name, only attribute technologies or challenges that appear in that project's Detail field. Never transfer concepts from the article onto a project unless they are explicitly listed in its detail.
 - Include at least one specific detail from the article: a model name, number, benchmark, technique, or decision.
 - Reference your own background at most once per post, and only when it maps directly to one of the profile facts provided. If none connect naturally, write the post without a personal reference.
+- Stay anchored to this article's actual subject. If it is about music, fashion, culture, or another nontechnical topic, do not force unrelated software projects or infrastructure into the post.
 - Do not invent percentages, performance numbers, timelines, or outcomes that are not stated in the article or profile facts."""
         else:
             format_instructions = """Output rules:
@@ -634,6 +635,7 @@ Balance rules (non-negotiable):
 - If you mention a specific project by name, only attribute technologies or challenges that appear in that project's Detail field. Never transfer concepts from the article onto a project unless they are explicitly listed in its detail.
 - Include at least one specific detail from the article: a model name, number, benchmark, technique, or decision.
 - Reference your own background at most once per post, and only when it maps directly to one of the profile facts provided. If none connect naturally, write the post without a personal reference.
+- Stay anchored to this article's actual subject. If it is about music, fashion, culture, or another nontechnical topic, do not force unrelated software projects or infrastructure into the post.
 - Do not invent percentages, performance numbers, timelines, or outcomes that are not stated in the article or profile facts."""
 
         grounding_block = build_grounding_facts_block(grounding_facts or [])

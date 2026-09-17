@@ -32,7 +32,7 @@ from dotenv import load_dotenv
 from colorama import Fore, Style, init as _colorama_init
 
 from scheduler import PostScheduler
-from services.buffer_service import BufferService, BufferQueueFullError, BufferRateLimitError, BufferChannelNotConnectedError
+from services.buffer_service import BufferService, BufferQueueFullError, BufferRateLimitError, BufferChannelNotConnectedError, BufferAuthenticationError
 from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
 from services.shared import append_channel_footer, get_rei_toei_dir, get_youtube_scripts_dir
 from services.flux_capacitor import get_flux_service, SourceMode, RenderStatus
@@ -1970,6 +1970,9 @@ def main():
                     + "   Connect the channel in Buffer or run with a different --channel value."
                     + str(Style.RESET_ALL)
                 )
+                return
+            except BufferAuthenticationError as e:
+                print(str(Fore.RED) + f"\n❌ Buffer authentication failed: {e}" + str(Style.RESET_ALL))
                 return
             noun = "posts" if args.type == "post" else "ideas"
 

@@ -739,7 +739,7 @@ class ContentCurator:
         _conf_reason = "not generated"
 
         li_text = self.ai.summarise_for_curation(
-            article_text=article["summary"],
+            article_text=f"Title: {article['title']}\n{article['summary']}",
             source_url=article["link"],
             ssi_component=ssi_component,
             channel="linkedin",
@@ -780,7 +780,7 @@ class ContentCurator:
 
         time.sleep(request_delay)
         x_post = self.ai.summarise_for_curation(
-            article["summary"], article["link"], ssi_component, "x",
+            f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "x",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
             interactive=interactive, github_context=self.github_context,
         )
@@ -792,7 +792,7 @@ class ContentCurator:
 
         time.sleep(request_delay)
         threads_post = self.ai.summarise_for_curation(
-            article["summary"], article["link"], ssi_component, "threads",
+            f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "threads",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
             interactive=interactive, github_context=self.github_context,
         )
@@ -805,7 +805,7 @@ class ContentCurator:
 
         time.sleep(request_delay)
         bsky_post = self.ai.summarise_for_curation(
-            article["summary"], article["link"], ssi_component, "bluesky",
+            f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "bluesky",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
             interactive=interactive, github_context=self.github_context,
         )
@@ -818,7 +818,7 @@ class ContentCurator:
 
         time.sleep(request_delay)
         yt_script = self.ai.summarise_for_curation(
-            article["summary"], article["link"], ssi_component, "youtube",
+            f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "youtube",
             post_mode=True, grounding_facts=grounding_facts, extracted_facts=extracted_facts,
             interactive=interactive, github_context=self.github_context,
         )
