@@ -363,11 +363,25 @@ def _normalize_serialized_lyric_text(value: str) -> str:
 
 
 def _normalize_lyric_payload(section_payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize string fields in an LLM lyric payload before validation."""
-    return {
-        key: _normalize_serialized_lyric_text(value) if isinstance(value, str) else value
-        for key, value in section_payload.items()
+    """Normalize string fields and dictionary keys (lowercasing and key aliases)."""
+    key_aliases = {
+        "chorus_1": "chorus",
+        "refrain": "chorus",
+        "main_chorus": "chorus",
+        "verse1": "verse_1",
+        "verse2": "verse_2",
+        "prechorus": "pre_chorus",
+        "instrumental_build": "intro",
     }
+    
+    normalized: Dict[str, Any] = {}
+    for key, value in section_payload.items():
+        clean_key = str(key).strip().lower().replace(" ", "_")
+        clean_key = key_aliases.get(clean_key, clean_key)
+        normalized[clean_key] = (
+            _normalize_serialized_lyric_text(value) if isinstance(value, str) else value
+        )
+    return normalized
 
 
 def _has_prompt_schema_leakage(section_payload: Dict[str, Any]) -> bool:
@@ -1650,7 +1664,7 @@ Previous lyric JSON:
             response_text = ollama._chat(
                 system_prompt,
                 attempt_user_prompt,
-                max_tokens=4096,
+                max_tokens=2048,
                 format="json",
             )
             logger.debug(f"Ollama lyrics response (attempt {attempt}): {response_text[:200]}...")
@@ -1678,6 +1692,13 @@ Previous lyric JSON:
                         continue
                 elif not last_valid_response_data:
                     raise
+
+            # Key rescue: if chorus is missing, attempt to infer from payload
+            if "chorus" not in response_data:
+                for k, v in list(response_data.items()):
+                    if "chorus" in k or "refrain" in k:
+                        response_data["chorus"] = response_data.pop(k)
+                        break
 
             required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
             for field in required_fields:
