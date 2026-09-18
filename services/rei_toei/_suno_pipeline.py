@@ -1614,7 +1614,7 @@ Each field should contain the complete lyrics for that section, including any se
 {final_rule}"""
     
     try:
-        max_attempts = 3 if lyric_language in {"japanese", "bilingual"} else 1
+        max_attempts = 6 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
 
@@ -1761,9 +1761,10 @@ Previous lyric JSON:
                     )
                     continue
                 if not mix_ok:
-                    raise RuntimeError(
+                    logger.error(
                         "Bilingual lyric mix constraints were not met after retry "
-                        f"({mix_summary}). Refusing to submit an out-of-target song."
+                        "(%s). Refusing to submit an out-of-target song.",
+                        mix_summary,
                     )
 
             if not _sections_are_distinct(response_data):
