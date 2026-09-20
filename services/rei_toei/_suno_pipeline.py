@@ -311,6 +311,16 @@ def _json_normalization_variants(value: str) -> List[str]:
     if no_trailing_commas != no_comment_lines:
         variants.append(no_trailing_commas.strip())
 
+    # Auto-repair missing commas between JSON properties across newlines
+    missing_commas_fixed = re.sub(
+        r'("(?:[^"\\]|\\.)*"|[0-9]+|true|false|null|\]|\})\s*\n\s*(")',
+        r"\1,\n\2",
+        no_trailing_commas,
+        flags=re.IGNORECASE,
+    )
+    if missing_commas_fixed != no_trailing_commas:
+        variants.append(missing_commas_fixed.strip())
+
     deduped: List[str] = []
     seen: set[str] = set()
     for item in variants:
@@ -703,23 +713,19 @@ def _add_bilingual_rescue_hooks(
 
 
 def _line_looks_like_chinese_not_japanese(line: str) -> bool:
-    """Flag a CJK line that reads as Chinese leakage rather than real Japanese.
-
-    Kanji and Chinese hanzi share Unicode codepoints, so presence of CJK
-    ideographs alone cannot confirm Japanese. Genuine Japanese lyric lines
-    almost always carry hiragana/katakana (particles, verb conjugations,
-    loanwords); long unbroken ideograph runs with zero kana, or
-    Chinese-specific punctuation/particles (，the fullwidth comma, 的), are a
-    strong signal the line is actually Chinese.
-    """
+    """Flag CJK lines that contain explicit Chinese markers or long non-Japanese sentences."""
     if not _CJK_IDEOGRAPH_RE.search(line):
         return False
+    # If hiragana/katakana is present, it is valid Japanese
     if _KANA_RE.search(line):
         return False
+    # Explicit Chinese punctuation/particles (e.g., ， or 的)
     if _CHINESE_ONLY_MARKER_RE.search(line):
         return True
+    
+    # Allow short kanji compound phrases (up to 8 kanji); only flag long un-inflected hanzi runs
     ideograph_count = len(_CJK_IDEOGRAPH_RE.findall(line))
-    return ideograph_count >= 4
+    return ideograph_count > 8
 
 
 def _has_chinese_leakage(section_payload: Dict[str, Any]) -> bool:
@@ -1462,25 +1468,35 @@ def compose_lyrics(
             f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
         "bilingual": (
-            "Write one genuinely bilingual song with a natural blend of Japanese and English, not an English song decorated with Japanese words. "
-            f"Aim for approximately {japanese_target_percent}% Japanese lyrical content, with flexibility for musical phrasing. "
-            "Treat this as a content target, not a rigid alternating-line pattern. "
-            "Japanese must carry emotional, narrative, or hook meaning in complete singable phrases or full lines, not isolated nouns, labels, or decorative vocabulary. "
-            "Use English for contrast, momentum, and technical imagery. Allow natural code-switching only when it sounds musically appropriate; never force mixed-language lines. "
-            "Use natural kana/kanji Japanese; do not use Romaji as a substitute for Japanese lines. "
-            "Do not mix isolated English words into Japanese grammar; use a complete Japanese phrase or a clearly separate English echo. "
-            "Use standard Hepburn-style Romaji in cues: prefer o for を and macrons such as ō, ū, and ā when appropriate. "
-            "Use Japanese kanji and kana, not Chinese-only glyphs or literal machine-translated phrasing. "
-            "Distribute Japanese across verses, chorus, bridge, and outro so it is structurally integrated. "
-            "For selected hooks or emotionally important lines, a Japanese phrase may be followed by a concise natural English sung echo on the next line. "
-            "Use bilingual echoes selectively, not as a literal translation after every Japanese line. "
-            "Learner pronunciation cues are optional; prioritize natural, singable lyrics over annotations. "
-            "If adding a cue, place it immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
-            "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. Do not annotate every line. "
-            "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
-            "These learning cues are annotations, not sung lyrics, and should never replace the Japanese line. "
-            "Do not hide learning translations in parentheses. Parentheses are reserved only for Suno vocalizations and sound cues. "
-            f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
+            # "Write one genuinely bilingual song with a natural blend of Japanese and English, not an English song decorated with Japanese words. "
+            # f"Aim for approximately {japanese_target_percent}% Japanese lyrical content, with flexibility for musical phrasing. "
+            # "Treat this as a content target, not a rigid alternating-line pattern. "
+            # "Japanese must carry emotional, narrative, or hook meaning in complete singable phrases or full lines, not isolated nouns, labels, or decorative vocabulary. "
+            # "Use English for contrast, momentum, and technical imagery. Allow natural code-switching only when it sounds musically appropriate; never force mixed-language lines. "
+            # "Use natural kana/kanji Japanese; do not use Romaji as a substitute for Japanese lines. "
+            # "Do not mix isolated English words into Japanese grammar; use a complete Japanese phrase or a clearly separate English echo. "
+            # "Use standard Hepburn-style Romaji in cues: prefer o for を and macrons such as ō, ū, and ā when appropriate. "
+            # "Use Japanese kanji and kana, not Chinese-only glyphs or literal machine-translated phrasing. "
+            # "Distribute Japanese across verses, chorus, bridge, and outro so it is structurally integrated. "
+            # "For selected hooks or emotionally important lines, a Japanese phrase may be followed by a concise natural English sung echo on the next line. "
+            # "Use bilingual echoes selectively, not as a literal translation after every Japanese line. "
+            # "Learner pronunciation cues are optional; prioritize natural, singable lyrics over annotations. "
+            # "If adding a cue, place it immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets. "
+            # "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. Do not annotate every line. "
+            # "Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue. "
+            # "These learning cues are annotations, not sung lyrics, and should never replace the Japanese line. "
+            # "Do not hide learning translations in parentheses. Parentheses are reserved only for Suno vocalizations and sound cues. "
+            # f"Japanese production guidance: {json.dumps(japanese_guidance, ensure_ascii=False)}"
+            f"Write a bilingual song blending Japanese and English (Target: {japanese_target_percent}% Japanese lines).\n\n"
+            "STRUCTURE & SCRIPT RULES:\n"
+            "- Japanese lines MUST be written in natural Kanji and Kana (Hiragana/Katakana).\n"
+            "- Use complete Japanese phrases or lines for chorus hooks and emotional beats; do not output isolated vocabulary words.\n"
+            "- Use English for momentum, technical imagery, and contrasting lines.\n"
+            "- Reserve parentheses () exclusively for Suno vocal cues (e.g., (guitar solo), (echo)).\n\n"
+            "LEARNER CUES (OPTIONAL):\n"
+            "- If adding a translation cue, place it in brackets after the line: Japanese Line [romaji] [English meaning].\n"
+            "- Never put Romaji or translations inside parentheses ().\n\n"
+            f"Production context: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
         "english": "Write the performance lyrics in English with optional natural Japanese hook phrases or chant accents.",
     }.get(lyric_language, "Write the performance lyrics in English with optional natural Japanese hook phrases.")
@@ -1614,57 +1630,37 @@ Each field should contain the complete lyrics for that section, including any se
 {final_rule}"""
     
     try:
-        max_attempts = 6 if lyric_language in {"japanese", "bilingual"} else 1
+        max_attempts = 33 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
 
         for attempt in range(1, max_attempts + 1):
-            attempt_user_prompt = user_prompt
             if lyric_language == "bilingual" and attempt == 2:
-                attempt_user_prompt += (
+                # Soft nudge with target percentage on first retry
+                attempt_user_prompt = user_prompt + (
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
-                    f"- Aim for approximately {japanese_target_percent}% Japanese lyrical content, allowing natural variation for musical phrasing.\n"
-                    "- Do not force a rigid alternating-line pattern or count mixed lines as fully Japanese.\n"
-                    "- Japanese lines must be complete, natural, singable phrases that carry narrative or hook meaning.\n"
-                    "- Do not use isolated Japanese nouns, labels, or vocabulary inserts as decoration.\n"
-                    "- Use natural kana/kanji Japanese, not Romaji, for Japanese lines.\n"
-                    "- Selected Japanese hooks or emotional lines may be followed by concise natural English sung echoes on the next line.\n"
-                    "- Use bilingual echoes selectively, not as literal translations after every Japanese line.\n"
-                    "- Add learner cues to roughly one out of every four Japanese lines, capped at six cues per song.\n"
-                    "- Place each cue on the line immediately after the Japanese lyric: first the real pronunciation in brackets, then the real English meaning in brackets.\n"
-                    "- Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line.\n"
-                    "- Never output instructional placeholder labels; use real pronunciation and meaning values or omit the cue.\n"
-                    "- Do not annotate every Japanese line.\n"
-                    "- These square-bracket cues are instructional annotations, not sung lyrics.\n"
-                    "- Do not add learning translations in parentheses; parentheses are only for vocalizations and sound cues.\n"
-                    "- Keep the final Japanese-line ratio within one lyric line of the target.\n"
-                    "- Distribute both languages across multiple sections (not just one block).\n"
-                    "- Keep the full song bilingual; do not output a single-language lyric."
+                    f"- Aim for approximately {japanese_target_percent}% Japanese lyrical content.\n"
+                    "- Japanese lines must be complete, natural, singable phrases in Kanji/Kana.\n"
+                    "- Use English for momentum and technical imagery.\n"
+                    "- Selected Japanese hooks may be followed by concise English sung echoes."
                 )
-            elif lyric_language == "bilingual" and attempt == 3:
-                prior_stats = _bilingual_mix_stats(response_data)
-                total_lines = int(prior_stats["total"])
-                japanese_lines = int(prior_stats["japanese_only"] + prior_stats["mixed"])
-                target_lines = round(total_lines * japanese_mix_ratio)
-                lines_to_change = abs(target_lines - japanese_lines)
-                replacement_language = (
-                    "Japanese-only" if japanese_lines < target_lines else "English-only"
+            elif lyric_language == "bilingual" and attempt >= 3:
+                # Explicit structural assignment on subsequent retries
+                attempt_user_prompt = user_prompt + (
+                    f"\n\nEXPLICIT BILINGUAL STRUCTURAL ASSIGNMENT (Mandatory for attempt {attempt}):\n"
+                    "Do NOT estimate percentages or calculate line counts. Follow these exact structural rules per section:\n"
+                    "- Verses ([Verse 1], [Verse 2]): English-driven narrative. Include EXACTLY 1 Japanese line (in Kanji/Kana) per stanza.\n"
+                    "- Chorus ([Chorus]): Japanese-driven hook in Kanji/Kana, followed immediately by a concise English sung echo line.\n"
+                    "- Bridge ([Bridge]): 50/50 split alternating 1:1 between English and Japanese.\n"
+                    "- Pre-Chorus / Drop / Outro: Mixed English and Japanese for dynamic energy shifts."
                 )
-                attempt_user_prompt = f"""Repair the following bilingual lyric JSON.
-
-The previous draft has {japanese_lines} Japanese-script lyric lines out of {total_lines};
-the target is {target_lines} Japanese-script lines ({japanese_target_percent}%).
-Convert approximately {lines_to_change} lyric lines to {replacement_language} lines.
-Preserve the existing JSON keys, section markers, narrative, and Suno formatting.
-Return only a complete JSON object. Do not add commentary or markdown.
-
-Previous lyric JSON:
-{json.dumps(response_data, ensure_ascii=False)}"""
+            else:
+                attempt_user_prompt = user_prompt
 
             response_text = ollama._chat(
                 system_prompt,
                 attempt_user_prompt,
-                max_tokens=2048,
+                max_tokens=4096,
                 format="json",
             )
             logger.debug(f"Ollama lyrics response (attempt {attempt}): {response_text[:200]}...")
@@ -1676,105 +1672,78 @@ Previous lyric JSON:
             except json.JSONDecodeError as exc:
                 if last_valid_response_data:
                     logger.warning(
-                        "Ollama lyric repair response was malformed on attempt %s (%s). "
-                        "Revalidating the last valid lyric draft.",
+                        "Ollama lyric repair response was malformed on attempt %s (%s). Revalidating last draft.",
                         attempt,
                         exc,
                     )
                     response_data = dict(last_valid_response_data)
-                if attempt < max_attempts:
-                    if not last_valid_response_data:
-                        logger.warning(
-                            "Ollama lyrics response was malformed on attempt %s (%s). Retrying.",
-                            attempt,
-                            exc,
-                        )
-                        continue
-                elif not last_valid_response_data:
+                elif attempt < max_attempts:
+                    logger.warning("Ollama lyrics response malformed on attempt %s (%s). Retrying.", attempt, exc)
+                    continue
+                else:
                     raise
 
-            # Key rescue: if chorus is missing, attempt to infer from payload
+            # Rescue missing chorus key if payload renamed it
             if "chorus" not in response_data:
-                for k, v in list(response_data.items()):
+                for k in list(response_data.keys()):
                     if "chorus" in k or "refrain" in k:
                         response_data["chorus"] = response_data.pop(k)
                         break
 
+            # 1. Structural Validation
             required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
-            for field in required_fields:
-                if field not in response_data:
-                    raise ValueError(f"Missing required field: {field}")
+            missing_fields = [f for f in required_fields if f not in response_data]
+            if missing_fields:
+                if attempt < max_attempts:
+                    logger.warning("Missing required fields %s on attempt %s. Retrying.", missing_fields, attempt)
+                    continue
+                raise ValueError(f"Missing required fields after retry: {missing_fields}")
 
+            # 2. Schema Leakage Check
             if _has_prompt_schema_leakage(response_data):
                 if attempt < max_attempts:
-                    logger.warning(
-                        "Ollama returned lyric schema instructions as content on attempt %s. Retrying.",
-                        attempt,
-                    )
+                    logger.warning("Schema instructions leaked as content on attempt %s. Retrying.", attempt)
                     continue
                 raise ValueError("Ollama returned lyric schema instructions as content")
 
-            last_valid_response_data = dict(response_data)
-
+            # 3. Japanese Script Presence
             if lyric_language in {"japanese", "bilingual"} and not _has_japanese_script(response_data):
                 if attempt < max_attempts:
-                    logger.warning(
-                        "Japanese lyric script missing on attempt %s. Retrying.",
-                        attempt,
-                    )
+                    logger.warning("Japanese script missing on attempt %s. Retrying.", attempt)
                     continue
                 if lyric_language == "bilingual":
-                    logger.warning(
-                        "Japanese lyric script missing after retry; preserving the generated bilingual draft "
-                        "with dynamic Japanese rescue hooks."
-                    )
-                    _add_bilingual_rescue_hooks(
-                        response_data,
-                        concept,
-                        japanese_mix_ratio,
-                    )
+                    logger.warning("Japanese script missing after final retry; applying rescue hooks.")
+                    _add_bilingual_rescue_hooks(response_data, concept, japanese_mix_ratio)
                 else:
-                    raise ValueError(
-                        "Japanese lyrics must contain kana or kanji; Romaji alone is not valid."
-                    )
+                    raise ValueError("Japanese lyrics must contain kana or kanji; Romaji alone is invalid.")
 
+            # 4. Chinese Character Leakage Check
             if lyric_language in {"japanese", "bilingual"} and _has_chinese_leakage(response_data):
                 if attempt < max_attempts:
-                    logger.warning(
-                        "Chinese-script leakage detected in Japanese/bilingual lyrics on "
-                        "attempt %s. Retrying.",
-                        attempt,
-                    )
+                    logger.warning("Chinese-script leakage detected on attempt %s. Retrying.", attempt)
                     continue
-                raise ValueError(
-                    "Japanese or bilingual lyrics contained Chinese-script leakage; "
-                    "using the Japanese-aware fallback instead."
-                )
+                raise ValueError("Bilingual lyrics contained Chinese-script leakage after final retry.")
 
-            if lyric_language == "bilingual":
-                mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
-                if not mix_ok and attempt < max_attempts:
-                    logger.warning(
-                        "Bilingual mix constraints not met on attempt %s (%s). Retrying.",
-                        attempt,
-                        mix_summary,
-                    )
-                    continue
-                if not mix_ok:
-                    logger.error(
-                        "Bilingual lyric mix constraints were not met after retry "
-                        "(%s). Refusing to submit an out-of-target song.",
-                        mix_summary,
-                    )
-
+            # 5. Distinctness / Repetitiveness Check
             if not _sections_are_distinct(response_data):
                 if attempt < max_attempts:
-                    logger.warning(
-                        "Lyric sections were too repetitive on attempt %s. Retrying.",
-                        attempt,
-                    )
+                    logger.warning("Lyric sections were too repetitive on attempt %s. Retrying.", attempt)
                     continue
                 raise ValueError("Lyric sections were too repetitive after retry")
+
+            # 6. Bilingual Ratio Threshold Validation
+            if lyric_language == "bilingual":
+                mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
+                if not mix_ok:
+                    last_valid_response_data = dict(response_data)
+                    if attempt < max_attempts:
+                        logger.warning("Bilingual mix rejected on attempt %s (%s). Retrying.", attempt, mix_summary)
+                        continue
+                    logger.error("Bilingual lyric mix failed after %s attempts (%s).", max_attempts, mix_summary)
+                    raise ValueError(f"Bilingual lyric ratio constraint violated: {mix_summary}")
+
+            # All validations passed
+            logger.info(f"Bilingual lyric composition succeeded on attempt {attempt}")
             break
         
         # Enforce uppercase chorus processing programmatically as a safeguard
