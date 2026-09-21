@@ -8,6 +8,8 @@ import logging
 import time
 from typing import Any, Sequence, TypeVar, Union, cast
 
+import numpy as np
+
 from services.avatar_intelligence._models import (
     DomainEvidenceFact,
     EvidenceFact,
@@ -235,16 +237,23 @@ def _retrieve_evidence_bm25(
     facts: list[EvidenceFact],
     limit: int,
 ) -> list[EvidenceFact]:
-    """BM25Okapi-backed retrieval path."""
+    """BM25Okapi-backed retrieval path optimized with NumPy vector indexing."""
     bm25 = _get_bm25_index("project", facts, _fact_tokens)
     q_tokens = re.findall(r"[a-zA-Z0-9_+#.-]{2,}", query.lower())
-    scores: list[float] = bm25.get_scores(q_tokens).tolist()
+    scores: np.ndarray = bm25.get_scores(q_tokens)  # Directly numpy.ndarray
 
-    ranked = sorted(zip(scores, facts), key=lambda x: x[0], reverse=True)
-    top = [f for s, f in ranked if s > 0.0][:limit]
-    if top:
-        return top
-    return [f for _, f in ranked[:limit]]
+    if scores.size == 0:
+        return []
+
+    # C-speed ranking using NumPy argsort
+    top_indices = np.argsort(scores)[::-1]
+    positive_mask = scores[top_indices] > 0.0
+    positive_indices = top_indices[positive_mask]
+
+    chosen_indices = (
+        positive_indices[:limit] if positive_indices.size > 0 else top_indices[:limit]
+    )
+    return [facts[i] for i in chosen_indices]
 
 
 def _retrieve_evidence_fallback(
@@ -252,30 +261,33 @@ def _retrieve_evidence_fallback(
     facts: list[EvidenceFact],
     limit: int,
 ) -> list[EvidenceFact]:
-    """Hand-weighted keyword fallback used when rank_bm25 is not installed."""
+    """Hand-weighted keyword fallback optimized with NumPy score arrays."""
     q_lower = query.lower()
     q_words = set(q_lower.split())
 
-    scored: list[tuple[int, Any]] = []
-    for fact in facts:
-        score = 0
+    scores = np.zeros(len(facts), dtype=np.float32)
+
+    for idx, fact in enumerate(facts):
+        score = 0.0
         proj_lower = fact.project.lower()
         if proj_lower in q_lower or any(w in proj_lower for w in q_words):
-            score += 5
+            score += 5.0
         for skill in fact.skills:
             if skill.lower() in q_lower:
-                score += 10
+                score += 10.0
         detail_words = set(fact.details.lower().split())
-        overlap = q_words & detail_words
-        score += len(overlap) * 3
+        overlap = len(q_words & detail_words)
+        score += overlap * 3.0
         score += min(len(fact.details) // 100, 2)
-        scored.append((score, fact))
+        scores[idx] = score
 
-    scored.sort(key=lambda x: x[0], reverse=True)
-    top = [f for s, f in scored if s > 0][:limit]
-    if top:
-        return top
-    return [f for _, f in scored[:limit]]
+    top_indices = np.argsort(scores)[::-1]
+    positive_indices = top_indices[scores[top_indices] > 0]
+
+    chosen_indices = (
+        positive_indices[:limit] if positive_indices.size > 0 else top_indices[:limit]
+    )
+    return [facts[i] for i in chosen_indices]
 
 
 # ---------------------------------------------------------------------------
@@ -288,16 +300,22 @@ def _retrieve_domain_evidence_bm25(
     facts: list[DomainEvidenceFact],
     limit: int,
 ) -> list[DomainEvidenceFact]:
-    """BM25Okapi-backed retrieval path for domain evidence facts."""
+    """BM25Okapi-backed retrieval path for domain facts with NumPy vector indexing."""
     bm25 = _get_bm25_index("domain", facts, _domain_fact_tokens)
     q_tokens = re.findall(r"[a-zA-Z0-9_+#.-]{2,}", query.lower())
-    scores: list[float] = bm25.get_scores(q_tokens).tolist()
+    scores: np.ndarray = bm25.get_scores(q_tokens)  # Directly numpy.ndarray
 
-    ranked = sorted(zip(scores, facts), key=lambda x: x[0], reverse=True)
-    top = [f for s, f in ranked if s > 0.0][:limit]
-    if top:
-        return top
-    return [f for _, f in ranked[:limit]]
+    if scores.size == 0:
+        return []
+
+    top_indices = np.argsort(scores)[::-1]
+    positive_mask = scores[top_indices] > 0.0
+    positive_indices = top_indices[positive_mask]
+
+    chosen_indices = (
+        positive_indices[:limit] if positive_indices.size > 0 else top_indices[:limit]
+    )
+    return [facts[i] for i in chosen_indices]
 
 
 def _retrieve_domain_evidence_fallback(
@@ -305,30 +323,33 @@ def _retrieve_domain_evidence_fallback(
     facts: list[DomainEvidenceFact],
     limit: int,
 ) -> list[DomainEvidenceFact]:
-    """Hand-weighted keyword fallback for domain facts when rank_bm25 is not installed."""
+    """Hand-weighted keyword fallback for domain facts using NumPy arrays."""
     q_lower = query.lower()
     q_words = set(q_lower.split())
 
-    scored: list[tuple[int, DomainEvidenceFact]] = []
-    for fact in facts:
-        score = 0
+    scores = np.zeros(len(facts), dtype=np.float32)
+
+    for idx, fact in enumerate(facts):
+        score = 0.0
         domain_lower = fact.domain.lower()
         if domain_lower in q_lower or any(w in domain_lower for w in q_words):
-            score += 5
+            score += 5.0
         for tag in fact.tags:
             if tag.lower() in q_lower:
-                score += 10
+                score += 10.0
         statement_words = set(fact.statement.lower().split())
-        overlap = q_words & statement_words
-        score += len(overlap) * 3
+        overlap = len(q_words & statement_words)
+        score += overlap * 3.0
         score += min(len(fact.statement) // 100, 2)
-        scored.append((score, fact))
+        scores[idx] = score
 
-    scored.sort(key=lambda x: x[0], reverse=True)
-    top = [f for s, f in scored if s > 0][:limit]
-    if top:
-        return top
-    return [f for _, f in scored[:limit]]
+    top_indices = np.argsort(scores)[::-1]
+    positive_indices = top_indices[scores[top_indices] > 0]
+
+    chosen_indices = (
+        positive_indices[:limit] if positive_indices.size > 0 else top_indices[:limit]
+    )
+    return [facts[i] for i in chosen_indices]
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +386,7 @@ def retrieve_evidence(
 
     Uses BM25Okapi (rank_bm25) when available — accounts for term-frequency
     saturation and corpus-level IDF so rare skills score higher than common
-    words like 'python'.  Falls back to hand-weighted keyword overlap when
+    words like 'python'. Falls back to hand-weighted keyword overlap when
     rank_bm25 is not installed.
 
     Returns up to *limit* facts; falls back to all facts when nothing scores.

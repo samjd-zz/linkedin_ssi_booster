@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import re
 import logging
-from typing import Union
+import re
+from typing import Any, Union, cast
 
 from services.avatar_intelligence._models import (
     AvatarState,
@@ -187,7 +187,8 @@ def get_grounding_context_for_query(
         # Tiny corpora can produce zero/non-positive BM25 scores even for a
         # useful token match. Fall back to the retrieval helper so callers still
         # get grounding context instead of a blank prompt block.
-        relevant = retrieve_evidence(query, facts + domain_facts, limit=limit)
+        combined_facts = cast(list[Any], facts + domain_facts)
+        relevant = retrieve_evidence(query, combined_facts, limit=limit)
         project_facts_sel = [f for f in relevant if isinstance(f, EvidenceFact)]
         domain_facts_sel = [f for f in relevant if isinstance(f, DomainEvidenceFact)]
         external_facts_sel = [f for f in relevant if isinstance(f, ExternalEvidenceFact)]
@@ -201,7 +202,8 @@ def get_grounding_context_for_query(
         return "\n\n".join(fallback_parts) if fallback_parts else ""
     else:
         # Fallback: use retrieve_evidence (which now uses the same split)
-        relevant = retrieve_evidence(query, facts + domain_facts, limit=limit)
+        combined_facts = cast(list[Any], facts + domain_facts)
+        relevant = retrieve_evidence(query, combined_facts, limit=limit)
         project_facts_sel = [f for f in relevant if isinstance(f, EvidenceFact)]
         domain_facts_sel = [f for f in relevant if isinstance(f, DomainEvidenceFact)]
         external_facts_sel = [f for f in relevant if isinstance(f, ExternalEvidenceFact)]

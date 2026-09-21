@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import TYPE_CHECKING
 
+import numpy as np
 from colorama import Fore, Style
 
 from services.console_grounding._config import (
@@ -49,33 +51,44 @@ def _get_model2vec_service():
         return None
 
 
-def _model2vec_similarity(left: str, right: str) -> float:
-    """Return optional Model2Vec similarity without affecting degraded mode."""
-    service = _get_model2vec_service()
-    if service is None:
-        return 0.0
-    try:
-        return service.semantic_similarity(left, right)
-    except Exception as exc:
-        logger.debug("Model2Vec truth-gate similarity skipped: %s", exc)
-        return 0.0
+def _compute_vectorized_cosine_similarity(
+    source_embeddings: np.ndarray, target_embeddings: np.ndarray
+) -> np.ndarray:
+    """Compute cosine similarity matrix between source and target embedding matrices.
+    
+    Args:
+        source_embeddings: Array of shape (S, D)
+        target_embeddings: Array of shape (F, D)
+        
+    Returns:
+        Similarity matrix of shape (S, F) with values in range [-1.0, 1.0].
+    """
+    if source_embeddings.size == 0 or target_embeddings.size == 0:
+        return np.array([])
+
+    # Normalize embedding vectors along vector dimension D
+    source_norm = np.linalg.norm(source_embeddings, axis=1, keepdims=True)
+    target_norm = np.linalg.norm(target_embeddings, axis=1, keepdims=True)
+
+    # Avoid divide-by-zero for zero vectors
+    source_norm = np.where(source_norm == 0, 1e-10, source_norm)
+    target_norm = np.where(target_norm == 0, 1e-10, target_norm)
+
+    normalized_source = source_embeddings / source_norm
+    normalized_target = target_embeddings / target_norm
+
+    # Matrix multiplication (S, D) @ (D, F) -> (S, F)
+    return np.dot(normalized_source, normalized_target.T)
 
 
 def _is_project_like_org_mention(sentence: str, org_phrase: str) -> bool:
-    """Return True when an ORG-like phrase is used as a project or event reference.
-
-    This prevents false positives like "G7 RIA project" or "G7 GovAI Grand Challenge"
-    where spaCy may label the phrase as ORG even though the sentence is explicitly
-    discussing a project/event/challenge, not introducing an unsupported organization.
-    """
+    """Return True when an ORG-like phrase is used as a project or event reference."""
     sent_lower = sentence.lower()
     org_lower = org_phrase.lower().strip()
     if not org_lower:
         return False
-    # Detect explicit "project" keyword after the org phrase
     if "project" in sent_lower and re.search(rf"\b{re.escape(org_lower)}\s+project\b", sent_lower):
         return True
-    # Detect event/competition keywords anywhere in the sentence
     _EVENT_KEYWORDS = {"challenge", "summit", "conference", "forum", "hackathon", "competition", "congress", "symposium"}
     if any(kw in sent_lower for kw in _EVENT_KEYWORDS):
         return True
@@ -83,16 +96,7 @@ def _is_project_like_org_mention(sentence: str, org_phrase: str) -> bool:
 
 
 def _is_likely_false_positive_org(org_phrase: str) -> bool:
-    """Return True when an ORG phrase is likely a formatting artifact or tag.
-
-    Skips:
-      - Phrases containing newlines (e.g., 'Scale\nIf' from text wrapping)
-      - Phrases containing slashes (e.g., 'AI/GovTech/Ottawa' community tags)
-      - Short social CTA labels such as 'DM' / 'Direct Message' used in copy
-        calls-to-action, not as company names
-      - Social phrases like 'DM exchange' or 'direct message exchange' that are
-        conversational CTA language, not organizations
-    """
+    """Return True when an ORG phrase is likely a formatting artifact or tag."""
     if not org_phrase:
         return False
     norm = org_phrase.strip().lower()
@@ -118,12 +122,7 @@ def _is_likely_false_positive_org(org_phrase: str) -> bool:
 
 
 def _is_valid_social_cta_sentence(sentence: str) -> bool:
-    """Return True for standard social CTA wording like 'DM' or 'Send a DM'.
-
-    These are valid LinkedIn CTA phrases used in outreach copy, not organization
-    names or unsupported claims. Keep them through the truth gate even when they
-    are short and lightweight.
-    """
+    """Return True for standard social CTA wording like 'DM' or 'Send a DM'."""
     text = sentence.lower()
     if "dm" not in text and "direct message" not in text:
         return False
@@ -155,18 +154,7 @@ def truth_gate_result(
     suggest_facts: bool = True,
     dot_facts: list[ProjectFact] | None = None,
 ) -> tuple[str, TruthGateMeta]:
-    """Truth gate that returns both the filtered text and scoring metadata.
-
-    Scans each sentence for unsupported numeric claims, year references, dollar
-    amounts, org names, and project-technology misattributions.  Returns the
-    cleaned text and a :class:`TruthGateMeta` with removed_count, reason_codes,
-    DoT gradient scores, and spaCy similarity scores.
-
-    When *interactive* is True, flagged sentences are presented for confirmation
-    and decisions are recorded in the avatar learning log.
-    When *suggest_facts* is True, spaCy is used to suggest supporting facts for
-    dropped sentences (interactive mode only).
-    """
+    """Truth gate that returns both the filtered text and scoring metadata."""
     if not text:
         return text, TruthGateMeta(removed_count=0, total_sentences=0)
 
@@ -174,10 +162,6 @@ def truth_gate_result(
 
     domain_facts = get_domain_facts_from_avatar_state()
     all_facts = facts + domain_facts
-    logger.debug(
-        "Truth gate using %d project facts + %d domain facts", len(facts), len(domain_facts)
-    )
-
     all_persona_facts = get_all_persona_facts_from_avatar_state()
     allowed = _build_allowed_tokens(article_text, all_facts + all_persona_facts)
     known_project_names = get_project_names_from_avatar_state()
@@ -210,7 +194,6 @@ def truth_gate_result(
 
     whitelisted_phrases = get_whitelisted_phrases()
 
-    # Built once: the evidence corpus is identical for every sentence.
     _bm25_index = None
     if _BM25_AVAILABLE and (article_text or all_facts):
         _bm25_index = build_bm25_index(article_text, all_facts)
@@ -220,6 +203,17 @@ def truth_gate_result(
         for f in all_facts
         if (f.project or f.details)
     ]
+
+    # Pre-compute Model2Vec embeddings with NumPy matrix acceleration if available
+    m2v_service = _get_model2vec_service()
+    m2v_fact_embeddings: np.ndarray | None = None
+    if m2v_service is not None and _fact_texts:
+        encode_fn = getattr(m2v_service, "encode", None)
+        if callable(encode_fn):
+            try:
+                m2v_fact_embeddings = np.asarray(encode_fn(_fact_texts))
+            except Exception as _enc_exc:
+                logger.debug("Model2Vec fact pre-embedding failed: %s", _enc_exc)
 
     for sentence in sentences:
         stripped = sentence.strip()
@@ -268,30 +262,36 @@ def truth_gate_result(
                 _sim = spacy_nlp.compute_similarity(sentence, article_text)
                 spacy_sim_scores[sentence] = _sim
                 if 0.0 < _sim < spacy_sim_floor:
-                    model2vec_sim = _model2vec_similarity(sentence, article_text)
+                    model2vec_sim = 0.0
+                    if m2v_service is not None and hasattr(m2v_service, "semantic_similarity"):
+                        model2vec_sim = m2v_service.semantic_similarity(sentence, article_text)
                     if model2vec_sim < spacy_sim_floor:
                         reason = f"low_semantic_similarity: sim={_sim:.3f} < floor={spacy_sim_floor:.2f}"
 
-        # Part E: spaCy semantic similarity vs persona/domain fact pool (all contexts)
-        # Computes best similarity across all facts individually; works in console mode too.
-        if not reason and spacy_nlp and all_facts:
-            if _fact_texts:
-                try:
-                    _sims = spacy_nlp.compute_similarity_batch(sentence, _fact_texts)
-                    _best_fact_sim = max(_sims) if _sims else 0.0
-                    fact_sim_scores[sentence] = _best_fact_sim
-                    if 0.0 < _best_fact_sim < fact_sim_floor:
-                        model2vec_service = _get_model2vec_service()
-                        model2vec_sims = (
-                            model2vec_service.batch_semantic_similarity(sentence, _fact_texts)
-                            if model2vec_service is not None
-                            else []
-                        )
-                        model2vec_best = max(model2vec_sims) if model2vec_sims else 0.0
-                        if model2vec_best < fact_sim_floor:
-                            reason = f"low_fact_similarity: sim={_best_fact_sim:.3f} < floor={fact_sim_floor:.2f}"
-                except Exception as _fsim_exc:
-                    logger.debug("Fact-pool spaCy sim failed: %s", _fsim_exc)
+        # Part E: Vectorized similarity vs persona/domain fact pool using NumPy
+        if not reason and spacy_nlp and all_facts and _fact_texts:
+            try:
+                _sims = spacy_nlp.compute_similarity_batch(sentence, _fact_texts)
+                # Fast NumPy vector max computation
+                sims_array = np.asarray(_sims, dtype=np.float32)
+                _best_fact_sim = float(np.max(sims_array)) if sims_array.size > 0 else 0.0
+                fact_sim_scores[sentence] = _best_fact_sim
+
+                if 0.0 < _best_fact_sim < fact_sim_floor:
+                    model2vec_best = 0.0
+                    encode_fn = getattr(m2v_service, "encode", None) if m2v_service is not None else None
+                    if encode_fn is not None and m2v_fact_embeddings is not None and callable(encode_fn):
+                        sent_emb = np.asarray(encode_fn([sentence]))
+                        sim_matrix = _compute_vectorized_cosine_similarity(sent_emb, m2v_fact_embeddings)
+                        model2vec_best = float(np.max(sim_matrix)) if sim_matrix.size > 0 else 0.0
+                    elif m2v_service is not None and hasattr(m2v_service, "batch_semantic_similarity"):
+                        m2v_sims = m2v_service.batch_semantic_similarity(sentence, _fact_texts)
+                        model2vec_best = float(np.max(m2v_sims)) if m2v_sims else 0.0
+
+                    if model2vec_best < fact_sim_floor:
+                        reason = f"low_fact_similarity: sim={_best_fact_sim:.3f} < floor={fact_sim_floor:.2f}"
+            except Exception as _fsim_exc:
+                logger.debug("Fact-pool spaCy sim failed: %s", _fsim_exc)
 
         # Strict token-matching checks
         if not reason:
@@ -317,7 +317,7 @@ def truth_gate_result(
                     break
 
         if not reason:
-            # Part D: spaCy NER org-name check (falls back to _ORG_NAME_RE regex)
+            # Part D: spaCy NER org-name check
             _spacy_orgs = _extract_spacy_orgs(sentence, spacy_nlp) if spacy_nlp else []
             if _spacy_orgs:
                 for _org in _spacy_orgs:
@@ -328,9 +328,7 @@ def truth_gate_result(
                     if _is_likely_false_positive_org(_org):
                         continue
                     _org_lower = _org.lower()
-                    # Strip leading articles before project name matching
                     _org_normalised = re.sub(r"^(the|a|an)\s+", "", _org_lower)
-                    # Skip if the ORG phrase is a full name or substring of a known project
                     if any(_org_lower in proj_name for proj_name in known_project_names):
                         continue
                     if any(_org_normalised in proj_name for proj_name in known_project_names):
@@ -349,9 +347,7 @@ def truth_gate_result(
                     if _is_likely_false_positive_org(m.group(1)):
                         continue
                     org_phrase = m.group(1).lower()
-                    # Strip leading articles before project name matching
                     org_normalised = re.sub(r"^(the|a|an)\s+", "", org_phrase)
-                    # Skip if the ORG phrase is a full name or substring of a known project
                     if any(org_phrase in proj_name for proj_name in known_project_names):
                         continue
                     if any(org_normalised in proj_name for proj_name in known_project_names):
@@ -374,11 +370,6 @@ def truth_gate_result(
                     dot_per_sentence_scores.append(_sent_dot.truth_gradient)
                     if _sent_dot.flagged:
                         reason = f"weak_dot_gradient: gradient={_sent_dot.truth_gradient:.3f}"
-                        logger.debug(
-                            "DoT per-sentence flagged: gradient=%.3f sentence='%s...'",
-                            _sent_dot.truth_gradient,
-                            sentence[:60],
-                        )
             except Exception as _dot_sent_exc:
                 logger.debug("Per-sentence DoT failed: %s", _dot_sent_exc)
 
@@ -453,6 +444,10 @@ def truth_gate_result(
             len(sentences),
         )
 
+    # Calculate DoT statistics using NumPy array methods
+    dot_array = np.asarray(dot_per_sentence_scores, dtype=np.float32)
+    mean_gradient = float(np.mean(dot_array)) if dot_array.size > 0 else 0.0
+
     meta = TruthGateMeta(
         removed_count=len(removed),
         total_sentences=len(sentences),
@@ -479,19 +474,6 @@ def truth_gate_result(
         meta.dot_flagged = _dot.flagged
         meta.dot_uncertainty_sources = _dot.uncertainty_sources
         meta.dot_result = _dot
-        if _dot.flagged:
-            logger.warning(
-                "DoT: truth gradient %.3f below threshold — post flagged (channel=%s)",
-                _dot.truth_gradient,
-                channel,
-            )
-        else:
-            logger.debug(
-                "DoT: truth gradient=%.3f uncertainty=%.3f (channel=%s)",
-                _dot.truth_gradient,
-                _dot.uncertainty,
-                channel,
-            )
     except Exception as _dot_exc:
         logger.debug("DoT scoring unavailable: %s", _dot_exc)
 
@@ -507,16 +489,7 @@ def truth_gate(
     channel: str = "linkedin",
     suggest_facts: bool = True,
 ) -> str:
-    """Lightweight post-generation truth gate.
-
-    Scans each sentence in *text* for unsupported numeric claims, year
-    references, dollar amounts, company names, and project-technology
-    misattributions.  Returns the filtered text (may be identical to input
-    if nothing was stripped).
-
-    When *interactive* is True each flagged sentence is presented to the user
-    for confirmation; decisions are recorded in the avatar learning log.
-    """
+    """Lightweight post-generation truth gate."""
     filtered, _ = truth_gate_result(
         text=text,
         article_text=article_text,

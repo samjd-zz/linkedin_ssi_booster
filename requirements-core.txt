@@ -29,6 +29,7 @@ pytest-asyncio>=0.23.0
 term-image>=0.0.1
 Pillow>=10.0.0
 python-dotenv>=1.0.0
+numpy>=1.26.0
 
 # --- DATABASE ---
 sqlalchemy>=2.0.0

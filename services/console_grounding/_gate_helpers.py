@@ -6,6 +6,9 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any
+
+import numpy as np
 
 from services.console_grounding._models import ProjectFact
 
@@ -51,9 +54,9 @@ def get_domain_facts_from_avatar_state() -> list[ProjectFact]:
     """Load domain facts from avatar state for use as evidence in the truth gate."""
     try:
         from services.avatar_intelligence import (
+            domain_facts_to_project_facts,
             load_avatar_state,
             normalize_domain_facts,
-            domain_facts_to_project_facts,
         )
         state = load_avatar_state()
         if not state.domain_knowledge:
@@ -72,9 +75,9 @@ def get_all_persona_facts_from_avatar_state() -> list[ProjectFact]:
     """
     try:
         from services.avatar_intelligence import (
+            evidence_facts_to_project_facts,
             load_avatar_state,
             normalize_evidence_facts,
-            evidence_facts_to_project_facts,
         )
         state = load_avatar_state()
         return evidence_facts_to_project_facts(normalize_evidence_facts(state))
@@ -220,7 +223,7 @@ def _score_sentence_bm25(
     """Score a sentence against article text and persona facts using BM25.
 
     Pass *index* from :func:`build_bm25_index` to avoid re-tokenizing the whole
-    corpus for every sentence.
+    corpus for every sentence. Uses NumPy for fast score aggregation.
     """
     if not _BM25_AVAILABLE:
         return 0.0
@@ -231,8 +234,8 @@ def _score_sentence_bm25(
         sentence_tokens = _tokenize_for_bm25(sentence)
         if not sentence_tokens:
             return 0.0
-        scores = bm25.get_scores(sentence_tokens)
-        return float(max(scores)) if len(scores) > 0 else 0.0
+        scores = np.asarray(bm25.get_scores(sentence_tokens), dtype=np.float64)
+        return float(np.max(scores)) if scores.size > 0 else 0.0
     except Exception as exc:
         logger.debug("BM25 scoring failed for sentence: %s", exc)
         return 0.0
@@ -244,7 +247,7 @@ def _score_sentence_bm25(
 def _compute_fact_overlap(sentence_tokens: set[str], fact_tokens: set[str]) -> float:
     """Compute Jaccard token overlap between sentence and fact token sets.
 
-    Returns a value in [0, 1].  Returns 0.0 when either set is empty.  A
+    Returns a value in [0, 1]. Returns 0.0 when either set is empty. A
     non-zero overlap activates the 4-term DoT formula instead of the 3-term
     fallback.
     """
@@ -270,11 +273,11 @@ def _build_evidence_paths_for_sentence(
         return []
     try:
         from services.derivative_of_truth import (
-            EvidencePath,
             EVIDENCE_TYPE_PRIMARY,
             EVIDENCE_TYPE_SECONDARY,
             REASONING_TYPE_LOGICAL,
             REASONING_TYPE_STATISTICAL,
+            EvidencePath,
         )
     except ImportError:
         return []

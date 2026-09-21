@@ -9,7 +9,7 @@ adds graph proximity and claim-support signals on top.
 Integrates with:
 - avatar_intelligence.retrieve_evidence (BM25 path)
 - knowledge_graph.KnowledgeGraphManager (graph path)
-- derivative_of_truth (truth gradient scoring in score_breakdown)
+- derivative_of_truth (4-layer truthgate in score_breakdown)
 
 Falls back gracefully to pure BM25 when networkx / KnowledgeGraphManager
 is unavailable.
@@ -18,8 +18,7 @@ is unavailable.
 from __future__ import annotations
 
 import logging
-import re
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,6 @@ except ImportError:  # pragma: no cover
 def _tokenize(text: str) -> list[str]:
     """Lemmatized, language-aware tokens shared with the truth gate."""
     from services.spacy_nlp import tokenize_for_search
-
     return tokenize_for_search(text)
 
 
@@ -57,19 +55,23 @@ def _fact_text(fact: Any) -> str:
         v = getattr(fact, attr, None)
         if v:
             parts.append(str(v))
+    
     skills = getattr(fact, "skills", None) or getattr(fact, "tags", None) or []
     if skills:
         parts.extend(skills)
+        
     # DomainEvidenceFact fields
     for attr in ("domain", "statement"):
         v = getattr(fact, attr, None)
-        if v and v not in parts:
+        if v and str(v) not in parts:
             parts.append(str(v))
+            
     # ExtractedEvidenceFact
     for attr in ("source_title",):
         v = getattr(fact, attr, None)
         if v:
             parts.append(str(v))
+            
     return " ".join(parts)
 
 
@@ -78,34 +80,19 @@ def _fact_graph_id(fact: Any) -> Optional[str]:
     src_id = getattr(fact, "source_project_id", None)
     if src_id:
         return f"project:{src_id}"
+    
     src_fact_id = getattr(fact, "source_fact_id", None)
     if src_fact_id:
-        # Could be domain or extracted
         domain_attr = getattr(fact, "domain", None)
         if domain_attr:
             return f"fact:{src_fact_id}"
         return f"extracted:{src_fact_id}"
+        
     return None
 
 
 class HybridRetriever:
-    """Reranks BM25 candidates with graph proximity and claim support.
-
-    Parameters
-    ----------
-    kg:
-        A bootstrapped KnowledgeGraphManager.  When None, the retriever
-        falls back to pure BM25 scoring.
-    persona_id:
-        The persona node ID in the knowledge graph (e.g. ``person:Shawn Dyck``).
-        Inferred from the KG manager when not supplied.
-    bm25_weight:
-        Weight for BM25 score (default 0.7).
-    graph_weight:
-        Weight for graph proximity (default 0.2).
-    claim_weight:
-        Weight for claim support (default 0.1).
-    """
+    """Reranks BM25 candidates with graph proximity and claim support."""
 
     def __init__(
         self,
@@ -118,19 +105,14 @@ class HybridRetriever:
     ) -> None:
         self._kg = kg
         self._persona_id: Optional[str] = (
-            persona_id
-            or (kg._persona_id if kg is not None else None)
+            persona_id or (kg._persona_id if kg is not None else None)
         )
         self._w_bm25 = bm25_weight
         self._w_semantic = semantic_weight
         self._w_graph = graph_weight
         self._w_claim = claim_weight
-        self._bm25_cache_key: tuple[str, ...] | None = None
+        self._bm25_cache_key: tuple[Any, ...] | None = None
         self._bm25_cache: Any = None
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def find_facts(
         self,
@@ -138,23 +120,6 @@ class HybridRetriever:
         candidates: Sequence[Any],
         limit: int = 5,
     ) -> list[Any]:
-        """Return up to *limit* candidates reranked by hybrid score.
-
-        Parameters
-        ----------
-        query:
-            The generation / grounding query string.
-        candidates:
-            Evidence facts to rank — any mix of EvidenceFact,
-            DomainEvidenceFact, ExtractedEvidenceFact.
-        limit:
-            Maximum number of results to return.
-
-        Returns
-        -------
-        list
-            Sorted facts, highest hybrid score first.
-        """
         if not candidates:
             return []
 
@@ -164,10 +129,6 @@ class HybridRetriever:
         return [fact for _, fact in scored[:limit]]
 
     def explain_fact_usage(self, fact: Any) -> list[list[str]]:
-        """Return explanation paths for *fact* in the knowledge graph.
-
-        Returns an empty list when no KG is attached or no paths exist.
-        """
         if self._kg is None:
             return []
         gid = _fact_graph_id(fact)
@@ -175,62 +136,68 @@ class HybridRetriever:
             return []
         return self._kg.explain_fact_usage(gid)
 
-    # ------------------------------------------------------------------
-    # Internal scoring
-    # ------------------------------------------------------------------
-
     def _bm25_scores(self, query: str, candidates: Sequence[Any]) -> list[float]:
-        """Return normalised BM25 scores in candidate order."""
         texts = [_fact_text(f) for f in candidates]
         q_tokens = _tokenize(query)
 
         if _BM25_AVAILABLE and q_tokens:
-            cache_key = tuple(texts)
+            # Optimized cache key using IDs rather than hashing full text content
+            cache_key = tuple(
+                getattr(f, "evidence_id", None) or _fact_graph_id(f) or id(f) 
+                for f in candidates
+            )
+            
             if cache_key != self._bm25_cache_key:
                 corpus = [_tokenize(t) for t in texts]
                 self._bm25_cache = _BM25Okapi(corpus)
                 self._bm25_cache_key = cache_key
-            bm25 = self._bm25_cache
-            raw: list[float] = bm25.get_scores(q_tokens).tolist()
+                
+            raw: list[float] = self._bm25_cache.get_scores(q_tokens).tolist()
         else:
-            # Keyword fallback
             q_words = set(q_tokens)
             raw = []
             for t in texts:
                 words = set(_tokenize(t))
                 raw.append(float(len(q_words & words)))
 
-        # Normalise to [0, 1]
         max_score = max(raw) if raw else 1.0
         if max_score == 0.0:
             return [0.0] * len(raw)
         return [s / max_score for s in raw]
 
     def _graph_scores(self, candidates: Sequence[Any]) -> list[float]:
-        """Return graph-proximity scores in candidate order."""
         if self._kg is None or self._persona_id is None:
             return [0.0] * len(candidates)
+            
         scores = []
         for fact in candidates:
             gid = _fact_graph_id(fact)
-            if gid:
-                scores.append(self._kg.graph_proximity(self._persona_id, gid))
-            else:
-                scores.append(0.0)
+            scores.append(self._kg.graph_proximity(self._persona_id, gid) if gid else 0.0)
         return scores
 
     def _claim_scores(self, candidates: Sequence[Any]) -> list[float]:
-        """Return claim-support scores in candidate order."""
         if self._kg is None:
             return [0.0] * len(candidates)
+            
         scores = []
         for fact in candidates:
             gid = _fact_graph_id(fact)
-            if gid:
-                scores.append(self._kg.claim_support(gid))
-            else:
-                scores.append(0.0)
+            scores.append(self._kg.claim_support(gid) if gid else 0.0)
         return scores
+
+    def _semantic_scores(self, query: str, candidates: Sequence[Any]) -> list[float]:
+        """Return Model2Vec semantic scores in candidate order with safety fallback."""
+        try:
+            from services.model2vec_service import get_model2vec_service
+            service = get_model2vec_service()
+            if service:
+                return service.batch_semantic_similarity(
+                    query, [_fact_text(fact) for fact in candidates]
+                )
+        except Exception as e:
+            logger.debug("Model2Vec semantic scoring unavailable. Defaulting to 0.0. Error: %s", e)
+            
+        return [0.0] * len(candidates)
 
     def _hybrid_score(
         self,
@@ -238,7 +205,6 @@ class HybridRetriever:
         candidates: Sequence[Any],
         query: str,
     ) -> list[tuple[float, Any]]:
-        """Compute hybrid score for each candidate."""
         graph_scores = self._graph_scores(candidates)
         claim_scores = self._claim_scores(candidates)
         semantic_scores = self._semantic_scores(query, candidates)
@@ -254,36 +220,16 @@ class HybridRetriever:
             result.append((hybrid, fact))
         return result
 
-    def _semantic_scores(self, query: str, candidates: Sequence[Any]) -> list[float]:
-        """Return Model2Vec semantic scores in candidate order."""
-        from services.model2vec_service import get_model2vec_service
-
-        return get_model2vec_service().batch_semantic_similarity(
-            query, [_fact_text(fact) for fact in candidates]
-        )
-
-    # ------------------------------------------------------------------
-    # Diagnostics
-    # ------------------------------------------------------------------
-
     def score_breakdown(
         self,
         query: str,
         candidates: Sequence[Any],
     ) -> list[dict[str, Any]]:
-        """Return per-candidate score breakdown for debugging.
-
-        Returns a list of dicts with keys: fact_id, bm25, graph_proximity,
-        claim_support, hybrid, and (when KG is available) truth_gradient,
-        uncertainty, confidence_penalty, flagged from the Derivative of Truth
-        subsystem.
-        """
         bm25_scores = self._bm25_scores(query, candidates)
         graph_scores = self._graph_scores(candidates)
         claim_scores = self._claim_scores(candidates)
         semantic_scores = self._semantic_scores(query, candidates)
 
-        # Attempt to compute truth gradient for each candidate using KG facts
         dot_results: list[Optional[dict[str, Any]]] = [None] * len(candidates)
         try:
             from services.derivative_of_truth import (
@@ -297,6 +243,7 @@ class HybridRetriever:
                     node_data = dict(self._kg._graph.nodes[gid])
                     kg_node = {"id": gid, **node_data}
                     evidence_paths = build_evidence_paths_from_kg_facts([kg_node])
+                    
                     dot_result = score_claim_with_truth_gradient(
                         claim=_fact_text(fact),
                         evidence_paths=evidence_paths,
@@ -316,6 +263,7 @@ class HybridRetriever:
                 + self._w_graph * graph_scores[i]
                 + self._w_claim * claim_scores[i]
             )
+            
             entry: dict[str, Any] = {
                 "fact_id": getattr(fact, "evidence_id", str(i)),
                 "bm25": round(bm25_scores[i], 4),
@@ -324,12 +272,16 @@ class HybridRetriever:
                 "claim_support": round(claim_scores[i], 4),
                 "hybrid": round(hybrid, 4),
             }
+            
             dr = dot_results[i]
             if dr is not None:
+                # 4-layer truthgate implementation output
                 entry["truth_gradient"] = dr.get("truth_gradient", 0.0)
                 entry["uncertainty"] = dr.get("uncertainty", 1.0)
                 entry["confidence_penalty"] = dr.get("confidence_penalty", 0.0)
                 entry["flagged"] = dr.get("flagged", False)
                 entry["uncertainty_sources"] = dr.get("uncertainty_sources", [])
+                
             breakdown.append(entry)
+            
         return breakdown
