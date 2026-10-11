@@ -46,13 +46,14 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Total Tests | Passed  | Skipped | Failed | Source Coverage | Status          |
 | ----------- | ------- | ------- | ------ | --------------- | --------------- |
-| **934**     | **932** | **2**   | **0**  | **66%**         | ✅ **All pass** |
+| **938**     | **938** | **0**   | **0**  | **66%**         | ✅ **All pass** |
 
-- **Latest Run Date:** September 14, 2026
+- **Latest Run Date:** October 11, 2026
+- **Latest Changes:** Rei Toei tests aligned with the 0.50 bilingual ratio tolerance, 33-attempt retry budget, and fallback-on-exhaustion behaviour; truth-gate Model2Vec mock restricted to the real service interface. Source coverage was last measured on September 14, 2026.
 - **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, prompt schema leakage scrubbing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, deterministic pykakasi Hepburn Romaji correction/generation for learner cues, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, language-routed spaCy search tokenization and batch similarity coverage, Model2Vec semantic scoring, Strudel WebSocket bridge message handling, database dual-write persistence, and Suno submission orchestration.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
-- **Notes:** 2 skipped (Buffer network calls when API is offline), 0 failed. All 923 runnable tests pass cleanly.
+- **Notes:** 0 skipped, 0 failed.
 
 ### Test Suite Breakdown
 
@@ -79,6 +80,7 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - **6** Strudel WebSocket bridge tests (new)
 - **6** Database writer dual-write tests (new)
 - **4** Suno submission orchestration tests (new)
+- **3** spaCy pipeline thread-safety tests (new)
 - **4** Singleton concurrency tests (new)
 - _3 Database engine/session singleton lifecycle + 1 Flux service singleton under concurrent access_
 
@@ -92,7 +94,11 @@ The console's direct-LLM song fallback (`_handle_llm_song_generation` → `_buil
 
 ### Bilingual Japanese-line target enforcement — `_suno_pipeline.py`
 
-`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft that misses its configured target is regenerated with explicit Japanese-only and English-only line guidance, then receives one measured repair attempt. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed repair revalidates the last parseable draft instead of bypassing the bilingual constraint. The 50% target accepts the practical 30%–70% band. `run.sh` also rebuilds one-off `app` containers automatically so Docker cannot execute stale validation code. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_twenty_percent_target_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_one_off_app_run_rebuilds_image` in `tests/test_run_script.py`.
+`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a 0.50 ratio tolerance of the target (so a 15% target rejects drafts above 65% Japanese). Failed drafts are retried up to 33 times: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. `run.sh` also rebuilds one-off `app` containers automatically so Docker cannot execute stale validation code. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_fifty_percent_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_one_off_app_run_rebuilds_image` in `tests/test_run_script.py`.
+
+### Concurrent spaCy tokenizer access — `spacy_nlp.py`
+
+Cached spaCy pipelines are shared process-wide, and the SudachiPy tokenizer behind `ja_core_news_md` is not re-entrant. Concurrent curation work failed with `summarize_article failed: Tokenizer is already in use`. Every pipeline returned by `_load_model()` is now wrapped in `_ThreadSafeNLP`, which serializes `nlp(...)` and `nlp.pipe(...)` with a per-model `RLock`; `pipe()` is materialized under the lock so a lazy generator cannot tokenize after release. Different language models still run in parallel. Covered by `tests/test_spacy_thread_safety.py`.
 
 ### Optional Japanese spaCy model warnings — `spacy_nlp.py`
 
@@ -197,6 +203,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `tests/test_content_curator.py`                           | Drives RSS fetch pipelines, keyword screening constraints, SSI adaptive category shifts, and module routing layouts.                                                                                                                                                                                  |
 | `tests/test_curator_extra_feeds.py`                       | Verifies `CURATOR_RSS_FEEDS_EXTRA` / `CURATOR_KEYWORDS_EXTRA` append semantics, URL/keyword dedup, and that built-in defaults are never mutated.                                                                                                                                                      |
 | `tests/test_spacy_theme_groups.py`                        | Covers source-based entity/concept grouping, temporal-entity demotion, Japanese `。！？` sentence splitting, ASCII decimal preservation, and graceful degradation when a pipeline lacks `noun_chunks`.                                                                                                |
+| `tests/test_spacy_thread_safety.py`                       | Verifies `_ThreadSafeNLP` serializes concurrent `__call__` and `pipe()` on a non-re-entrant tokenizer (SudachiPy simulation) and passes other attributes such as `pipe_names` through.                                                                                                                 |
 | `tests/test_continual_learning.py`                        | Orchestrates comprehensive noise filtering regression, multi-source ingestion constraints, structural text normalization, and multi-URL exact statement uniqueness checks.                                                                                                                            |
 | `tests/test_derivative_of_truth.py`                       | Evaluates gradient equations, factual annotation workflows, programmatic uncertainty logic, and core PLN evaluations.                                                                                                                                                                                 |
 | `tests/test_evidence_mapping.py`                          | Targets factual ID tracking consistency, retrieval prioritization fallback loops, and conversational reasoning reporting.                                                                                                                                                                             |

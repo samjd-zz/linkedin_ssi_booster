@@ -837,7 +837,8 @@ class TestPartEFactPoolSpacySim:
             patch(
                 "services.console_grounding._truth_gate._get_model2vec_service",
                 return_value=MagicMock(
-                    batch_semantic_similarity=MagicMock(return_value=[0.85])
+                    spec=["semantic_similarity", "batch_semantic_similarity"],
+                    batch_semantic_similarity=MagicMock(return_value=[0.85]),
                 ),
             ),
             patch.dict("os.environ", {"TRUTH_GATE_FACT_SIM_FLOOR": "0.50"}),

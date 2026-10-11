@@ -22,8 +22,8 @@ from __future__ import annotations
 import logging
 import os
 import re
-from threading import Lock
-from typing import Any
+from threading import Lock, RLock
+from typing import Any, Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,32 @@ def detect_language(text: str) -> str:
     return "en"
 
 
+class _ThreadSafeNLP:
+    """Proxy that serializes calls into a shared spaCy pipeline.
+
+    Some tokenizers (notably SudachiPy in ``ja_core_news_*``) raise
+    "Tokenizer is already in use" when one instance is used from two threads.
+    """
+
+    __slots__ = ("_nlp", "_lock")
+
+    def __init__(self, nlp: Any) -> None:
+        self._nlp = nlp
+        self._lock = RLock()
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        with self._lock:
+            return self._nlp(*args, **kwargs)
+
+    def pipe(self, texts: Iterable[str], *args: Any, **kwargs: Any) -> list[Any]:
+        # Materialize under the lock; a lazy generator would tokenize after release.
+        with self._lock:
+            return list(self._nlp.pipe(texts, *args, **kwargs))
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._nlp, name)
+
+
 def _is_spacy_available() -> bool:
     """Check if spaCy is available and can be imported."""
     global _SPACY_AVAILABLE
@@ -104,7 +130,7 @@ def _load_model(model_name: str = "en_core_web_sm") -> Any:
         try:
             import spacy
 
-            nlp = spacy.load(model_name)
+            nlp = _ThreadSafeNLP(spacy.load(model_name))
             _SPACY_NLP_MODELS[model_name] = nlp
             _SPACY_NLP_MODEL = nlp
             logger.info("spacy_nlp: loaded model '%s'", model_name)

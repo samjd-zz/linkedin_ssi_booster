@@ -101,6 +101,10 @@ SPACY_MODELS=en_core_web_md,ja_core_news_md     # routing pool
 
 When a listed model is missing, the loader logs a warning and silently falls back to English. Japanese text tokenized by the English pipeline produces meaningless spans, so treat that warning as a hard failure — see [setup.md](setup.md#prerequisites).
 
+### Thread safety
+
+Each loaded pipeline is cached once per process and shared across threads. SudachiPy, the tokenizer behind `ja_core_news_md`, is not re-entrant and raises `Tokenizer is already in use` under concurrent access. The loader therefore wraps every pipeline in `_ThreadSafeNLP`, which serializes `nlp(...)` and `nlp.pipe(...)` per model. Calls to the same model run one at a time; English and Japanese pipelines still run in parallel. Code that needs a spaCy pipeline should obtain it through `SpacyNLP` / `get_model_for_text()` rather than calling `spacy.load()` directly, or it will bypass the lock.
+
 ### Japanese-language behaviour
 
 Japanese extraction works. One characteristic still differs from the English path and is worth knowing before reading the output.
