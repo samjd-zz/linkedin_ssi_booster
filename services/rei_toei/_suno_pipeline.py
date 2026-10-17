@@ -666,7 +666,7 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
     # Music lyrics need room for hooks, echoes, and section-level variation.
     # Keep a broad floor while still rejecting extreme language drift.
-    ratio_tolerance = max(0.50, 1.0 / total_lines) if total_lines else 0.0
+    ratio_tolerance = max(0.30, 1.0 / total_lines) if total_lines else 0.0
     ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
@@ -1573,7 +1573,12 @@ Suno Formatting Rules:
 7. Use sound-cue parentheticals at high-energy transitions: '(bass drop)' before a Drop, '(silence)' for a breakdown pause, '(chaos)' before a chaotic breakdown
 8. Follow character caps per section for API parsing compliance
 9. Make every section materially distinct. Do not copy Verse 1 into the Chorus, Drop, Bridge, Solo, or Outro.
-10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things."""
+10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things.
+11. CREATIVE CRAFT: Write like a songwriter, not a keyword generator. Tell a concrete story with characters, a setting, and a turning point drawn from the theme. Every line must add a new image, action, or emotion; never restate the previous line with swapped synonyms.
+12. Avoid stock cyberpop filler used as padding: 'signal flows', 'data streams', 'code descends', 'circuits sing', 'bits dance', 'neon', 'latency', 'packets', 'glitch', 'cyber realms', 'silicon dreams'. Use at most one such phrase in the whole song; invent fresh, specific imagery instead.
+13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns.
+14. Use varied line lengths, concrete sensory detail, surprising metaphors, humor or wonder where the theme invites it, and a clear emotional arc from setup to climax to resolution.
+15. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -1605,6 +1610,8 @@ Suno Formatting Rules:
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 
+CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. Verse 1 sets the scene and characters, Pre-Chorus raises the stakes, Chorus delivers an original emotional hook, Verse 2 escalates or twists the story, Bridge offers a new perspective, and Outro resolves it. Use fresh, specific imagery and avoid generic tech buzzword chains or repeating the same line patterns.
+
 Title: {concept.title}
 Theme: {concept.theme}
 Mood: {concept.mood}
@@ -1617,10 +1624,10 @@ Each field should contain the complete lyrics for that section, including any se
 
 {{
   "intro": "[Instrumental Build] then a blank line, then '(Ahh ahh ahh)' on its own line as a vocalization primer, then 4-5 lines of atmospheric build-up text. (Character Cap: 400 chars)",
-  "verse_1": "[Verse 1] Two stanzas of technical narrative. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "verse_1": "[Verse 1] Two stanzas of vivid, story-driven narrative that sets the scene. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
     "chorus": "{chorus_json_instruction}",
-  "verse_2": "[Verse 2] Two distinct stanzas of deep technical narrative building on Verse 1 themes. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "verse_2": "[Verse 2] Two distinct stanzas that escalate or twist the story from Verse 1 with new imagery. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "drop": "[Drop] then '(bass drop)' on its own line as a Suno energy-shift cue, then 4-5 lines of high-energy electronic phrases. Optionally use '(silence)' or '(chaos)' for further energy shifts. (Character Cap: 400 chars)",
   "bridge": "[Bridge] A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
   "solo": "[Solo] followed by 3-4 lines describing the instrumental solo moment (total). (Character Cap: 300 chars)",

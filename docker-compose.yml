@@ -271,6 +271,7 @@ services:
       - ./yt-vid-data:/app/yt-vid-data
       - ./content_calendar.py:/app/content_calendar.py:ro
       - ./models/flux:/app/models/flux
+      - hf_cache:/root/.cache/huggingface
     stdin_open: true
     tty: true
     command: [ "python", "main.py", "--help" ]
@@ -285,3 +286,4 @@ volumes:
   ollama_data:
   postgres_data:
   playwright_cache:
+  hf_cache:
