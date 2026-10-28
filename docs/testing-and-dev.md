@@ -46,11 +46,11 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **976** | **972** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
+| **998** | **994** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
 
 - **Latest Run Date:** October 27, 2026
-- **Latest Changes:** 31 curation performance regressions plus 7 Rei CLI preview regressions: unused GitHub/avatar loading, shared Ollama client, single title-history read, preview isolation, explicit-theme syntax, default model, and stage timings. Source coverage was last measured on September 14, 2026.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused Rei/CLI/launcher/timing run passed **167 tests**; the preceding curation/NLP/FLUX/confidence run passed **187 tests**.
+- **Latest Changes:** 22 console performance regressions covering batched retrieval, large embedding corpora, snapshot/reload consistency, Rei lazy knowledge/client reuse, bounded history, synchronous voice, and timing/error behavior. Previous work added 31 curation and 7 Rei CLI preview regressions. Source coverage was last measured on September 14, 2026.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused console/NLP/Rei/FLUX/timing run passed **221 tests**.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
 - **Notes:** Two unchanged tests in `test_persona_graph_retrieval.py` expect 19 projects/evidence facts, while the current persona graph contains 20. They fail at lines 63 and 81; no persona data, loaders, normalizers, or those assertions were changed by the performance work.
@@ -87,6 +87,33 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - _10 FLUX text-only gating | 6 bounded corpus caching | 9 gate-metadata reuse | 6 timing telemetry_
 - **7** Rei CLI preview performance regression tests (new)
 - _Explicit-theme syntax, preparation gating, automatic-theme history reuse, explain-mode evidence, default model, Strudel client reuse, console GitHub preservation_
+- **22** Sam/Rei console performance regression tests (new)
+- _Large-batch embedding correctness/reuse, content/model invalidation, batched tokenization/fallback, one snapshot per reload, refreshed tag relationships and graph, lazy Rei knowledge, shared music client, sparse external fallback, bounded history, one verification bar, voice completion, and chat metrics/errors_
+
+---
+
+## Console Performance Regressions
+
+| Test file | Tests | Coverage |
+| --------- | ----- | -------- |
+| `tests/test_console_performance.py` | 22 | 617-candidate semantic scoring across different queries; order/duplicates/model changes; incomplete batches; BM25 batching/content edits/fallback; snapshot and graph reloads; tag relationship refresh; sparse external fallback; Rei lazy templates and shared song/pattern clients; sticky switching/history bound; single verification; synchronous voice; Sam/Rei server timings and propagated errors; disabled reporting |
+
+Run focused console coverage with the existing virtual environment:
+
+```bash
+source .venv/bin/activate && python -m pytest -q \
+  tests/test_console_performance.py tests/test_rei_console_routing.py \
+  tests/test_model2vec_service.py tests/test_knowledge_graph.py \
+  tests/test_enhanced_console_routing.py tests/test_spacy_nlp.py \
+  tests/test_rei_preview_performance.py tests/test_performance.py \
+  tests/test_flux_capacitor_curate_console_integration.py
+```
+
+Tests use fake model embeddings, mocked chat/voice clients, and scripted console
+input, without accessing Ollama, Piper, Suno, Strudel, or live Buffer accounts.
+These assert removed operations and preserved behavior, not hardware latency.
+See [console runtime behavior](features/console-performance.md) for timing stages,
+expected voice/retry delays, and `/reload` semantics.
 
 ---
 

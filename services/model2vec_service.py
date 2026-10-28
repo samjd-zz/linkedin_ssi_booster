@@ -18,6 +18,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from services._nlp_corpus_cache import CorpusCache
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -206,6 +208,8 @@ class Model2VecService:
         self._model: "Optional[StaticModel]" = None  # type: ignore[name-defined]
         self._categories: dict[str, CategoryMetadata] = {}
         self._embedding_cache: dict[str, Any] = {}
+        self._embedding_corpus_cache: CorpusCache[Any] = CorpusCache()
+        self._embedding_cache_model: Any = None
         self._initialized = False
 
         # Always register default categories regardless of model availability so that
@@ -390,26 +394,41 @@ class Model2VecService:
         if not self._load_model() or self._model is None:
             return [0.0] * len(texts)
         try:
-            embeddings = self._encode_cached([query, *texts])
-            query_embedding = embeddings[0]
+            query_embedding = self._encode_cached([query])[0]
+            embeddings = self._encode_cached(texts)
             return [
                 max(0.0, min(1.0, self._cosine_similarity(query_embedding, embedding)))
-                for embedding in embeddings[1:]
+                for embedding in embeddings
             ]
         except Exception as exc:
-            logger.debug("Model2Vec: batch_semantic_similarity failed: %s", exc)
+            logger.warning("Model2Vec: batch_semantic_similarity failed: %s", exc)
             return [0.0] * len(texts)
 
     def _encode_cached(self, texts: list[str]) -> list[Any]:
         """Encode texts once and retain a bounded cache of their embeddings."""
         normalized = [text[:2000] if text else "" for text in texts]
-        missing = list(dict.fromkeys(text for text in normalized if text not in self._embedding_cache))
-        if missing:
-            encoded = self._model.encode(missing)  # type: ignore[union-attr]
-            self._embedding_cache.update(zip(missing, encoded))
+        model = self._model
+        if model is None:
+            raise RuntimeError("Model2Vec model is not loaded")
+        if self._embedding_cache_model is not model:
+            self._embedding_cache.clear()
+            self._embedding_cache_model = model
+
+        def build() -> list[Any]:
+            values = dict(self._embedding_cache)
+            missing = list(dict.fromkeys(text for text in normalized if text not in values))
+            if missing:
+                encoded = model.encode(missing)
+                if len(encoded) != len(missing):
+                    raise ValueError("Model2Vec returned an incomplete embedding batch")
+                values.update(zip(missing, encoded))
+                self._embedding_cache.update(zip(missing, encoded))
+            embeddings = [values[text] for text in normalized]
             while len(self._embedding_cache) > 512:
                 self._embedding_cache.pop(next(iter(self._embedding_cache)))
-        return [self._embedding_cache[text] for text in normalized]
+            return embeddings
+
+        return self._embedding_corpus_cache.get_or_build(model, normalized, build)
 
     def batch_classify(
         self, texts: list[str], top_k: int = 1

@@ -139,9 +139,7 @@ class TestReiConsoleRouting:
 
 def test_handle_rei_console_routes_plain_song_request_to_suno():
     with (
-        patch("services.console_grounding._rei_console.load_rei_persona", return_value=MagicMock()),
-        patch("services.console_grounding._rei_console.load_rei_domain_knowledge", return_value=MagicMock()),
-        patch("services.console_grounding._rei_console.load_strudel_patterns", return_value=MagicMock()),
+        patch("services.console_grounding._rei_console.get_rei_service", return_value=MagicMock()),
         patch("services.console_grounding._rei_console._handle_suno_request", new=AsyncMock(return_value=("song", []))) as mock_suno,
         patch("services.console_grounding._rei_console._handle_conversation", new=AsyncMock(return_value=("chat", []))) as mock_chat,
     ):
@@ -160,9 +158,7 @@ def test_handle_rei_console_routes_plain_song_request_to_suno():
 
 def test_handle_rei_console_routes_retry_to_suno_when_song_context_exists():
     with (
-        patch("services.console_grounding._rei_console.load_rei_persona", return_value=MagicMock()),
-        patch("services.console_grounding._rei_console.load_rei_domain_knowledge", return_value=MagicMock()),
-        patch("services.console_grounding._rei_console.load_strudel_patterns", return_value=MagicMock()),
+        patch("services.console_grounding._rei_console.get_rei_service", return_value=MagicMock()),
         patch("services.console_grounding._rei_console._handle_suno_request", new=AsyncMock(return_value=("song_retry", []))) as mock_suno,
         patch("services.console_grounding._rei_console._handle_conversation", new=AsyncMock(return_value=("chat", []))) as mock_chat,
     ):

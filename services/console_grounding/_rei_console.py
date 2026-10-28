@@ -15,10 +15,7 @@ from pathlib import Path
 
 from services.rei_toei_service import (
     ReiToeiConfig,
-    ReiToeiService,
-    load_rei_persona,
-    load_rei_domain_knowledge,
-    load_strudel_patterns,
+    get_rei_service,
     extract_themes,
     choose_diverse_theme,
     load_recent_rei_titles,
@@ -33,6 +30,7 @@ from services.rei_toei_service import (
     Theme,
 )
 from services.ollama_service import OllamaService
+from services.performance import log_ollama_timings, timed_stage
 from services.avatar_intelligence import (
     load_avatar_state as _lav_rei_console,
     normalize_extracted_facts as _normalize_extracted_rei,
@@ -307,12 +305,14 @@ def _rei_chat(
     messages.append({"role": "user", "content": user_message})
 
     try:
-        response = ai.client.chat(
-            model=ai.model,
-            think=ai.think,
-            options={"num_predict": max_tokens, "num_ctx": ai.num_ctx},
-            messages=messages,
-        )
+        with timed_stage(logger, "console.rei.chat"):
+            response = ai.client.chat(
+                model=ai.model,
+                think=ai.think,
+                options={"num_predict": max_tokens, "num_ctx": ai.num_ctx},
+                messages=messages,
+            )
+        log_ollama_timings(logger, ai.model, response)
         return clean_llm_text((response.message.content or "").strip())
     except Exception as exc:
         raise RuntimeError(f"Rei LLM call failed: {exc}") from exc
@@ -340,9 +340,10 @@ async def handle_rei_console(
     """
     # Load Rei's persona and knowledge
     try:
-        rei_persona = load_rei_persona()
-        rei_domain = load_rei_domain_knowledge()
-        strudel_patterns = load_strudel_patterns()
+        service = get_rei_service()
+        rei_persona = service.persona
+        rei_domain = service.domain_knowledge
+        strudel_patterns = service.pattern_library if is_rei_pattern_request(user_input) else None
     except Exception as e:
         logger.error(f"Failed to load Rei avatar state: {e}")
         return (
@@ -352,7 +353,9 @@ async def handle_rei_console(
     
     # Command: generate Strudel pattern
     if is_rei_pattern_request(user_input):
-        return await _handle_strudel_request(user_input, rei_persona, rei_domain, strudel_patterns, history)
+        return await _handle_strudel_request(
+            user_input, rei_persona, rei_domain, strudel_patterns, history, ai=ai,
+        )
     
     # Command: generate Suno song
     if is_rei_song_request(user_input) or is_rei_song_retry_request(user_input, history):
@@ -368,6 +371,7 @@ async def _handle_strudel_request(
     rei_domain: Any,
     strudel_patterns: Any,
     history: list[dict[str, str]],
+    ai: OllamaService | None = None,
 ) -> tuple[str, list[dict[str, str]]]:
     """Generate and optionally execute a Strudel pattern.
     
@@ -427,7 +431,8 @@ async def _handle_strudel_request(
             return reply, history
         
         # Generate Strudel code
-        pattern = generate_strudel_code(theme, template, rei_persona, rei_domain)
+        with timed_stage(logger, "console.rei.strudel"):
+            pattern = generate_strudel_code(theme, template, rei_persona, rei_domain, ollama=ai)
         
         # Validate syntax
         validation = validate_strudel_syntax(pattern.strudel_code)
@@ -542,18 +547,22 @@ async def _handle_suno_request(
             )
         
         # Generate song concept
-        concept = generate_song_concept(
-            theme,
-            rei_persona,
-            rei_domain,
-            recent_titles=recent_titles,
-        )
+        with timed_stage(logger, "console.rei.concept"):
+            concept = generate_song_concept(
+                theme,
+                rei_persona,
+                rei_domain,
+                recent_titles=recent_titles,
+                ollama=ai,
+            )
         
         # Compose lyrics
-        lyrics = compose_lyrics(concept, rei_persona, rei_domain)
+        with timed_stage(logger, "console.rei.lyrics"):
+            lyrics = compose_lyrics(concept, rei_persona, rei_domain, ollama=ai)
         
         # Assemble Suno prompt
-        suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
+        with timed_stage(logger, "console.rei.suno_formatting"):
+            suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
         
         # Format response.
         # suno_prompt.lyrics is already normalized by assemble_suno_prompt →

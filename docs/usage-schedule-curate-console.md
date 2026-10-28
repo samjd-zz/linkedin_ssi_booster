@@ -142,7 +142,7 @@ Console mode supports the following slash commands:
 | ------------------ | ------------------------------------------------------------------------- |
 | `/help`            | Display all available commands                                            |
 | `/reset`           | Clear conversation history                                                |
-| `/reload`          | Re-read persona graph, domain packs, and extracted_knowledge.json         |
+| `/reload`          | Refresh Sam's facts, tag relationships, and graph; invalidate Rei's lazy knowledge cache |
 | `/exit` or `/quit` | Exit console mode                                                         |
 | `/verify`          | Toggle DoT + similarity verification on/off                               |
 | `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
@@ -159,6 +159,8 @@ Console mode supports the following slash commands:
 **Status Display**: The status line shows the current state of all three diagnostic modes. When a mode is enabled, it displays in **green**; when disabled, it displays in **red**.
 
 **Toggle Behavior**: When you toggle a mode with `/verify`, `/avatar-explain`, or `/dot-report`, the command displays confirmation and updates the status line. You can enable/disable any combination of modes during your session without restarting console mode.
+
+**Runtime and latency:** Sam reuses batched retrieval corpora rather than reparsing every fact on each turn. Rei caches persona/domain files and only loads Strudel templates for pattern requests; songs and patterns reuse the active console Ollama client. Voice playback remains synchronous, so a long spoken reply delays the next prompt. See [console performance and stage timings](features/console-performance.md) for details.
 
 **Visual Feedback**: When diagnostic modes are active, console displays progress indicators for long-running operations:
 

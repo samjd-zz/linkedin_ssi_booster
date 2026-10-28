@@ -325,7 +325,7 @@ flowchart TD
 
 The avatar accumulates domain knowledge automatically from RSS feeds and curated articles. spaCy extracts, normalises, and deduplicates facts before merging them into the knowledge graph and BM25 candidate pool. Extracted facts are stamped with `primary_category` and `primary_ssi_component` for category-filtered retrieval.
 
-Use `--learn` during curation to populate the knowledge base. Inside a running console session, `/reload` re-reads all avatar files without restarting — useful when running a `--learn` job concurrently in a second terminal. Console mode supports inline truth scoring with `--verify` (DoT + fact-pool similarity indicator after every AI reply).
+Use `--learn` during curation to populate the knowledge base. Console retrieval reuses batched NLP/embedding corpora; `/reload` refreshes Sam's facts, tag relationships, and knowledge graph, and invalidates Rei's lazy knowledge cache. Rei chat skips Strudel templates, and music generation shares the console Ollama client. Optional `--verify` adds DoT + fact-pool scoring; voice playback remains synchronous. See [console runtime and timings](docs/features/console-performance.md) for identifying retrieval, model-load, voice, and verification delays.
 
 A multi-layer noise filter (first-person narration, truncated RSS fragments, navigation blobs, zero-signal sentences, and more) runs before spaCy NLP to keep the knowledge graph clean. Voice synthesis is available via Wyoming Piper (enable with `CONSOLE_USE_VOICE=true`).
 

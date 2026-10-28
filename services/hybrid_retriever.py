@@ -20,6 +20,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional, Sequence
 
+from services.performance import timed_stage
+
 logger = logging.getLogger(__name__)
 
 # Weights for hybrid scoring
@@ -111,9 +113,10 @@ class HybridRetriever:
         self._w_semantic = semantic_weight
         self._w_graph = graph_weight
         self._w_claim = claim_weight
-        self._bm25_cache_key: tuple[Any, ...] | None = None
+        self._bm25_cache_key: tuple[str, ...] | None = None
         self._bm25_cache: Any = None
 
+    @timed_stage(logger, "retrieval.hybrid")
     def find_facts(
         self,
         query: str,
@@ -137,18 +140,19 @@ class HybridRetriever:
         return self._kg.explain_fact_usage(gid)
 
     def _bm25_scores(self, query: str, candidates: Sequence[Any]) -> list[float]:
+        from services.spacy_nlp import tokenize_many_for_search
+
         texts = [_fact_text(f) for f in candidates]
         q_tokens = _tokenize(query)
 
-        if _BM25_AVAILABLE and q_tokens:
-            # Optimized cache key using IDs rather than hashing full text content
-            cache_key = tuple(
-                getattr(f, "evidence_id", None) or _fact_graph_id(f) or id(f) 
-                for f in candidates
-            )
+        if not q_tokens:
+            return [0.0] * len(texts)
+
+        if _BM25_AVAILABLE:
+            cache_key = tuple(texts)
             
             if cache_key != self._bm25_cache_key:
-                corpus = [_tokenize(t) for t in texts]
+                corpus = tokenize_many_for_search(texts)
                 self._bm25_cache = _BM25Okapi(corpus)
                 self._bm25_cache_key = cache_key
                 
@@ -156,8 +160,8 @@ class HybridRetriever:
         else:
             q_words = set(q_tokens)
             raw = []
-            for t in texts:
-                words = set(_tokenize(t))
+            for tokens in tokenize_many_for_search(texts):
+                words = set(tokens)
                 raw.append(float(len(q_words & words)))
 
         max_score = max(raw) if raw else 1.0

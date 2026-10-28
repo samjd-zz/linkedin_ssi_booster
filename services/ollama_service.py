@@ -289,12 +289,14 @@ You are in interactive console chat mode.
                 normalized_messages.append({"role": role, "content": content})
 
         try:
-            response = self.client.chat(
-                model=self.model,
-                think=self.think,
-                options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
-                messages=[{"role": "system", "content": system_prompt}, *normalized_messages],
-            )
+            with timed_stage(logger, "console.sam.chat"):
+                response = self.client.chat(
+                    model=self.model,
+                    think=self.think,
+                    options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
+                    messages=[{"role": "system", "content": system_prompt}, *normalized_messages],
+                )
+            log_ollama_timings(logger, self.model, response)
             return clean_llm_text((response.message.content or "").strip())
         except ollama.ResponseError as e:
             raise RuntimeError(f"Ollama API error (model={self.model}): {e}") from e

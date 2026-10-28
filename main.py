@@ -345,6 +345,7 @@ def _render_curate_art_avatar(
         return {"art_avatar_status": "failed", "art_avatar_render_error": str(exc)}
 
 
+@timed_stage(logger, "console.art")
 def _render_console_art_avatar(
     ai: OllamaService,
     post_text: str,
@@ -694,19 +695,27 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     )
     
     from services.console_grounding._models import ProjectFact as _ProjectFact
+    from services.console_grounding._config import get_console_grounding_tag_expansions_from_graph
     from services.knowledge_graph import KnowledgeGraphManager
     from services.hybrid_retriever import HybridRetriever
 
     # Initialize Knowledge Graph Manager
     _kg: KnowledgeGraphManager | None = None
     _hybrid_retriever: HybridRetriever | None = None
+    _tag_expansions: dict[str, set[str]] = {}
 
+    @timed_stage(logger, "console.preparation")
     def _load_knowledge_state() -> tuple[list, str, list, list, list]:
         """Load (or reload) avatar knowledge state.
         
         Returns: (_profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts)
         """
+        nonlocal _kg, _hybrid_retriever, _tag_expansions
         avatar_state = _lav_console()
+        _tag_expansions = (
+            get_console_grounding_tag_expansions_from_graph(avatar_state.domain_knowledge)
+            if avatar_state.domain_knowledge is not None else {}
+        )
         avatar_facts = normalize_evidence_facts(avatar_state)
         
         domain_facts_raw = []
@@ -739,6 +748,14 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         grounding_ctx = build_grounding_context(avatar_facts)
         if github_context:
             grounding_ctx = f"{grounding_ctx}\n\n{github_context}" if grounding_ctx else github_context
+        try:
+            _kg = KnowledgeGraphManager()
+            _kg.bootstrap_from_avatar_state(avatar_state)
+            _hybrid_retriever = HybridRetriever(kg=_kg)
+        except Exception as kg_err:
+            logger.warning("Knowledge Graph initialization failed: %s — using fallback retrieval", kg_err)
+            _kg = None
+            _hybrid_retriever = None
         return profile_facts, grounding_ctx, list(avatar_facts), domain_facts_raw, extracted_raw
 
     def _index_profile_facts(profile_facts: list) -> tuple[dict, dict, dict]:
@@ -767,21 +784,6 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         len(_profile_facts),
         len(_profile_facts),
     )
-
-    # Bootstrap Knowledge Graph from avatar state
-    try:
-        _kg = KnowledgeGraphManager()
-        _kg.bootstrap_from_avatar_state(_lav_console())
-        _hybrid_retriever = HybridRetriever(kg=_kg)
-        logger.debug(
-            "Knowledge Graph initialized: %d nodes, %d edges",
-            _kg.node_count,
-            _kg.edge_count,
-        )
-    except Exception as kg_err:
-        logger.warning("Knowledge Graph initialization failed: %s — using fallback retrieval", kg_err)
-        _kg = None
-        _hybrid_retriever = None
 
     _console_cleanup_done = False
     _original_excepthook = sys.excepthook
@@ -836,7 +838,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         if not verify:
             return None
         try:
-            _, _meta = _tg_result(reply, "", facts)
+            with timed_stage(logger, "console.verification"):
+                _, _meta = _tg_result(reply, "", facts)
             dot = _meta.truth_gradient
 
             if dot >= 0.75:
@@ -877,7 +880,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 )
             print(_line)
             return _meta
-        except Exception:
+        except Exception as exc:
+            logger.warning("Console verification failed: %s", exc)
             return None
 
     def print_graph_statistics(summary, domain_profiles=None):
@@ -1024,6 +1028,11 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         if cmd == "/reload":
             _profile_facts, _grounding_context, _raw_evidence_facts, _raw_domain_facts, _raw_extracted_facts = _load_knowledge_state()
             _avatar_facts_by_id, _domain_facts_by_id, _extracted_facts_by_id = _index_profile_facts(_profile_facts)
+            try:
+                from services.rei_toei_service import get_rei_service
+                get_rei_service().reload(eager=False)
+            except (OSError, ValueError, TypeError) as exc:
+                logger.warning("Rei console knowledge reload failed: %s", exc)
             print(
                 str(Fore.CYAN)
                 + f"Knowledge reloaded — {len(_profile_facts)} grounding facts now active."
@@ -1078,7 +1087,10 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             
             try:
                 _status_width = _show_console_thinking("rei")
-                reply, history = asyncio.run(handle_rei_console(rei_input, ai, history, max_tokens=600))
+                with timed_stage(logger, "console.rei.turn"):
+                    reply, history = asyncio.run(handle_rei_console(rei_input, ai, history, max_tokens=600))
+                if len(history) > max_turns * 2:
+                    history = history[-max_turns * 2 :]
                 _clear_console_status(_status_width + 2)
                 _print_console_reply("rei", reply)
                 speak_text(reply)
@@ -1135,7 +1147,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             continue
 
         # Parse query to determine routing mode
-        constraints = parse_query_constraints(user_input)
+        constraints = parse_query_constraints(user_input, tag_expansions=_tag_expansions)
         
         # Route 1: Explicit file name requests → Deterministic citation (raw facts)
         if constraints.explicit_artifact_request:
@@ -1193,7 +1205,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             elif avatar_explain or dot_report:
                 if avatar_explain:
                     print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
-                _, _gate_meta = _tg_result(reply, "", learned_facts, dot_facts=learned_facts)
+                with timed_stage(logger, "console.verification"):
+                    _, _gate_meta = _tg_result(reply, "", learned_facts, dot_facts=learned_facts)
             
             
             from services.shared import print_validation_reports
@@ -1207,7 +1220,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 raw_extracted=used_extracted,
                 raw_external=[],
                 facts_used_for_dot=learned_facts,
-                verify=verify,
+                verify=False,
                 avatar_explain=avatar_explain,
                 dot_report=dot_report,
                 gate_meta=_gate_meta
@@ -1257,14 +1270,19 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         try:
             from services.avatar_intelligence import retrieve_evidence, ExternalEvidenceFact, build_external_grounding_context
 
+            # Distinct local results fill both slots when the pool has enough facts;
+            # they would all be discarded by the external-only filter below.
+            external_pool = list(_raw_evidence_facts) + list(_raw_domain_facts)
+            local_ids = {f.evidence_id for f in external_pool}
             external_candidates = retrieve_evidence(
                 user_input,
-                list(_raw_evidence_facts) + list(_raw_domain_facts),
+                external_pool,
                 limit=2,
-            )
+            ) if 0 < len(local_ids) < 2 else []
             used_external = [f for f in external_candidates if isinstance(f, ExternalEvidenceFact)]
             external_context = build_external_grounding_context(used_external)
-        except Exception:
+        except Exception as exc:
+            logger.warning("Console external evidence retrieval failed: %s", exc)
             used_external = []
 
         facts_context = build_grounding_facts_block(facts, limit=8)
@@ -1308,7 +1326,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         elif avatar_explain or dot_report:
             if avatar_explain:
                 print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
-            _, _gate_meta = _tg_result(reply, "", facts, dot_facts=facts)
+            with timed_stage(logger, "console.verification"):
+                _, _gate_meta = _tg_result(reply, "", facts, dot_facts=facts)
 
         from services.shared import print_validation_reports
         print_validation_reports(
@@ -1320,7 +1339,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             raw_extracted=used_ext,
             raw_external=used_external,
             facts_used_for_dot=facts,
-            verify=verify,
+            verify=False,
             avatar_explain=avatar_explain,
             dot_report=dot_report,
             gate_meta=_gate_meta

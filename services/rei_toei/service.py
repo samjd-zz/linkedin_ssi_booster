@@ -91,20 +91,22 @@ class ReiToeiService:
         
         return self._sam_persona
     
-    def reload(self) -> None:
-        """Reload all Rei knowledge files (useful for console /reload)"""
+    def reload(self, *, eager: bool = True) -> None:
+        """Invalidate cached knowledge, optionally loading it immediately."""
         logger.info("Reloading Rei Toei knowledge files")
         self._persona = None
         self._domain_knowledge = None
         self._pattern_library = None
         self._sam_persona = None
-        # Force reload on next access
-        _ = self.persona
-        _ = self.domain_knowledge
-        _ = self.pattern_library
-        if self.config.use_sam_persona:
-            _ = self.sam_persona
-        logger.info("Rei Toei knowledge files reloaded")
+        if eager:
+            _ = self.persona
+            _ = self.domain_knowledge
+            _ = self.pattern_library
+            if self.config.use_sam_persona:
+                _ = self.sam_persona
+            logger.info("Rei Toei knowledge files reloaded")
+        else:
+            logger.info("Rei Toei knowledge cache cleared; files will reload on next access")
     
     def get_default_bpm(self, mood: Optional[str] = None) -> int:
         """

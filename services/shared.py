@@ -323,6 +323,8 @@ def print_validation_reports(
     gate_meta=None,
 ) -> None:
     """Unified reporting engine for both Console and Curator."""
+    if not (verify or avatar_explain or dot_report):
+        return
     from services.console_grounding import truth_gate_result as _tgr
     from services.avatar_intelligence import build_explain_output, format_explain_output
     from services.derivative_of_truth import (

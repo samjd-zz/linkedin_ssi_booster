@@ -8,6 +8,8 @@ import os
 import socket
 from typing import Optional
 
+from services.performance import timed_stage
+
 logger = logging.getLogger(__name__)
 
 
@@ -257,6 +259,7 @@ def get_piper_service() -> PiperService:
     return _piper_service
 
 
+@timed_stage(logger, "console.voice")
 def speak_text(text: str) -> bool:
     """
     Convenience function to speak text using the global Piper service.
