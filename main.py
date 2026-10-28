@@ -37,6 +37,7 @@ from services.selection_learning import ACCEPTANCE_WINDOW_DAYS
 from services.shared import append_channel_footer, get_rei_toei_dir, get_youtube_scripts_dir
 from services.flux_capacitor import get_flux_service, SourceMode, RenderStatus
 from services.graph_stats import collect_domain_knowledge_profiles
+from services.performance import timed_stage
 
 
 def _configure_stdio() -> None:
@@ -1555,14 +1556,19 @@ def main():
 
     print_startup_notice()
 
-    _github_context = build_github_profile_context(
-        max_chars=int(os.getenv("GITHUB_CONTEXT_MAX_CHARS", "30000"))
-    )
+    _github_context = ""
+    if args.schedule or args.curate or args.console:
+        _github_context = build_github_profile_context(
+            max_chars=int(os.getenv("GITHUB_CONTEXT_MAX_CHARS", "30000"))
+        )
     if _github_context:
         logger.info("GitHub context loaded: %d chars", len(_github_context))
 
     ai = OllamaService(
-        model=os.getenv("OLLAMA_MODEL", "llama3.2"),
+        model=os.getenv(
+            "OLLAMA_MODEL",
+            "gemma4:e4b" if args.rei_generate or args.rei_generate_strudel else "llama3.2",
+        ),
         base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
     )
 
@@ -1605,15 +1611,17 @@ def main():
 
         async def _handle_rei_generate() -> None:
             """Suno song generation pipeline."""
-            import asyncio
-            from services.shared import get_ollama_service_cached
-            
-            rei_persona = load_rei_persona()
-            rei_domain = load_rei_domain_knowledge()
-            avatar_state = _lav_rei()
-            # Use normalize_extracted_facts (same pattern as curator.py) to get
-            # List[ExtractedEvidenceFact] — the normalized runtime representation.
-            _extracted_facts = _nef_rei(avatar_state)
+            with timed_stage(logger, "rei.preparation"):
+                rei_persona = load_rei_persona()
+                rei_domain = load_rei_domain_knowledge()
+                _extracted_facts = []
+                if not args.rei_theme or args.rei_explain:
+                    avatar_state = _lav_rei()
+                    _extracted_facts = _nef_rei(avatar_state)
+                recent_titles = load_recent_rei_titles(
+                    get_rei_toei_dir(create=False),
+                    limit=rei_config.recent_title_window,
+                )
 
             if args.rei_theme:
                 theme = Theme(
@@ -1635,10 +1643,6 @@ def main():
                         + str(Style.RESET_ALL)
                     )
                     return
-                recent_titles = load_recent_rei_titles(
-                    get_rei_toei_dir(create=False),
-                    limit=rei_config.recent_title_window,
-                )
                 theme = choose_diverse_theme(
                     themes,
                     recent_theme_names=recent_titles,
@@ -1647,32 +1651,26 @@ def main():
                 )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Selected theme: {theme.name} (frequency={theme.frequency}, recency={theme.recency_score:.2f})" + str(Style.RESET_ALL))
 
-            recent_titles = load_recent_rei_titles(
-                get_rei_toei_dir(create=False),
-                limit=rei_config.recent_title_window,
-            )
-
             print(str(Fore.CYAN) + "\U0001f3bc Generating song concept..." + str(Style.RESET_ALL))
-            # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
-            import asyncio
-            from services.shared import get_ollama_service_cached
-            from services.ollama_service import OllamaService as _OllamaSvc
-            ollama_service: _OllamaSvc = get_ollama_service_cached()  # type: ignore[assignment]
-            concept = await asyncio.to_thread(
-                generate_song_concept,
-                theme,
-                rei_persona,
-                rei_domain,
-                None,
-                ollama_service,
-                recent_titles,
-            )
+            with timed_stage(logger, "rei.concept"):
+                concept = await asyncio.to_thread(
+                    generate_song_concept,
+                    theme,
+                    rei_persona,
+                    rei_domain,
+                    None,
+                    ai,
+                    recent_titles,
+                )
 
             print(str(Fore.CYAN) + "\u270d\ufe0f  Composing lyrics..." + str(Style.RESET_ALL))
-            # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
-            lyrics = await asyncio.to_thread(compose_lyrics, concept, rei_persona, rei_domain, None, ollama_service)
+            with timed_stage(logger, "rei.lyrics"):
+                lyrics = await asyncio.to_thread(
+                    compose_lyrics, concept, rei_persona, rei_domain, None, ai,
+                )
 
-            suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
+            with timed_stage(logger, "rei.suno_formatting"):
+                suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
 
             # Display
             print(str(Fore.MAGENTA) + str(Style.BRIGHT) + "\n\U0001f3b5 REI TOEI \u2014 SUNO SONG" + str(Style.RESET_ALL))
@@ -1691,7 +1689,8 @@ def main():
                 print(f"  Narrative   : {concept.narrative_arc}")
                 if suno_prompt.evidence_ids:
                     print(f"  Evidence IDs: {', '.join(suno_prompt.evidence_ids[:5])}")
-                dot = validate_lyrics_with_dot(lyrics, _extracted_facts)
+                with timed_stage(logger, "rei.dot_validation"):
+                    dot = validate_lyrics_with_dot(lyrics, _extracted_facts)
                 _dot_col = (
                     str(Fore.GREEN) if dot.overall_truth_score >= 0.7
                     else (str(Fore.YELLOW) if dot.overall_truth_score >= 0.4 else str(Fore.RED))
@@ -1808,16 +1807,9 @@ def main():
 
         async def _handle_rei_generate_strudel() -> None:
             """Strudel pattern generation pipeline."""
-            import asyncio
-            from services.shared import get_ollama_service_cached
-            
             rei_persona = load_rei_persona()
             rei_domain = load_rei_domain_knowledge()
             pattern_library = load_strudel_patterns()
-            avatar_state = _lav_rei()
-            # Use normalize_extracted_facts (same pattern as curator.py) to get
-            # List[ExtractedEvidenceFact] — the normalized runtime representation.
-            _extracted_facts = _nef_rei(avatar_state)
 
             if args.rei_theme:
                 theme = Theme(
@@ -1830,6 +1822,8 @@ def main():
                 )
                 print(str(Fore.CYAN) + f"\U0001f3b5 Using theme: {args.rei_theme}" + str(Style.RESET_ALL))
             else:
+                avatar_state = _lav_rei()
+                _extracted_facts = _nef_rei(avatar_state)
                 themes = extract_themes(_extracted_facts, limit=rei_config.theme_pool_size)
                 if not themes:
                     print(
@@ -1865,12 +1859,10 @@ def main():
                 + f"\U0001f3bc Generating Strudel pattern (template: {template.name})..."
                 + str(Style.RESET_ALL)
             )
-            # P1 fix: Wrap blocking Ollama calls in asyncio.to_thread() to prevent event loop blocking
-            import asyncio
-            from services.shared import get_ollama_service_cached
-            from services.ollama_service import OllamaService as _OllamaSvc
-            ollama_service: _OllamaSvc = get_ollama_service_cached()  # type: ignore[assignment]
-            strudel_pattern = await asyncio.to_thread(generate_strudel_code, theme, template, rei_persona, rei_domain, None, ollama_service)
+            with timed_stage(logger, "rei.strudel"):
+                strudel_pattern = await asyncio.to_thread(
+                    generate_strudel_code, theme, template, rei_persona, rei_domain, None, ai,
+                )
             strudel_code = strudel_pattern.strudel_code
             validation = validate_strudel_syntax(strudel_code)
 

@@ -46,11 +46,11 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **969** | **965** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
+| **976** | **972** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
 
 - **Latest Run Date:** October 27, 2026
-- **Latest Changes:** 31 performance regressions added: disabled/minimal FLUX prompt gating, bounded model-aware NLP corpus reuse, original truth-gate metadata reuse, and stage/Ollama timing logs. Source coverage was last measured on September 14, 2026.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused performance and related NLP/FLUX/confidence suite passed **187 tests**.
+- **Latest Changes:** 31 curation performance regressions plus 7 Rei CLI preview regressions: unused GitHub/avatar loading, shared Ollama client, single title-history read, preview isolation, explicit-theme syntax, default model, and stage timings. Source coverage was last measured on September 14, 2026.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused Rei/CLI/launcher/timing run passed **167 tests**; the preceding curation/NLP/FLUX/confidence run passed **187 tests**.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
 - **Notes:** Two unchanged tests in `test_persona_graph_retrieval.py` expect 19 projects/evidence facts, while the current persona graph contains 20. They fail at lines 63 and 81; no persona data, loaders, normalizers, or those assertions were changed by the performance work.
@@ -85,6 +85,8 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - _3 Database engine/session singleton lifecycle + 1 Flux service singleton under concurrent access_
 - **31** Curation performance regression tests (new)
 - _10 FLUX text-only gating | 6 bounded corpus caching | 9 gate-metadata reuse | 6 timing telemetry_
+- **7** Rei CLI preview performance regression tests (new)
+- _Explicit-theme syntax, preparation gating, automatic-theme history reuse, explain-mode evidence, default model, Strudel client reuse, console GitHub preservation_
 
 ---
 
@@ -123,13 +125,17 @@ The caching tests verify operation counts, not a production speedup estimate. Re
 
 ## Recent Bug Fixes Covered by Tests
 
+### Rei CLI preview preparation and timing
+
+`tests/test_rei_preview_performance.py` runs the CLI with isolated mocks: no live Ollama, GitHub, Suno, or Buffer calls. It verifies that explicit-theme previews skip unused avatar loading, auto-theme previews read history once, explain mode retains DoT evidence validation, both music modes reuse the CLI client, the default model remains unchanged, and console mode still receives GitHub context. Preview writes no song artifact or media and never submits to Suno. Tests also require concept/lyric/formatting stage records. See [runtime behavior](features/rei-toei/preview.md) for corrected command examples and retry expectations.
+
 ### Console/CLI Rei Toei lyric-language misalignment — `_rei_console.py` and `_suno_pipeline.py`
 
 The console's direct-LLM song fallback (`_handle_llm_song_generation` → `_build_rei_system_prompt`), used when no extracted knowledge/themes are available, built its own system prompt with no reference to `REI_LYRIC_LANGUAGE` / `REI_JAPANESE_LYRIC_PROBABILITY`, so it silently ignored the language-mix policy that `--rei-generate` (CLI) always applied via `compose_lyrics`. Fixed by injecting the same `resolve_lyric_language()`-derived language instruction into `_build_rei_system_prompt`. Separately, `assemble_suno_prompt` unconditionally forced the chorus to ALL-CAPS regardless of `concept.lyric_language`, uppercasing Japanese/bilingual chorus text that should preserve natural script and casing; fixed to only uppercase when `lyric_language == "english"`. Covered by `test_assemble_suno_prompt_flips_japanese_first_bilingual_lines` in `tests/test_rei_toei_service.py`.
 
 ### Bilingual Japanese-line target enforcement — `_suno_pipeline.py`
 
-`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a 0.50 ratio tolerance of the target (so a 15% target rejects drafts above 65% Japanese). Failed drafts are retried up to 33 times: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. `run.sh` also rebuilds one-off `app` containers automatically so Docker cannot execute stale validation code. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_fifty_percent_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_one_off_app_run_rebuilds_image` in `tests/test_run_script.py`.
+`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a 0.50 ratio tolerance of the target (so a 15% target rejects drafts above 65% Japanese). The current composer permits five total attempts: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. `run.sh` also rebuilds one-off `app` containers automatically so Docker cannot execute stale validation code. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_fifty_percent_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_one_off_app_run_rebuilds_image` in `tests/test_run_script.py`.
 
 ### Concurrent spaCy tokenizer access — `spacy_nlp.py`
 

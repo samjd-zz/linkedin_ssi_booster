@@ -174,7 +174,7 @@ You> /sam                         # Switch back to Sam when you're done
 
 Sam's normal Kanji-teaching response is text-first and uses domain-backed meanings plus deterministic Hepburn readings. Add `draw`, `render`, or another image request verb to auto-trigger FLUX, or run `/art [topic]` afterward to turn the latest Sam lesson into a visual. FLUX rendering must be enabled with `FLUX_CAPACITOR_ENABLED=true` and is normally run through the Docker `full` profile.
 
-After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console.
+After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console. For a CLI-only preview, run `bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview --rei-theme "async programming"`; omit `--rei-theme` for automatic selection. Preview still generates full lyrics locally but does not save or submit them. Rei-only runs skip unused GitHub context and share one Ollama client; explicit themes skip avatar loading unless `--rei-explain` needs evidence. INFO timings separate preparation, concept generation, lyrics (including retries), and Suno formatting; see [Rei CLI runtime behavior](docs/features/rei-toei/preview.md).
 
 ---
 
