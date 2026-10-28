@@ -33,8 +33,8 @@ def log_ollama_timings(logger: logging.Logger, model: str, response: ChatRespons
     """Report server timings separately from client wall time; missing values stay None."""
     logger.info(
         "⏱️  Ollama timing model=%s load_s=%s prompt_eval_s=%s generation_s=%s "
-        "total_s=%s prompt_tokens=%s generated_tokens=%s",
+        "total_s=%s prompt_tokens=%s generated_tokens=%s done_reason=%s",
         model, _seconds(response.load_duration), _seconds(response.prompt_eval_duration),
         _seconds(response.eval_duration), _seconds(response.total_duration),
-        response.prompt_eval_count, response.eval_count,
+        response.prompt_eval_count, response.eval_count, response.done_reason,
     )

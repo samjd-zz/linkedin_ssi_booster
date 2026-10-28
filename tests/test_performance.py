@@ -54,8 +54,11 @@ def test_ollama_nanosecond_metrics_are_seconds(caplog: pytest.LogCaptureFixture)
         eval_duration=7_000_000_000, total_duration=12_000_000_000,
         prompt_eval_count=100, eval_count=50,
     )
-    with caplog.at_level(logging.INFO):
-        log_ollama_timings(LOGGER, "local-model", response)
+    for reason in ("stop", "length", "other"):
+        response.done_reason = reason
+        with caplog.at_level(logging.INFO):
+            log_ollama_timings(LOGGER, "local-model", response)
+        assert caplog.records[-1].getMessage().endswith(f"done_reason={reason}")
     assert "load_s=2.0 prompt_eval_s=3.0 generation_s=7.0 total_s=12.0" in caplog.text
     assert "prompt_tokens=100 generated_tokens=50" in caplog.text
     assert caplog.records[-1].getMessage().startswith("⏱️  Ollama timing model=local-model")
@@ -69,6 +72,7 @@ def test_missing_ollama_metrics_are_explicit(caplog: pytest.LogCaptureFixture) -
         )
     assert "load_s=None" in caplog.text
     assert "generated_tokens=None" in caplog.text
+    assert "done_reason=None" in caplog.text
 
 
 def test_chat_emits_wall_and_server_timings_without_content(
@@ -83,11 +87,13 @@ def test_chat_emits_wall_and_server_timings_without_content(
     ai.client = Mock()
     ai.client.chat.return_value = ChatResponse(
         message={"role": "assistant", "content": "private output"}, load_duration=0,
+        done_reason="length",
     )
     with caplog.at_level(logging.INFO):
         assert ai._chat("private system", "private prompt") == "private output"
     assert "stage=ollama.chat" in caplog.text
     assert "Ollama timing model=local-model load_s=0.0" in caplog.text
+    assert "done_reason=length" in caplog.text
     assert any(
         record.getMessage() == "🤖 Ollama request model=local-model max_tokens=1024"
         for record in caplog.records

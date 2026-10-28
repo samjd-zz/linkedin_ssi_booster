@@ -238,6 +238,14 @@ timing/console/schedule/cleanup/Rei-preview run passed **65 tests**.
 Stage-start and Ollama-timing messages use two ASCII spaces after their icons
 (`▶️  Stage start`, `⏱️  Ollama timing`) for clearance with wide emoji rendering. The exact spacing
 is covered by the existing timing tests; the spacing-only validation passed **6 tests**.
+Ollama timing records also append `done_reason` exactly as returned by the server:
+`stop` indicates a normal stop (including stop sequences), `length` indicates a
+generation-limit stop, and `None` means the server did not supply a reason.
+Other values are preserved rather than reclassified. This adds tracing only;
+it does not alter token limits, retries, or output handling. Existing timing tests
+cover these values, missing reasons, and propagation through `_chat` without
+logging prompts or generated content (no test-count change). The focused
+timing/console/Rei-preview run passed **35 tests**.
 
 - `ollama.chat`: client wall time for each primary/fallback request.
 - `truth_gate`: filtering plus DoT scoring.
