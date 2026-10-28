@@ -1,10 +1,11 @@
 """T6.6 — Integration tests for persona graph retrieval cutover.
 
-These tests load the *real* data/avatar/persona_graph.json to verify:
-- The graph loads fully (all 17 projects)
+These tests load the local data/avatar/persona_graph.json to verify:
+- The graph loads every project present in the source file
 - Graph-backed retrieval returns expected projects for known queries
 - The app starts without PROFILE_CONTEXT set (migration regression gate R4)
 """
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -12,13 +13,14 @@ from pathlib import Path
 import pytest
 
 from services.avatar_intelligence import (
+    AvatarState,
     load_avatar_state,
     normalize_evidence_facts,
     retrieve_evidence,
 )
 import services.avatar_intelligence as ai
 
-# Path to the real persona_graph.json committed to the repo
+# Paths to locally configured avatar data.
 _REAL_PG = Path(__file__).parent.parent / "data" / "avatar" / "persona_graph.json"
 _REAL_NM = Path(__file__).parent.parent / "data" / "avatar" / "narrative_memory.json"
 _MAIN = str(Path(__file__).parent.parent / "main.py")
@@ -30,16 +32,12 @@ _MAIN = str(Path(__file__).parent.parent / "main.py")
 
 
 @pytest.fixture(scope="module")
-def real_state():
-    """Load avatar state from the committed persona_graph.json."""
-    # Monkeypatching is per-test; for module scope we set paths directly.
-    old_pg = ai.PERSONA_GRAPH_PATH
-    old_nm = ai.NARRATIVE_MEMORY_PATH
-    ai.PERSONA_GRAPH_PATH = _REAL_PG
-    ai.NARRATIVE_MEMORY_PATH = _REAL_NM
-    state = load_avatar_state()
-    ai.PERSONA_GRAPH_PATH = old_pg
-    ai.NARRATIVE_MEMORY_PATH = old_nm
+def real_state() -> AvatarState:
+    """Load local avatar data, restoring path overrides even on load failure."""
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(ai, "PERSONA_GRAPH_PATH", _REAL_PG)
+        patch.setattr(ai, "NARRATIVE_MEMORY_PATH", _REAL_NM)
+        state = load_avatar_state()
     project_names = {p.name for p in state.persona_graph.projects} if state.persona_graph else set()
     required_private_projects = {"G7 GovAI Grand Challenge RIA", "Answer42"}
     if not required_private_projects.issubset(project_names):
@@ -59,8 +57,12 @@ def test_real_graph_loads_successfully(real_state) -> None:
     assert real_state.load_errors == []
 
 
-def test_real_graph_has_expected_project_count(real_state) -> None:
-    assert len(real_state.persona_graph.projects) == 19
+def test_real_graph_has_expected_project_count(real_state: AvatarState) -> None:
+    assert real_state.persona_graph is not None
+    source = json.loads(_REAL_PG.read_text(encoding="utf-8"))
+    expected_ids = [project["id"] for project in source["projects"]]
+    assert expected_ids
+    assert [project.id for project in real_state.persona_graph.projects] == expected_ids
 
 
 def test_real_graph_has_skills(real_state) -> None:
@@ -76,9 +78,17 @@ def test_real_graph_has_companies(real_state) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_normalize_evidence_facts_real(real_state) -> None:
+def test_normalize_evidence_facts_real(real_state: AvatarState) -> None:
+    assert real_state.persona_graph is not None
     facts = normalize_evidence_facts(real_state)
-    assert len(facts) == 19
+    projects = real_state.persona_graph.projects
+    assert len(facts) == len(projects)
+    assert [fact.source_project_id for fact in facts] == [project.id for project in projects]
+    for fact, project in zip(facts, projects, strict=True):
+        assert fact.project == project.name
+        assert fact.details == project.details
+        assert fact.years == project.years
+        assert fact.skills == project.skills
 
 
 def test_evidence_ids_all_unique(real_state) -> None:

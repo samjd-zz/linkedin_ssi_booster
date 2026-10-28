@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1024%20passed%20%7C%202%20failed%20%7C%202%20deselected-yellow.svg" alt="Tests: 1024 passed, 2 existing failures, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1026%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1026 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-66%25%20historical-yellow.svg" alt="Historical source coverage: 66%, measured September 14, 2026"></a>
 </p>
 
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 27, 2026: 1,028 collected; 1,024 passed, 2 existing persona-count failures, 2 live Buffer tests deselected. Includes 90 performance regressions across curation, Rei preview, console, and scheduling; source coverage remains the historical 66%, not remeasured by these runs.
+- [Testing and development](docs/testing-and-dev.md) — October 27, 2026: 1,028 collected; 1,026 passed, 0 failed, 2 live Buffer tests deselected. Includes 90 performance regressions across curation, Rei preview, console, and scheduling; source coverage remains the historical 66%, not remeasured by these runs.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
