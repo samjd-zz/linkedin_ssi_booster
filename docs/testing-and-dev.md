@@ -46,13 +46,13 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1028** | **1026** | **0** | **0** | **2** | **66% (historical)** | All executed tests passed |
+| **1028** | **1026** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
 - **Latest Run Date:** October 27, 2026
-- **Latest Changes:** 30 schedule/cleanup regressions covering shared preparation, per-topic grounding reuse, SSI-equivalent early caps and skewed-allocation queue order, full previews/YouTube, generated-content report reuse/fallback, phase timings, and actual-use FLUX cleanup. Previous work added 22 console, 31 curation, and 7 Rei CLI preview regressions. Source coverage was last measured on September 14, 2026.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,026 passed, 0 failed, 2 deselected** in 44.37 seconds. One existing non-terminal `term_image` warning remains. The focused persona-retrieval module passed **12 tests**; the preceding schedule/cleanup/FLUX/Rei-preview/timing run passed **101 tests**.
-- **Environment Specs:** Python 3.12.x, pytest 9.0.3
-- **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
+- **Latest Changes:** 30 schedule/cleanup regressions covering shared preparation, per-topic grounding reuse, SSI-equivalent early caps and skewed-allocation queue order, full previews/YouTube, generated-content report reuse/fallback, phase timings, and actual-use FLUX cleanup. Previous work added 22 console, 31 curation, and 7 Rei CLI preview regressions. Source coverage was remeasured October 27, 2026.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,026 passed, 0 failed, 2 deselected** in 50.86 seconds with coverage enabled. One existing non-terminal `term_image` warning remains. The focused persona-retrieval module passed **12 tests**; the preceding schedule/cleanup/FLUX/Rei-preview/timing run passed **101 tests**.
+- **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
+- **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
@@ -61,9 +61,13 @@ The latest run executed **1,026 of 1,028 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
-The **66% source-coverage figure is historical**, measured September 14, 2026.
-The October 27 performance runs did not collect coverage, so their passing
-test counts do not establish a new line-coverage percentage.
+The **70% source-coverage figure was measured October 27, 2026**: 12,802
+executable statements, 3,881 missed, and 8,921 executed (69.68%, rounded to 70%
+by the report). This replaces the historical September 14 figure of 66%.
+It measures statement coverage, not branch coverage or live API correctness.
+`content_calendar` was not imported by the suite and is absent from the total;
+18 fully covered files were omitted from the terminal listing but included in
+the total. Entry-point coverage was 55% for `main.py` and 68% for `scheduler.py`.
 
 The recent performance work added **90 regression tests**:
 
