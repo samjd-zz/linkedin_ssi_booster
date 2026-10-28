@@ -235,6 +235,9 @@ names, log levels, and timing units are unchanged; failed stages still propagate
 their exceptions. Icon/field assertions are included in the existing six
 `tests/test_performance.py` tests (no test-count change). The focused
 timing/console/schedule/cleanup/Rei-preview run passed **65 tests**.
+Stage-start messages use two ASCII spaces after the play icon (`▶️  Stage start`)
+to leave extra clearance in terminals with wide emoji rendering. The exact spacing
+is covered by the existing timing tests; the spacing-only validation passed **6 tests**.
 
 - `ollama.chat`: client wall time for each primary/fallback request.
 - `truth_gate`: filtering plus DoT scoring.

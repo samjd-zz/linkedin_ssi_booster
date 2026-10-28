@@ -19,7 +19,7 @@ def test_stage_reports_measured_elapsed_time(caplog: pytest.LogCaptureFixture) -
             pass
     assert "stage=test elapsed_s=2.250 status=ok" in caplog.text
     assert [record.getMessage() for record in caplog.records] == [
-        "▶️ Stage start stage=test",
+        "▶️  Stage start stage=test",
         "✅ Stage end stage=test elapsed_s=2.250 status=ok",
     ]
 

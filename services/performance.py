@@ -13,7 +13,7 @@ def timed_stage(logger: logging.Logger, stage: str) -> Iterator[None]:
     """Measure a stage without swallowing errors or logging user content."""
     started = perf_counter()
     status = "error"
-    logger.info("▶️ Stage start stage=%s", stage)
+    logger.info("▶️  Stage start stage=%s", stage)
     try:
         yield
         status = "ok"
