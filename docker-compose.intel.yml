@@ -41,15 +41,9 @@ services:
       - /bin/bash
       - -c
       - |
+        set -e
         mkdir -p /llm/ollama
         cd /llm/ollama
         init-ollama
-        MODEL=$${OLLAMA_MODEL:-llama3.2}
-        echo "[ollama-init] Pulling model: $$MODEL"
-        ./ollama pull $$MODEL
-        FALLBACK=$${OLLAMA_MODEL_FALLBACK:-}
-        if [ -n "$$FALLBACK" ]; then
-          echo "[ollama-init] Pulling fallback model: $$FALLBACK"
-          ./ollama pull $$FALLBACK
-        fi
-        echo "[ollama-init] Done."
+        export PATH="/llm/ollama:$$PATH"
+        exec sh /opt/ensure-ollama-models.sh

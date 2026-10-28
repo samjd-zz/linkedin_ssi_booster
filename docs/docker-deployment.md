@@ -46,7 +46,7 @@ For NVIDIA acceleration or the full FLUX profile, also install the NVIDIA Contai
 | Service             | Profile        | Description                                                                                                                                  |
 | ------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ollama`            | `core`, `full` | Ollama LLM server — CPU-only by default, GPU-accelerated when `run.sh` detects a usable NVIDIA GPU; persisted via named `ollama_data` volume |
-| `ollama-init`       | `core`, `full` | One-shot init container — pulls `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK` then exits                                                          |
+| `ollama-init`       | `core`, `full` | One-shot init container — reuses cached `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK`, pulling only unavailable models |
 | `piper`             | `full`         | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                                              |
 | `strudel-mcp-agent` | `full`         | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server                                        |
 | `buffer-mcp-agent`  | `full`         | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server                                      |
@@ -55,7 +55,7 @@ For NVIDIA acceleration or the full FLUX profile, also install the NVIDIA Contai
 | `flux_capacitor`    | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete                            |
 | `app`               | `core`, `full` | GPU-neutral SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md`; calls accelerated services over HTTP       |
 
-The application source is copied into the `app` image rather than bind-mounted. `run.sh` therefore adds `--build` automatically to one-off `app` commands such as `run --rm app ...`, ensuring local source changes are present in the container. Docker reuses unchanged dependency layers, so normal rebuilds remain cached.
+The application source is copied into the `app` image rather than bind-mounted. `run.sh` reuses local images by default; after source changes, explicitly use `run --build`, `up --build`, or `build app`. See [cache-first/offline commands](features/docker-cache-first.md) for prerequisites, GPU probe caching, and no-pull startup.
 
 At startup, the app image identifies itself as GPU-neutral and reports the supported backend acceleration choices: NVIDIA CUDA, Intel iGPU, or CPU. Hardware-specific runtime banners belong to the Ollama and FLUX service containers, not the application container.
 
@@ -157,7 +157,7 @@ bash run.sh --profile full up -d
 
 ### First Start Sequence
 
-1. **`ollama-init`** pulls `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` from Ollama registry
+1. **`ollama-init`** checks `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` locally, pulling only unavailable models from the Ollama registry; failed pulls fail initialization.
 2. **`ollama`** starts LLM server on port `11434`
 3. **`piper`** (full profile only) downloads voice model (if not cached) and starts TTS server on port `10200`
 4. **`flux-init`** (full profile only) downloads FLUX GGUF weights from Civitai

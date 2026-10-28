@@ -82,8 +82,8 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1050%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1050 passed, 0 failed, 2 live API tests deselected"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-70%25-yellow.svg" alt="Source coverage: 70%, measured October 27, 2026"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1059%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1059 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-70%25-yellow.svg" alt="Source coverage: 70%, measured October 28, 2026"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 27, 2026: 1,052 collected; 1,050 passed, 0 failed, 2 live Buffer tests deselected; measured source coverage **70%**. Includes 24 relevance and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — October 28, 2026: 1,061 collected; 1,059 passed, 0 failed, 2 live Buffer tests deselected; measured source coverage **70%**. Includes 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
@@ -425,6 +425,7 @@ Use `run.sh` as the main launcher. It auto-detects GPU availability (NVIDIA CUDA
 and layers in the appropriate Compose override (`docker-compose.gpu.yml`, `docker-compose.intel.yml`,
 or `docker-compose.intel-wsl.yml`); on hosts without GPU acceleration it falls back to CPU-only
 automatically — no flags needed. `flux-init`/`flux_capacitor` (full profile) always require an NVIDIA GPU.
+Normal runs reuse local images; rebuild explicitly with `run --build`, `up --build`, or `build app` after source changes. Cached Ollama models skip pulls; see [cache-first/offline commands](docs/features/docker-cache-first.md).
 
 **Quick Start:**
 
@@ -439,12 +440,11 @@ bash run.sh --profile full up -d
 bash run.sh --profile core run --rm -it app python main.py --console
 bash run.sh --profile core run --rm app python main.py --curate
 
-# Rebuild after source changes
+# Rebuild after source changes (or use run --build / up --build)
 bash run.sh --profile core build app
 ```
 
 See [docs/docker-deployment.md](docs/docker-deployment.md) for complete setup guide, prerequisites (NVIDIA Container Toolkit, CUDA 12.4+, GPU requirements), service details, and troubleshooting.
-
 ---
 
 ## ⚡ Quickstart (local Python)

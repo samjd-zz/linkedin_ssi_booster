@@ -196,18 +196,9 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_NUM_PARALLEL: 1
-    entrypoint: >
-      sh -c "
-        MODEL=$${OLLAMA_MODEL:-llama3.2}
-        echo \"[ollama-init] Pulling model: $$MODEL\";
-        ollama pull $$MODEL;
-        FALLBACK=$${OLLAMA_MODEL_FALLBACK:-};
-        if [ -n \"$$FALLBACK\" ]; then
-          echo \"[ollama-init] Pulling fallback model: $$FALLBACK\";
-          ollama pull $$FALLBACK;
-        fi;
-        echo \"[ollama-init] Done.\"
-      "
+    volumes:
+      - ./scripts/ensure-ollama-models.sh:/opt/ensure-ollama-models.sh:ro
+    entrypoint: [ "sh", "/opt/ensure-ollama-models.sh" ]
     restart: "no"
 
   # ── Wyoming Piper TTS server ──────────────────────────────────────────────

@@ -46,22 +46,22 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1052** | **1050** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1061** | **1059** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
-- **Latest Run Date:** October 27, 2026
-- **Latest Changes:** 24 curation-relevance regressions covering English/Japanese matching, named-product lemma differences, rejection of metadata-only and single-topic matches, empty quotas, hybrid/fallback parity, prompt filtering, selected-evidence explanations, learning-before-selection, and full source IDs. The 90 earlier performance regressions remain. Source coverage was remeasured October 27, 2026.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,050 passed, 0 failed, 2 deselected** in 47.85 seconds with coverage enabled. One existing non-terminal `term_image` warning remains. The focused relevance/curation/extraction/prompt/console run passed **211 tests**.
+- **Latest Run Date:** October 28, 2026
+- **Latest Changes:** 10 launcher/model-initializer cases replace the old forced-build test (net +9 tests). They cover default image reuse, explicit builds, argument preservation, offline GPU probes, cached models, missing fallback downloads, and pull failures. The 24 relevance and 90 earlier performance regressions remain.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,059 passed, 0 failed, 2 deselected** in 51.68 seconds with coverage enabled. One existing non-terminal `term_image` warning remains. All **10 launcher/model-initializer tests** passed independently.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,050 of 1,052 collected tests**, all passing with
+The latest run executed **1,059 of 1,061 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
-The **70% source-coverage figure was measured October 27, 2026**: 12,822
+The **70% source-coverage figure was measured October 28, 2026**: 12,822
 executable statements, 3,829 missed, and 8,993 executed (70.14%, rounded to 70%
 by the report). This replaces the historical September 14 figure of 66%.
 It measures statement coverage, not branch coverage or live API correctness.
@@ -133,8 +133,30 @@ private graph is not configured, those checks retain their existing skip behavio
 - _17 preparation/grounding/report/cap/preview/error/timing cases | 13 actual-use FLUX lifecycle and cleanup cases_
 - **24** Article-evidence relevance regressions (new)
 - _English/Japanese content matching, capitalized names, no duplicate lemma/raw credit, metadata/stopword/year rejection, per-type maximums, hybrid/fallback filtering, prompt safety, actual-evidence explanations, current-article learning, and full extracted IDs_
+- **10** Docker launcher/model-initializer tests (replace the prior forced-build test)
+- _Six Compose argument scenarios each exercise successful and failed cached-only GPU probes; four initializer cases cover fully cached models, missing fallback, no fallback, and fail-fast pulls._
 
 ---
+
+## Cache-First Launcher Regressions
+
+`tests/test_run_script.py` runs the real shell scripts with fake Docker/Ollama
+executables. It verifies Compose arguments are unchanged (including quoted values),
+explicit `run --build` / `up --build` / `build app` work, ordinary launches add no
+build flags, and the GPU probe always uses `--pull=never`. Cached primary/fallback
+models issue only local `show` calls; missing models pull, and failed pulls stop
+initialization without a success message. No containers or live downloads are used.
+
+```bash
+bash -n run.sh
+sh -n scripts/ensure-ollama-models.sh
+source .venv/bin/activate && python -m pytest -q tests/test_run_script.py
+```
+
+CPU/NVIDIA and Intel/WSL Compose initializer wiring was checked, and all three GPU
+override configurations passed `docker compose config -q` validation. These checks
+do not certify real GPU passthrough or full-stack disconnected operation.
+See [running with cached images/models](features/docker-cache-first.md).
 
 ## Article-Evidence Relevance Regressions
 
@@ -273,7 +295,7 @@ The console's direct-LLM song fallback (`_handle_llm_song_generation` → `_buil
 
 ### Bilingual Japanese-line target enforcement — `_suno_pipeline.py`
 
-`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a 0.50 ratio tolerance of the target (so a 15% target rejects drafts above 65% Japanese). The current composer permits five total attempts: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. `run.sh` also rebuilds one-off `app` containers automatically so Docker cannot execute stale validation code. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_fifty_percent_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_one_off_app_run_rebuilds_image` in `tests/test_run_script.py`.
+`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a 0.50 ratio tolerance of the target (so a 15% target rejects drafts above 65% Japanese). The current composer permits five total attempts: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. After validation-code changes, explicitly rebuild the app (`run --build` or `build app`); normal launches reuse the existing image. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_fifty_percent_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_launcher_preserves_compose_arguments` in `tests/test_run_script.py`.
 
 ### Concurrent spaCy tokenizer access — `spacy_nlp.py`
 
