@@ -58,7 +58,7 @@ def test_ollama_nanosecond_metrics_are_seconds(caplog: pytest.LogCaptureFixture)
         log_ollama_timings(LOGGER, "local-model", response)
     assert "load_s=2.0 prompt_eval_s=3.0 generation_s=7.0 total_s=12.0" in caplog.text
     assert "prompt_tokens=100 generated_tokens=50" in caplog.text
-    assert caplog.records[-1].getMessage().startswith("⏱️ Ollama timing model=local-model")
+    assert caplog.records[-1].getMessage().startswith("⏱️  Ollama timing model=local-model")
     assert "private output" not in caplog.text
 
 

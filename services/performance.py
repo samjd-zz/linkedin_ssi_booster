@@ -32,7 +32,7 @@ def _seconds(duration_ns: int | None) -> float | None:
 def log_ollama_timings(logger: logging.Logger, model: str, response: ChatResponse) -> None:
     """Report server timings separately from client wall time; missing values stay None."""
     logger.info(
-        "⏱️ Ollama timing model=%s load_s=%s prompt_eval_s=%s generation_s=%s "
+        "⏱️  Ollama timing model=%s load_s=%s prompt_eval_s=%s generation_s=%s "
         "total_s=%s prompt_tokens=%s generated_tokens=%s",
         model, _seconds(response.load_duration), _seconds(response.prompt_eval_duration),
         _seconds(response.eval_duration), _seconds(response.total_duration),
