@@ -55,6 +55,41 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
 - **Notes:** Two unchanged tests in `test_persona_graph_retrieval.py` expect 19 projects/evidence facts, while the current persona graph contains 20. They fail at lines 63 and 81; no persona data, loaders, normalizers, or those assertions were changed by the performance work.
 
+### What These Results Measure
+
+The latest run executed **1,026 of 1,028 collected tests**: 1,024 passed and two
+failed. The two live Buffer tests were explicitly deselected, not skipped or
+counted as passing. This is not an all-green suite.
+
+The **66% source-coverage figure is historical**, measured September 14, 2026.
+The October 27 performance runs did not collect coverage, so their passing
+test counts do not establish a new line-coverage percentage.
+
+The recent performance work added **90 regression tests**:
+
+| Area | Added tests | Behaviors covered |
+| ---- | ----------- | ----------------- |
+| [Curation](#curation-performance-regressions) | 31 | FLUX gating, bounded NLP corpora, truth-gate metadata reuse, timing telemetry |
+| [Rei CLI preview](#rei-cli-preview-preparation-and-timing) | 7 | Preparation gating, shared client/history, preview isolation, explicit-theme syntax |
+| [Sam/Rei console](#console-performance-regressions) | 22 | Batched retrieval, large embeddings, reload consistency, lazy knowledge, voice/history/timings |
+| [Scheduling and cleanup](#schedule-performance-regressions) | 30 | Grounding reuse, SSI cap/order preservation, report scope/fallback, actual-use resource cleanup |
+
+These regressions verify operation counts, outputs, and error/lifecycle
+contracts using mocks. They do not measure real GPU latency or live publishing.
+
+To remeasure source coverage while excluding the two live Buffer tests:
+
+```bash
+source .venv/bin/activate && python -m pytest -q tests/ \
+  --deselect=tests/test_buffer_service.py::test_get_scheduled_posts \
+  --deselect=tests/test_buffer_service.py::test_get_published_posts \
+  --cov=services --cov=agents --cov=main --cov=scheduler --cov=content_calendar \
+  --cov-report=term-missing:skip-covered
+```
+
+The two known persona-count failures will still make that command exit nonzero;
+inspect both the test summary and coverage report before updating the badges.
+
 ### Test Suite Breakdown
 
 - **565** Original core logic assertions
