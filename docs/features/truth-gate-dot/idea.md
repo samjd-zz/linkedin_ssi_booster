@@ -16,6 +16,18 @@ with real token-overlap and proper source-type annotations.
 
 ---
 
+## Implemented Runtime Optimizations (October 2026)
+
+- Similarity candidates are cached as complete, model-specific corpora, including pools larger than 256 facts. The corpus cache keeps four entries of at most 4,096 texts each; larger inputs still work without being cached. Text or model changes cause a fresh parse.
+- DoT fact tokenization uses the existing language-routed batch tokenizer. Its separate corpus cache reuses the parsed fact text across sentences and channels; overlap, credibility, evidence types, and thresholds are unchanged.
+- Curation retains the first gate's `TruthGateMeta` and passes it through source-link formatting and truncation to confidence scoring. Original removal counts and reason codes therefore affect routing instead of disappearing in a second assessment of already-filtered text. Final channel length is still assessed separately.
+- Nonstandard callers without matching metadata retain the validation fallback, using the requested channel and article reference.
+- INFO stage timings expose truth-gate wall time separately from Ollama generation and confidence scoring. No prompts or generated content are included in these new timing records.
+
+See [performance regression coverage](../../testing-and-dev.md#curation-performance-regressions) for operation-count tests and log interpretation.
+
+---
+
 ## Problem Statement
 
 Four concrete deficiencies exist in the current implementation:

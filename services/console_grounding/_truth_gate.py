@@ -36,6 +36,7 @@ from services.console_grounding._gate_helpers import (
     get_project_names_from_avatar_state,
 )
 from services.console_grounding._models import ProjectFact, TruthGateMeta
+from services.performance import timed_stage
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,7 @@ def _is_valid_social_cta_sentence(sentence: str) -> bool:
     return any(re.search(pattern, text) for pattern in patterns)
 
 
+@timed_stage(logger, "truth_gate")
 def truth_gate_result(
     text: str,
     article_text: str,

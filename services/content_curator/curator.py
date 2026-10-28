@@ -19,9 +19,10 @@ from typing import Any, Callable
 from colorama import Fore, Style
 
 from services.ollama_service import OllamaService
+from services.performance import timed_stage
 from services.shared import append_channel_footer, X_CHAR_LIMIT, X_URL_CHARS, THREADS_CHAR_LIMIT, get_youtube_scripts_dir, KATZILLA_ENABLED
 from services.buffer_service import BufferQueueFullError, BufferChannelNotConnectedError
-from services.console_grounding import ProjectFact, truth_gate_result
+from services.console_grounding import ProjectFact, TruthGateMeta, truth_gate_result
 
 from services.content_curator._config import (
     IDEAS_CACHE_PATH,
@@ -274,6 +275,7 @@ class ContentCurator:
             logger.debug("Could not fetch article text from %s: %s", url, exc)
             return ""
 
+    @timed_stage(logger, "curation.confidence")
     def _score_and_route(
         self,
         post_text: str,
@@ -282,6 +284,7 @@ class ContentCurator:
         channel: str,
         article_ref: str,
         requested_mode: str,
+        gate_meta: TruthGateMeta | None = None,
     ) -> tuple[str, str]:
         """Score post with confidence engine; return (route, reason).
 
@@ -302,7 +305,18 @@ class ContentCurator:
                 if self._narrative_memory is not None
                 else 0.0
             )
-            _assessed_text, gate_meta = truth_gate_result(post_text, article_summary, grounding_facts)
+            if gate_meta is None:
+                cached_meta = getattr(self.ai, "last_truth_gate_meta", None)
+                if (
+                    isinstance(cached_meta, TruthGateMeta)
+                    and getattr(self.ai, "last_truth_gate_text", None) == post_text
+                ):
+                    gate_meta = cached_meta
+                else:
+                    _assessed_text, gate_meta = truth_gate_result(
+                        post_text, article_summary, grounding_facts,
+                        channel=channel, article_ref=article_ref,
+                    )
             signals = extract_confidence_signals(
                 removed_count=gate_meta.removed_count,
                 total_sentences=gate_meta.total_sentences,
@@ -921,6 +935,7 @@ class ContentCurator:
 
         return created_ideas
 
+    @timed_stage(logger, "curation.channel")
     def _process_single_channel(
         self,
         article: dict[str, Any],
@@ -939,6 +954,7 @@ class ContentCurator:
         update_published_cache: Callable[[str], None],
     ) -> list | None:
         """Generate and route a post for a single channel / idea mode."""
+        logger.info("Curation channel=%s starting", channel)
 
         try:
             from services.avatar_intelligence import build_continuity_context
@@ -965,6 +981,12 @@ class ContentCurator:
         if not post_text:
             logger.info("Skipping article with no usable content: %s", article["title"][:60])
             return created_ideas
+        generation_meta = getattr(self.ai, "last_truth_gate_meta", None)
+        if (
+            not isinstance(generation_meta, TruthGateMeta)
+            or getattr(self.ai, "last_truth_gate_text", None) != post_text
+        ):
+            generation_meta = None
 
         # print_validation_reports(
         #     post_text=post_text,
@@ -1033,6 +1055,7 @@ class ContentCurator:
             channel=channel,
             article_ref=article.get("link", article["title"]),
             requested_mode=message_type,
+            gate_meta=generation_meta,
         )
 
         post_text = append_channel_footer(post_text, channel)

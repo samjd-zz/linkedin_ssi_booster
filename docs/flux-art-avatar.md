@@ -2,6 +2,16 @@
 
 Local GPU image generation for persona-aligned visual content, built on FLUX.1-schnell (GGUF quantised). The README refers to this as the Alex Grey Avatar Enhancement: a style-and-aesthetic layer that guides the image prompt without introducing a separate visual persona. The `services/flux_capacitor/` package integrates image rendering into all three main flows — schedule, curate, and console — with a single shared GPU orchestrator that enforces Ollama-first sequencing on the RTX 3060.
 
+<p align="center">
+  <img src="../media/alex-grey.jpg" alt="Alex Grey style visual" width="320">
+</p>
+
+The visual direction is Alex Grey-inspired symbolic technical storytelling, tuned for professional B2B marketing with clean composition, brand-safe color discipline, and a corporate-minimal default. The `marketing_editorial` preset supports campaign-ready LinkedIn creatives. Use the pipeline for social-media visuals, persona-aligned avatars, and content-calendar imagery.
+
+**Current status:** FLUX.1 integration is stable; persona aesthetic tuning remains in progress (see [ROADMAP.md](../ROADMAP.md)). The image pipeline renders from the source story and style configuration, not a separate persona graph identity.
+
+For long-running full-profile rendering, use `FLUX_KEEP_PIPELINE_LOADED=true` (service mode default) and optionally `FLUX_LOG_MEMORY=true` to trace CUDA allocation/reservation drift.
+
 ---
 
 ## Architecture
@@ -61,6 +71,8 @@ The art avatar does not pull a separate visual persona from the persona graph. T
 For console `/art`, the source story is the most recent assistant reply in the current session. The topic hint becomes both the visual theme and the short knowledge context passed into the optimizer. This gives Sam's Kanji-teaching flow a clean multimodal handoff: a normal lesson remains text-first, while `/art "kanji 夢 in golden calligraphy"` turns the latest grounded lesson into a FLUX visual. A teaching request that also contains an image verb (`draw`, `render`, `depict`, and similar) triggers the same render automatically.
 
 FLUX remains disabled by default, so enable `FLUX_CAPACITOR_ENABLED=true` and use the full GPU-capable profile before expecting an image.
+
+When FLUX is disabled or `FLUX_CAPACITOR_MINIMAL_MODE=true`, the shared prompt optimizer returns the original nonempty story without calling Ollama. This applies to schedule, curate (including its post-publication optimization loop), and console. Existing text-only rendering status and metadata handling remain intact; disabled rendering no longer incurs hidden image-prompt generation.
 
 ---
 
@@ -132,7 +144,7 @@ docker compose --profile full exec flux-app curl -X POST http://flux-app:5000/un
 | `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS` | `120`               | Seconds before deferring a render                   |
 | `FLUX_CAPACITOR_SUBDIR`                     | `flux_capacitor`    | Artifact subdirectory under `GENERATED_CONTENT_DIR` |
 | `FLUX_CAPACITOR_STORIES_SUBDIR`             | `stories`           | Story artifact subdirectory                         |
-| `FLUX_CAPACITOR_MINIMAL_MODE`               | `false`             | Skip story generation, render image only            |
+| `FLUX_CAPACITOR_MINIMAL_MODE`               | `false`             | Text-only: skip prompt optimization and rendering  |
 | `FLUX_DISPLAY_WIDTH`                        | _(unset)_           | Terminal display column cap                         |
 
 See [docs/environment-variables.md](environment-variables.md) for the full reference.

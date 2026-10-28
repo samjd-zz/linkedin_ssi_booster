@@ -1637,7 +1637,7 @@ Each field should contain the complete lyrics for that section, including any se
 {final_rule}"""
     
     try:
-        max_attempts = 33 if lyric_language in {"japanese", "bilingual"} else 1
+        max_attempts = 5 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
 

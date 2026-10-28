@@ -64,7 +64,7 @@ class TestTokenizeManyForSearch:
         assert tokenize_many_for_search([]) == []
 
     def test_falls_back_to_regex_when_model_missing(self) -> None:
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = None
         with patch(_PATCH_ENGINE, return_value=engine):
             assert tokenize_many_for_search(["Built a RAG pipeline"]) == [
@@ -77,7 +77,7 @@ class TestTokenizeManyForSearch:
         nlp.pipe.return_value = iter(
             [_fake_doc([("観る", "観る"), ("ライブ", "ライブ")])]
         )
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = nlp
 
         with patch(_PATCH_ENGINE, return_value=engine):
@@ -90,7 +90,7 @@ class TestTokenizeManyForSearch:
         nlp = MagicMock()
         nlp.pipe_names = ["tok2vec", "ner"]
         nlp.pipe.return_value = iter([_fake_doc([("built", "build")])])
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = nlp
 
         with patch(_PATCH_ENGINE, return_value=engine):
@@ -99,7 +99,7 @@ class TestTokenizeManyForSearch:
         assert nlp.pipe.call_args.kwargs["disable"] == ["ner"]
 
     def test_routes_mixed_language_corpus_per_language(self) -> None:
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = None
         with patch(_PATCH_ENGINE, return_value=engine):
             tokenize_many_for_search(["Built a pipeline", "新宿でライブ", "more text"])
@@ -112,7 +112,7 @@ class TestTokenizeManyForSearch:
         assert engine.get_model_for_text.call_count == 2
 
     def test_preserves_input_order_across_language_groups(self) -> None:
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = None
         with patch(_PATCH_ENGINE, return_value=engine):
             result = tokenize_many_for_search(["alpha beta", "新宿", "gamma delta"])
@@ -125,7 +125,7 @@ class TestTokenizeManyForSearch:
         nlp = MagicMock()
         nlp.pipe_names = []
         nlp.pipe.return_value = iter([])
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = nlp
 
         with patch(_PATCH_ENGINE, return_value=engine):
@@ -137,7 +137,7 @@ class TestTokenizeManyForSearch:
         nlp = MagicMock()
         nlp.pipe_names = []
         nlp.pipe.side_effect = RuntimeError("model exploded")
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = nlp
 
         with patch(_PATCH_ENGINE, return_value=engine):
@@ -149,7 +149,7 @@ class TestTokenizeManyForSearch:
         nlp = MagicMock()
         nlp.pipe_names = []
         nlp.pipe.return_value = iter([[]])
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = nlp
 
         with patch(_PATCH_ENGINE, return_value=engine):
@@ -158,7 +158,7 @@ class TestTokenizeManyForSearch:
             ]
 
     def test_explicit_lang_skips_detection(self) -> None:
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = None
         with patch(_PATCH_ENGINE, return_value=engine):
             tokenize_many_for_search(["新宿でライブ"], lang="en")
@@ -168,7 +168,7 @@ class TestTokenizeManyForSearch:
 
 class TestTokenizeForSearch:
     def test_single_text_wrapper(self) -> None:
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = None
         with patch(_PATCH_ENGINE, return_value=engine):
             assert tokenize_for_search("Built a RAG pipeline") == [
@@ -178,7 +178,7 @@ class TestTokenizeForSearch:
             ]
 
     def test_empty_string_returns_empty_list(self) -> None:
-        engine = MagicMock()
+        engine = MagicMock(spec=SpacyNLP)
         engine.get_model_for_text.return_value = None
         with patch(_PATCH_ENGINE, return_value=engine):
             assert tokenize_for_search("") == []

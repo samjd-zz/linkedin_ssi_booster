@@ -180,40 +180,7 @@ After you enter Rei mode, plain follow-up messages stay with Rei until you switc
 
 ## 🖼️ Image Generation with FLUX.1
 
-<p align="center">
-  <img src="media/alex-grey.jpg" alt="Alex Grey style visual" width="320">
-</p>
-
-> **Inspiration:** Visual style direction is Alex Grey-inspired, tuned for persona-aligned, symbolic technical storytelling.
-
-> **Marketing focus:** The FLUX prompt stack is tuned for professional B2B outcomes by default, using a corporate-minimal preset plus a marketing-oriented style system prompt (clean hierarchy, brand-safe color discipline, conversion-oriented storytelling), with a dedicated `marketing_editorial` preset for campaign-ready LinkedIn creatives.
-
-Generate persona-aligned visual content using FLUX.1-schnell locally.
-
-**Current status:** FLUX.1 integration is stable; persona aesthetic tuning remains in progress (see [ROADMAP.md](ROADMAP.md)).
-
-**Requirements:**
-
-- GPU with 12GB+ VRAM (tested on RTX 3060)
-- Run with `--profile full` in Docker Compose
-- Or locally with `pip install -r requirements-flux.txt`
-- **Hugging Face FLUX.1-schnell model files** must be downloaded locally using the provided script (`scripts/download-flux1-schnell-Q4_K_S.sh`)
-
-**Use cases:**
-
-- Generate social-media-ready visuals for posts
-- Create persona-aligned avatar artwork
-- Batch generate imagery for content calendars
-
-The FLUX art avatar pipeline is complete — GPU orchestration, Ollama-first sequencing, singleton-safe service, style presets with neutral art-direction by default, and opt-in realism via `FLUX_CAPACITOR_REALISM_HINT`.
-
-For long-running full-profile rendering, memory stability is tuned via `FLUX_KEEP_PIPELINE_LOADED=true` (service mode default) and optional `FLUX_LOG_MEMORY=true` to trace CUDA allocation/reservation drift per generation.
-
-The image pipeline does not use a separate persona graph identity. It renders from source story text (schedule, curate, or console), applies the active style preset (default `corporate_minimal`, with built-ins including `marketing_editorial`, `sacred_geometry_light`, and `tech_dark`), incorporates `FLUX_CAPACITOR_STYLE_SYSTEM_PROMPT`, supports optional realism hints (`FLUX_CAPACITOR_REALISM_HINT` globally or per-request `realism_hint`), and accepts optional `knowledge_context` from the caller. In console mode, `/art` renders from the most recent assistant reply (or an explicit topic hint), and asking Sam to depict or draw Japanese characters, artwork, or cultural subjects automatically triggers an inline FLUX image render.
-
-See [docs/flux-art-avatar.md](docs/flux-art-avatar.md) for configuration, style presets, GPU sequencing, and terminal display details. See [docs/multimodal-features.md](docs/multimodal-features.md) for the broader multimodal overview.
-
----
+Generate persona-aligned post visuals and avatar artwork locally with FLUX.1-schnell, a 12GB+ GPU, and Docker's `full` profile (or local `requirements-flux.txt`). See the [FLUX art avatar guide](docs/flux-art-avatar.md) for model downloads, Alex Grey-inspired art direction, marketing presets, GPU sequencing, memory controls, and console `/art` integration; see [multimodal features](docs/multimodal-features.md) for the broader overview. With `FLUX_CAPACITOR_ENABLED=false` or `FLUX_CAPACITOR_MINIMAL_MODE=true`, all flows skip image-prompt LLM calls and preserve the original story. Curation also reuses NLP evidence corpora and original truth-gate metadata, retaining draft-removal penalties without duplicate validation. INFO logs separate stage wall times from Ollama model-load, prompt-evaluation, and generation durations; see [performance validation](docs/testing-and-dev.md#curation-performance-regressions).
 
 ## 🏆 What is the Social Selling Index (SSI)?
 

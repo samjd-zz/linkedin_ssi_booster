@@ -17,6 +17,7 @@ from services.selection_learning._models import CandidateRecord
 from services.selection_learning._storage import JsonlStore
 from services.selection_learning._text import TextMatcher
 from services.shared import DATABASE_ENABLED
+from services.performance import timed_stage
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class CandidateService:
     def __init__(self, nlp_provider: Callable[[], Any]) -> None:
         self._nlp_provider = nlp_provider
 
+    @timed_stage(logger, "curation.candidate_logging")
     def log_candidate(
         self,
         *,

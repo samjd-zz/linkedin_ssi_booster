@@ -1,5 +1,6 @@
 from services.avatar_intelligence import ExtractedEvidenceFact
 from services.ollama_service import OllamaService
+from services.console_grounding import TruthGateMeta
 
 
 class DummyOllamaService(OllamaService):
@@ -17,8 +18,10 @@ def test_summarise_for_curation_includes_extracted_grounding(monkeypatch):
     svc = DummyOllamaService()
 
     monkeypatch.setattr(
-        "services.ollama_service.truth_gate",
-        lambda text, article_text, grounding_facts, interactive=False, channel="linkedin": text,
+        "services.ollama_service.truth_gate_result",
+        lambda text, article_text, grounding_facts, **kwargs: (
+            text, TruthGateMeta(removed_count=0, total_sentences=1),
+        ),
     )
 
     extracted = [

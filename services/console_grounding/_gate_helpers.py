@@ -283,10 +283,14 @@ def _build_evidence_paths_for_sentence(
         return []
 
     sent_tokens = set(_tokenize_for_bm25(sentence))
+    from services.spacy_nlp import tokenize_many_for_search
+
+    fact_tokens_batch = tokenize_many_for_search([
+        f"{fact.project} {fact.details}" for fact in all_facts
+    ])
     paths = []
-    for fact in all_facts:
-        fact_tokens = set(_tokenize_for_bm25(f"{fact.project} {fact.details}"))
-        overlap = _compute_fact_overlap(sent_tokens, fact_tokens)
+    for fact, tokens in zip(all_facts, fact_tokens_batch):
+        overlap = _compute_fact_overlap(sent_tokens, set(tokens))
         src_lower = fact.source.lower()
         if src_lower.startswith("profile_context") or src_lower.startswith("avatar:"):
             evidence_type, credibility = EVIDENCE_TYPE_PRIMARY, 0.90

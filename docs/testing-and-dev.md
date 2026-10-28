@@ -44,16 +44,16 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 ### Summary Metrics
 
-| Total Tests | Passed  | Skipped | Failed | Source Coverage | Status          |
-| ----------- | ------- | ------- | ------ | --------------- | --------------- |
-| **938**     | **938** | **0**   | **0**  | **66%**         | ✅ **All pass** |
+| Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
+| --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
+| **969** | **965** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
 
-- **Latest Run Date:** October 11, 2026
-- **Latest Changes:** Rei Toei tests aligned with the 0.50 bilingual ratio tolerance, 33-attempt retry budget, and fallback-on-exhaustion behaviour; truth-gate Model2Vec mock restricted to the real service interface. Source coverage was last measured on September 14, 2026.
-- **Latest Run Scope:** Full suite, including bilingual lyric target, retry, generated-JSON parsing, prompt schema leakage scrubbing, Romaji learner cue density, messy inline-cue cleanup for bracket and parenthetical meaning forms, parenthetical Romaji normalization, deterministic pykakasi Hepburn Romaji correction/generation for learner cues, Japanese lyric script hygiene, Japanese spaCy fallback routing, curator extra-feed/keyword append, language-agnostic theme grouping, language-routed spaCy search tokenization and batch similarity coverage, Model2Vec semantic scoring, Strudel WebSocket bridge message handling, database dual-write persistence, and Suno submission orchestration.
+- **Latest Run Date:** October 27, 2026
+- **Latest Changes:** 31 performance regressions added: disabled/minimal FLUX prompt gating, bounded model-aware NLP corpus reuse, original truth-gate metadata reuse, and stage/Ollama timing logs. Source coverage was last measured on September 14, 2026.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused performance and related NLP/FLUX/confidence suite passed **187 tests**.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
-- **Notes:** 0 skipped, 0 failed.
+- **Notes:** Two unchanged tests in `test_persona_graph_retrieval.py` expect 19 projects/evidence facts, while the current persona graph contains 20. They fail at lines 63 and 81; no persona data, loaders, normalizers, or those assertions were changed by the performance work.
 
 ### Test Suite Breakdown
 
@@ -83,6 +83,41 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - **3** spaCy pipeline thread-safety tests (new)
 - **4** Singleton concurrency tests (new)
 - _3 Database engine/session singleton lifecycle + 1 Flux service singleton under concurrent access_
+- **31** Curation performance regression tests (new)
+- _10 FLUX text-only gating | 6 bounded corpus caching | 9 gate-metadata reuse | 6 timing telemetry_
+
+---
+
+## Curation Performance Regressions
+
+| Test file | Tests | Coverage |
+| --------- | ----- | -------- |
+| `tests/test_performance_flux_gating.py` | 10 | All source modes skip image-prompt LLM calls when disabled/minimal; enabled mode optimizes once |
+| `tests/test_nlp_corpus_cache.py` | 6 | A 617-fact corpus parses once across sentences, unchanged overlap, model/content invalidation, bounded eviction, incomplete/oversized inputs and failed builds |
+| `tests/test_curator_gate_metadata.py` | 9 | One gate pass through generation and channel formatting, retained removal penalties, stale metadata fallback, per-call reset |
+| `tests/test_performance.py` | 6 | Wall-time units, repeated/decorated calls, propagated errors, server nanosecond conversion, explicit missing metrics, content-free logs |
+
+Run the isolated suite without the two live Buffer tests:
+
+```bash
+source .venv/bin/activate && python -m pytest -q tests/ \
+  --deselect=tests/test_buffer_service.py::test_get_scheduled_posts \
+  --deselect=tests/test_buffer_service.py::test_get_published_posts
+```
+
+Normal INFO logs now include `Stage start` and `Stage end` records with `stage`, `elapsed_s`, and `status`:
+
+- `ollama.chat`: client wall time for each primary/fallback request.
+- `truth_gate`: filtering plus DoT scoring.
+- `curation.confidence`: confidence assessment/routing; normally reuses generation metadata.
+- `curation.candidate_logging`: NLP enrichment and candidate persistence.
+- `buffer.channel_discovery`: organization/channel lookup.
+- `buffer.graphql`: each Buffer request.
+- `curation.channel`: the full single-channel pipeline, including generation, validation, and publishing.
+
+Stages are nested: do not sum overlapping durations. `Ollama timing` records report server `load_s`, `prompt_eval_s`, `generation_s`, `total_s`, and token counts. `None` means the server did not supply a metric, not zero. Compare server load time with generation and client wall time before diagnosing model reloads or transport delays. Existing content logs are unchanged; the new timing records contain no prompts or post text.
+
+The caching tests verify operation counts, not a production speedup estimate. Re-run the normal curation command to measure the actual improvement on the deployment hardware.
 
 ---
 

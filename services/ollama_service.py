@@ -24,10 +24,11 @@ from services.shared import PERSONA_SYSTEM_PROMPT, YOUTUBE_SHORT_SYSTEM_PROMPT, 
 from services.console_grounding import (
     build_grounding_facts_block,
     ProjectFact,
-    truth_gate,
     truth_gate_result,
+    TruthGateMeta,
 )
 from services.avatar_intelligence import build_extracted_grounding_context, ExtractedEvidenceFact
+from services.performance import log_ollama_timings, timed_stage
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,8 @@ def _load_ollama_think() -> bool | Literal['low', 'medium', 'high'] | None:
 
 class OllamaService:
     think: bool | Literal['low', 'medium', 'high'] | None
+    last_truth_gate_meta: TruthGateMeta | None
+    last_truth_gate_text: str
 
     def generate_youtube_short_script(
         self,
@@ -163,16 +166,19 @@ class OllamaService:
         use_fallback = bool(fallback and fallback != self.model)
 
         def _attempt(model: str) -> str:
-            response = self.client.chat(
-                model=model,
-                think=self.think,
-                options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
-                format=format,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user",   "content": user_prompt},
-                ],
-            )
+            logger.info("Ollama request model=%s max_tokens=%d", model, max_tokens)
+            with timed_stage(logger, "ollama.chat"):
+                response = self.client.chat(
+                    model=model,
+                    think=self.think,
+                    options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
+                    format=format,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user",   "content": user_prompt},
+                    ],
+                )
+            log_ollama_timings(logger, model, response)
             return (response.message.content or "").strip()
 
         def _run_fallback(reason: str) -> str:
@@ -570,6 +576,8 @@ Rewrite the source story into a FLUX-ready prompt that would produce an ultra re
         Returns None if article_text is too short to be useful.
         post_mode=True: omits hashtags and URL from the body â€” both go in the first comment instead.
         """
+        self.last_truth_gate_meta = None
+        self.last_truth_gate_text = ""
         if not article_text or len(article_text.strip()) < 100:
             logger.warning(f"Skipping curation â€” article text too short ({len(article_text.strip())} chars): {source_url}")
             return None
@@ -680,24 +688,23 @@ Write a {"Threads post" if channel == "threads" else "Bluesky post" if channel =
 
         # Lightweight truth gate â€” strip sentences with unsupported claims
         if result:
-            result = truth_gate(
+            result, self.last_truth_gate_meta = truth_gate_result(
                 result,
                 article_text,
                 grounding_facts or [],
                 interactive=interactive,
                 channel=channel,
             )
-            self.last_truth_gate_meta = None
 
         # Format into paragraphs with hashtags on their own line
         if result and channel in ("linkedin", "facebook"):
             result = format_post_paragraphs(result)
 
         if result:
+            self.last_truth_gate_text = result
             return result
 
         logger.warning(
             "Curation output was empty after cleanup â€” skipping article: %s", source_url
         )
         return None
-

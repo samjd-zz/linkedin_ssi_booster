@@ -25,6 +25,8 @@ import re
 from threading import Lock, RLock
 from typing import Any, Iterable
 
+from services._nlp_corpus_cache import CorpusCache
+
 logger = logging.getLogger(__name__)
 
 # Global cache for spaCy models to avoid reloading
@@ -185,6 +187,8 @@ class SpacyNLP:
         self._nlp = None  # Cache for primary model (test compatibility)
         self._nlp_models: dict[str, Any] = {}
         self._similarity_doc_cache: dict[tuple[int, str], Any] = {}
+        self._similarity_corpus_cache: CorpusCache[Any] = CorpusCache()
+        self._search_corpus_cache: CorpusCache[list[str]] = CorpusCache()
 
     def _ensure_model(self) -> Any:
         """Lazy load the primary spaCy model on first use."""
@@ -419,16 +423,14 @@ class SpacyNLP:
                 logger.debug("spacy_nlp: compute_similarity_batch fallback (no vectors)")
                 return [0.0] * len(candidates)
 
-            if len(candidates) > 256:
-                candidate_docs = list(nlp.pipe(candidates))
-            else:
-                missing = [candidate for candidate in candidates if (model_key, candidate) not in cache]
-                if missing:
-                    for candidate, doc in zip(missing, nlp.pipe(missing)):
-                        cache[(model_key, candidate)] = doc
-                    while len(cache) > 256:
-                        cache.pop(next(iter(cache)))
-                candidate_docs = [cache[(model_key, candidate)] for candidate in candidates]
+            corpus_cache = getattr(self, "_similarity_corpus_cache", None)
+            if corpus_cache is None:
+                corpus_cache = self._similarity_corpus_cache = CorpusCache()
+            candidate_docs = corpus_cache.get_or_build(
+                nlp, candidates, lambda: list(nlp.pipe(candidates)),
+            )
+            while len(cache) > 256:
+                cache.pop(next(iter(cache)))
 
             scores: list[float] = []
             for doc in candidate_docs:
@@ -762,6 +764,9 @@ def tokenize_many_for_search(
 
     results: list[list[str]] = [[] for _ in texts]
     engine = get_spacy_nlp()
+    corpus_cache = getattr(engine, "_search_corpus_cache", None)
+    if corpus_cache is None:
+        corpus_cache = engine._search_corpus_cache = CorpusCache()
 
     groups: dict[str, list[int]] = {}
     for idx, text in enumerate(texts):
@@ -779,8 +784,15 @@ def tokenize_many_for_search(
         batch = [texts[idx] or "" for idx in indices]
         filled: set[int] = set()
         try:
-            for idx, doc in zip(indices, nlp.pipe(batch, disable=disable)):
-                results[idx] = _lemma_tokens(doc) or regex_tokens(texts[idx] or "")
+            token_rows = corpus_cache.get_or_build(
+                (nlp, tuple(disable)), batch,
+                lambda: [
+                    _lemma_tokens(doc) or regex_tokens(text)
+                    for text, doc in zip(batch, nlp.pipe(batch, disable=disable))
+                ],
+            )
+            for idx, tokens in zip(indices, token_rows):
+                results[idx] = list(tokens)
                 filled.add(idx)
         except Exception as exc:
             logger.warning("spacy_nlp: tokenize_many_for_search failed: %s", exc)
@@ -796,4 +808,3 @@ def tokenize_many_for_search(
 def tokenize_for_search(text: str, lang: str | None = None) -> list[str]:
     """Single-text convenience wrapper around :func:`tokenize_many_for_search`."""
     return tokenize_many_for_search([text], lang=lang)[0]
-

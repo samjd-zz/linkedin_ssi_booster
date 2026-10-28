@@ -1264,7 +1264,7 @@ def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert mock_chat.call_count == 33
+    assert mock_chat.call_count == 5
     assert "Signal wakes inside the core" in merged
     assert "English Driftの夜" in merged
 
@@ -1329,10 +1329,14 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
         ensure_ascii=False,
     )
 
-    with patch.object(OllamaService, "_chat", side_effect=[first_response, second_response]) as mock_chat:
+    with patch.object(
+        OllamaService,
+        "_chat",
+        side_effect=[first_response] * 4 + [second_response],
+    ) as mock_chat:
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 2
+    assert mock_chat.call_count == 5
     configured_ratio = ReiToeiConfig().japanese_lyric_probability
     configured_percent = int(round(configured_ratio * 100))
     assert f"Aim for approximately {configured_percent}% Japanese lyrical content" in mock_chat.call_args_list[1].args[1]
@@ -1342,6 +1346,10 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
     assert "concise English sung echoes" in retry_prompt
     assert "[Romaji:" not in retry_prompt
     assert "[Meaning:" not in retry_prompt
+    third_attempt_prompt = mock_chat.call_args_list[2].args[1]
+    assert "EXPLICIT BILINGUAL STRUCTURAL ASSIGNMENT (Mandatory for attempt 3)" in third_attempt_prompt
+    fifth_attempt_prompt = mock_chat.call_args_list[4].args[1]
+    assert "EXPLICIT BILINGUAL STRUCTURAL ASSIGNMENT (Mandatory for attempt 5)" in fifth_attempt_prompt
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "Signal" in merged or "Break" in merged or "rewrite" in merged
     assert "データ" in merged or "境界線" in merged or "次のステップ" in merged
@@ -1533,7 +1541,7 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
     with patch.object(OllamaService, "_chat", return_value=out_of_target_response) as mock_chat:
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 33
+    assert mock_chat.call_count == 5
     assert "システムを再起動する" in lyrics.bridge
     assert "未来へ進む" not in lyrics.bridge
 
@@ -1590,11 +1598,11 @@ def test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_re
     with patch.object(
         OllamaService,
         "_chat",
-        side_effect=[serialized_japanese] + [malformed_repair] * 32,
+        side_effect=[serialized_japanese] + [malformed_repair] * 4,
     ) as mock_chat:
         lyrics = compose_lyrics(concept, persona, domain_knowledge)
 
-    assert mock_chat.call_count == 33
+    assert mock_chat.call_count == 5
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "GPUが光る" not in merged
     assert "システムを再起動する" in lyrics.bridge

@@ -544,15 +544,16 @@ def _optimize_flux_story_for_render(
 ) -> str:
     """Rewrite story text into a FLUX-ready visual prompt.
 
-    Intentionally does NOT gate on FLUX_CAPACITOR_ENABLED — the caller decides
-    whether to invoke optimization, and flux_service.render() handles the
-    feature-disabled path by returning TEXT_ONLY.  Checking the env flag here
-    caused make_request(post_text="") when the feature was off, breaking tests.
+    Text-only flows keep the original story without making an LLM request.
     """
     story_text = (story_text or "").strip()
     if not story_text:
         return ""
     try:
+        config = get_flux_service().config
+        if not config.enabled or config.minimal_mode:
+            logger.debug("FLUX prompt optimization skipped (text-only mode)")
+            return story_text
         return ai.optimise_flux_art_prompt(
             story_text,
             title=title,

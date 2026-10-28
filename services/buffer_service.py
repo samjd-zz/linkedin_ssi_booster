@@ -9,6 +9,7 @@ import requests
 import logging
 import re
 from typing import Any, Optional
+from services.performance import timed_stage
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class BufferService:
             "Content-Type": "application/json",
         }
 
+    @timed_stage(logger, "buffer.graphql")
     def _query(self, query: str, variables: Optional[dict] = None) -> dict:
         """Execute a GraphQL query/mutation against Buffer API."""
         import json as _json
@@ -102,6 +104,7 @@ class BufferService:
             raise RuntimeError("No organizations found in Buffer account.")
         return orgs[0]["id"]
 
+    @timed_stage(logger, "buffer.channel_discovery")
     def get_channels(self) -> list:
         """Get all connected social channels using the current top-level channels query."""
         org_id = self.get_organization_id()

@@ -79,6 +79,8 @@ class TestDisplayArtInTerminal:
 def _mock_flux_service(status: RenderStatus = RenderStatus.RENDERED):
     """Return a minimal mock FluxCapacitorService."""
     class _MockFluxService:
+        config = SimpleNamespace(enabled=True, minimal_mode=False)
+
         def make_request(self, **kwargs):
             self._last_request = kwargs
             return SimpleNamespace(request_id="req-test")
@@ -161,6 +163,8 @@ class TestRenderCurateArtAvatar:
 
     def test_exception_returns_failed(self, monkeypatch):
         class _BoomService:
+            config = SimpleNamespace(enabled=True, minimal_mode=False)
+
             def make_request(self, **kwargs):
                 raise RuntimeError("curate-boom")
 
@@ -178,6 +182,8 @@ class TestRenderCurateArtAvatar:
         recorded: dict = {}
 
         class _RecordingService:
+            config = SimpleNamespace(enabled=True, minimal_mode=False)
+
             def make_request(self, **kwargs):
                 recorded.update(kwargs)
                 return SimpleNamespace(request_id="r")
@@ -236,6 +242,8 @@ class TestRenderConsoleArtAvatar:
 
     def test_exception_returns_failed(self, monkeypatch):
         class _BoomService:
+            config = SimpleNamespace(enabled=True, minimal_mode=False)
+
             def make_request(self, **kwargs):
                 raise RuntimeError("console-boom")
 
@@ -251,6 +259,8 @@ class TestRenderConsoleArtAvatar:
         recorded: dict = {}
 
         class _RecordingService:
+            config = SimpleNamespace(enabled=True, minimal_mode=False)
+
             def make_request(self, **kwargs):
                 recorded.update(kwargs)
                 return SimpleNamespace(request_id="r")
@@ -320,4 +330,3 @@ class TestRenderConsoleArtAvatar:
         main._auto_render_art_if_requested(ai, "Just normal text response", constraints, "hello sam")
 
         assert len(rendered_calls) == 0
-

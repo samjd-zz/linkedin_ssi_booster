@@ -27,6 +27,8 @@ def test_render_schedule_art_avatar_records_rendered(monkeypatch) -> None:
     ai = _MockOllamaAI()
 
     class _MockFluxService:
+        config = SimpleNamespace(enabled=True, minimal_mode=False)
+
         def make_request(self, **kwargs):
             recorded["request"] = kwargs
             return SimpleNamespace(request_id="req-1")
@@ -61,6 +63,8 @@ def test_render_schedule_art_avatar_records_rendered(monkeypatch) -> None:
 
 def test_render_schedule_art_avatar_returns_failed_on_exception(monkeypatch) -> None:
     class _BoomFluxService:
+        config = SimpleNamespace(enabled=True, minimal_mode=False)
+
         def make_request(self, **kwargs):
             raise RuntimeError("boom")
 
