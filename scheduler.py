@@ -9,6 +9,8 @@ Buffer owns the posting cadence and publish times.
 import logging
 import os
 
+from services.performance import timed_stage
+
 logger = logging.getLogger(__name__)
 
 
@@ -82,15 +84,9 @@ class PostScheduler:
         else:
             raise ValueError(f"Unknown channel {channel!r}. Use 'linkedin', 'x', 'bluesky', 'threads', 'youtube', 'facebook', or 'all'.")
 
-    def schedule_week(self, posts: list, week_number: int = 1, channel: str = "linkedin"):
-        """
-        Add a week of posts to Buffer's queue.
-        Buffer owns posting times and queue placement.
-        Posts are selected according to SSI focus weights from the environment.
-        channel: 'linkedin' | 'x' | 'bluesky' | 'threads' | 'youtube' | 'facebook' | 'all'
-        """
-        channel_ids = self._resolve_channel_ids(channel)
-
+    @classmethod
+    def select_posts(cls, posts: list[dict]) -> list[dict]:
+        """Select calendar entries using the same SSI allocation and slot cap."""
         # Compute how many posts per SSI component this week
         ssi_weights = get_ssi_focus_weights()
         total_posts = len(posts)
@@ -132,7 +128,7 @@ class PostScheduler:
                 if id(post) not in used_ids and len(selected_posts) < total_posts:
                     selected_posts.append(post)
 
-        slot_limit = self._get_posting_slot_limit()
+        slot_limit = cls._get_posting_slot_limit()
         if slot_limit is not None:
             if slot_limit <= 0:
                 logger.info("SCHEDULER_POSTING_SLOTS is configured to 0 slots; no posts scheduled.")
@@ -144,6 +140,16 @@ class PostScheduler:
                 total_posts,
             )
 
+        return selected_posts
+
+    @timed_stage(logger, "schedule.queue")
+    def schedule_week(
+        self, posts: list, week_number: int = 1, channel: str = "linkedin",
+        *, preselected: bool = False,
+    ):
+        """Queue posts, preserving order if select_posts already selected them."""
+        channel_ids = self._resolve_channel_ids(channel)
+        selected_posts = list(posts) if preselected else self.select_posts(posts)
         scheduled = []
         for channel_id, channel_name in channel_ids:
             for i, post in enumerate(selected_posts):

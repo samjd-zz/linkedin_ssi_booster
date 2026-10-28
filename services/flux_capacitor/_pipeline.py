@@ -51,6 +51,8 @@ from services.flux_capacitor._storage import (
 
 logger = logging.getLogger(__name__)
 
+_REMOTE_RUNTIME_USED = False
+
 # Module-level import with graceful fallback so the symbol is patchable in tests
 try:
     from services.image_generation import generate_flux_image as _generate_flux_image  # type: ignore
@@ -217,6 +219,7 @@ def run_art_avatar(
     The FLUX inference call is wrapped in a try/except so render failures
     degrade to TEXT_ONLY without breaking the caller's post flow.
     """
+    global _REMOTE_RUNTIME_USED
     telemetry = ArtAvatarTelemetry()
 
     # ------------------------------------------------------------------ #
@@ -313,6 +316,7 @@ def run_art_avatar(
                 else:
                 # Call the FLUX HTTP service (full Docker profile).
                     import requests as _requests
+                    _REMOTE_RUNTIME_USED = True
                     resp = _requests.post(
                         f"{flux_service_url}/generate",
                         json={

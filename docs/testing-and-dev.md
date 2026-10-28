@@ -46,11 +46,11 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **998** | **994** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
+| **1028** | **1024** | **0** | **2** | **2** | **66% (historical)** | Existing persona-count failures |
 
 - **Latest Run Date:** October 27, 2026
-- **Latest Changes:** 22 console performance regressions covering batched retrieval, large embedding corpora, snapshot/reload consistency, Rei lazy knowledge/client reuse, bounded history, synchronous voice, and timing/error behavior. Previous work added 31 curation and 7 Rei CLI preview regressions. Source coverage was last measured on September 14, 2026.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused console/NLP/Rei/FLUX/timing run passed **221 tests**.
+- **Latest Changes:** 30 schedule/cleanup regressions covering shared preparation, per-topic grounding reuse, SSI-equivalent early caps and skewed-allocation queue order, full previews/YouTube, generated-content report reuse/fallback, phase timings, and actual-use FLUX cleanup. Previous work added 22 console, 31 curation, and 7 Rei CLI preview regressions. Source coverage was last measured on September 14, 2026.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access. The focused schedule/cleanup/FLUX/Rei-preview/timing run passed **101 tests**.
 - **Environment Specs:** Python 3.12.x, pytest 9.0.3
 - **Coverage Scope:** `services`, `agents`, `main`, `scheduler`, and `content_calendar` measured with pytest-cov.
 - **Notes:** Two unchanged tests in `test_persona_graph_retrieval.py` expect 19 projects/evidence facts, while the current persona graph contains 20. They fail at lines 63 and 81; no persona data, loaders, normalizers, or those assertions were changed by the performance work.
@@ -89,6 +89,34 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - _Explicit-theme syntax, preparation gating, automatic-theme history reuse, explain-mode evidence, default model, Strudel client reuse, console GitHub preservation_
 - **22** Sam/Rei console performance regression tests (new)
 - _Large-batch embedding correctness/reuse, content/model invalidation, batched tokenization/fallback, one snapshot per reload, refreshed tag relationships and graph, lazy Rei knowledge, shared music client, sparse external fallback, bounded history, one verification bar, voice completion, and chat metrics/errors_
+- **30** Schedule performance and resource-cleanup regression tests (new)
+- _17 preparation/grounding/report/cap/preview/error/timing cases | 13 actual-use FLUX lifecycle and cleanup cases_
+
+---
+
+## Schedule Performance Regressions
+
+| Test file | Tests | Coverage |
+| --------- | ----- | -------- |
+| `tests/test_schedule_performance.py` | 17 | No unused GitHub enrichment; one avatar normalization; topic-specific grounding reuse; generated-content DoT metadata and fallback; early live caps matching SSI queue selection/order, including overflow under skewed allocation; uncapped/invalid cap behavior; full dry-run/YouTube; preserved hashtags/footer; generation-error cleanup; phase timings |
+| `tests/test_schedule_cleanup.py` | 13 | Only-used remote unload; success/error state handling; no unused local-runtime import; continued cleanup after Ollama errors; disabled/minimal/DNS-failed/successful/failed-request FLUX usage tracking |
+
+Run the focused suite:
+
+```bash
+source .venv/bin/activate && python -m pytest -q \
+  tests/test_schedule_performance.py tests/test_schedule_cleanup.py \
+  tests/test_scheduler_queue.py tests/test_flux_capacitor_schedule_integration.py \
+  tests/test_flux_capacitor_pipeline.py tests/test_rei_preview_performance.py \
+  tests/test_performance_flux_gating.py tests/test_performance.py
+```
+
+All scheduling/publishing, model generation, remote FLUX requests, and cleanup
+clients are mocked in the new tests. They assert operation counts and selected
+topic/output equivalence rather than hardware speed. The five-topic,
+two-channel, one-slot test requires two live generations versus ten preview
+generations. See [schedule runtime behavior](features/schedule-performance.md)
+for the generated-content report scope and shutdown timings.
 
 ---
 

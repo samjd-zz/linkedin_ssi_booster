@@ -203,7 +203,7 @@ SSI decays if you go quiet — LinkedIn penalises inconsistency. Manually writin
 
 This tool handles the repeatable parts:
 
-- 📅 **Consistent cadence** — scheduled content is added to your Buffer queue, where Buffer owns publish cadence and posting times
+- 📅 **Consistent cadence** — Buffer owns publish cadence and posting times. Live scheduling applies configured slot caps before generation, reuses prepared grounding across channels, and skips unused GitHub enrichment; dry-run and YouTube retain the full calendar. See [schedule runtime and timings](docs/features/schedule-performance.md).
 - ✍️ **On-brand content** — every post is grounded in your real projects, real numbers, and real technical voice via a detailed persona prompt
 - 🏆 **All four SSI pillars** — the content calendar and curator rotate across all four components so no single pillar is neglected
 - 📰 **Curation pipeline** — fetches today's AI/GovTech news, filters by your niche, and generates commentary that you can either:

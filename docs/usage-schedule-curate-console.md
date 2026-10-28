@@ -49,6 +49,14 @@ bash run.sh --profile core run --rm app python main.py --save-ssi 10.49 9.69 11.
 
 `--schedule --week N` generates posts from the selected week of the content calendar and adds them to Buffer's queue unless `--dry-run` is supplied. The scheduler uses SSI focus weights from `.env` to balance selected topics across pillars, then sends each selected post without an explicit publish timestamp so Buffer owns queue placement, cadence, and posting times.
 
+When `SCHEDULER_POSTING_SLOTS` is explicitly configured, live non-YouTube runs
+select the same SSI-balanced topics before generation, avoiding drafts and art
+that would be discarded by the cap. `--dry-run` and YouTube still generate the
+full selected week. Avatar normalization happens once per run, and topic
+grounding is reused across channels without reusing channel-specific generated
+posts. Schedule `--dot-report` scores generated content, excluding appended
+hashtags and configured footers. See [schedule runtime and timings](features/schedule-performance.md).
+
 Examples:
 
 ```bash

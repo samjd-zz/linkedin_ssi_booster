@@ -135,6 +135,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING) # suppress underlying tr
 logger = logging.getLogger(__name__)
 
 
+@timed_stage(logger, "cleanup.total")
 def _run_post_generation_cleanup(ai: OllamaService, source_mode: str) -> None:
     """Release model/runtime memory after schedule/curate runs.
 
@@ -144,18 +145,22 @@ def _run_post_generation_cleanup(ai: OllamaService, source_mode: str) -> None:
 
     # 1) Ask Ollama to evict loaded models from VRAM/RAM.
     try:
-        ai.unload(wait_seconds=10.0)
+        with timed_stage(logger, "cleanup.ollama"):
+            ai.unload(wait_seconds=10.0)
     except Exception as exc:  # noqa: BLE001
         logger.debug("Post-%s Ollama unload skipped: %s", source_mode, exc)
 
     # 2) Ask flux-app service to unload cached FLUX runtime (if service mode is active).
     flux_service_url = os.getenv("FLUX_SERVICE_URL", "").rstrip("/")
-    if flux_service_url:
+    from services.flux_capacitor import _pipeline as _flux_pipeline
+    if flux_service_url and _flux_pipeline._REMOTE_RUNTIME_USED:
         try:
             import requests as _requests
 
-            resp = _requests.post(f"{flux_service_url}/unload", timeout=30)
+            with timed_stage(logger, "cleanup.flux_remote"):
+                resp = _requests.post(f"{flux_service_url}/unload", timeout=30)
             if resp.ok:
+                _flux_pipeline._REMOTE_RUNTIME_USED = False
                 logger.info("FLUX runtime unload requested via %s/unload", flux_service_url)
             else:
                 logger.warning(
@@ -164,19 +169,21 @@ def _run_post_generation_cleanup(ai: OllamaService, source_mode: str) -> None:
                     resp.text,
                 )
         except Exception as exc:  # noqa: BLE001
-            logger.debug("Post-%s flux-app unload skipped: %s", source_mode, exc)
+            logger.warning("Post-%s flux-app unload failed: %s", source_mode, exc)
 
     # 3) If in-process FLUX runtime is present (fallback mode), unload it too.
     try:
-        from services.image_generation import unload_flux_runtime
-
-        unload_flux_runtime()
+        _image_module = sys.modules.get("services.image_generation")
+        if _image_module is not None:
+            with timed_stage(logger, "cleanup.flux_local"):
+                _image_module.unload_flux_runtime()
     except Exception as exc:  # noqa: BLE001
         logger.debug("Post-%s in-process FLUX unload skipped: %s", source_mode, exc)
 
     # 4) Final Python heap collection pass.
-    gc.collect()
-    gc.collect()
+    with timed_stage(logger, "cleanup.heap"):
+        gc.collect()
+        gc.collect()
 
     # 5) Linux/glibc heap trim (best-effort) to return freed pages to OS.
     if sys.platform.startswith("linux"):
@@ -188,6 +195,7 @@ def _run_post_generation_cleanup(ai: OllamaService, source_mode: str) -> None:
             logger.debug("Post-%s malloc_trim skipped: %s", source_mode, exc)
 
 
+@timed_stage(logger, "schedule.art")
 def _render_schedule_art_avatar(
     ai: OllamaService,
     post_text: str,
@@ -1576,7 +1584,7 @@ def main():
     print_startup_notice()
 
     _github_context = ""
-    if args.schedule or args.curate or args.console:
+    if args.curate or args.console:
         _github_context = build_github_profile_context(
             max_chars=int(os.getenv("GITHUB_CONTEXT_MAX_CHARS", "30000"))
         )
@@ -2067,68 +2075,97 @@ def main():
                 logger.error("No content found for week %d", args.week)
                 return
 
-            # args.channel is already a list from _parse_channels
-            for channel in args.channel:
-                logger.info("📝 Generating %d posts for week %d (channel: %s)...", len(week_topics), args.week, channel)
-                posts = []
-                from services.avatar_intelligence import (
-                    load_avatar_state as _lav_gen,
-                    normalize_evidence_facts,
-                    normalize_domain_facts,
-                    retrieve_evidence,
-                    evidence_facts_to_project_facts,
-                    EvidenceFact,
-                    DomainEvidenceFact,
-                    domain_facts_to_project_facts,
-                )
+            from services.avatar_intelligence import (
+                load_avatar_state as _lav_gen,
+                normalize_evidence_facts,
+                normalize_domain_facts,
+                normalize_extracted_facts,
+                retrieve_evidence,
+                evidence_facts_to_project_facts,
+                EvidenceFact,
+                DomainEvidenceFact,
+                domain_facts_to_project_facts,
+            )
+            with timed_stage(logger, "schedule.preparation"):
                 _gen_avatar_state = _lav_gen()
-                if channel == "youtube" and not args.dry_run:
-                    get_youtube_scripts_dir()
+                all_facts = (
+                    list(normalize_evidence_facts(_gen_avatar_state))
+                    + list(normalize_domain_facts(_gen_avatar_state))
+                )
+                _ev_proj = int(os.getenv("EVIDENCE_PROJECT_COUNT", "3"))
+                _ev_dom = int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
+                _extracted_tokens = []
                 if args.avatar_explain:
                     from services.avatar_intelligence import build_explain_output, format_explain_output
+                    _ev_extracted = int(os.getenv("EVIDENCE_EXTRACTED_COUNT", "2"))
+                    for _fact in normalize_extracted_facts(_gen_avatar_state):
+                        _text = " ".join([
+                            _fact.statement, _fact.source_title,
+                            " ".join(_fact.tags or []), " ".join(_fact.entities or []),
+                        ])
+                        _extracted_tokens.append((
+                            _fact, set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", _text.lower())),
+                        ))
+                _grounding_cache: dict[int, tuple[list, list]] = {}
 
-                for _topic_idx, topic in enumerate(week_topics, start=1):
+            # args.channel is already a list from _parse_channels
+            for channel in args.channel:
+                preselected = (
+                    not args.dry_run and channel != "youtube"
+                    and PostScheduler._get_posting_slot_limit() is not None
+                )
+                channel_topics = PostScheduler.select_posts(week_topics) if preselected else week_topics
+                logger.info("📝 Generating %d posts for week %d (channel: %s)...", len(channel_topics), args.week, channel)
+                posts = []
+                if channel == "youtube" and not args.dry_run:
+                    get_youtube_scripts_dir()
+
+                for _topic_idx, topic in enumerate(channel_topics, start=1):
                     logger.info("  Generating: %s", topic['title'])
                     grounding_query = f"{topic['title']}. {topic['angle']}. {topic.get('ssi_component', 'establish_brand')}"
-                    # Combine both fact types
-                    _gen_avatar_facts = normalize_evidence_facts(_gen_avatar_state)
-                    _gen_domain_facts = normalize_domain_facts(_gen_avatar_state)
-                    all_facts = list(_gen_avatar_facts) + list(_gen_domain_facts)
-                    _ev_proj = int(os.getenv("EVIDENCE_PROJECT_COUNT", "3"))
-                    _ev_dom = int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
-                    relevant = retrieve_evidence(grounding_query, all_facts, limit=_ev_proj + _ev_dom)  # type: ignore[arg-type]
-
-                    # Split by type and convert
-                    persona_facts = [f for f in relevant if isinstance(f, EvidenceFact)]
-                    domain_facts = [f for f in relevant if isinstance(f, DomainEvidenceFact)]
-                    grounding_facts = (
-                        evidence_facts_to_project_facts(persona_facts)
-                        + domain_facts_to_project_facts(domain_facts)
-                    )
+                    with timed_stage(logger, "schedule.retrieval"):
+                        _topic_key = id(topic)
+                        if _topic_key not in _grounding_cache:
+                            relevant = retrieve_evidence(grounding_query, all_facts, limit=_ev_proj + _ev_dom)  # type: ignore[arg-type]
+                            grounding_facts = (
+                                evidence_facts_to_project_facts([f for f in relevant if isinstance(f, EvidenceFact)])
+                                + domain_facts_to_project_facts([f for f in relevant if isinstance(f, DomainEvidenceFact)])
+                            )
+                            _grounding_cache[_topic_key] = (relevant, grounding_facts)
+                        relevant, grounding_facts = _grounding_cache[_topic_key]
 
                     flux_service = get_flux_service()
                     ollama_job_id = flux_service.notify_ollama_start()
                     try:
-                        if channel == "youtube":
-                            post = ai.generate_youtube_short_script(
-                                title=topic["title"],
-                                angle=topic["angle"],
-                                ssi_component=topic.get("ssi_component", "establish_brand"),
-                                grounding_facts=grounding_facts,
-                                interactive=args.interactive,
-                            )
-                        else:
-                            post = ai.generate_linkedin_post(
-                                title=topic["title"],
-                                angle=topic["angle"],
-                                ssi_component=topic.get("ssi_component", "establish_brand"),
-                                hashtags=topic.get("hashtags", []),
-                                grounding_facts=grounding_facts,
-                                channel=channel,
-                                interactive=args.interactive,
-                            )
+                        with timed_stage(logger, "schedule.generation"):
+                            if channel == "youtube":
+                                post = ai.generate_youtube_short_script(
+                                    title=topic["title"],
+                                    angle=topic["angle"],
+                                    ssi_component=topic.get("ssi_component", "establish_brand"),
+                                    grounding_facts=grounding_facts,
+                                    interactive=args.interactive,
+                                )
+                            else:
+                                post = ai.generate_linkedin_post(
+                                    title=topic["title"],
+                                    angle=topic["angle"],
+                                    ssi_component=topic.get("ssi_component", "establish_brand"),
+                                    hashtags=topic.get("hashtags", []),
+                                    grounding_facts=grounding_facts,
+                                    channel=channel,
+                                    interactive=args.interactive,
+                                )
                     finally:
                         flux_service.notify_ollama_done(ollama_job_id)
+
+                    _generated_post = post
+                    _cached_text = getattr(ai, "last_truth_gate_text", "")
+                    _cached_meta = getattr(ai, "last_truth_gate_meta", None)
+                    _generation_meta = (
+                        _cached_meta
+                        if _cached_text.split() == _generated_post.split() else None
+                    )
 
                     if channel == "youtube":
                         safe_title = re.sub(r"[^\w\-]", "_", topic["title"][:60]).strip("_")
@@ -2194,19 +2231,15 @@ def main():
                                 )
                                 for f in grounding_facts
                             ]
-                            _cached_meta = getattr(ai, "last_truth_gate_meta", None)
-                            _cached_text = getattr(ai, "last_truth_gate_text", "")
-                            _dot_result = (
-                                getattr(_cached_meta, "dot_result", None)
-                                if _cached_meta is not None and _cached_text == post
-                                else None
-                            )
-                            if _dot_result is None:
-                                _dot_result = score_claim_with_truth_gradient(post, _dot_paths)
-                            _dot_report_dict = report_truth_gradient(post, _dot_result, verbose=True)
+                            with timed_stage(logger, "schedule.dot_report"):
+                                _dot_result = getattr(_generation_meta, "dot_result", None)
+                                if _dot_result is None:
+                                    _dot_result = score_claim_with_truth_gradient(_generated_post, _dot_paths)
+                                _dot_report_dict = report_truth_gradient(_generated_post, _dot_result, verbose=True)
                             _dot_colour = str(Fore.RED) if _dot_result.flagged else str(Fore.CYAN)
                             from services.derivative_of_truth._reporting import format_dot_report_header
                             print(format_dot_report_header())
+                            print("Generated-content score (excludes appended hashtags and footer).")
                             print(format_truth_gradient_report(_dot_report_dict))
                             print()
                         except Exception as _dot_err:
@@ -2214,33 +2247,23 @@ def main():
 
                     if args.avatar_explain:
                         # Combine project and domain facts for retrieval
-                        from services.avatar_intelligence import EvidenceFact, DomainEvidenceFact, normalize_extracted_facts
                         from services.console_grounding import truth_gate_result as _tgr_exp
                         _relevant = relevant
                         
                         # Score and filter extracted facts by relevance (retrieve_evidence doesn't support ExtractedEvidenceFact type)
-                        _gen_extracted_facts_all = normalize_extracted_facts(_gen_avatar_state)
-                        _ev_extracted = int(os.getenv("EVIDENCE_EXTRACTED_COUNT", "2"))
                         _q_tokens = set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", grounding_query.lower()))
                         _scored_extracted = []
-                        for _fact in _gen_extracted_facts_all:
-                            _text = " ".join([
-                                getattr(_fact, "statement", ""),
-                                getattr(_fact, "source_title", ""),
-                                " ".join(getattr(_fact, "tags", []) or []),
-                                " ".join(getattr(_fact, "entities", []) or []),
-                            ])
-                            _tokens = set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", _text.lower()))
+                        for _fact, _tokens in _extracted_tokens:
                             _score = len(_q_tokens & _tokens)
                             _scored_extracted.append((_score, _fact))
                         _scored_extracted.sort(key=lambda x: x[0], reverse=True)
                         _relevant_extracted = [f for s, f in _scored_extracted if s > 0][:_ev_extracted]
-                        if not _relevant_extracted and _gen_extracted_facts_all:
-                            _relevant_extracted = list(_gen_extracted_facts_all)[:_ev_extracted]
+                        if not _relevant_extracted and _extracted_tokens:
+                            _relevant_extracted = [f for f, _ in _extracted_tokens][:_ev_extracted]
                         
-                        _gate_meta = ai.last_truth_gate_meta
+                        _gate_meta = _generation_meta
                         if _gate_meta is None:
-                            _, _gate_meta = _tgr_exp(post, topic.get("angle", ""), grounding_facts)
+                            _, _gate_meta = _tgr_exp(_generated_post, topic.get("angle", ""), grounding_facts)
                         _explain = build_explain_output(
                             evidence_facts=_relevant,
                             article_ref=topic.get("title", ""),
@@ -2253,11 +2276,12 @@ def main():
                         print(format_explain_output(_explain))
 
                     # Release large per-topic structures before moving to next topic.
-                    del all_facts, relevant, persona_facts, domain_facts, grounding_facts
+                    del relevant, grounding_facts
                     if args.avatar_explain:
-                        del _relevant, _gen_extracted_facts_all, _scored_extracted, _relevant_extracted
+                        del _relevant, _scored_extracted, _relevant_extracted
                     if _topic_idx % 2 == 0:
-                        gc.collect()
+                        with timed_stage(logger, "schedule.gc"):
+                            gc.collect()
 
                 if channel != "youtube":
                     for _scheduled_post in posts:
@@ -2289,7 +2313,10 @@ def main():
                     buffer = build_buffer_service()
                     scheduler = PostScheduler(buffer_service=buffer)
                     try:
-                        scheduled = scheduler.schedule_week(posts=posts, week_number=args.week, channel=channel)
+                        scheduled = scheduler.schedule_week(
+                            posts=posts, week_number=args.week, channel=channel,
+                            preselected=preselected,
+                        )
                         print(str(Fore.GREEN) + f"\n✅  Scheduled {len(scheduled)} posts to Buffer ({channel})" + str(Style.RESET_ALL))
                     except BufferQueueFullError as e:
                         print(str(Fore.YELLOW) + f"\n⚠️  Buffer queue is full — no new posts were scheduled.\n   {e}\n   Free up slots at https://publish.buffer.com before running again." + str(Style.RESET_ALL))
