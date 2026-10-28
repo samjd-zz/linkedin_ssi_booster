@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1026%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1026 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1050%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1050 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-70%25-yellow.svg" alt="Source coverage: 70%, measured October 27, 2026"></a>
 </p>
 
@@ -267,7 +267,7 @@ Use unique per-client values for `IDEAS_CACHE_PATH`, `GENERATED_CONTENT_DIR`, an
 - 🔁 **Reconciliation & priors** — Buffer publication outcomes update Beta-smoothed acceptance priors per source/topic/SSI component; well-performing sources float upward over time.
 - 🥇 **Ranking** — candidates ranked by acceptance priors × BM25 scores, continuously adapting to your preferences.
 - 🌊 **Signal flow** — truth gate reason codes → confidence scorer (`post`/`idea`/`block`) → Buffer reconciliation → priors update. Sources that reliably produce clean, grounded posts rise; sources that trigger heavy filtering sink.
-- 📌 **Deterministic grounding** — BM25Okapi retrieves persona/domain facts for every generation; prompts forbid invented stats, dates, or companies. The four-layer truth gate enforces this post-generation.
+- 📌 **Relevant grounding** — curation requires shared article-content terms before hybrid ranking of persona/domain/extracted facts, supports English/Japanese matching, and leaves unmatched quotas empty instead of injecting unrelated knowledge. Newly learned facts are available before selection; Avatar Explain shows selected evidence. See [retrieval safeguards](docs/learning-pipeline.md#curation-relevance-safeguards).
 - 🌍 **Multi-language extraction** — spaCy routes text to `en_core_web_md` or `ja_core_news_md` by character set, then summarizes, extracts entities/tags, and de-duplicates before writing facts to the knowledge graph.
 
 See [docs/learning-pipeline.md](docs/learning-pipeline.md) · [docs/spacy-extraction.md](docs/spacy-extraction.md) · [docs/selection-learning.md](docs/selection-learning.md) · [docs/derivative-of-truth.md](docs/derivative-of-truth.md).
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 27, 2026: 1,028 collected; 1,026 passed, 0 failed, 2 live Buffer tests deselected; measured source coverage **70%**. Includes 90 performance regressions across curation, Rei preview, console, and scheduling; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — October 27, 2026: 1,052 collected; 1,050 passed, 0 failed, 2 live Buffer tests deselected; measured source coverage **70%**. Includes 24 relevance and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

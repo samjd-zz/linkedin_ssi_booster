@@ -60,6 +60,11 @@ Before generation, the system retrieves relevant facts using **BM25Okapi** (prod
 - Facts are ranked by relevance to the query/topic
 - Top N facts (configurable via `EXTRACTED_CONTEXT_LIMIT`) are injected into prompts
 
+### Curation Relevance Safeguards
+
+Curation requires shared article-content terms before ranking and leaves unmatched evidence pools empty. See [curation relevance](features/curation-relevance.md)
+for English/Japanese matching, learning order, limits, and reporting semantics.
+
 ### Hybrid Graph Reranking (Console Mode)
 
 In console mode, retrieved facts are reranked using knowledge graph proximity:

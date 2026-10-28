@@ -126,7 +126,9 @@ class ContentCurator:
         ssi_component: str,
     ) -> tuple[list[ProjectFact], list[Any], list[Any]]:
         """Retrieve top-N persona and domain facts, reranked via HybridRetriever when available."""
-        query = f"{article_title}. {article_summary[:600]}. {ssi_component}"
+        from services.evidence_relevance import rank_relevant_evidence
+
+        query = f"{article_title}. {article_summary[:600]}"
         if self._avatar_facts or self._domain_facts or self._extracted_facts:
             from services.avatar_intelligence import (
                 retrieve_evidence,
@@ -142,12 +144,12 @@ class ContentCurator:
             n_extracted = int(os.getenv("EXTRACTED_EVIDENCE_COUNT", "2"))
             n_external = int(os.getenv("KATZILLA_MAX_EXTERNAL_RESULTS", "2"))
 
+            eligible = rank_relevant_evidence(
+                query, list(self._avatar_facts) + list(self._domain_facts) + list(self._extracted_facts)
+            )
             if self._hybrid_retriever is not None:
-                all_candidates = list(self._avatar_facts) + list(self._domain_facts) + list(self._extracted_facts)
-                total = n_persona + n_domain + n_extracted
-                # Use 3x buffer so each type has enough headroom to meet its quota even
-                # when facts from other types rank higher in the joint pool.
-                ranked = self._hybrid_retriever.find_facts(query, all_candidates, limit=total * 3)
+                # Rank all eligible facts so one evidence type cannot crowd out another.
+                ranked = self._hybrid_retriever.find_facts(query, eligible, limit=len(eligible))
                 persona_hits_typed: list[EvidenceFact] = [f for f in ranked if isinstance(f, EvidenceFact)][:n_persona]
                 domain_hits_typed: list[DomainEvidenceFact] = [f for f in ranked if isinstance(f, DomainEvidenceFact)][:n_domain]
                 extracted_hits_typed: list[ExtractedEvidenceFact] = [f for f in ranked if isinstance(f, ExtractedEvidenceFact)][:n_extracted]
@@ -158,32 +160,15 @@ class ContentCurator:
                         limit=n_persona + n_domain + n_external,
                         category_filter=ssi_component,
                     )
-                    external_hits_typed: list[ExternalEvidenceFact] = [
+                    external_hits_typed: list[ExternalEvidenceFact] = rank_relevant_evidence(query, [
                         f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
-                    ][:n_external]
+                    ])[:n_external]
                 else:
                     external_hits_typed = []
             else:
-                persona_hits = retrieve_evidence(query, self._avatar_facts, limit=n_persona) if self._avatar_facts else []
-                domain_hits = retrieve_evidence(query, self._domain_facts, limit=n_domain) if self._domain_facts else []
-                persona_hits_typed = [f for f in persona_hits if isinstance(f, EvidenceFact)]
-                domain_hits_typed = [f for f in domain_hits if isinstance(f, DomainEvidenceFact)]
-                q_tokens = set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", query.lower()))
-                scored_extracted = []
-                for fact in self._extracted_facts:
-                    text = " ".join([
-                        getattr(fact, "statement", ""),
-                        getattr(fact, "source_title", ""),
-                        " ".join(getattr(fact, "tags", []) or []),
-                        " ".join(getattr(fact, "entities", []) or []),
-                    ])
-                    tokens = set(re.findall(r"[a-zA-Z0-9_+#.-]{2,}", text.lower()))
-                    score = len(q_tokens & tokens)
-                    scored_extracted.append((score, fact))
-                scored_extracted.sort(key=lambda x: x[0], reverse=True)
-                extracted_hits_typed = [f for s, f in scored_extracted if s > 0][:n_extracted]
-                if not extracted_hits_typed:
-                    extracted_hits_typed = list(self._extracted_facts)[:n_extracted]
+                persona_hits_typed = [f for f in eligible if isinstance(f, EvidenceFact)][:n_persona]
+                domain_hits_typed = [f for f in eligible if isinstance(f, DomainEvidenceFact)][:n_domain]
+                extracted_hits_typed = [f for f in eligible if isinstance(f, ExtractedEvidenceFact)][:n_extracted]
 
                 if KATZILLA_ENABLED:
                     combined_hits = retrieve_evidence(
@@ -192,9 +177,9 @@ class ContentCurator:
                         limit=n_persona + n_domain + n_external,
                         category_filter=ssi_component,
                     )
-                    external_hits_typed = [
+                    external_hits_typed = rank_relevant_evidence(query, [
                         f for f in combined_hits if isinstance(f, ExternalEvidenceFact)
-                    ][:n_external]
+                    ])[:n_external]
                 else:
                     external_hits_typed = []
 
@@ -355,27 +340,22 @@ class ContentCurator:
         extracted_facts: list[Any] | None = None,
         external_facts: list[Any] | None = None,
     ) -> None:
-        """Print the avatar explain block (evidence IDs + DoT/spaCy scores).
-        
-        ⚠️  Avatar Explain retrieves evidence independently from console grounding,
-        so it may show facts that are filtered out by truth-gate before DoT reporting.
-        
-        This is by design: Avatar Explain displays the *candidate* facts that were considered,
-        while DoT Report shows only the facts that passed filtering (grounding_facts).
-        To align them fully, Avatar Explain would need to apply truth-gate filtering to its
-        independently retrieved facts, which would require a deeper refactor.
-        """
+        """Print the actual selected grounding evidence and DoT/spaCy scores."""
         try:
             from services.avatar_intelligence import (
-                retrieve_evidence,
                 build_explain_output,
                 format_explain_output,
             )
             from services.console_grounding import truth_gate_result as _tgr_exp
 
-            grounding_query = f"{article['title']}. {article['summary'][:600]}. {ssi_component}"
-            _exp_limit = int(os.getenv("EVIDENCE_PROJECT_COUNT", "3")) + int(os.getenv("EVIDENCE_DOMAIN_COUNT", "2"))
-            _relevant = retrieve_evidence(grounding_query, self._avatar_facts + self._domain_facts, limit=_exp_limit)
+            sources = {fact.source for fact in grounding_facts}
+            _relevant = [
+                fact for fact in self._avatar_facts
+                if f"avatar:{fact.source_project_id}" in sources
+            ] + [
+                fact for fact in self._domain_facts
+                if f"domain:{fact.source_fact_id}" in sources
+            ]
             _, _gate_meta = _tgr_exp(post_text, article["summary"], grounding_facts)
             _extracted = extracted_facts or []
             _external = external_facts or []
@@ -604,12 +584,6 @@ class ContentCurator:
 
             _candidate_id = str(uuid.uuid4())
             ssi_component = pick_ssi_component(self._topic_signal)
-            grounding_facts, extracted_facts, external_facts = self._grounding_facts_for_article(
-                article_title=article["title"],
-                article_summary=article["summary"],
-                ssi_component=ssi_component,
-            )
-
             # Continual learning — persist new knowledge from the article
             if not dry_run or learn:
                 try:
@@ -646,6 +620,11 @@ class ContentCurator:
             else:
                 logger.info("Knowledge extraction skipped for '%s' (dry_run without --learn)", article["title"][:60])
 
+            grounding_facts, extracted_facts, external_facts = self._grounding_facts_for_article(
+                article_title=article["title"],
+                article_summary=article["summary"],
+                ssi_component=ssi_component,
+            )
             logger.info("Generating [%s|%s] for: %s...", message_type, ssi_component, article["title"][:60])
 
             # Normalize channel to list

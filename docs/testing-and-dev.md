@@ -46,27 +46,27 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1028** | **1026** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1052** | **1050** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
 - **Latest Run Date:** October 27, 2026
-- **Latest Changes:** 30 schedule/cleanup regressions covering shared preparation, per-topic grounding reuse, SSI-equivalent early caps and skewed-allocation queue order, full previews/YouTube, generated-content report reuse/fallback, phase timings, and actual-use FLUX cleanup. Previous work added 22 console, 31 curation, and 7 Rei CLI preview regressions. Source coverage was remeasured October 27, 2026.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,026 passed, 0 failed, 2 deselected** in 50.86 seconds with coverage enabled. One existing non-terminal `term_image` warning remains. The focused persona-retrieval module passed **12 tests**; the preceding schedule/cleanup/FLUX/Rei-preview/timing run passed **101 tests**.
+- **Latest Changes:** 24 curation-relevance regressions covering English/Japanese matching, named-product lemma differences, rejection of metadata-only and single-topic matches, empty quotas, hybrid/fallback parity, prompt filtering, selected-evidence explanations, learning-before-selection, and full source IDs. The 90 earlier performance regressions remain. Source coverage was remeasured October 27, 2026.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,050 passed, 0 failed, 2 deselected** in 47.85 seconds with coverage enabled. One existing non-terminal `term_image` warning remains. The focused relevance/curation/extraction/prompt/console run passed **211 tests**.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,026 of 1,028 collected tests**, all passing with
+The latest run executed **1,050 of 1,052 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
-The **70% source-coverage figure was measured October 27, 2026**: 12,802
-executable statements, 3,881 missed, and 8,921 executed (69.68%, rounded to 70%
+The **70% source-coverage figure was measured October 27, 2026**: 12,822
+executable statements, 3,829 missed, and 8,993 executed (70.14%, rounded to 70%
 by the report). This replaces the historical September 14 figure of 66%.
 It measures statement coverage, not branch coverage or live API correctness.
 `content_calendar` was not imported by the suite and is absent from the total;
-18 fully covered files were omitted from the terminal listing but included in
+19 fully covered files were omitted from the terminal listing but included in
 the total. Entry-point coverage was 55% for `main.py` and 68% for `scheduler.py`.
 
 The recent performance work added **90 regression tests**:
@@ -131,8 +131,33 @@ private graph is not configured, those checks retain their existing skip behavio
 - _Large-batch embedding correctness/reuse, content/model invalidation, batched tokenization/fallback, one snapshot per reload, refreshed tag relationships and graph, lazy Rei knowledge, shared music client, sparse external fallback, bounded history, one verification bar, voice completion, and chat metrics/errors_
 - **30** Schedule performance and resource-cleanup regression tests (new)
 - _17 preparation/grounding/report/cap/preview/error/timing cases | 13 actual-use FLUX lifecycle and cleanup cases_
+- **24** Article-evidence relevance regressions (new)
+- _English/Japanese content matching, capitalized names, no duplicate lemma/raw credit, metadata/stopword/year rejection, per-type maximums, hybrid/fallback filtering, prompt safety, actual-evidence explanations, current-article learning, and full extracted IDs_
 
 ---
+
+## Article-Evidence Relevance Regressions
+
+`tests/test_evidence_relevance.py` contains 24 deterministic cases. Language-model
+tokenization is mocked to cover both lemma behavior and missing-model fallback;
+no Ollama, Buffer, external retrieval, or knowledge-file writes are needed.
+`services/evidence_relevance.py` has **100% statement coverage (33 statements)**.
+The existing extracted-grounding prompt test additionally verifies genuinely
+related “Managed Agents” context is retained with the installed English tokenizer.
+
+```bash
+source .venv/bin/activate && python -m pytest -q \
+  tests/test_evidence_relevance.py tests/test_ollama_extracted_grounding.py \
+  tests/test_content_curator.py tests/test_continual_learning.py \
+  tests/test_performance_flux_gating.py tests/test_console_performance.py
+```
+
+Separately, a read-only check against the local 617-fact corpus rejected all five
+festival facts from the reported Replit and Google headlines, returned no stored
+matches for the Replit headline alone, and found Japanese music facts for a
+Japanese music query without the local Japanese spaCy model. These observations
+are corpus-specific, not unit-test fixtures or a claim of semantic correctness.
+See [curation relevance safeguards](learning-pipeline.md#curation-relevance-safeguards).
 
 ## Schedule Performance Regressions
 

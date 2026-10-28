@@ -157,7 +157,7 @@ def extracted_fact_to_evidence_path(extracted_fact: Any, claim_text: str) -> Any
 
     statement = str(getattr(extracted_fact, "statement", "") or "")
     source_id = str(getattr(extracted_fact, "source_fact_id", "unknown") or "unknown")
-    source = f"extracted_knowledge:{source_id[:8]}"
+    source = f"extracted_knowledge:{source_id}"
 
     claim_tokens = set(re.findall(r"[a-z]{3,}", claim_text.lower()))
     fact_tokens = set(re.findall(r"[a-z]{3,}", statement.lower()))

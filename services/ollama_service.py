@@ -653,12 +653,10 @@ Balance rules (non-negotiable):
         # Inject recently extracted knowledge as additional grounding context.
         _extracted_context = ""
         if extracted_facts:
+            from services.evidence_relevance import rank_relevant_evidence
+
             _limit = int(os.getenv("EXTRACTED_CONTEXT_LIMIT", "10"))
-            art_tokens = set(re.findall(r"[a-zA-Z0-9]{3,}", article_text.lower()))
-            relevant = [
-                f for f in extracted_facts
-                if art_tokens & set(re.findall(r"[a-zA-Z0-9]{3,}", f.statement.lower()))
-            ] or extracted_facts
+            relevant = rank_relevant_evidence(article_text, extracted_facts)
             _extracted_context = build_extracted_grounding_context(relevant[:_limit])
 
         _continuity_block = (
