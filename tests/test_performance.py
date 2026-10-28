@@ -18,6 +18,10 @@ def test_stage_reports_measured_elapsed_time(caplog: pytest.LogCaptureFixture) -
         with timed_stage(LOGGER, "test"):
             pass
     assert "stage=test elapsed_s=2.250 status=ok" in caplog.text
+    assert [record.getMessage() for record in caplog.records] == [
+        "▶️ Stage start stage=test",
+        "✅ Stage end stage=test elapsed_s=2.250 status=ok",
+    ]
 
 
 def test_stage_propagates_errors(caplog: pytest.LogCaptureFixture) -> None:
@@ -27,6 +31,7 @@ def test_stage_propagates_errors(caplog: pytest.LogCaptureFixture) -> None:
             with timed_stage(LOGGER, "test"):
                 raise ValueError("bad config")
     assert "stage=test elapsed_s=0.500 status=error" in caplog.text
+    assert caplog.records[-1].getMessage() == "❌ Stage end stage=test elapsed_s=0.500 status=error"
 
 
 def test_decorated_stages_measure_each_call(caplog: pytest.LogCaptureFixture) -> None:
@@ -53,6 +58,7 @@ def test_ollama_nanosecond_metrics_are_seconds(caplog: pytest.LogCaptureFixture)
         log_ollama_timings(LOGGER, "local-model", response)
     assert "load_s=2.0 prompt_eval_s=3.0 generation_s=7.0 total_s=12.0" in caplog.text
     assert "prompt_tokens=100 generated_tokens=50" in caplog.text
+    assert caplog.records[-1].getMessage().startswith("⏱️ Ollama timing model=local-model")
     assert "private output" not in caplog.text
 
 
@@ -82,4 +88,8 @@ def test_chat_emits_wall_and_server_timings_without_content(
         assert ai._chat("private system", "private prompt") == "private output"
     assert "stage=ollama.chat" in caplog.text
     assert "Ollama timing model=local-model load_s=0.0" in caplog.text
+    assert any(
+        record.getMessage() == "🤖 Ollama request model=local-model max_tokens=1024"
+        for record in caplog.records
+    )
     assert "private" not in caplog.text

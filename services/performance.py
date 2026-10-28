@@ -13,13 +13,14 @@ def timed_stage(logger: logging.Logger, stage: str) -> Iterator[None]:
     """Measure a stage without swallowing errors or logging user content."""
     started = perf_counter()
     status = "error"
-    logger.info("Stage start stage=%s", stage)
+    logger.info("▶️ Stage start stage=%s", stage)
     try:
         yield
         status = "ok"
     finally:
         logger.info(
-            "Stage end stage=%s elapsed_s=%.3f status=%s",
+            "%s Stage end stage=%s elapsed_s=%.3f status=%s",
+            "✅" if status == "ok" else "❌",
             stage, perf_counter() - started, status,
         )
 
@@ -31,7 +32,7 @@ def _seconds(duration_ns: int | None) -> float | None:
 def log_ollama_timings(logger: logging.Logger, model: str, response: ChatResponse) -> None:
     """Report server timings separately from client wall time; missing values stay None."""
     logger.info(
-        "Ollama timing model=%s load_s=%s prompt_eval_s=%s generation_s=%s "
+        "⏱️ Ollama timing model=%s load_s=%s prompt_eval_s=%s generation_s=%s "
         "total_s=%s prompt_tokens=%s generated_tokens=%s",
         model, _seconds(response.load_duration), _seconds(response.prompt_eval_duration),
         _seconds(response.eval_duration), _seconds(response.total_duration),

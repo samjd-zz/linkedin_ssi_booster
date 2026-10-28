@@ -166,7 +166,7 @@ class OllamaService:
         use_fallback = bool(fallback and fallback != self.model)
 
         def _attempt(model: str) -> str:
-            logger.info("Ollama request model=%s max_tokens=%d", model, max_tokens)
+            logger.info("🤖 Ollama request model=%s max_tokens=%d", model, max_tokens)
             with timed_stage(logger, "ollama.chat"):
                 response = self.client.chat(
                     model=model,
