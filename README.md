@@ -116,7 +116,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - 🧠 **Memory & repetition penalty** — recent themes and claims penalised to keep your feed fresh.
 - 🔍 **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
 - 🏠 **No cloud AI keys required** — all generation runs locally via Ollama.
-- 💻 **Laptop-optimized local AI** — Intel iGPU acceleration is supported on native Linux and Windows WSL2 via `/dev/dri` or `/dev/dxg`, with automatic CPU fallback. The verified Rei Toei laptop workflow uses `qwen2.5:3b` with `llama3.2:3b` as fallback; see [docs/rei-toei-customization.md](docs/rei-toei-customization.md#verified-intel-wsl2-laptop-workflow).
+- 💻 **Laptop-optimized local AI** — Intel iGPU acceleration is supported on native Linux and Windows WSL2 via `/dev/dri` or `/dev/dxg`, with automatic CPU fallback. The laptop workflow is optimized for `qwen2.5:7b`; see [docs/rei-toei-customization.md](docs/rei-toei-customization.md#verified-intel-wsl2-laptop-workflow).
 
 ✨🦄 **Result:** A self-improving, persona-driven content engine 🦄 that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
 
