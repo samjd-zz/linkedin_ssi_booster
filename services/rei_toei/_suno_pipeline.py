@@ -5,7 +5,7 @@ This module provides pipeline functions for transforming technical themes into
 Suno-ready song prompts with lyrics, validation, and submission orchestration.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.3.5
+Version: beta-v0.0.3.7
 """
 
 import json

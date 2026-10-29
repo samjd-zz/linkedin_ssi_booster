@@ -6,7 +6,7 @@ art-avatar rendering pipeline.  All values are environment-driven so no code
 edits are required for routine style or policy changes.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.3.5
+Version: beta-v0.0.3.7
 """
 
 import os

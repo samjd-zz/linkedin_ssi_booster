@@ -6,7 +6,7 @@
 
 # Stack: Python 3.12+, Ollama LLM (local), spaCy, Buffer GraphQL API, PostgreSQL, Model2Vec, PLN, NetworkX, Piper TTS, FLUX.1-schnell, pytest
 
-# Version: alpha-v0.0.3.7 | Tests: 1,059 passed, 2 deselected
+# Version: beta-v0.0.3.7 | Tests: 1,059 passed, 2 deselected
 
 ## Project Structure
 

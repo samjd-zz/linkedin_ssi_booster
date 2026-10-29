@@ -15,7 +15,7 @@ Behavior:
   • All gate decisions are logged with timing so operators can tune thresholds.
 
 Author: Shawn Jackson Dyck
-Version: alpha-v0.0.3.5
+Version: beta-v0.0.3.7
 """
 
 import gc
