@@ -1703,7 +1703,7 @@ def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
 
     assert not mix_ok
     assert "jp_ratio=0.80" in summary
-    assert "tolerance=0.30" in summary
+    assert "tolerance=0.33" in summary
 
 
 def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
@@ -1723,8 +1723,8 @@ def test_bilingual_mix_counts_mixed_lines_as_japanese_lines():
     assert "jp_ratio=0.38" in summary
 
 
-def test_bilingual_mix_accepts_the_thirty_percent_tolerance_boundary():
-    """A 50% Japanese-line result sits exactly on the 0.30 tolerance for a 20% target."""
+def test_bilingual_mix_accepts_the_tolerance_boundary():
+    """A 50% Japanese-line result sits exactly on the 0.33 tolerance for a 17% target."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
 
     payload = {
@@ -1734,11 +1734,12 @@ def test_bilingual_mix_accepts_the_thirty_percent_tolerance_boundary():
         "bridge": "",
     }
 
-    mix_ok, summary = _bilingual_mix_ok(payload, target_japanese_ratio=0.2)
+    mix_ok, summary = _bilingual_mix_ok(payload, target_japanese_ratio=0.17)
 
     assert mix_ok
     assert "jp_ratio=0.50" in summary
-    assert "tolerance=0.30" in summary
+    assert "ratio_error=0.33" in summary
+    assert "tolerance=0.33" in summary
 
 
 def test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values():

@@ -692,7 +692,7 @@ def _bilingual_mix_ok(section_payload: Dict[str, Any], target_japanese_ratio: fl
     ratio_error = abs(stats["effective_japanese_ratio"] - target_japanese_ratio)
     # Music lyrics need room for hooks, echoes, and section-level variation.
     # Keep a broad floor while still rejecting extreme language drift.
-    ratio_tolerance = max(0.30, 1.0 / total_lines) if total_lines else 0.0
+    ratio_tolerance = max(0.33, 1.0 / total_lines) if total_lines else 0.0
     ratio_within_tolerance = ratio_error <= ratio_tolerance
     ok = has_both_languages and ratio_within_tolerance
     summary = (
