@@ -127,9 +127,9 @@ Three claims that appeared in earlier versions of this document were wrong or ha
 | -------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `min_sentence_len`         | `40`     | Function argument, not env. Sentences shorter than this are dropped before any NLP runs.                                      |
 | `confidence`               | `medium` | Function argument. Stamped on every fact from the run.                                                                        |
-| `EXTRACTED_EVIDENCE_COUNT` | `5`      | Max extracted facts fed into the HybridRetriever evidence pool per article. Raise to give learned facts more weight.          |
-| `EXTRACTED_CONTEXT_LIMIT`  | `15`     | Max extracted facts injected as text into the Ollama prompt. Only facts whose tokens overlap the current article are included. |
-| `TOPIC_SIGNAL_WINDOW`      | `100`    | How many recent facts build the adaptive topic signal that tilts SSI component selection.                                     |
+| `EXTRACTED_EVIDENCE_COUNT` | `2`      | Max extracted facts fed into the HybridRetriever evidence pool per article. Raise to give learned facts more weight.          |
+| `EXTRACTED_CONTEXT_LIMIT`  | `10`     | Max extracted facts injected as text into the Ollama prompt. Only facts whose tokens overlap the current article are included. |
+| `TOPIC_SIGNAL_WINDOW`      | `50`     | How many recent facts build the adaptive topic signal that tilts SSI component selection.                                     |
 | `CURATOR_MAX_PER_FEED`     | `10`     | Entries scanned per feed before keyword filtering — the upstream volume control.                                              |
 | `MODEL2VEC_ENABLED`        | `true`   | When false, `primary_category` and `primary_ssi_component` are left empty on every fact.                                      |
 | `AVATAR_LEARNING_ENABLED`  | `true`   | Master switch for narrative memory injection and moderation-event logging.                                                    |

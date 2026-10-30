@@ -18,7 +18,6 @@ All existing imports will continue to work:
     from services.rei_toei_service import get_rei_service, ReiToeiConfig, etc.
 
 Author: Shawn Jackson Dyck
-Version: beta-v0.0.3.7
 """
 
 # Re-export entire package API for backward compatibility

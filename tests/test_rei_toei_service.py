@@ -8,7 +8,6 @@ Tests cover:
 - ID generation
 
 Author: Shawn Jackson Dyck
-Version: beta-v0.0.3.7
 """
 
 import json

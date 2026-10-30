@@ -8,7 +8,6 @@ This agent provides Buffer API request generation via Ollama with proper:
 - Graceful degradation when services are unavailable
 
 Author: Shawn Jackson Dyck
-Version: beta-v0.0.3.7
 """
 
 import asyncio

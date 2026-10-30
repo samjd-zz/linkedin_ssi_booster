@@ -5,7 +5,6 @@ This module contains all functions for generating and executing Strudel/Tidal Cy
 algorithmic music patterns from technical themes.
 
 Author: Shawn Jackson Dyck
-Version: beta-v0.0.3.7
 """
 
 import json

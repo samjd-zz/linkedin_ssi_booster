@@ -31,6 +31,14 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# Project version — single source of truth. Update here on each release and
+# keep README.md, .clinerules, and .github/copilot-instructions.md in sync
+# (tests/test_version.py enforces this).
+# ---------------------------------------------------------------------------
+
+__version__ = "beta-v0.0.3.7"
+
+# ---------------------------------------------------------------------------
 # Generated content storage (local-first, configurable root)
 # ---------------------------------------------------------------------------
 

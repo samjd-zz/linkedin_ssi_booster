@@ -6,7 +6,7 @@
 
 # Stack: Python 3.12+, Ollama LLM (local), spaCy, Buffer GraphQL API, PostgreSQL, Model2Vec, PLN, NetworkX, Piper TTS, FLUX.1-schnell, pytest
 
-# Version: beta-v0.0.3.7 | Tests: 1,059 passed, 2 deselected
+# Version: beta-v0.0.3.7 | Tests: 1,064 passed, 2 deselected
 
 ## Project Structure
 
@@ -79,7 +79,7 @@ Four target components:
 - Unit tests go in `tests/` (create if missing); name files `test_<module>.py`
 - Mock external API calls — never hit live Buffer/Ollama/PostgreSQL in tests
 - Use `pytest` for all tests; all new modules/functions require tests
-- Current test count: **1,059 passed, 0 failed, 2 deselected** (two live Buffer API tests)
+- Current test count: **1,064 passed, 0 failed, 2 deselected** (two live Buffer API tests)
 - Database tests use in-memory SQLite for speed and isolation
 
 ## After Every Change

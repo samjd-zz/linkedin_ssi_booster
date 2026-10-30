@@ -1121,6 +1121,54 @@ IDEAS_CACHE_TTL_DAYS=30
 
 ---
 
+## Curation Performance
+
+### `CURATOR_RSS_FETCH_WORKERS`
+
+Maximum parallel workers used to fetch RSS feeds during curation. Capped at the number of configured feeds.
+
+**Default:** `8`
+
+```bash
+CURATOR_RSS_FETCH_WORKERS=8
+```
+
+### `CURATOR_ARTICLE_FETCH_WORKERS`
+
+Maximum parallel workers used to fetch full article bodies for keyword-matched entries. Capped at the number of articles to fetch.
+
+**Default:** `4`
+
+```bash
+CURATOR_ARTICLE_FETCH_WORKERS=4
+```
+
+---
+
+## Scheduling
+
+### `SCHEDULER_POSTING_SLOTS`
+
+Explicit weekly posting slots as a comma-separated list of `day@HH:MM` entries. When set, live non-YouTube `--schedule` runs cap the number of scheduled posts to the slot count. When unset or blank, no cap is applied and the content calendar defines the full week volume. Entries missing the `@` separator disable the cap with a warning.
+
+**Default:** unset (no cap)
+
+```bash
+SCHEDULER_POSTING_SLOTS=monday@09:00,wednesday@12:30,friday@15:00
+```
+
+### `CONTENT_CALENDAR_PATH`
+
+Path to a per-client JSON content calendar used by `--schedule`. When unset, `--schedule` falls back to the local `content_calendar.py` module. See [multi-client-runbook.md](multi-client-runbook.md) for the JSON shape.
+
+**Default:** unset (uses `content_calendar.py`)
+
+```bash
+CONTENT_CALENDAR_PATH=data/client-acme/content_calendar.json
+```
+
+---
+
 ## Complete Example `.env` File
 
 ```bash

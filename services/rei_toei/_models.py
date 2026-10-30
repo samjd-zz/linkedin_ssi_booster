@@ -4,7 +4,6 @@ Rei Toei Data Models
 All dataclasses for Rei Toei service.
 
 Author: Shawn Jackson Dyck
-Version: beta-v0.0.3.7
 """
 
 from dataclasses import dataclass, field

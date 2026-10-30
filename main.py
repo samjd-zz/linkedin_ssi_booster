@@ -2097,7 +2097,11 @@ def main():
                 _extracted_tokens = []
                 if args.avatar_explain:
                     from services.avatar_intelligence import build_explain_output, format_explain_output
-                    _ev_extracted = int(os.getenv("EVIDENCE_EXTRACTED_COUNT", "2"))
+                    # Canonical name first; EVIDENCE_EXTRACTED_COUNT kept as legacy alias.
+                    _ev_extracted = int(
+                        os.getenv("EXTRACTED_EVIDENCE_COUNT")
+                        or os.getenv("EVIDENCE_EXTRACTED_COUNT", "2")
+                    )
                     for _fact in normalize_extracted_facts(_gen_avatar_state):
                         _text = " ".join([
                             _fact.statement, _fact.source_title,

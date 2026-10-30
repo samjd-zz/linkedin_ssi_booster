@@ -5,7 +5,6 @@ Request / result contracts, style presets, queue state, and telemetry payloads
 for the art-avatar rendering pipeline.
 
 Author: Shawn Jackson Dyck
-Version: beta-v0.0.3.7
 """
 
 from __future__ import annotations

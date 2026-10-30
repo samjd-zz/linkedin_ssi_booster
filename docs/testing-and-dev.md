@@ -46,18 +46,18 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1061** | **1059** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1066** | **1064** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
-- **Latest Run Date:** October 28, 2026
-- **Latest Changes:** 10 launcher/model-initializer cases replace the old forced-build test (net +9 tests). They cover default image reuse, explicit builds, argument preservation, offline GPU probes, cached models, missing fallback downloads, and pull failures. The 24 relevance and 90 earlier performance regressions remain.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,059 passed, 0 failed, 2 deselected** in 51.68 seconds with coverage enabled. One existing non-terminal `term_image` warning remains. All **10 launcher/model-initializer tests** passed independently.
+- **Latest Run Date:** October 29, 2026
+- **Latest Changes:** 5 new version-consistency tests (`tests/test_version.py`, net +5) cover the new `services.shared.__version__` single-source version constant: format validation, README/.clinerules/Copilot-instructions sync, and a guard against per-file `Version:` docstring stamps. The 10 launcher, 24 relevance, and 90 performance regressions remain.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,064 passed, 0 failed, 2 deselected** in 43.64 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,059 of 1,061 collected tests**, all passing with
+The latest run executed **1,064 of 1,066 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
