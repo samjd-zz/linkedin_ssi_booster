@@ -171,7 +171,7 @@ def extract_and_append_knowledge(
             )
 
     # Strip HTML tags, entities, and common boilerplate before extracting facts
-    from services.content_curator._text_utils import clean_article_text
+    from services.content_curator._text_utils import clean_article_text, looks_like_nav_chrome
     clean_text = clean_article_text(_preprocessing_text)
 
     if len(clean_text) < 40:
@@ -524,6 +524,12 @@ def extract_and_append_knowledge(
             sentence,
         ):
             logger.debug("extraction [ui-nav-blob]: %.100s", sentence)
+            continue
+        # Filter JP media-site chrome (share strips, related-article rails, ranking
+        # widgets) that trafilatura leaks from outlets like Real Sound — e.g.
+        # "ポスト はてなブックマーク LINE", "関連記事 …", "ランキング アクセス数 シェア数"
+        if looks_like_nav_chrome(sentence):
+            logger.debug("extraction [jp-nav-chrome]: %.100s", sentence)
             continue
         # Filter pipe-delimited navigation links — catches both multi-pipe nav
         # (e.g. "Home | Source on GitHub | Reference documentation") and single-pipe

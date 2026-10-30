@@ -507,6 +507,31 @@ def test_extract_and_append_knowledge_creates_file_if_missing(tmp_path):
     assert len(result) >= 1
 
 
+def test_extract_and_append_knowledge_jp_nav_chrome_skipped(tmp_path):
+    """JP media-site share/nav chrome must never become facts.
+
+    Regression: Real Sound articles leaked share strips ("ポスト はてなブックマーク
+    LINE") and related-article headline rails into extracted_knowledge.json,
+    which later surfaced as Rei Toei song themes.
+    """
+    path = tmp_path / "ek.json"
+    path.write_text(json.dumps({"schemaVersion": "1.0", "facts": []}), encoding="utf-8")
+
+    chrome_article = (
+        "リアルサウンド編集部の記事一覧はこちら 関連記事 NIKO NIKO TAN TAN、ツアーを完走して迎える新しいシーズン 盟友Tempalayも駆けつけた東京公演。"
+        "実存』 ランキング アクセス数 シェア数 工藤静香 新着MVランキングはこちらからチェックできます。"
+        "Like on Facebook Follow on x Follow on Instagram Follow on YouTube and never miss an update from us."
+    )
+    result = extract_and_append_knowledge(
+        chrome_article,
+        source_url="https://example.com/jp-music",
+        source_title="JP Music Article",
+        path=path,
+        dry_run=False,
+    )
+    assert result == []
+
+
 def test_extract_and_append_knowledge_confidence_field(tmp_path):
     path = tmp_path / "ek.json"
     path.write_text(json.dumps({"schemaVersion": "1.0", "facts": []}), encoding="utf-8")

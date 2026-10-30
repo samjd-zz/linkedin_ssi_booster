@@ -733,6 +733,87 @@ def test_extract_themes_limit(mock_extracted_knowledge):
     assert len(themes) <= 2
 
 
+def test_extract_themes_filters_generic_discourse_words():
+    """Generic discourse tags ('example', 'results', …) must never become themes.
+
+    Regression: spaCy noun-chunking tags "For example, ..." sentences with the
+    tag "example", which once outranked real technical concepts and was picked
+    as a song theme.
+    """
+    facts = [
+        ExtractedEvidenceFact(
+            evidence_id=f"ev_generic_{i:03d}",
+            statement=f"For example, generic fact number {i}.",
+            source_url="https://example.com/generic",
+            source_title="Generic Source",
+            entities=[],
+            tags=["example", "results", "observations", "rust",
+                  "その後", "2024年", "october", "10月"],
+            confidence="medium",
+            source_fact_id=f"fact_generic_{i:03d}",
+        )
+        for i in range(7)
+    ]
+
+    themes = extract_themes(facts, limit=10)
+
+    theme_names = {t.name.lower() for t in themes}
+    assert "example" not in theme_names
+    assert "results" not in theme_names
+    assert "observations" not in theme_names
+    # JP discourse connectives and bare temporal tags are filtered too
+    assert "その後" not in theme_names
+    assert "2024年" not in theme_names
+    assert "october" not in theme_names
+    assert "10月" not in theme_names
+    # Real technical tags survive the filter
+    assert "rust" in theme_names
+
+
+def test_extract_themes_skips_nav_chrome_facts_and_tags():
+    """Nav/share-chrome from JP media sites must never become themes.
+
+    Regression: learned facts scraped from Real Sound carried share-strip
+    statements and headline-rail tags ("ポスト はてなブックマーク line",
+    "pick up"), which once surfaced as Rei song themes.
+    """
+    chrome_fact = ExtractedEvidenceFact(
+        evidence_id="ev_chrome_001",
+        statement="リアルサウンド編集部の記事一覧はこちら 関連記事 新しい学校のリーダーズ",
+        source_url="https://example.com/jp",
+        source_title="JP Chrome",
+        entities=[],
+        # Headline-rail garbage: none of these should ever surface
+        tags=["正体\" shintani × ishiya", "記憶：今井寿 カンザキイオリ"],
+        confidence="medium",
+        source_fact_id="fact_chrome_001",
+    )
+    good_facts = [
+        ExtractedEvidenceFact(
+            evidence_id=f"ev_good_{i:03d}",
+            statement=f"新宿のライブハウスで生成AIを使った音楽イベントが開催された（{i}回目）。",
+            source_url="https://example.com/good",
+            source_title="Good JP Article",
+            entities=[],
+            # One clean tag plus chrome tags that must be dropped individually
+            tags=["生成ai", "ポスト はてなブックマーク line", "『mind+』メンバー全員インタビュー pick up"],
+            confidence="medium",
+            source_fact_id=f"fact_good_{i:03d}",
+        )
+        for i in range(5)
+    ]
+
+    themes = extract_themes([chrome_fact] + good_facts, limit=10)
+
+    theme_names = {t.name.lower() for t in themes}
+    # Chrome fact contributed nothing at all
+    assert not any("shintani" in n or "カンザキイオリ" in n for n in theme_names)
+    # Chrome tags on good facts were dropped individually
+    assert not any("はてなブックマーク" in n or "pick up" in n for n in theme_names)
+    # The clean tag survived
+    assert "生成ai" in theme_names
+
+
 def test_extract_themes_suggests_bpm_and_mood(mock_extracted_knowledge):
     """Test extract_themes suggests BPM and mood based on concept keywords"""
     themes = extract_themes(mock_extracted_knowledge, limit=10)

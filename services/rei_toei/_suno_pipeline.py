@@ -34,6 +34,7 @@ from ._models import (
 from ._config import ReiToeiConfig
 from ._suno_submission import submit_to_suno
 from ._suno_validation import validate_lyrics_with_dot
+from services.content_curator._text_utils import looks_like_nav_chrome
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,32 @@ _JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-
 _ENGLISH_CHAR_RE = re.compile(r"[A-Za-z]")
 _TRAILING_PARENTHETICAL_RE = re.compile(r"^(?P<body>.*?)(?:\s*\((?P<paren>[^()]*)\)\s*)$")
 _SOUND_CUE_PHRASES = {"bass drop", "silence", "glitch noise", "chaos"}
+
+# Tags/entities skipped during theme extraction. Articles and pronouns, plus
+# generic discourse nouns that spaCy noun-chunking emits from learned facts
+# (e.g. "For example, ..." → tag "example") — none of them make a song theme.
+_THEME_STOP_WORDS = {
+    "the", "a", "an", "which", "that", "this", "these", "those", "it", "its",
+    "they", "their",
+    "example", "examples", "instance", "instances", "case", "cases",
+    "result", "results", "observation", "observations", "figure", "figures",
+    "table", "tables", "pair", "pairs", "number", "numbers", "percent",
+    "part", "parts", "thing", "things", "way", "ways", "item", "items",
+    "step", "steps", "section", "sections", "list", "lists", "note", "notes",
+    "term", "terms", "word", "words", "sentence", "sentences",
+    "overview", "summary", "introduction", "conclusion", "people",
+    # Japanese discourse connectives (never a song theme)
+    "その後", "今回", "一方", "さらに", "また", "そして",
+}
+
+# Bare temporal tags ("2024年", "10月", "October") — demoted in NER but they
+# still slip through as noun-chunk tags; a date is not a music theme.
+_TEMPORAL_TAG_RE = re.compile(
+    r"^(?:\d{4}\s*年?|\d{1,2}\s*月|\d{1,2}月\d{1,2}日"
+    r"|(?:january|february|march|april|may|june|july|august|september|october|november|december)"
+    r"|(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))$",
+    re.IGNORECASE,
+)
 _LEARNING_CUE_RE = re.compile(r"^\[([^\[\]]+)\]\s+\[([^\[\]]+)\]$")
 _INLINE_LEARNING_CUE_RE = re.compile(
     r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
@@ -1132,20 +1159,35 @@ def extract_themes(
     logger.info(f"Extracting themes from {len(extracted_facts)} facts")
 
     # Hoisted out of the loop to optimize memory allocation overhead
-    stop_words = {"the", "a", "an", "which", "that", "this", "these", "those", "it", "its", "they", "their"}
+    stop_words = _THEME_STOP_WORDS
     concept_groups: Dict[str, List[Any]] = defaultdict(list)
 
     for fact in extracted_facts:
+        # Skip facts whose statement is scraped nav/share chrome — every tag on
+        # such a fact is headline-rail noise, not a real concept.
+        if looks_like_nav_chrome(getattr(fact, "statement", "") or ""):
+            continue
+
         concepts = set()
         
         for tag in (getattr(fact, "tags", []) or []):
             normalized = tag.lower().strip()
-            if len(normalized) > 2 and normalized not in stop_words:
+            if (
+                len(normalized) > 2
+                and normalized not in stop_words
+                and not _TEMPORAL_TAG_RE.match(normalized)
+                and not looks_like_nav_chrome(normalized)
+            ):
                 concepts.add(normalized)
 
         for entity in (getattr(fact, "entities", []) or []):
             normalized = entity.lower().strip()
-            if len(normalized) > 2 and normalized not in stop_words:
+            if (
+                len(normalized) > 2
+                and normalized not in stop_words
+                and not _TEMPORAL_TAG_RE.match(normalized)
+                and not looks_like_nav_chrome(normalized)
+            ):
                 concepts.add(normalized)
 
         for concept in concepts:

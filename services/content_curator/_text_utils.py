@@ -5,6 +5,48 @@ No external service dependencies — pure string manipulation.
 
 import re
 
+# ---------------------------------------------------------------------------
+# Navigation/share chrome detection
+# ---------------------------------------------------------------------------
+# Markers that leak through trafilatura on media sites (notably Japanese
+# outlets like Real Sound): share buttons, related-article rails, ranking
+# widgets, pagination, and social follow strips. High-precision — these
+# strings essentially never occur in real article prose.
+_NAV_CHROME_JP_RE = re.compile(
+    r"はてなブックマーク"      # Hatena bookmark share button
+    r"|関連記事"               # "related articles" rail header
+    r"|記事一覧"               # "article list" link
+    r"|厳選記事"               # "hand-picked articles" rail header
+    r"|もっとみる"             # "see more" link
+    r"|次のページ|次ページ"    # pagination
+    r"|サイトを検索"           # site search box
+    r"|アクセス数|シェア数"    # ranking widget labels
+    r"|編集部"                 # editorial-desk byline / article-list credit
+)
+_NAV_CHROME_EN_RE = re.compile(
+    r"\b(?:Follow on (?:X|Facebook|Instagram|YouTube|LINE|TikTok)|Like on Facebook)\b",
+    re.IGNORECASE,
+)
+_JP_CHARS_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]")
+_PICK_UP_RE = re.compile(r"\bpick\s*up\b", re.IGNORECASE)
+
+
+def looks_like_nav_chrome(text: str) -> bool:
+    """Return True when *text* contains site-navigation or share-button chrome.
+
+    Used to drop scraped boilerplate (share strips, related-article rails,
+    ranking widgets) both at knowledge-extraction time and when existing
+    learned facts are re-read (e.g. Rei Toei theme extraction), so junk that
+    already landed in the data cannot surface downstream.
+    """
+    if not text:
+        return False
+    if _NAV_CHROME_JP_RE.search(text) or _NAV_CHROME_EN_RE.search(text):
+        return True
+    # "Pick Up" section headers on JP media sites. Require Japanese context so
+    # legitimate English prose ("pick up the phone") is never flagged.
+    return bool(_JP_CHARS_RE.search(text) and _PICK_UP_RE.search(text))
+
 
 def truncate_at_sentence(text: str, budget: int) -> str:
     """Ensure *text* fits within *budget* chars AND ends on a complete sentence.
