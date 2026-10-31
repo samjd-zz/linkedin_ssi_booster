@@ -35,6 +35,8 @@ _ROMAJI_MARKER_RE = re.compile(
     r"(?:\b(?:wa|ha|ga|o|wo|ni|de|no|to|kara|made|e|he|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
     re.IGNORECASE,
 )
+_PARTICLE_ROMAJI = {"は": "wa", "へ": "e", "を": "o"}
+_ATTACHED_CONJUNCTIVE_PARTICLES = {"て", "で", "ば", "たり", "だり"}
 _SOUND_CUE_PHRASES = {"bass drop", "silence", "glitch noise", "chaos"}
 _STAGE_CUE_RE = re.compile(
     r"^(?:instrumental(?: build)?|verse\s*\d*|pre-chorus|chorus|drop|bridge|"
@@ -226,26 +228,42 @@ def _generate_hepburn_romaji(japanese_text: str) -> str:
         logger.warning("Sudachi tokenization failed; using pykakasi alone: %s", exc)
         return _pykakasi_reading(japanese_text, kakasi)
 
-    words: list[str] = []
+    # Each entry is (is_kana_reading, text); conjugation endings are merged
+    # into the preceding reading so っ/ん resolve correctly (hikatte, kieta).
+    entries: list[tuple[bool, str]] = []
     punctuation = {"、": ",", "。": ".", "！": "!", "？": "?"}
     for morpheme in morphemes:
         surface = morpheme.surface()
         if not surface or surface.isspace():
             continue
         if not _JAPANESE_CHAR_RE.search(surface):
-            words.append(punctuation.get(surface, surface))
+            entries.append((False, punctuation.get(surface, surface)))
             continue
 
         reading = morpheme.reading_form()
         if _CJK_CHAR_RE.search(reading):
             _warn_unreadable(reading)
             return ""
-        if morpheme.part_of_speech()[0] == "助詞" and surface in {"は", "へ", "を"}:
-            words.append({"は": "wa", "へ": "e", "を": "o"}[surface])
+        pos = morpheme.part_of_speech()
+        if pos[0] == "助詞" and surface in _PARTICLE_ROMAJI:
+            entries.append((False, _PARTICLE_ROMAJI[surface]))
             continue
-        romanized = _pykakasi_reading(reading, kakasi)
+        attaches = pos[0] == "助動詞" or (
+            pos[1] in {"接続助詞", "副助詞"} and surface in _ATTACHED_CONJUNCTIVE_PARTICLES
+        )
+        if attaches and entries and entries[-1][0]:
+            entries[-1] = (True, entries[-1][1] + reading)
+        else:
+            entries.append((True, reading))
+
+    words: list[str] = []
+    for is_reading, text in entries:
+        if not is_reading:
+            words.append(text)
+            continue
+        romanized = _pykakasi_reading(text, kakasi)
         if not romanized:
-            _warn_unreadable(surface)
+            _warn_unreadable(text)
             return ""
         words.append(romanized.replace(" ", ""))
 
@@ -330,6 +348,26 @@ def _is_adjacent_romaji_cue(japanese: str, line: str) -> bool:
     return False
 
 
+def _join_split_romaji(candidate: str, expected: str) -> Optional[str]:
+    """Merge candidate tokens that the expected reading writes as one word."""
+    pieces = candidate.split()
+    merged: list[str] = []
+    index = 0
+    for target in (_canonical_reading(token) for token in expected.split()):
+        if not target:
+            continue
+        group: list[str] = []
+        while index < len(pieces) and len(_canonical_reading("".join(group))) < len(target):
+            group.append(pieces[index])
+            index += 1
+        if _canonical_reading("".join(group)) != target:
+            return None
+        merged.append("".join(group))
+    if index != len(pieces):
+        return None
+    return " ".join(merged)
+
+
 def _correct_match(
     line: str,
     match: re.Match[str],
@@ -344,7 +382,10 @@ def _correct_match(
     if not expected or (not explicit and not _is_romaji_attempt(candidate, expected)):
         return line, False
     if _canonical_reading(candidate) == _canonical_reading(expected):
-        return line, False
+        joined = _join_split_romaji(candidate, expected)
+        if not joined or joined == candidate:
+            return line, False
+        return line[:match.start("romaji")] + joined + line[match.end("romaji"):], True
     return line[:match.start("romaji")] + expected + line[match.end("romaji"):], True
 
 

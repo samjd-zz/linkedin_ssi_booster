@@ -1987,7 +1987,10 @@ def test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts(mock_domain_
     assert "\\n" not in suno_prompt.lyrics
     assert '\",' not in suno_prompt.lyrics
     assert "\\." not in suno_prompt.lyrics
-    assert "信号が走る。\nGPU wakes.\n回路が光る。\nSignal returns..." in suno_prompt.lyrics
+    assert (
+        "信号が走る。\n[shingou ga hashiru.]\nGPU wakes.\n"
+        "回路が光る。\n[kairo ga hikaru.]\nSignal returns..."
+    ) in suno_prompt.lyrics
 
 
 def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_knowledge_data):
@@ -2707,7 +2710,7 @@ def test_assemble_suno_prompt_splits_inline_slash_fragments(mock_domain_knowledg
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "Input overflow\n境界線超えて\nsignal still rising" in suno_prompt.lyrics
+    assert "Input overflow\n境界線超えて\n[kyoukaisen koete]\nsignal still rising" in suno_prompt.lyrics
     assert "Protocol complete\n次へ" in suno_prompt.lyrics
 
 

@@ -817,30 +817,17 @@ def _backfill_missing_romaji_cues(section_payload: Dict[str, Any]) -> int:
 
     compose_lyrics prompts the LLM for learner cues, but small models routinely
     drop them. Rather than spending another generation round-trip, synthesize
-    Hepburn Romaji with pykakasi until the song meets its learner-cue target.
-    Returns the number of cues added (0 when pykakasi is unavailable, there is
-    no shortfall, or no line converts to a recognizable Romaji cue).
+    Hepburn Romaji for every Japanese line that lacks a cue. Returns the number
+    of cues added (0 when no converter is available or every line is cued).
     """
-    stats = _learning_annotation_stats(section_payload)
-    missing = (
-        _required_learning_annotation_pairs(stats["japanese_lines"])
-        - stats["annotation_pairs"]
-    )
-    if missing <= 0:
-        return 0
-
     added = 0
     for field, value in section_payload.items():
-        if added >= missing:
-            break
         if not isinstance(value, str) or not _JAPANESE_CHAR_RE.search(value):
             continue
         lines = value.splitlines()
         rebuilt: List[str] = []
         for index, raw_line in enumerate(lines):
             rebuilt.append(raw_line)
-            if added >= missing:
-                continue
             line = raw_line.strip()
             if (
                 not line
@@ -1053,6 +1040,7 @@ def _append_normalized_section(
         corrected = _verify_and_correct_romaji_lines(payload)
         if corrected:
             logger.info("Corrected %d formatted Romaji cue(s) in %s.", corrected, label)
+        _backfill_missing_romaji_cues(payload)
         block = payload["section"]
         lyric_blocks.append(block)
     return block
@@ -1866,18 +1854,17 @@ Each field should contain the complete lyrics for that section, including any se
                     corrected_romaji,
                 )
             cues_ok, cue_summary = _learning_annotations_ok(response_data, lyric_language)
-            if not cues_ok:
-                added_cues = _backfill_missing_romaji_cues(response_data)
-                if added_cues:
-                    logger.info(
-                        "Backfilled %d Hepburn Romaji cue(s) (%s).", added_cues, cue_summary
-                    )
-                else:
-                    logger.warning(
-                        "Romaji learner cues below target (%s); pykakasi unavailable "
-                        "or lines unconvertible.",
-                        cue_summary,
-                    )
+            added_cues = _backfill_missing_romaji_cues(response_data)
+            if added_cues:
+                logger.info(
+                    "Backfilled %d Hepburn Romaji cue(s) (%s).", added_cues, cue_summary
+                )
+            elif not cues_ok:
+                logger.warning(
+                    "Romaji learner cues below target (%s); pykakasi unavailable "
+                    "or lines unconvertible.",
+                    cue_summary,
+                )
         
         # Enforce uppercase chorus processing programmatically as a safeguard
         processed_chorus = (
