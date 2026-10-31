@@ -7,7 +7,6 @@ Suno-ready song prompts with lyrics, validation, and submission orchestration.
 Author: Shawn Jackson Dyck
 """
 
-import difflib
 import json
 import logging
 import os
@@ -34,16 +33,30 @@ from ._models import (
 )
 from ._config import ReiToeiConfig
 from services.content_curator._text_utils import looks_like_nav_chrome
+from services.rei_toei._lyric_romaji import (
+    _BRACKET_LEARNING_CUE_RE,
+    _BRACKET_PAREN_LEARNING_CUE_RE,
+    _ENGLISH_CHAR_RE,
+    _INLINE_LEARNING_CUE_RE,
+    _JAPANESE_CHAR_RE,
+    _ROMAJI_FIRST_RE as _ROMAJI_FIRST_RE,
+    _generate_hepburn_romaji,
+    _has_inline_romaji_cue,
+    _is_adjacent_romaji_cue,
+    _is_probable_romaji,
+    _is_sound_cue_phrase,
+    _is_stage_cue_phrase,
+    _japanese_lyric_phrase,
+    _join_split_japanese_acronyms,
+    _looks_like_romaji_cue,
+    _match_inline_romaji_cue,
+    _normalize_romaji_for_match,
+    _split_english_lead_from_japanese,
+    _strip_cue_noise as _strip_cue_noise,
+    _verify_and_correct_romaji_lines,
+)
 
 logger = logging.getLogger(__name__)
-
-try:
-    import pykakasi
-    _PYKAKASI_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    _PYKAKASI_AVAILABLE = False
-
-_KAKASI_INSTANCE: Optional[Any] = None
 
 _SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balances richness vs safety
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
@@ -53,11 +66,16 @@ _EMBEDDED_SECTION_LABEL_RE = re.compile(
     r"\s*\[(?:Instrumental Build|Verse\s*\d*|Pre-Chorus|Chorus|Drop|Bridge|Solo|Breakdown|Outro)\]\s*",
     re.IGNORECASE,
 )
+_FREEFORM_SECTION_HEADER_RE = re.compile(
+    r"(?im)^[ \t]*\[(?P<label>Instrumental Build|Intro|Verse\s*\d*|Pre-Chorus|"
+    r"Chorus|Drop|Bridge|Solo|Breakdown|Outro)\][ \t]*"
+)
+_FREEFORM_METADATA_RE = re.compile(
+    r"(?im)^[ \t]*(?:\*\*)?(?:Suno Prompt|Style Tags|Genre Tags|Tags)"
+    r"\s*(?:\*\*)?\s*:(?:\*\*)?"
+)
 _INLINE_SLASH_SEPARATOR_RE = re.compile(r"(?:\s+/\s*|\s*/\s+)")
-_JAPANESE_CHAR_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]")
-_ENGLISH_CHAR_RE = re.compile(r"[A-Za-z]")
 _TRAILING_PARENTHETICAL_RE = re.compile(r"^(?P<body>.*?)(?:\s*\((?P<paren>[^()]*)\)\s*)$")
-_SOUND_CUE_PHRASES = {"bass drop", "silence", "glitch noise", "chaos"}
 
 # Tags/entities skipped during theme extraction. Articles and pronouns, plus
 # generic discourse nouns that spaCy noun-chunking emits from learned facts
@@ -83,23 +101,6 @@ _TEMPORAL_TAG_RE = re.compile(
     r"|(?:january|february|march|april|may|june|july|august|september|october|november|december)"
     r"|(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))$",
     re.IGNORECASE,
-)
-_LEARNING_CUE_RE = re.compile(r"^\[([^\[\]]+)\]\s+\[([^\[\]]+)\]$")
-_INLINE_LEARNING_CUE_RE = re.compile(
-    r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
-    r"\((?P<romaji>[^()]*)\)\s+\[(?P<meaning>[^\[\]]+)\](?P<tail>.*)$"
-)
-_BRACKET_LEARNING_CUE_RE = re.compile(
-    r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
-    r"\[(?P<romaji>[^\[\]]+)\]\s+\[(?P<meaning>[^\[\]]+)\]$"
-)
-_BRACKET_PAREN_LEARNING_CUE_RE = re.compile(
-    r"^(?P<japanese>.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f].*?)\s+"
-    r"\[(?P<romaji>[^\[\]]+)\]\s+\((?P<meaning>[^()]*)\)(?P<tail>.*)$"
-)
-_ROMAJI_FIRST_RE = re.compile(
-    r"^(?P<romaji>[A-Za-z][A-Za-z'\-\sāīūēōĀĪŪĒŌ]+?)\s+"
-    r"\((?P<japanese>[^()]*(?:[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f])[^()]*)\)$"
 )
 _LEARNING_PLACEHOLDER_RE = re.compile(
     r"^\[(?:romaji pronunciation|actual pronunciation)\]\s+"
@@ -127,11 +128,14 @@ _PROMPT_METADATA_RE = re.compile(
     r"\(\s*(?:Kanji|English):[^)]*\)",
     re.IGNORECASE,
 )
-# "then (bass drop)" / "then (Ahh ahh ahh)" — prompt-instruction prefix leakage
-# not caught by _PROMPT_CUE_INSTRUCTION_RE (which needs "on its own line" text).
-_THEN_CUE_PREFIX_RE = re.compile(r"^(?:and\s+)?then\s+(?=\()", re.IGNORECASE)
-_ROMAJI_MARKER_RE = re.compile(
-    r"(?:\b(?:wa|ha|ga|o|wo|ni|de|no|to|kara|made|e|he|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
+_THEN_CUE_LINE_RE = re.compile(
+    r"^(?:and\s+)?then\s+['\"]?(?P<cue>\([^()]+\))['\"]?\s*[,.;]?\s*$",
+    re.IGNORECASE,
+)
+_THEN_CUE_PREFIX_RE = re.compile(r"^(?:and\s+)?then\s+(?=['\"]?\()", re.IGNORECASE)
+_THEN_SCHEMA_LINE_RE = re.compile(
+    r"^(?:and\s+)?then\s+['\"]?\s*\d+(?:-\d+)?\s+lines\s+(?:of|describing)\s+"
+    r"(?:atmospheric resolution|the instrumental solo moment)\b[^\n]*$",
     re.IGNORECASE,
 )
 _NON_JAPANESE_SCRIPT_CONTAMINATION_RE = re.compile(r"[\u0900-\u0d7f]+")
@@ -148,48 +152,6 @@ _SCRIPT_CONTAMINATION_REPLACEMENTS = {
 }
 
 
-def _looks_like_romaji_cue(text: str) -> bool:
-    """Return True for parenthetical romanized Japanese learner cues."""
-    stripped = text.strip()
-    if not stripped or _JAPANESE_CHAR_RE.search(stripped):
-        return False
-    if not _ENGLISH_CHAR_RE.search(stripped):
-        return False
-    if _is_sound_cue_phrase(stripped):
-        return False
-    return bool(_ROMAJI_MARKER_RE.search(stripped))
-
-
-def _get_kakasi() -> Optional[Any]:
-    """Lazily construct the shared pykakasi converter instance."""
-    global _KAKASI_INSTANCE
-    if not _PYKAKASI_AVAILABLE:
-        return None
-    if _KAKASI_INSTANCE is None:
-        _KAKASI_INSTANCE = pykakasi.kakasi()
-    return _KAKASI_INSTANCE
-
-
-def _generate_hepburn_romaji(japanese_text: str) -> str:
-    """Convert Japanese text to Hepburn Romaji via pykakasi; empty string on failure."""
-    kakasi = _get_kakasi()
-    if kakasi is None or not japanese_text.strip():
-        return ""
-    try:
-        chunks = kakasi.convert(japanese_text)
-    except Exception as exc:
-        logger.debug("pykakasi conversion failed: %s", exc)
-        return ""
-
-    words: List[str] = [chunk["hepburn"] for chunk in chunks if chunk.get("hepburn")]
-    if not words:
-        return ""
-    # Join words with spaces, then tighten spacing before closing punctuation.
-    romaji = " ".join(words)
-    romaji = re.sub(r"\s+([,.!?])", r"\1", romaji)
-    return romaji.strip()
-
-
 def _clean_learning_tail(text: str) -> str:
     """Return a trailing sung echo after an inline learner cue, if meaningful."""
     cleaned = text.strip()
@@ -197,20 +159,6 @@ def _clean_learning_tail(text: str) -> str:
     if not _ENGLISH_CHAR_RE.search(cleaned):
         return ""
     return cleaned
-
-
-def _split_english_lead_from_japanese(text: str) -> tuple[str, str]:
-    """Split a leading English sung phrase from an inline Japanese cue line."""
-    stripped = text.strip()
-    japanese_match = _JAPANESE_CHAR_RE.search(stripped)
-    if not japanese_match:
-        return "", stripped
-
-    prefix = stripped[:japanese_match.start()].strip()
-    japanese = stripped[japanese_match.start():].strip()
-    if not prefix or not _ENGLISH_CHAR_RE.search(prefix):
-        return "", stripped
-    return prefix.rstrip(" .,!?:;"), japanese
 
 
 def _format_learning_cue_block(
@@ -224,7 +172,7 @@ def _format_learning_cue_block(
     """Format a Japanese learner cue with optional sung lines around it."""
     japanese = japanese.strip()
     romaji = romaji.strip()
-    if not _looks_like_romaji_cue(romaji):
+    if not _is_probable_romaji(japanese, romaji):
         # LLM-provided Romaji is garbled or missing; fall back to a real
         # Hepburn conversion instead of surfacing bad data to the listener.
         corrected = _generate_hepburn_romaji(japanese)
@@ -469,12 +417,6 @@ def _clean_style_descriptor(value: str) -> str:
     return cleaned.strip(" ,.-")
 
 
-def _is_sound_cue_phrase(text: str) -> bool:
-    """Return True for parenthetical stage directions that should stay untouched."""
-    normalized = re.sub(r"\s+", " ", text).strip().lower()
-    return normalized in _SOUND_CUE_PHRASES
-
-
 def _normalize_bilingual_translation_order(line: str) -> str:
     """Move spoken English outside parentheses when the line is Japanese-first."""
     stripped = line.strip()
@@ -515,6 +457,8 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
     inline_match = _INLINE_LEARNING_CUE_RE.fullmatch(stripped)
     if inline_match:
+        if _is_stage_cue_phrase(inline_match.group("romaji")):
+            return stripped
         prefix, japanese = _split_english_lead_from_japanese(inline_match.group("japanese"))
         romaji = inline_match.group("romaji").strip()
         meaning = inline_match.group("meaning").strip()
@@ -528,6 +472,8 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
     bracket_match = _BRACKET_LEARNING_CUE_RE.fullmatch(stripped)
     if bracket_match:
+        if _is_stage_cue_phrase(bracket_match.group("romaji")):
+            return stripped
         prefix, japanese = _split_english_lead_from_japanese(bracket_match.group("japanese"))
         romaji = bracket_match.group("romaji").strip()
         meaning = bracket_match.group("meaning").strip()
@@ -535,6 +481,8 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
     bracket_paren_match = _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(stripped)
     if bracket_paren_match:
+        if _is_stage_cue_phrase(bracket_paren_match.group("romaji")):
+            return stripped
         prefix, japanese = _split_english_lead_from_japanese(bracket_paren_match.group("japanese"))
         romaji = bracket_paren_match.group("romaji").strip()
         meaning = bracket_paren_match.group("meaning").strip()
@@ -546,11 +494,11 @@ def _normalize_learning_annotation_order(line: str) -> str:
             tail=bracket_paren_match.group("tail"),
         )
 
-    romaji_first_match = _ROMAJI_FIRST_RE.fullmatch(stripped)
-    if romaji_first_match:
-        romaji = romaji_first_match.group("romaji").strip()
-        japanese = romaji_first_match.group("japanese").strip()
-        return f"{japanese}\n[{romaji}]"
+    single_cue = _match_inline_romaji_cue(stripped)
+    if single_cue:
+        prefix, japanese = _split_english_lead_from_japanese(single_cue.group("japanese"))
+        romaji = single_cue.group("romaji").strip()
+        return "\n".join(part for part in (prefix, japanese, f"[{romaji}]") if part)
 
     # Remove cue-like annotations that contain no Japanese lyric line to attach to.
     if stripped.startswith("[") and "]" in stripped and ":" in stripped:
@@ -563,7 +511,7 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
 def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: bool = False) -> str:
     """Normalize a lyric section into deterministic Suno-friendly section format."""
-    body = _normalize_serialized_lyric_text(text or "")
+    body = _join_split_japanese_acronyms(_normalize_serialized_lyric_text(text or ""))
     body = _SECTION_HEADER_RE.sub("", body, count=1)
     body = _EMBEDDED_SECTION_LABEL_RE.sub("\n", body)
 
@@ -577,7 +525,13 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 normalized_lines.append("")
             previous_blank = True
             continue
-        stripped = _THEN_CUE_PREFIX_RE.sub("", stripped).strip()
+        if _THEN_SCHEMA_LINE_RE.fullmatch(stripped):
+            continue
+        then_cue = _THEN_CUE_LINE_RE.fullmatch(stripped)
+        if then_cue:
+            stripped = then_cue.group("cue")
+        else:
+            stripped = _THEN_CUE_PREFIX_RE.sub("", stripped).strip()
         stripped = _PROMPT_CUE_INSTRUCTION_RE.sub(r"\g<cue>", stripped).strip()
         stripped = _PROMPT_METADATA_RE.sub("", stripped).strip()
         if _PROMPT_SCHEMA_LEAKAGE_RE.search(stripped):
@@ -608,23 +562,21 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 and _JAPANESE_CHAR_RE.search(normalized_lines[-1])
             ):
                 parenthetical_text = normalized_segment[1:-1].strip()
-                if _looks_like_romaji_cue(parenthetical_text):
-                    # Canonicalize "romaji [meaning]" inners into a proper cue
-                    # pair; otherwise strip embedded brackets so wrapping can
-                    # never produce nested "]]" artifacts.
-                    inner_cue_match = re.fullmatch(
-                        r"(?P<romaji>[^\[\]]+?)\s*\[(?P<meaning>[^\[\]]+)\]\s*",
-                        parenthetical_text,
+                inner_cue_match = re.fullmatch(
+                    r"(?P<romaji>[^\[\]]+?)\s*\[(?P<meaning>[^\[\]]+)\]\s*",
+                    parenthetical_text,
+                )
+                if inner_cue_match:
+                    normalized_lines.append(
+                        f"[{inner_cue_match.group('romaji').strip()}] "
+                        f"[{inner_cue_match.group('meaning').strip()}]"
                     )
-                    if inner_cue_match:
-                        normalized_lines.append(
-                            f"[{inner_cue_match.group('romaji').strip()}] "
-                            f"[{inner_cue_match.group('meaning').strip()}]"
-                        )
-                    else:
-                        safe_inner = re.sub(r"[\[\]]", " ", parenthetical_text)
-                        safe_inner = re.sub(r"\s{2,}", " ", safe_inner).strip()
-                        normalized_lines.append(f"[{safe_inner}]")
+                    previous_blank = False
+                    continue
+                if _is_probable_romaji(normalized_lines[-1], parenthetical_text):
+                    safe_inner = re.sub(r"[\[\]]", " ", parenthetical_text)
+                    safe_inner = re.sub(r"\s{2,}", " ", safe_inner).strip()
+                    normalized_lines.append(f"[{safe_inner}]")
                     previous_blank = False
                     continue
             # Drop near-duplicate Romaji cue lines — small models often emit
@@ -805,96 +757,6 @@ def _has_chinese_leakage(section_payload: Dict[str, Any]) -> bool:
     return False
 
 
-def _strip_cue_noise(line: str) -> str:
-    """Remove section-label prefixes, wrapping parens, and quote residue.
-
-    Applied before Romaji conversion so leaked labels ("[Pre-Chorus] コードが舞う")
-    and stray quotes never end up inside a generated cue.
-    """
-    cleaned = re.sub(r"^\[[^\]]*\]\s*", "", line.strip())
-    return cleaned.strip("()（）").strip(" '\"‘’“”「」『』")
-
-
-def _normalize_romaji_for_match(text: str) -> str:
-    """Normalize Romaji for fuzzy comparison.
-
-    Folds macrons to double vowels and maps Hepburn particle spellings
-    (wa/e/o) onto pykakasi's literal readings (ha/he/wo) so stylistic
-    differences never count as mismatches.
-    """
-    folded = (
-        text.lower()
-        .replace("ā", "aa").replace("ī", "ii").replace("ū", "uu")
-        .replace("ē", "ee").replace("ō", "ou")
-    )
-    folded = re.sub(r"[^a-z0-9\s]", " ", folded)
-    particle_map = {"wa": "ha", "e": "he", "o": "wo"}
-    return " ".join(particle_map.get(token, token) for token in folded.split())
-
-
-def _verify_and_correct_romaji_lines(section_payload: Dict[str, Any]) -> int:
-    """Replace hallucinated Romaji readings with pykakasi-verified Hepburn.
-
-    LLM drafts pair Japanese lines with confidently wrong Romaji
-    ("時は流れ" → "Sora wa nagare"). Shape-based cue checks cannot catch
-    these, so compare each unbracketed Romaji line against a deterministic
-    pykakasi conversion of the preceding Japanese line and swap it out when
-    the readings disagree. English translation lines score far below the
-    match threshold and are left untouched. Returns the corrected count.
-    """
-    corrected = 0
-    for field, value in section_payload.items():
-        if not isinstance(value, str) or not _JAPANESE_CHAR_RE.search(value):
-            continue
-        lines = value.splitlines()
-        changed = False
-        for index in range(len(lines) - 1):
-            jp_line = lines[index].strip()
-            if not jp_line or not _JAPANESE_CHAR_RE.search(jp_line):
-                continue
-            candidate = lines[index + 1].strip()
-            if (
-                not candidate
-                or _JAPANESE_CHAR_RE.search(candidate)
-                or candidate.startswith("[")
-                or candidate.startswith("(")
-            ):
-                continue
-            # Separate a trailing [meaning] cue so it is preserved on
-            # replacement and does not dilute the Romaji comparison.
-            tail_match = re.fullmatch(
-                r"(?P<body>[^\[\]]+?)\s*(?P<cue>\[[^\[\]]+\])?\s*", candidate
-            )
-            if not tail_match:
-                continue
-            body = tail_match.group("body").strip()
-            meaning_cue = tail_match.group("cue") or ""
-            expected = _generate_hepburn_romaji(_strip_cue_noise(jp_line))
-            if not expected:
-                continue
-            norm_expected = _normalize_romaji_for_match(expected)
-            norm_candidate = _normalize_romaji_for_match(body)
-            if not norm_expected or not norm_candidate:
-                continue
-            ratio = difflib.SequenceMatcher(None, norm_candidate, norm_expected).ratio()
-            shares_token = bool(
-                set(norm_candidate.split()) & set(norm_expected.split())
-            )
-            # Calibrated on real drafts: wrong Romaji scores 0.58-0.83, correct
-            # Romaji ~1.0, English translations <=0.44 without Romaji shape.
-            is_romaji_attempt = ratio >= 0.50 or (
-                _looks_like_romaji_cue(body) and shares_token
-            )
-            if is_romaji_attempt and ratio < 0.92:
-                replacement = expected if not meaning_cue else f"{expected} {meaning_cue}"
-                lines[index + 1] = replacement
-                corrected += 1
-                changed = True
-        if changed:
-            section_payload[field] = "\n".join(lines)
-    return corrected
-
-
 def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int]:
     """Count Japanese lyric lines and adjacent Romaji/meaning cue pairs."""
     japanese_lines = 0
@@ -908,34 +770,12 @@ def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int
                 continue
             if _JAPANESE_CHAR_RE.search(line):
                 japanese_lines += 1
-                inline_match = _INLINE_LEARNING_CUE_RE.fullmatch(line)
-                bracket_match = _BRACKET_LEARNING_CUE_RE.fullmatch(line)
-                bracket_paren_match = _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(line)
-                if inline_match or bracket_match or bracket_paren_match:
+                if _has_inline_romaji_cue(line):
                     annotation_pairs += 1
                     continue
                 if index + 1 >= len(lines):
                     continue
-                next_line = lines[index + 1]
-                match = _LEARNING_CUE_RE.fullmatch(next_line)
-                if match:
-                    romaji, meaning = match.groups()
-                    if _ENGLISH_CHAR_RE.search(romaji) and _ENGLISH_CHAR_RE.search(meaning):
-                        annotation_pairs += 1
-                    continue
-                if next_line.startswith("[") and next_line.endswith("]"):
-                    romaji = next_line.strip("[]")
-                    if _looks_like_romaji_cue(romaji):
-                        annotation_pairs += 1
-                    continue
-                if next_line.startswith("(") and next_line.endswith(")"):
-                    romaji = next_line.strip("()")
-                    if _looks_like_romaji_cue(romaji):
-                        annotation_pairs += 1
-                    continue
-                # Bare (unbracketed) Romaji line directly below the Japanese
-                # line — the format small models emit most often.
-                if _looks_like_romaji_cue(next_line):
+                if _is_adjacent_romaji_cue(line, lines[index + 1]):
                     annotation_pairs += 1
 
     return {
@@ -1002,25 +842,23 @@ def _backfill_missing_romaji_cues(section_payload: Dict[str, Any]) -> int:
             if added >= missing:
                 continue
             line = raw_line.strip()
-            if not line or not _JAPANESE_CHAR_RE.search(line):
-                continue
-            # Skip lines that already carry an inline cue
             if (
-                _INLINE_LEARNING_CUE_RE.fullmatch(line)
-                or _BRACKET_LEARNING_CUE_RE.fullmatch(line)
-                or _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(line)
+                not line
+                or not _JAPANESE_CHAR_RE.search(line)
+                or (line.startswith("[") and line.endswith("]"))
             ):
                 continue
-            # Skip lines already cued on the following line (bracketed,
-            # parenthetical, or bare Romaji)
-            next_line = lines[index + 1].strip() if index + 1 < len(lines) else ""
-            if next_line.startswith("[") or (
-                next_line.startswith("(")
-                and _looks_like_romaji_cue(next_line.strip("()"))
-            ) or _looks_like_romaji_cue(next_line):
+            # Skip lines that already carry an inline cue
+            if _has_inline_romaji_cue(line):
                 continue
-            romaji = _generate_hepburn_romaji(_strip_cue_noise(line))
-            if romaji and _looks_like_romaji_cue(romaji):
+            next_line = next(
+                (following.strip() for following in lines[index + 1:] if following.strip()),
+                "",
+            )
+            if next_line and _is_adjacent_romaji_cue(line, next_line):
+                continue
+            romaji = _generate_hepburn_romaji(_japanese_lyric_phrase(line))
+            if romaji and _ENGLISH_CHAR_RE.search(romaji):
                 rebuilt.append(f"[{romaji}]")
                 added += 1
         if len(rebuilt) != len(lines):
@@ -1211,8 +1049,34 @@ def _append_normalized_section(
     """Normalize and append a Suno lyric section when it has content."""
     block = _normalize_suno_section(text, label, uppercase_body=uppercase_body)
     if block:
+        payload = {"section": block}
+        corrected = _verify_and_correct_romaji_lines(payload)
+        if corrected:
+            logger.info("Corrected %d formatted Romaji cue(s) in %s.", corrected, label)
+        block = payload["section"]
         lyric_blocks.append(block)
     return block
+
+
+def _normalize_freeform_suno_reply(reply: str) -> str:
+    """Clean recognizable song sections without rewriting surrounding prose."""
+    headers = list(_FREEFORM_SECTION_HEADER_RE.finditer(reply))
+    if not headers:
+        return reply
+    metadata = _FREEFORM_METADATA_RE.search(reply, headers[0].end())
+    end = metadata.start() if metadata else len(reply)
+    headers = [header for header in headers if header.start() < end]
+
+    blocks: List[str] = []
+    for index, header in enumerate(headers):
+        next_start = headers[index + 1].start() if index + 1 < len(headers) else end
+        label = header.group("label")
+        body = reply[header.end():next_start].strip("\r\n")
+        if not _append_normalized_section(blocks, body, label):
+            blocks.append(f"[{label}]")
+
+    suffix = reply[end:]
+    return reply[:headers[0].start()] + "\n\n".join(blocks) + ("\n\n" if suffix else "") + suffix
 
 
 def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
@@ -1992,12 +1856,13 @@ Each field should contain the complete lyrics for that section, including any se
         # the prompted cues; synthesize them with pykakasi instead of burning
         # another generation round-trip.
         if lyric_language in {"japanese", "bilingual"}:
-            # Correct hallucinated Romaji readings first (deterministic pykakasi
-            # verification), then backfill any genuinely missing cues.
+            for field, value in response_data.items():
+                if isinstance(value, str):
+                    response_data[field] = _join_split_japanese_acronyms(value)
             corrected_romaji = _verify_and_correct_romaji_lines(response_data)
             if corrected_romaji:
                 logger.info(
-                    "Corrected %d hallucinated Romaji line(s) via pykakasi.",
+                    "Corrected %d inconsistent Romaji cue(s).",
                     corrected_romaji,
                 )
             cues_ok, cue_summary = _learning_annotations_ok(response_data, lyric_language)

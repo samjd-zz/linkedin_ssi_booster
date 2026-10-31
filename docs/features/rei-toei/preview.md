@@ -9,6 +9,9 @@ bash run.sh --profile core run --rm app \
 
 # Automatic theme selection from extracted knowledge
 bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview
+
+# Rebuild the app image before previewing local code changes
+bash run.sh --profile core run --build --rm app python main.py --rei-generate --rei-preview
 ```
 
 Preview generates the song concept, full lyrics, and formatted Suno prompt using local Ollama. It does not save artifacts, submit to Suno, download media, or render FLUX images. It is not a fast placeholder or a generation-free dry run.
@@ -23,6 +26,12 @@ INFO timing records distinguish `rei.preparation`, `rei.concept`, `rei.lyrics`, 
 
 The lyric composer currently allows up to five attempts for Japanese/bilingual output and one for English, with up to 4,096 generated tokens per attempt. Structural, language-mix, script, and repetitiveness failures can trigger a complete regeneration. These checks and retry limits are unchanged by the startup optimization; warning logs give retry reasons. Formatting includes deterministic Japanese/Romaji normalization and does not make another LLM call. Use timings to distinguish retries from post-generation CPU work.
 
-The launcher still performs its GPU passthrough probe and requests a cached Docker build for one-off app runs, preserving stale-image protection. Those steps occur before Python's stage logs.
+The launcher performs its GPU passthrough probe before Python's stage logs. One-off runs reuse the existing app image unless `run --build` is supplied.
+
+## Japanese Lyric Cues
+
+For Japanese and bilingual songs, Rei checks inline, bracketed, parenthesized, and recognizable bare Romaji against their Japanese lyric lines. Recognized inline pronunciations count toward cue coverage; when only an English translation is present, backfilling uses the Japanese phrase without incorporating the translation. Explicit pronunciation/meaning pairs retain their English meaning; ambiguous English lyrics and sound cues are handled conservatively. Formatting also removes leaked quoted stage instructions and keeps technical acronyms such as `SQL` attached to Japanese phrases. The direct console fallback applies the same cleanup to recognizable section-marked songs; unstructured replies are unchanged.
+
+Readings use SudachiPy's contextual tokenization and pykakasi's Hepburn conversion; both are already included by the core requirements. If Sudachi is unavailable, Rei warns and falls back to pykakasi alone. If a Japanese character cannot be read, Rei warns and leaves its existing cue unchanged rather than producing a partial reading. These checks do not guarantee correct Japanese, resolve every ambiguous reading, or verify English translations: review the preview before submitting. They do not add an LLM call.
 
 See [regression coverage](../../testing-and-dev.md#rei-cli-preview-preparation-and-timing) for isolated CLI tests and current suite results.

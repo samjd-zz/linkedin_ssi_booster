@@ -46,18 +46,18 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1097** | **1095** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1165** | **1163** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
 - **Latest Run Date:** October 30, 2026
-- **Latest Changes:** 3 new Romaji cue-hygiene tests (net +3): the Romaji verifier now preserves trailing `[meaning]` translation cues when replacing wrong readings (and compares only the Romaji body, catching previously missed hallucinations), paren-wrapped cues with embedded `[meaning]` are canonicalized to `[romaji] [meaning]` instead of emitting nested `]]` blobs, and degraded duplicate cue attempts ("Bitto to b", "Bitto to btu, …") are dropped during section normalization. Also includes the 3 Rei enforcement, 5 Romaji-verification, 2 Romaji backfill, 17 nav-chrome, 1 theme discourse-word, and 5 version-consistency tests from this cycle. The 10 launcher, 24 relevance, and 90 performance regressions remain.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,095 passed, 0 failed, 2 deselected** in 44.25 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
+- **Latest Changes:** 68 new parameterized and standalone Rei lyric-cue cases cover contextual Japanese readings, explicit and ambiguous cue formats, inline pronunciations, translations and stage cues, particle pronunciation, unknown characters, tokenizer fallbacks, technical acronyms, prompt leakage, and CLI/console formatting. Prior Romaji cue-hygiene, Rei enforcement, nav-chrome, launcher, relevance, and performance regressions remain.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,163 passed, 0 failed, 2 deselected** in 43.36 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,095 of 1,097 collected tests**, all passing with
+The latest run executed **1,163 of 1,165 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
@@ -100,6 +100,7 @@ private graph is not configured, those checks retain their existing skip behavio
 - **565** Original core logic assertions
 - **115** Rei Toei validation tests (Phases 1A–1E + console LLM behavior + Romaji music hooks)
 - _27 Foundation | 26 Suno | 20 Strudel | 18 Console Mode | 8 CLI Integration Flags + 2 fallback paths_
+- **68** Rei lyric-cue regression cases (including parameterized reading and formatting cases)
 
 - **6** Continuous knowledge extraction quality assertions
 - **5** Selection Learning database integration tests (Phase 5)
@@ -289,13 +290,17 @@ The caching tests verify operation counts, not a production speedup estimate. Re
 
 `tests/test_rei_preview_performance.py` runs the CLI with isolated mocks: no live Ollama, GitHub, Suno, or Buffer calls. It verifies that explicit-theme previews skip unused avatar loading, auto-theme previews read history once, explain mode retains DoT evidence validation, both music modes reuse the CLI client, the default model remains unchanged, and console mode still receives GitHub context. Preview writes no song artifact or media and never submits to Suno. Tests also require concept/lyric/formatting stage records. See [runtime behavior](features/rei-toei/preview.md) for corrected command examples and retry expectations.
 
+### Rei Japanese lyric-cue repair
+
+`tests/test_rei_lyric_cue_repair.py` covers explicit and ambiguous Romaji/meaning formats, contextual SudachiPy plus pykakasi readings, particles, unreadable-character warnings, fallback behavior, technical acronym line breaks, leaked prompt instructions, and both assembled and direct-console song output. Generated Japanese and English meanings remain subject to human review; no live LLM or Suno call is made by these tests.
+
 ### Console/CLI Rei Toei lyric-language misalignment — `_rei_console.py` and `_suno_pipeline.py`
 
 The console's direct-LLM song fallback (`_handle_llm_song_generation` → `_build_rei_system_prompt`), used when no extracted knowledge/themes are available, built its own system prompt with no reference to `REI_LYRIC_LANGUAGE` / `REI_JAPANESE_LYRIC_PROBABILITY`, so it silently ignored the language-mix policy that `--rei-generate` (CLI) always applied via `compose_lyrics`. Fixed by injecting the same `resolve_lyric_language()`-derived language instruction into `_build_rei_system_prompt`. Separately, `assemble_suno_prompt` unconditionally forced the chorus to ALL-CAPS regardless of `concept.lyric_language`, uppercasing Japanese/bilingual chorus text that should preserve natural script and casing; fixed to only uppercase when `lyric_language == "english"`. Covered by `test_assemble_suno_prompt_flips_japanese_first_bilingual_lines` in `tests/test_rei_toei_service.py`.
 
 ### Bilingual Japanese-line target enforcement — `_suno_pipeline.py`
 
-`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a 0.50 ratio tolerance of the target (so a 15% target rejects drafts above 65% Japanese). The current composer permits five total attempts: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. After validation-code changes, explicitly rebuild the app (`run --build` or `build app`); normal launches reuse the existing image. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_fifty_percent_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_launcher_preserves_compose_arguments` in `tests/test_run_script.py`.
+`REI_JAPANESE_LYRIC_PROBABILITY` is a per-song target for lyric lines containing Japanese script, not the probability of selecting Japanese for an entire song. A bilingual draft must contain both languages and stay within a ratio tolerance of `max(0.33, 1 / total_lines)` (so a 15% target normally rejects drafts above 48% Japanese). The current composer permits five total attempts: attempt 2 adds hard constraints, later attempts add explicit per-section language assignments. If no Japanese script ever appears, rescue hooks are appended to the bridge; if the mix still fails after the final attempt, the built-in bilingual fallback lyrics are used. Generated JSON accepts literal lyric line breaks, expands leaked `\n` sequences before language validation, and removes serialized quote/punctuation artifacts during Suno formatting. A malformed retry revalidates the last parseable draft instead of bypassing the bilingual constraint. After validation-code changes, explicitly rebuild the app (`run --build` or `build app`); normal launches reuse the existing image. Covered by `test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language`, `test_compose_lyrics_rejects_bilingual_output_outside_target_ratio`, `test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs`, `test_assemble_suno_prompt_normalizes_serialized_lyric_artifacts`, `test_bilingual_mix_counts_mixed_lines_as_japanese_lines`, `test_bilingual_mix_accepts_the_tolerance_boundary`, and `test_parse_llm_json_payload_allows_literal_newlines_in_lyric_values` in `tests/test_rei_toei_service.py`, plus `test_launcher_preserves_compose_arguments` in `tests/test_run_script.py`.
 
 ### Concurrent spaCy tokenizer access — `spacy_nlp.py`
 
@@ -386,7 +391,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 | `services/avatar_intelligence/` | ✅ Active     | **10 Focused Submodules:** `_paths`, `_models`, `_loaders`, `_normalizers`, `_retrieval`, `_grounding`, `_learning`, `_confidence`, `_narrative`, `_extraction`. |
 | `services/console_grounding/`   | ✅ Active     | **6 Focused Submodules:** `_config`, `_models`, `_profile_parser`, `_retrieval`, `_gate_helpers`, `_truth_gate`.                                                 |
 | `services/selection_learning/`  | ✅ Active     | **10 Focused Submodules:** `_constants`, `_models`, `_storage`, `_text`, `_logging`, `_published`, `_reconcile`, `_priors`, `_ranking`, `_feedback`.             |
-| `services/rei_toei/`            | ✅ Active     | **7 Focused Submodules:** `_config`, `_models`, `_loaders`, `_suno_client`, `_suno_pipeline`, `_strudel_pipeline`, `service`.                                    |
+| `services/rei_toei/`            | ✅ Active     | **Focused Submodules:** `_config`, `_models`, `_loaders`, `_lyric_romaji`, `_suno_client`, `_suno_pipeline`, `_strudel_pipeline`, `service`.                                    |
 | `services/flux_capacitor/`      | ✅ Active     | **6 Focused Submodules:** `_config`, `_models`, `_prompting`, `_pipeline`, `_storage`, `__init__` — GPUOrchestrator, FluxCapacitorService, style presets.        |
 
 ---
@@ -395,6 +400,7 @@ The architecture is fully modularized into dedicated Python packages containing 
 
 | Targeted Test File Vector                                 | Detailed Functional Coverage Matrix                                                                                                                                                                                                                                                                   |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/test_rei_lyric_cue_repair.py`                      | Contextual Japanese readings, cue verification, safe fallbacks, prompt cleanup, technical acronyms, and CLI/console song formatting.                                                                                                                                                                  |
 | `tests/test_rei_console_routing.py`                       | Rei Toei console routing: command parsing, sticky Rei mode (`should_handle_rei_turn`), song/pattern heuristics, `_build_rei_system_prompt` identity and music-generation directive, Suno fallback to LLM when no extracted knowledge, `_handle_conversation` song re-routing, no Sam persona leakage. |
 | `tests/test_avatar_state_loader.py`                       | Confirms graph structural configurations, narrative memory loading, malformed input recovery routines, and multi-file asset joining (`domain_knowledge_*.json`, including `domain_knowledge_romaji.json`).                                                                                            |
 | `tests/test_buffer_service.py`                            | Exercises the GraphQL API wrapper connectivity layers, buffer item queues, and content idea generation.                                                                                                                                                                                               |

@@ -31,7 +31,7 @@
 - 🧭 **自動言語ルーティング** — ひらがな・カタカナ・漢字を検出し、`ja_core_news_md` と `en_core_web_md` を自動で切り替え
 - 🧩 **形態素解析と検索** — SudachiPyによるトークナイズ、NER、名詞句抽出、意味類似度、lemmaベースのBM25検索を一つの流れで処理
 - 🔎 **抽出・要約・重複排除** — 日本語の事実を正規化して知識グラフへ統合し、生成時の根拠として再利用
-- 🔤 **決定論的な発音支援** — `pykakasi`で漢字・かなをHepburn式ローマ字へ変換し、Rei Toeiの歌詞キューとSamの学習用発音ガイドを安定化
+- 🔤 **決定論的な発音支援** — `pykakasi`で漢字・かなをHepburn式ローマ字へ変換し、Rei Toeiの歌詞ではSudachiPyによる文脈解析も利用
 - 🔮 **ドメイン知識に基づく漢字学習** — Samは一般的なLLM知識だけに頼らず、読み方・意味・用例・出典を読み込んだ日本語パックから説明を組み立てます
 - 🪄 **視覚学習への接続** — `draw`、`render`、`/art [topic]`を使うと、根拠付きの漢字レッスンをFLUX Capacitorへ渡し、書道・字形・文化語彙の視覚教材として生成できます
 - 📣 **日本語の告知表現** — 「発表」「開発」「公開」「導入」などの表現を記事要約のシグナルとして認識
@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1095%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1095 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1146%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1146 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-70%25-yellow.svg" alt="Source coverage: 70%, measured October 28, 2026"></a>
 </p>
 
@@ -101,7 +101,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 
 - 🧠 **Advanced multi-language NLP with spaCy** — theme/claim extraction, semantic similarity, fact suggestion when the truth gate drops a sentence, and multi-language routing (English `en_core_web_md` + Japanese `ja_core_news_md` with the SudachiPy tokenizer). The curator can ingest configured Japanese-language sources alongside the general feed set, so the Japanese pipeline can learn from real native-language articles rather than translated text. Preprocessing filters boilerplate before fact storage. See [docs/spacy-extraction.md](docs/spacy-extraction.md) and [docs/knowledge-extraction-improvement.md](docs/knowledge-extraction-improvement.md).
 - ⚡ **Model2Vec semantic intelligence** — ultra-fast local embeddings (`minishlab/potion-base-8M`) support article categorisation, query-to-fact semantic reranking, category alignment checks, and truth-gate fallback similarity. Strong semantic matches can rescue valid paraphrases that lexical BM25 or spaCy checks would otherwise under-score, without API or GPU requirements.
-- 🇯🇵 **Japanese language intelligence** — pykakasi provides deterministic Kanji/Kana → Hepburn conversion for Rei Toei learner cues, correcting invalid LLM Romaji and generating reliable pronunciation aids for bilingual lyrics.
+- 🇯🇵 **Japanese language intelligence** — Rei combines SudachiPy's contextual readings with pykakasi's Hepburn conversion to check learner cues and backfill missing Romaji. Unreadable characters trigger a warning; generated Japanese and translations still need review.
 - 🈶 **Domain-backed Kanji teaching** — when Sam is asked to teach Kanji, he combines the loaded domain knowledge with pykakasi Hepburn readings, meanings, and source notes in the LLM grounding context instead of relying on generic language-model knowledge.
 - 🎨 **Multimodal teaching with FLUX Capacitor** — Sam lessons stay text-first by default, then hand the grounded reply to FLUX.1 for a visual when the request includes `draw`/`render` or when `/art [topic]` is used. Enable with `FLUX_CAPACITOR_ENABLED=true` for the full Kanji-to-visual learning loop.
 - 🧬 **Persona-grounded generation** — every post uses facts, projects, and outcomes from your private persona graph and domain knowledge packs — not a bio blurb.
@@ -150,7 +150,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 **Current capabilities:**
 
 - 🎤 **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
-- 🇯🇵 **Japanese-aware lyric production** — Rei can generate English or Japanese lyrics using mora-aware phrasing, idiomatic kana/kanji guidance, song-friendly Hepburn Romaji cue density, messy inline-cue cleanup for bracket or parenthetical meaning forms, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
+- 🇯🇵 **Japanese-aware lyric production** — Rei supports English, Japanese, and bilingual lyrics with contextual Romaji checks, bracket/parenthetical cue cleanup, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
 - 🎚️ **Controlled lyric language selection** — `bilingual` mode is the default; `REI_JAPANESE_LYRIC_PROBABILITY` controls the Japanese lyrical-content target at runtime, while explicit `english` or `japanese` modes are deterministic
 - 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
 - 🎛️ **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅; Docker `full` profile)
@@ -174,7 +174,7 @@ You> /sam                         # Switch back to Sam when you're done
 
 Sam's normal Kanji-teaching response is text-first and uses domain-backed meanings plus deterministic Hepburn readings. Add `draw`, `render`, or another image request verb to auto-trigger FLUX, or run `/art [topic]` afterward to turn the latest Sam lesson into a visual. FLUX rendering must be enabled with `FLUX_CAPACITOR_ENABLED=true` and is normally run through the Docker `full` profile.
 
-After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console. For a CLI-only preview, run `bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview --rei-theme "async programming"`; omit `--rei-theme` for automatic selection. Preview still generates full lyrics locally but does not save or submit them. Rei-only runs skip unused GitHub context and share one Ollama client; explicit themes skip avatar loading unless `--rei-explain` needs evidence. INFO timings separate preparation, concept generation, lyrics (including retries), and Suno formatting; see [Rei CLI runtime behavior](docs/features/rei-toei/preview.md).
+After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console. For a CLI-only preview, run `bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview --rei-theme "async programming"`; omit `--rei-theme` for automatic selection. Add `--build` immediately after `run` to rebuild the app image after code changes. Preview still generates full lyrics locally but does not save or submit them. Rei-only runs skip unused GitHub context and share one Ollama client; explicit themes skip avatar loading unless `--rei-explain` needs evidence. INFO timings separate preparation, concept generation, lyrics (including retries), and Suno formatting; see [Rei CLI runtime behavior](docs/features/rei-toei/preview.md).
 
 ---
 
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,097 collected; 1,095 passed, 0 failed, 2 live Buffer tests deselected; measured source coverage **70%**. Includes 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,165 collected; 1,163 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 68 Japanese lyric-cue regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

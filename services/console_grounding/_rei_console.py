@@ -31,6 +31,7 @@ from services.rei_toei_service import (
 )
 from services.ollama_service import OllamaService
 from services.performance import log_ollama_timings, timed_stage
+from services.rei_toei._suno_pipeline import _normalize_freeform_suno_reply
 from services.avatar_intelligence import (
     load_avatar_state as _lav_rei_console,
     normalize_extracted_facts as _normalize_extracted_rei,
@@ -482,7 +483,9 @@ async def _handle_llm_song_generation(
     Used as the primary path when extracted knowledge is unavailable.
     """
     system_prompt = _build_rei_system_prompt(rei_persona, rei_domain)
-    reply = _rei_chat(ai, history, system_prompt, user_input, max_tokens=max_tokens)
+    reply = _normalize_freeform_suno_reply(
+        _rei_chat(ai, history, system_prompt, user_input, max_tokens=max_tokens)
+    )
     updated = list(history)
     updated.append({"role": "user", "content": user_input})
     updated.append({"role": "assistant", "content": reply})

@@ -2090,7 +2090,7 @@ def test_format_learning_cue_block_corrects_garbled_llm_romaji():
 
     assert "回路が焼ける" in block
     assert "xkjqz garbage" not in block
-    assert "[kairo ga yake ru] [The circuit burns]" in block
+    assert "[kairo ga yakeru] [The circuit burns]" in block
 
 
 def test_format_learning_cue_block_keeps_valid_llm_romaji():
@@ -2134,7 +2134,7 @@ def test_assemble_suno_prompt_converts_standalone_parenthetical_romaji(mock_doma
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "アークが起動する\n[Arc ga kidō suru]" in suno_prompt.lyrics
+    assert "アークが起動する\n[aaku ga kidou suru]" in suno_prompt.lyrics
     assert "(Arc ga kidō suru)" not in suno_prompt.lyrics
     assert "(Chromatic shock, ready.)" in suno_prompt.lyrics
 
