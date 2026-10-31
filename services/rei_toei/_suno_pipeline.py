@@ -840,6 +840,61 @@ def _learning_annotations_ok(
     )
 
 
+def _backfill_missing_romaji_cues(section_payload: Dict[str, Any]) -> int:
+    """Insert deterministic ``[romaji]`` pronunciation cues after uncued Japanese lines.
+
+    compose_lyrics prompts the LLM for learner cues, but small models routinely
+    drop them. Rather than spending another generation round-trip, synthesize
+    Hepburn Romaji with pykakasi until the song meets its learner-cue target.
+    Returns the number of cues added (0 when pykakasi is unavailable, there is
+    no shortfall, or no line converts to a recognizable Romaji cue).
+    """
+    stats = _learning_annotation_stats(section_payload)
+    missing = (
+        _required_learning_annotation_pairs(stats["japanese_lines"])
+        - stats["annotation_pairs"]
+    )
+    if missing <= 0:
+        return 0
+
+    added = 0
+    for field, value in section_payload.items():
+        if added >= missing:
+            break
+        if not isinstance(value, str) or not _JAPANESE_CHAR_RE.search(value):
+            continue
+        lines = value.splitlines()
+        rebuilt: List[str] = []
+        for index, raw_line in enumerate(lines):
+            rebuilt.append(raw_line)
+            if added >= missing:
+                continue
+            line = raw_line.strip()
+            if not line or not _JAPANESE_CHAR_RE.search(line):
+                continue
+            # Skip lines that already carry an inline cue
+            if (
+                _INLINE_LEARNING_CUE_RE.fullmatch(line)
+                or _BRACKET_LEARNING_CUE_RE.fullmatch(line)
+                or _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(line)
+            ):
+                continue
+            # Skip lines already cued on the following line
+            next_line = lines[index + 1].strip() if index + 1 < len(lines) else ""
+            if next_line.startswith("[") or (
+                next_line.startswith("(")
+                and _looks_like_romaji_cue(next_line.strip("()"))
+            ):
+                continue
+            romaji = _generate_hepburn_romaji(line.strip("()（）"))
+            if romaji and _looks_like_romaji_cue(romaji):
+                rebuilt.append(f"[{romaji}]")
+                added += 1
+        if len(rebuilt) != len(lines):
+            section_payload[field] = "\n".join(rebuilt)
+    return added
+
+
 def _sections_are_distinct(section_payload: Dict[str, Any]) -> bool:
     """Reject drafts where most lyric sections are copied from one another."""
     fields = ("verse_1", "pre_chorus", "chorus", "verse_2", "drop", "bridge", "solo", "outro")
@@ -1793,6 +1848,26 @@ Each field should contain the complete lyrics for that section, including any se
             # All validations passed
             logger.info(f"Bilingual lyric composition succeeded on attempt {attempt}")
             break
+        
+        # 7. Japanese learner-cue coverage — deterministic Hepburn backfill.
+        # _learning_annotations_ok was previously defined but never enforced,
+        # so songs often shipped with little or no Romaji. Small models drop
+        # the prompted cues; synthesize them with pykakasi instead of burning
+        # another generation round-trip.
+        if lyric_language in {"japanese", "bilingual"}:
+            cues_ok, cue_summary = _learning_annotations_ok(response_data, lyric_language)
+            if not cues_ok:
+                added_cues = _backfill_missing_romaji_cues(response_data)
+                if added_cues:
+                    logger.info(
+                        "Backfilled %d Hepburn Romaji cue(s) (%s).", added_cues, cue_summary
+                    )
+                else:
+                    logger.warning(
+                        "Romaji learner cues below target (%s); pykakasi unavailable "
+                        "or lines unconvertible.",
+                        cue_summary,
+                    )
         
         # Enforce uppercase chorus processing programmatically as a safeguard
         processed_chorus = (

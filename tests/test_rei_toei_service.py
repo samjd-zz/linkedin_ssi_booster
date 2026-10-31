@@ -13,6 +13,7 @@ Author: Shawn Jackson Dyck
 import json
 import logging
 import os
+import re
 import pytest
 from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
@@ -1686,6 +1687,50 @@ def test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_re
     merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert "GPUが光る" not in merged
     assert "システムを再起動する" in lyrics.bridge
+
+
+def test_backfill_romaji_cues_meets_learning_target():
+    """Uncued Japanese lyrics must receive deterministic Hepburn Romaji cues.
+
+    Regression: _learning_annotations_ok existed but was never enforced, so
+    generated songs shipped with almost no Romaji despite the prompt asking
+    for learner cues.
+    """
+    from services.rei_toei._suno_pipeline import (
+        _backfill_missing_romaji_cues,
+        _learning_annotations_ok,
+    )
+
+    payload = {
+        "verse_1": "The data streams, unyielding,\n(データ流れる、断じて、\n回路の中、記憶へ。)",
+        "chorus": "光る、記憶のコード、\nCode of the memory",
+        "verse_2": "信号が歪められ、\nフィルタがネットワークを通過。",
+        "bridge": "心が融合し、デジタルな夢。",
+    }
+    assert _learning_annotations_ok(payload, "bilingual")[0] is False
+
+    added = _backfill_missing_romaji_cues(payload)
+
+    assert added > 0
+    ok, summary = _learning_annotations_ok(payload, "bilingual")
+    assert ok, summary
+    # Cues are bracketed Romaji lines inserted after Japanese lines
+    merged = "\n".join(payload.values())
+    assert re.search(r"\[[A-Za-z][^\]]+\]", merged)
+
+
+def test_backfill_romaji_cues_noop_when_cues_sufficient():
+    """Already-annotated lyrics are left untouched."""
+    from services.rei_toei._suno_pipeline import _backfill_missing_romaji_cues
+
+    payload = {
+        "verse_1": "データの波が走る。\n[Deeta no nami ga hashiru] [Data waves run]",
+        "chorus": "English only chorus line",
+    }
+    snapshot = dict(payload)
+
+    assert _backfill_missing_romaji_cues(payload) == 0
+    assert payload == snapshot
 
 
 def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
