@@ -7,6 +7,7 @@ Suno-ready song prompts with lyrics, validation, and submission orchestration.
 Author: Shawn Jackson Dyck
 """
 
+import difflib
 import json
 import logging
 import os
@@ -128,8 +129,11 @@ _PROMPT_METADATA_RE = re.compile(
     r"\(\s*(?:Kanji|English):[^)]*\)",
     re.IGNORECASE,
 )
+# "then (bass drop)" / "then (Ahh ahh ahh)" — prompt-instruction prefix leakage
+# not caught by _PROMPT_CUE_INSTRUCTION_RE (which needs "on its own line" text).
+_THEN_CUE_PREFIX_RE = re.compile(r"^(?:and\s+)?then\s+(?=\()", re.IGNORECASE)
 _ROMAJI_MARKER_RE = re.compile(
-    r"(?:\b(?:wa|ga|o|wo|ni|de|no|to|kara|made|e|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
+    r"(?:\b(?:wa|ha|ga|o|wo|ni|de|no|to|kara|made|e|he|mo|yo|ne|suru|shita|nai|eru|iru|aru)\b|[āīūēōĀĪŪĒŌ])",
     re.IGNORECASE,
 )
 _NON_JAPANESE_SCRIPT_CONTAMINATION_RE = re.compile(r"[\u0900-\u0d7f]+")
@@ -575,6 +579,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
                 normalized_lines.append("")
             previous_blank = True
             continue
+        stripped = _THEN_CUE_PREFIX_RE.sub("", stripped).strip()
         stripped = _PROMPT_CUE_INSTRUCTION_RE.sub(r"\g<cue>", stripped).strip()
         stripped = _PROMPT_METADATA_RE.sub("", stripped).strip()
         if _PROMPT_SCHEMA_LEAKAGE_RE.search(stripped):
@@ -768,6 +773,86 @@ def _has_chinese_leakage(section_payload: Dict[str, Any]) -> bool:
     return False
 
 
+def _strip_cue_noise(line: str) -> str:
+    """Remove section-label prefixes, wrapping parens, and quote residue.
+
+    Applied before Romaji conversion so leaked labels ("[Pre-Chorus] コードが舞う")
+    and stray quotes never end up inside a generated cue.
+    """
+    cleaned = re.sub(r"^\[[^\]]*\]\s*", "", line.strip())
+    return cleaned.strip("()（）").strip(" '\"‘’“”「」『』")
+
+
+def _normalize_romaji_for_match(text: str) -> str:
+    """Normalize Romaji for fuzzy comparison.
+
+    Folds macrons to double vowels and maps Hepburn particle spellings
+    (wa/e/o) onto pykakasi's literal readings (ha/he/wo) so stylistic
+    differences never count as mismatches.
+    """
+    folded = (
+        text.lower()
+        .replace("ā", "aa").replace("ī", "ii").replace("ū", "uu")
+        .replace("ē", "ee").replace("ō", "ou")
+    )
+    folded = re.sub(r"[^a-z0-9\s]", " ", folded)
+    particle_map = {"wa": "ha", "e": "he", "o": "wo"}
+    return " ".join(particle_map.get(token, token) for token in folded.split())
+
+
+def _verify_and_correct_romaji_lines(section_payload: Dict[str, Any]) -> int:
+    """Replace hallucinated Romaji readings with pykakasi-verified Hepburn.
+
+    LLM drafts pair Japanese lines with confidently wrong Romaji
+    ("時は流れ" → "Sora wa nagare"). Shape-based cue checks cannot catch
+    these, so compare each unbracketed Romaji line against a deterministic
+    pykakasi conversion of the preceding Japanese line and swap it out when
+    the readings disagree. English translation lines score far below the
+    match threshold and are left untouched. Returns the corrected count.
+    """
+    corrected = 0
+    for field, value in section_payload.items():
+        if not isinstance(value, str) or not _JAPANESE_CHAR_RE.search(value):
+            continue
+        lines = value.splitlines()
+        changed = False
+        for index in range(len(lines) - 1):
+            jp_line = lines[index].strip()
+            if not jp_line or not _JAPANESE_CHAR_RE.search(jp_line):
+                continue
+            candidate = lines[index + 1].strip()
+            if (
+                not candidate
+                or _JAPANESE_CHAR_RE.search(candidate)
+                or candidate.startswith("[")
+                or candidate.startswith("(")
+            ):
+                continue
+            expected = _generate_hepburn_romaji(_strip_cue_noise(jp_line))
+            if not expected:
+                continue
+            norm_expected = _normalize_romaji_for_match(expected)
+            norm_candidate = _normalize_romaji_for_match(candidate)
+            if not norm_expected or not norm_candidate:
+                continue
+            ratio = difflib.SequenceMatcher(None, norm_candidate, norm_expected).ratio()
+            shares_token = bool(
+                set(norm_candidate.split()) & set(norm_expected.split())
+            )
+            # Calibrated on real drafts: wrong Romaji scores 0.58-0.83, correct
+            # Romaji ~1.0, English translations <=0.44 without Romaji shape.
+            is_romaji_attempt = ratio >= 0.50 or (
+                _looks_like_romaji_cue(candidate) and shares_token
+            )
+            if is_romaji_attempt and ratio < 0.92:
+                lines[index + 1] = expected
+                corrected += 1
+                changed = True
+        if changed:
+            section_payload[field] = "\n".join(lines)
+    return corrected
+
+
 def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int]:
     """Count Japanese lyric lines and adjacent Romaji/meaning cue pairs."""
     japanese_lines = 0
@@ -805,6 +890,11 @@ def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int
                     romaji = next_line.strip("()")
                     if _looks_like_romaji_cue(romaji):
                         annotation_pairs += 1
+                    continue
+                # Bare (unbracketed) Romaji line directly below the Japanese
+                # line — the format small models emit most often.
+                if _looks_like_romaji_cue(next_line):
+                    annotation_pairs += 1
 
     return {
         "japanese_lines": japanese_lines,
@@ -879,14 +969,15 @@ def _backfill_missing_romaji_cues(section_payload: Dict[str, Any]) -> int:
                 or _BRACKET_PAREN_LEARNING_CUE_RE.fullmatch(line)
             ):
                 continue
-            # Skip lines already cued on the following line
+            # Skip lines already cued on the following line (bracketed,
+            # parenthetical, or bare Romaji)
             next_line = lines[index + 1].strip() if index + 1 < len(lines) else ""
             if next_line.startswith("[") or (
                 next_line.startswith("(")
                 and _looks_like_romaji_cue(next_line.strip("()"))
-            ):
+            ) or _looks_like_romaji_cue(next_line):
                 continue
-            romaji = _generate_hepburn_romaji(line.strip("()（）"))
+            romaji = _generate_hepburn_romaji(_strip_cue_noise(line))
             if romaji and _looks_like_romaji_cue(romaji):
                 rebuilt.append(f"[{romaji}]")
                 added += 1
@@ -1855,6 +1946,14 @@ Each field should contain the complete lyrics for that section, including any se
         # the prompted cues; synthesize them with pykakasi instead of burning
         # another generation round-trip.
         if lyric_language in {"japanese", "bilingual"}:
+            # Correct hallucinated Romaji readings first (deterministic pykakasi
+            # verification), then backfill any genuinely missing cues.
+            corrected_romaji = _verify_and_correct_romaji_lines(response_data)
+            if corrected_romaji:
+                logger.info(
+                    "Corrected %d hallucinated Romaji line(s) via pykakasi.",
+                    corrected_romaji,
+                )
             cues_ok, cue_summary = _learning_annotations_ok(response_data, lyric_language)
             if not cues_ok:
                 added_cues = _backfill_missing_romaji_cues(response_data)

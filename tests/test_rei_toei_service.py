@@ -1733,6 +1733,99 @@ def test_backfill_romaji_cues_noop_when_cues_sufficient():
     assert payload == snapshot
 
 
+def test_verify_romaji_replaces_wrong_readings_and_keeps_correct_ones():
+    """Hallucinated Romaji readings are replaced by pykakasi-verified Hepburn.
+
+    Regression: the LLM pairs Japanese lines with confidently wrong Romaji
+    ("時は流れ" → "Sora wa nagare") that passes shape-only validation.
+    """
+    from services.rei_toei._suno_pipeline import _verify_and_correct_romaji_lines
+
+    payload = {
+        "verse_1": "時は流れ\nSora wa nagare\nThe time flows",
+        "chorus": "電子の舞い\ndenshi no mai\nDance of circuits",
+        "bridge": "制御不能\nSeikyū bunnō\nControl loss",
+    }
+
+    corrected = _verify_and_correct_romaji_lines(payload)
+
+    assert corrected == 2
+    verse_lines = payload["verse_1"].splitlines()
+    assert "toki" in verse_lines[1].lower()
+    assert "sora" not in verse_lines[1].lower()
+    # Correct Romaji is preserved verbatim
+    assert payload["chorus"].splitlines()[1] == "denshi no mai"
+    # Wrong on-reading guess replaced by the verified reading
+    assert "seiky" not in payload["bridge"].splitlines()[1].lower()
+    # English translation lines are untouched
+    assert verse_lines[2] == "The time flows"
+    assert payload["bridge"].splitlines()[2] == "Control loss"
+
+
+def test_verify_romaji_leaves_translation_only_lines_alone():
+    """JP line followed directly by an English translation must not be rewritten."""
+    from services.rei_toei._suno_pipeline import _verify_and_correct_romaji_lines
+
+    payload = {
+        "verse_1": "データの海\nOcean of data",
+        "chorus": "デジタルな世界\nDigital world alive",
+    }
+    snapshot = dict(payload)
+
+    assert _verify_and_correct_romaji_lines(payload) == 0
+    assert payload == snapshot
+
+
+def test_backfill_skips_lines_with_bare_romaji_next_line():
+    """An unbracketed Romaji line below a JP line counts as an existing cue.
+
+    Regression: the backfill double-annotated lines the LLM had already
+    romanized because bare Romaji lines were not recognized as cues.
+    """
+    from services.rei_toei._suno_pipeline import (
+        _backfill_missing_romaji_cues,
+        _learning_annotations_ok,
+    )
+
+    payload = {"verse_1": "電子の舞い\ndenshi no mai\nDance of circuits"}
+    snapshot = dict(payload)
+
+    assert _learning_annotations_ok(payload, "bilingual")[0] is True
+    assert _backfill_missing_romaji_cues(payload) == 0
+    assert payload == snapshot
+
+
+def test_backfill_strips_section_labels_and_quotes_from_cues():
+    """Leaked section labels and quotes never end up inside generated cues.
+
+    Regression: a line like "[Pre-Chorus ] コードが舞う" produced the nested
+    cue "[[Pre-Chorus ]   koodo ga mau]".
+    """
+    from services.rei_toei._suno_pipeline import _backfill_missing_romaji_cues
+
+    payload = {"verse_1": "[Pre-Chorus ] コードが舞う"}
+
+    assert _backfill_missing_romaji_cues(payload) == 1
+    cue_line = payload["verse_1"].splitlines()[1]
+    assert cue_line.startswith("[") and cue_line.endswith("]")
+    assert "[[" not in cue_line
+    assert "chorus" not in cue_line.lower()
+    assert "koodo" in cue_line or "ko" in cue_line.lower()
+
+
+def test_normalize_suno_section_strips_then_cue_prefix():
+    """Prompt leakage like "then (bass drop)" loses the "then " prefix."""
+    from services.rei_toei._suno_pipeline import _normalize_suno_section
+
+    result = _normalize_suno_section(
+        "then (Ahh ahh ahh)\nデータの流れ\nthen (bass drop)", "Drop"
+    )
+
+    assert "then" not in result.lower()
+    assert "(Ahh ahh ahh)" in result
+    assert "(bass drop)" in result
+
+
 def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
     """A configured target must still reject an extremely skewed draft."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok

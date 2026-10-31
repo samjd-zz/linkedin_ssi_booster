@@ -46,18 +46,18 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1086** | **1084** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1091** | **1089** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
 - **Latest Run Date:** October 30, 2026
-- **Latest Changes:** 2 new Romaji learner-cue tests (net +2): `_learning_annotations_ok` was defined but never enforced, so bilingual/Japanese songs shipped with little or no Romaji. `compose_lyrics` now checks cue coverage after validation and deterministically backfills `[romaji]` pronunciation cues via pykakasi (`_backfill_missing_romaji_cues`) instead of spending an extra generation round-trip. Also 17 nav/share-chrome filtering tests, 1 Rei theme discourse-word regression, and 5 version-consistency tests from earlier this cycle. The 10 launcher, 24 relevance, and 90 performance regressions remain.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,084 passed, 0 failed, 2 deselected** in 43.18 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
+- **Latest Changes:** 5 new Romaji-verification tests (net +5): `_verify_and_correct_romaji_lines` replaces hallucinated LLM Romaji readings with pykakasi-verified Hepburn (difflib similarity, calibrated thresholds), bare Romaji lines below Japanese lines now count as learner cues (no more double annotation by the backfill), generated cues strip leaked section labels/quotes, and `then (…)` prompt-prefix leakage is scrubbed in section normalization. Builds on the 2 earlier Romaji backfill tests, 17 nav/share-chrome filtering tests, 1 theme discourse-word regression, and 5 version-consistency tests. The 10 launcher, 24 relevance, and 90 performance regressions remain.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,089 passed, 0 failed, 2 deselected** in 45.37 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,084 of 1,086 collected tests**, all passing with
+The latest run executed **1,089 of 1,091 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
