@@ -609,9 +609,43 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
             ):
                 parenthetical_text = normalized_segment[1:-1].strip()
                 if _looks_like_romaji_cue(parenthetical_text):
-                    normalized_lines.append(f"[{parenthetical_text}]")
+                    # Canonicalize "romaji [meaning]" inners into a proper cue
+                    # pair; otherwise strip embedded brackets so wrapping can
+                    # never produce nested "]]" artifacts.
+                    inner_cue_match = re.fullmatch(
+                        r"(?P<romaji>[^\[\]]+?)\s*\[(?P<meaning>[^\[\]]+)\]\s*",
+                        parenthetical_text,
+                    )
+                    if inner_cue_match:
+                        normalized_lines.append(
+                            f"[{inner_cue_match.group('romaji').strip()}] "
+                            f"[{inner_cue_match.group('meaning').strip()}]"
+                        )
+                    else:
+                        safe_inner = re.sub(r"[\[\]]", " ", parenthetical_text)
+                        safe_inner = re.sub(r"\s{2,}", " ", safe_inner).strip()
+                        normalized_lines.append(f"[{safe_inner}]")
                     previous_blank = False
                     continue
+            # Drop near-duplicate Romaji cue lines — small models often emit
+            # several degraded attempts of the same cue ("Bitto to b",
+            # "Bitto to btu, ...") directly below the real one.
+            if (
+                normalized_lines
+                and "\n" not in normalized_segment
+                and not normalized_segment.startswith("[")
+                and not normalized_segment.startswith("(")
+                and not _JAPANESE_CHAR_RE.search(normalized_segment)
+                and _looks_like_romaji_cue(normalized_segment)
+            ):
+                prev_text = normalized_lines[-1].strip().strip("[]")
+                if prev_text and not _JAPANESE_CHAR_RE.search(prev_text):
+                    cand_tokens = set(_normalize_romaji_for_match(normalized_segment).split())
+                    prev_tokens = set(_normalize_romaji_for_match(prev_text).split())
+                    if cand_tokens and (
+                        len(cand_tokens & prev_tokens) / len(cand_tokens) >= 0.6
+                    ):
+                        continue
             normalized_lines.append(_normalize_bilingual_translation_order(normalized_segment))
             previous_blank = False
 
@@ -826,11 +860,20 @@ def _verify_and_correct_romaji_lines(section_payload: Dict[str, Any]) -> int:
                 or candidate.startswith("(")
             ):
                 continue
+            # Separate a trailing [meaning] cue so it is preserved on
+            # replacement and does not dilute the Romaji comparison.
+            tail_match = re.fullmatch(
+                r"(?P<body>[^\[\]]+?)\s*(?P<cue>\[[^\[\]]+\])?\s*", candidate
+            )
+            if not tail_match:
+                continue
+            body = tail_match.group("body").strip()
+            meaning_cue = tail_match.group("cue") or ""
             expected = _generate_hepburn_romaji(_strip_cue_noise(jp_line))
             if not expected:
                 continue
             norm_expected = _normalize_romaji_for_match(expected)
-            norm_candidate = _normalize_romaji_for_match(candidate)
+            norm_candidate = _normalize_romaji_for_match(body)
             if not norm_expected or not norm_candidate:
                 continue
             ratio = difflib.SequenceMatcher(None, norm_candidate, norm_expected).ratio()
@@ -840,10 +883,11 @@ def _verify_and_correct_romaji_lines(section_payload: Dict[str, Any]) -> int:
             # Calibrated on real drafts: wrong Romaji scores 0.58-0.83, correct
             # Romaji ~1.0, English translations <=0.44 without Romaji shape.
             is_romaji_attempt = ratio >= 0.50 or (
-                _looks_like_romaji_cue(candidate) and shares_token
+                _looks_like_romaji_cue(body) and shares_token
             )
             if is_romaji_attempt and ratio < 0.92:
-                lines[index + 1] = expected
+                replacement = expected if not meaning_cue else f"{expected} {meaning_cue}"
+                lines[index + 1] = replacement
                 corrected += 1
                 changed = True
         if changed:

@@ -1820,6 +1820,78 @@ def test_normalize_suno_section_strips_then_cue_prefix():
     assert "(bass drop)" in result
 
 
+def test_verify_romaji_preserves_meaning_cue_tail():
+    """Replacing a wrong reading must keep the trailing [meaning] translation.
+
+    Regression: the verifier replaced the entire "romaji [meaning]" line with
+    bare pykakasi Romaji, silently deleting the English meaning cue — and the
+    meaning text diluted the similarity ratio so some wrong readings escaped.
+    """
+    from services.rei_toei._suno_pipeline import _verify_and_correct_romaji_lines
+
+    payload = {
+        "verse_1": (
+            "データの流れ、無限ループ\n"
+            "Data no nagare, uzen rūpu [Signal flow, infinite loop]\n"
+            "コードが舞い、パッチワーク\n"
+            "Kodoga mui, pachikowā [Codes dance, patchwork patterns]"
+        ),
+    }
+
+    corrected = _verify_and_correct_romaji_lines(payload)
+
+    assert corrected == 2
+    lines = payload["verse_1"].splitlines()
+    assert "mugen" in lines[1] and "uzen" not in lines[1]
+    assert lines[1].endswith("[Signal flow, infinite loop]")
+    assert "mai" in lines[3] and "mui" not in lines[3]
+    assert lines[3].endswith("[Codes dance, patchwork patterns]")
+
+
+def test_normalize_suno_section_never_nests_brackets_from_paren_cues():
+    """Paren-wrapped cues with embedded [meaning] must not produce "]]".
+
+    Regression: "(Data no nagare... [Signal flow...])" after a Japanese line
+    was wrapped verbatim, emitting nested "[... [...]]" cue blobs.
+    """
+    from services.rei_toei._suno_pipeline import _normalize_suno_section
+
+    result = _normalize_suno_section(
+        "データの流れ、無限ループ\n"
+        "(Data no nagare, uzen rūpu [Signal flow, infinite loop])",
+        "Verse 1",
+    )
+
+    assert "]]" not in result
+    assert "[[" not in result
+    assert "[Data no nagare, uzen rūpu] [Signal flow, infinite loop]" in result
+
+
+def test_normalize_suno_section_drops_degraded_duplicate_cues():
+    """Mangled duplicate Romaji cue attempts below the real cue are dropped.
+
+    Regression: small models emit several degraded copies of the same cue
+    ("Bitto to b", "Bitto to btu, ...") which ended up sung in the final song.
+    """
+    from services.rei_toei._suno_pipeline import _normalize_suno_section
+
+    result = _normalize_suno_section(
+        "バイトとビット、音楽の中で\n"
+        "Bitto to bītu, ongaku no naka de [Bytes and bits, in the music]\n"
+        "Bitto to b\n"
+        "Bitto to btu,  ongaku no naka de [Bytes and bits,  in the music ]\n"
+        "We hold the line",
+        "Verse 1",
+    )
+
+    lines = result.splitlines()
+    assert lines.count("Bitto to b") == 0
+    assert not any("btu" in line for line in lines)
+    # The real cue and unrelated English lyric survive
+    assert any("ongaku no naka de" in line for line in lines)
+    assert "We hold the line" in lines
+
+
 def test_bilingual_mix_rejects_a_materially_skewed_language_ratio():
     """A configured target must still reject an extremely skewed draft."""
     from services.rei_toei._suno_pipeline import _bilingual_mix_ok
