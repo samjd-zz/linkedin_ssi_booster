@@ -33,8 +33,6 @@ from ._models import (
     ReiDomainKnowledge
 )
 from ._config import ReiToeiConfig
-from ._suno_submission import submit_to_suno
-from ._suno_validation import validate_lyrics_with_dot
 from services.content_curator._text_utils import looks_like_nav_chrome
 
 logger = logging.getLogger(__name__)
@@ -1455,6 +1453,7 @@ Purpose: {persona.identity['purpose']}
 
 Your musical expertise:
 - Genres: {', '.join(persona.musical_expertise.get('genres', [])[:5])}
+- Genre direction for this project: {lyric_config.default_genre}
 - Vocal style: {persona.musical_expertise.get('vocal_style', {}).get('type', 'AI vocaloid')} ({', '.join(persona.musical_expertise.get('vocal_style', {}).get('characteristics', [])[:3])})
 - Production techniques: {', '.join(persona.production_knowledge.get('production_techniques', [])[:5])}
 
@@ -1583,7 +1582,10 @@ Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, 
             theme=theme.name,
             mood=suggested_mood,
             bpm=suggested_bpm,
-            genre_tags=["industrial techno", "cyberpop", "ai vocaloid"],
+            genre_tags=(
+                [t.strip() for t in lyric_config.default_genre.split(",") if t.strip()]
+                or ["industrial techno", "cyberpop", "ai vocaloid"]
+            ),
             narrative_arc=f"A relentless exploration of {theme.name}, building from digital whispers to aggressive synthesis, culminating in a breakdown of pure data noise.",
             evidence_ids=theme.evidence_ids,
             generated_at=datetime.now().isoformat(),

@@ -6,6 +6,7 @@ all Rei Toei music generation flags and triggers the correct generation pipeline
 """
 
 import pytest
+import os
 import sys
 from contextlib import ExitStack
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -80,12 +81,13 @@ def _mock_validation(is_valid: bool = True) -> MagicMock:
     return v
 
 
-def _mock_dot_score() -> MagicMock:
+def _mock_dot_score(valid: bool = True) -> MagicMock:
     d = MagicMock()
-    d.truth_gradient = 0.85
-    d.flagged = False
-    d.evidence_ids = []
-    d.unsupported_claims = []
+    d.valid = valid
+    d.overall_truth_score = 0.85 if valid else 0.30
+    d.flagged_claims = [] if valid else ["Unsupported claim about data throughput"]
+    d.truth_gradients = {}
+    d.warnings = []
     return d
 
 
@@ -108,10 +110,16 @@ def _mock_exec_result(success: bool = True) -> MagicMock:
 # Helper: run main() with all Rei Toei dependencies mocked
 # ---------------------------------------------------------------------------
 
-def _run_main_with_rei_mocks(argv: list) -> MagicMock:
+def _run_main_with_rei_mocks(
+    argv: list,
+    env: dict | None = None,
+    dot_result: MagicMock | None = None,
+    rei_output_dir=None,
+) -> MagicMock:
     """
     Run main() with all Rei Toei service dependencies mocked.
-    Returns the mock_print object so callers can assert on output.
+    Returns the mock_print object so callers can assert on output; the Suno
+    submission mock is attached as ``mock_print.rei_submit_mock``.
     """
     # generate_strudel_code is synchronous — returns a StrudelPattern object
     _mock_strudel_pattern = MagicMock()
@@ -121,9 +129,18 @@ def _run_main_with_rei_mocks(argv: list) -> MagicMock:
     mock_gen_strudel = MagicMock(return_value=_mock_strudel_pattern)
     # execute_strudel_pattern is async
     mock_exec_strudel = AsyncMock(return_value=_mock_exec_result(success=True))
+    mock_submit = AsyncMock(
+        return_value=MagicMock(id="task_001", status="complete", audio_url=None, video_url=None)
+    )
 
     with ExitStack() as stack:
         stack.enter_context(patch("sys.argv", argv))
+        if env is not None:
+            stack.enter_context(patch.dict(os.environ, env))
+        if rei_output_dir is not None:
+            stack.enter_context(
+                patch("main.get_rei_toei_dir", return_value=rei_output_dir)
+            )
         # Infrastructure mocks
         stack.enter_context(
             patch("services.github_service.build_github_profile_context", return_value="")
@@ -161,7 +178,13 @@ def _run_main_with_rei_mocks(argv: list) -> MagicMock:
             patch("services.rei_toei_service.assemble_suno_prompt", return_value=_mock_suno_prompt())
         )
         stack.enter_context(
-            patch("services.rei_toei_service.validate_lyrics_with_dot", return_value=_mock_dot_score())
+            patch(
+                "services.rei_toei_service.validate_lyrics_with_dot",
+                return_value=dot_result if dot_result is not None else _mock_dot_score(),
+            )
+        )
+        stack.enter_context(
+            patch("services.rei_toei_service.submit_to_suno", mock_submit)
         )
         stack.enter_context(
             patch("services.rei_toei_service.map_concept_to_pattern", return_value=_mock_template())
@@ -180,6 +203,7 @@ def _run_main_with_rei_mocks(argv: list) -> MagicMock:
 
         from main import main
         main()
+        mock_print.rei_submit_mock = mock_submit
         return mock_print
 
 
@@ -270,3 +294,48 @@ def test_rei_flags_show_helpful_message():
         or "suno" in output.lower()
         or "neural cascade" in output.lower()
     )
+
+
+def test_rei_generate_respects_rei_toei_enabled_false():
+    """REI_TOEI_ENABLED=false must short-circuit the rei flow.
+
+    Regression: the flag was documented and loaded into ReiToeiConfig but
+    never checked, so disabling Rei Toei did nothing.
+    """
+    mock_print = _run_main_with_rei_mocks(
+        ["main.py", "--rei-generate", "--rei-preview"],
+        env={"REI_TOEI_ENABLED": "false"},
+    )
+    output = str(mock_print.call_args_list)
+    assert "disabled" in output.lower()
+    assert "Neural Cascade" not in output
+
+
+def test_rei_generate_skips_suno_submit_when_dot_invalid(tmp_path):
+    """A failing DoT validation saves the song but skips Suno auto-submission.
+
+    Regression: validate_lyrics_with_dot only ran under --rei-explain and its
+    `valid` flag never gated anything — unvalidated songs were submitted.
+    """
+    mock_print = _run_main_with_rei_mocks(
+        ["main.py", "--rei-generate"],
+        env={"SUNO_API_KEY": "test-key", "REI_TOEI_DOT_VALIDATION_ENABLED": "true"},
+        dot_result=_mock_dot_score(valid=False),
+        rei_output_dir=tmp_path,
+    )
+    output = str(mock_print.call_args_list)
+    assert "skipping suno submission" in output.lower()
+    mock_print.rei_submit_mock.assert_not_awaited()
+    # The song artifact is still saved locally for review
+    assert list(tmp_path.glob("rei_*_suno.json"))
+
+
+def test_rei_generate_submits_to_suno_when_dot_valid(tmp_path):
+    """With a valid DoT result and an API key, submission proceeds."""
+    mock_print = _run_main_with_rei_mocks(
+        ["main.py", "--rei-generate"],
+        env={"SUNO_API_KEY": "test-key", "REI_TOEI_DOT_VALIDATION_ENABLED": "true"},
+        dot_result=_mock_dot_score(valid=True),
+        rei_output_dir=tmp_path,
+    )
+    mock_print.rei_submit_mock.assert_awaited()

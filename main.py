@@ -1636,13 +1636,25 @@ def main():
 
         rei_config = ReiToeiConfig()
 
+        if not rei_config.enabled:
+            print(
+                str(Fore.YELLOW)
+                + "⚠️  Rei Toei is disabled (REI_TOEI_ENABLED=false) — skipping generation."
+                + str(Style.RESET_ALL)
+            )
+            return
+
         async def _handle_rei_generate() -> None:
             """Suno song generation pipeline."""
             with timed_stage(logger, "rei.preparation"):
                 rei_persona = load_rei_persona()
                 rei_domain = load_rei_domain_knowledge()
                 _extracted_facts = []
-                if not args.rei_theme or args.rei_explain:
+                if (
+                    not args.rei_theme
+                    or args.rei_explain
+                    or (rei_config.dot_validation_enabled and not args.rei_preview)
+                ):
                     avatar_state = _lav_rei()
                     _extracted_facts = _nef_rei(avatar_state)
                 recent_titles = load_recent_rei_titles(
@@ -1699,6 +1711,24 @@ def main():
             with timed_stage(logger, "rei.suno_formatting"):
                 suno_prompt = assemble_suno_prompt(concept, lyrics, rei_domain)
 
+            # Enforce DoT truth validation (REI_TOEI_DOT_VALIDATION_ENABLED).
+            # A failing score warns and skips Suno auto-submission; the song is
+            # still displayed and saved locally for review. Preview mode skips
+            # enforcement — nothing is saved or submitted there.
+            dot_result = None
+            if rei_config.dot_validation_enabled and not args.rei_preview:
+                with timed_stage(logger, "rei.dot_validation"):
+                    dot_result = validate_lyrics_with_dot(lyrics, _extracted_facts)
+                if not dot_result.valid:
+                    print(
+                        str(Fore.YELLOW)
+                        + f"⚠️  DoT validation failed (score {dot_result.overall_truth_score:.2f} "
+                        + f"< threshold {rei_config.dot_min_truth_gradient}) — Suno submission will be skipped."
+                        + str(Style.RESET_ALL)
+                    )
+                    for _claim in dot_result.flagged_claims[:3]:
+                        print(str(Fore.YELLOW) + f"   flagged: {_claim[:100]}" + str(Style.RESET_ALL))
+
             # Display
             print(str(Fore.MAGENTA) + str(Style.BRIGHT) + "\n\U0001f3b5 REI TOEI \u2014 SUNO SONG" + str(Style.RESET_ALL))
             print(str(Fore.WHITE) + str(Style.BRIGHT) + f"Title: {suno_prompt.title}" + str(Style.RESET_ALL))
@@ -1716,8 +1746,10 @@ def main():
                 print(f"  Narrative   : {concept.narrative_arc}")
                 if suno_prompt.evidence_ids:
                     print(f"  Evidence IDs: {', '.join(suno_prompt.evidence_ids[:5])}")
-                with timed_stage(logger, "rei.dot_validation"):
-                    dot = validate_lyrics_with_dot(lyrics, _extracted_facts)
+                dot = dot_result
+                if dot is None:
+                    with timed_stage(logger, "rei.dot_validation"):
+                        dot = validate_lyrics_with_dot(lyrics, _extracted_facts)
                 _dot_col = (
                     str(Fore.GREEN) if dot.overall_truth_score >= 0.7
                     else (str(Fore.YELLOW) if dot.overall_truth_score >= 0.4 else str(Fore.RED))
@@ -1754,9 +1786,16 @@ def main():
                 )
             print(str(Fore.GREEN) + f"\n\u2705  Saved to: {output_path}" + str(Style.RESET_ALL))
 
-            # Submit to Suno if API key available
+            # Submit to Suno if API key available and DoT validation passed
             suno_api_key = os.getenv("SUNO_API_KEY")
-            if suno_api_key:
+            if suno_api_key and dot_result is not None and not dot_result.valid:
+                print(
+                    str(Fore.YELLOW)
+                    + "⚠️  Skipping Suno submission — DoT validation failed. Review the flagged "
+                    + "claims above, or set REI_TOEI_DOT_VALIDATION_ENABLED=false to bypass."
+                    + str(Style.RESET_ALL)
+                )
+            elif suno_api_key:
                 print(str(Fore.CYAN) + "\U0001f680 Submitting to Suno API..." + str(Style.RESET_ALL))
                 try:
                     task = await submit_to_suno(

@@ -281,7 +281,7 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
 
 ### Example: Operational Constraints (Current Implementation)
 
-Runtime constraints are primarily configured via environment variables (for example, `REI_TOEI_DEFAULT_BPM`, `REI_TOEI_MAX_SONG_LENGTH_SECONDS`, `REI_TOEI_STRUDEL_DEFAULT_BARS`) rather than a `technical_constraints` object in `rei_toei_domain_knowledge.json`.
+Runtime constraints are primarily configured via environment variables (for example, `REI_TOEI_DEFAULT_BPM`, `REI_TOEI_DEFAULT_GENRE`, `REI_TOEI_STRUDEL_DEFAULT_BARS`) rather than a `technical_constraints` object in `rei_toei_domain_knowledge.json`.
 
 ---
 

@@ -184,13 +184,8 @@ def mock_env_vars(monkeypatch):
     """Set up mock environment variables"""
     monkeypatch.setenv("REI_TOEI_ENABLED", "true")
     monkeypatch.setenv("REI_TOEI_DEFAULT_BPM", "142")
-    monkeypatch.setenv("REI_TOEI_DEFAULT_GENRE", "industrial techno cyberpunk")
-    monkeypatch.setenv("REI_TOEI_MAX_SONG_LENGTH_SECONDS", "180")
-    monkeypatch.setenv("REI_TOEI_CONSOLE_ENABLED", "true")
-    monkeypatch.setenv("REI_TOEI_AUTO_EVIDENCE_TRACKING", "true")
-    monkeypatch.setenv("REI_TOEI_STRUDEL_ENABLED", "true")
+    monkeypatch.setenv("REI_TOEI_DEFAULT_GENRE", "industrial techno, cyberpunk")
     monkeypatch.setenv("REI_TOEI_STRUDEL_DEFAULT_BARS", "16")
-    monkeypatch.setenv("REI_TOEI_STRUDEL_AUTO_EXECUTE", "false")
     monkeypatch.setenv("REI_TOEI_THEME_POOL_SIZE", "24")
     monkeypatch.setenv("REI_TOEI_RECENT_TITLE_WINDOW", "30")
     monkeypatch.setenv("REI_TOEI_THEME_REPEAT_PENALTY", "0.15")
@@ -201,18 +196,17 @@ def mock_env_vars(monkeypatch):
 # Configuration Tests
 # ============================================================================
 
-def test_config_defaults():
+def test_config_defaults(monkeypatch):
     """Test ReiToeiConfig with default values"""
+    # Shield from local .env overrides so true defaults are exercised
+    monkeypatch.delenv("REI_TOEI_DEFAULT_GENRE", raising=False)
+    monkeypatch.delenv("REI_TOEI_ENABLED", raising=False)
+    monkeypatch.delenv("REI_TOEI_DEFAULT_BPM", raising=False)
     config = ReiToeiConfig()
     assert config.enabled is True
     assert config.default_bpm == 142
-    assert config.default_genre == "industrial techno cyberpop"
-    assert config.max_song_length_seconds == 180
-    assert config.console_enabled is True
-    assert config.auto_evidence_tracking is True
-    assert config.strudel_enabled is True
+    assert config.default_genre == "industrial techno, cyberpop, ai vocaloid"
     assert config.strudel_default_bars == 16
-    assert config.strudel_auto_execute is False
     assert config.theme_pool_size == 20
     assert config.recent_title_window == 20
     assert config.theme_repeat_penalty == 0.10

@@ -21,19 +21,17 @@ class ReiToeiConfig:
     def __init__(self):
         self.enabled = os.getenv("REI_TOEI_ENABLED", "true").lower() == "true"
         self.default_bpm = int(os.getenv("REI_TOEI_DEFAULT_BPM", "142"))
-        self.default_genre = os.getenv("REI_TOEI_DEFAULT_GENRE", "industrial techno cyberpop")
-        self.max_song_length_seconds = int(os.getenv("REI_TOEI_MAX_SONG_LENGTH_SECONDS", "180"))
-        self.console_enabled = os.getenv("REI_TOEI_CONSOLE_ENABLED", "true").lower() == "true"
-        self.auto_evidence_tracking = os.getenv("REI_TOEI_AUTO_EVIDENCE_TRACKING", "true").lower() == "true"
+        # Comma-separated genre tags used for concept prompting and fallbacks.
+        self.default_genre = os.getenv(
+            "REI_TOEI_DEFAULT_GENRE", "industrial techno, cyberpop, ai vocaloid"
+        )
         
         # DoT validation configuration
         self.dot_validation_enabled = os.getenv("REI_TOEI_DOT_VALIDATION_ENABLED", "true").lower() == "true"
         self.dot_min_truth_gradient = float(os.getenv("REI_TOEI_DOT_MIN_TRUTH_GRADIENT", "0.6"))
         
         # Strudel configuration
-        self.strudel_enabled = os.getenv("REI_TOEI_STRUDEL_ENABLED", "true").lower() == "true"
         self.strudel_default_bars = int(os.getenv("REI_TOEI_STRUDEL_DEFAULT_BARS", "16"))
-        self.strudel_auto_execute = os.getenv("REI_TOEI_STRUDEL_AUTO_EXECUTE", "false").lower() == "true"
         
         # Sam's persona graph integration
         self.use_sam_persona = os.getenv("REI_TOEI_USE_SAM_PERSONA", "true").lower() == "true"
