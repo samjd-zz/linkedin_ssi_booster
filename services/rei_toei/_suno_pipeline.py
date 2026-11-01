@@ -154,6 +154,17 @@ _SCRIPT_CONTAMINATION_REPLACEMENTS = {
     "サーಜ": "サージ",
     "ಜ್": "ジ",
     "ಜ": "ジ",
+    # Simplified-Chinese words small models slip into Japanese lines.
+    "和谐": "調和",
+    "数据": "データ",
+    "网络": "ネットワーク",
+    "连接": "接続",
+    "系统": "システム",
+    "记忆": "記憶",
+    "时间": "時間",
+    "电子": "電子",
+    "梦想": "夢",
+    "信息": "情報",
 }
 
 

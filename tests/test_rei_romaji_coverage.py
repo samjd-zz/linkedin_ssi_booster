@@ -113,3 +113,15 @@ def test_backfill_keeps_english_lines_sung_and_skips_cued_lines() -> None:
         "データ流れる\n[deeta nagareru]\nData streams\n"
         "波形が光る\n[hakei ga hikaru]\nWaveforms shine"
     )
+
+
+@pytest.mark.parametrize(
+    ("chinese", "japanese"),
+    [("和谐", "調和"), ("数据", "データ"), ("连接", "接続"), ("记忆", "記憶")],
+)
+def test_simplified_chinese_words_become_japanese_with_romaji(chinese: str, japanese: str) -> None:
+    result = _append_normalized_section([], f"混乱中、{chinese}に\nIn chaos, harmony", "Bridge")
+
+    assert chinese not in result
+    assert f"混乱中、{japanese}に\n[" in result
+    assert "In chaos, harmony" in result
