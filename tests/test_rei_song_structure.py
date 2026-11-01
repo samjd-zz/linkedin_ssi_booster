@@ -13,6 +13,7 @@ from services.rei_toei._models import (
     Theme,
 )
 from services.rei_toei._song_structure import (
+    borrowed_lines,
     bridge_is_underdeveloped,
     sung_line_signatures,
     verse_two_repeats_verse_one,
@@ -213,3 +214,57 @@ def test_concept_prompt_asks_for_metaphor_turning_point_and_aftermath(persona, d
     assert "central metaphor" in user_prompt
     assert "turning point" in user_prompt
     assert "what happens after it" in user_prompt
+
+
+def test_borrowed_lines_names_copies_but_allows_chorus_reprise() -> None:
+    payload = {
+        "verse_1": "Signal flows like water's breath\nSeeds of light",
+        "chorus": "データ種子が芽吹く\nSignal flows like water's breath",
+        "verse_2": "A glitch disrupts the flow",
+        "bridge": "データ種子が芽吹く\nA glitch disrupts the flow\nThe walls fall open",
+        "drop": "データ種子が芽吹く",
+        "outro": "データ種子が芽吹く",
+    }
+
+    assert borrowed_lines(payload) == [
+        ("chorus", "verse_1", "signal flows like water s breath"),
+        ("bridge", "chorus", "データ種子が芽吹く"),
+        ("bridge", "verse_2", "a glitch disrupts the flow"),
+    ]
+
+
+def test_bridge_copying_chorus_is_retried_with_named_lines(persona, domain, monkeypatch) -> None:
+    monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.4")
+    borrowed = {
+        "intro": "(Ahh ahh ahh)",
+        "verse_1": "信号が飛び散る\nA candle waits\nThe hallway hums",
+        "chorus": "種が芽吹く\nBlossom from the seed\nWe thrive",
+        "verse_2": "新しい朝が来る\nThe ashes cool\nShe hears a new voice",
+        "bridge": "種が芽吹く\nBlossom from the seed\nWe thrive\nThe walls fall",
+        "drop": "(bass drop)",
+        "outro": "The night fades",
+    }
+    fresh = dict(borrowed, bridge="壁が崩れる\nThe walls fall open\nI see the sky\nEvery error was a door")
+    ollama = MagicMock()
+    ollama._chat.side_effect = [
+        json.dumps(borrowed, ensure_ascii=False),
+        json.dumps(fresh, ensure_ascii=False),
+    ]
+
+    lyrics = compose_lyrics(_concept("bilingual"), persona, domain, ollama=ollama)
+
+    assert ollama._chat.call_count == 2
+    retry_prompt = ollama._chat.call_args_list[1].args[1]
+    assert "bridge copies chorus: 'blossom from the seed'" in retry_prompt
+    assert "Every error was a door" in lyrics.bridge
+
+
+def test_lyric_prompt_asks_for_natural_rhyme_meter_and_japanese_grammar(persona, domain) -> None:
+    ollama = MagicMock()
+    ollama._chat.return_value = json.dumps(_english_response(VERSE_2))
+
+    compose_lyrics(_concept("english"), persona, domain, ollama=ollama)
+    prompt = ollama._chat.call_args.args[0] + ollama._chat.call_args.args[1]
+
+    assert "Keep rhymes natural" in prompt
+    assert "Keep meter steady" in prompt

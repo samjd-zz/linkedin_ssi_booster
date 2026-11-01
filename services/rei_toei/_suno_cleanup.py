@@ -27,6 +27,8 @@ _INLINE_GLOSS_RE = re.compile(
 _CHINESE_BY_RESHAPE_RE = re.compile(r"(?<![理自経])由(?P<agent>[^\s、。，,]+?)重塑")
 # Traditional/Taiwanese forms; longer keys first so 數據 wins over 數.
 _CHINESE_PHRASE_REPLACEMENTS = {
+    # Chinese "在空中" (in the air) has no verb in Japanese; "空に舞う" does.
+    "在空中": "が空に舞う",
     "數據": "データ",
     "資料庫": "データベース",
     "網絡": "ネットワーク",
@@ -42,6 +44,15 @@ _CHINESE_PHRASE_REPLACEMENTS = {
     "體": "体",
     "據": "拠",
 }
+# Chinese-only grammar in a kana-free line: locative 在, aspect 了, and
+# simplified pronouns/particles. Japanese compounds such as 存在, 現在, 完了
+# and 了解 are excluded.
+_CHINESE_GRAMMAR_RE = re.compile(
+    r"(?<![存現不滞実所健潜自駐散点介偏遍])在(?![庫籍住宅学職任来])"
+    r"|(?<![完終修満読魅校])了(?![解承])"
+    r"|[们这那吗呢么吧]"
+)
+_KANA_RE = re.compile(r"[\u3040-\u30ff\uff66-\uff9f]")
 # Own-line instrument cues Suno should play, not sing.
 _INSTRUMENT_CUE_TAGS = {
     "bass drop": "[Heavy Bass Drop]",
@@ -63,6 +74,11 @@ def replace_chinese_phrasing(text: str) -> str:
     for old, new in _CHINESE_PHRASE_REPLACEMENTS.items():
         cleaned = cleaned.replace(old, new)
     return cleaned
+
+
+def has_chinese_grammar(line: str) -> bool:
+    """True for a kana-free line that uses Chinese grammar words such as 在 or 了."""
+    return not _KANA_RE.search(line) and bool(_CHINESE_GRAMMAR_RE.search(line))
 
 
 def _split_gloss_line(line: str) -> List[str]:

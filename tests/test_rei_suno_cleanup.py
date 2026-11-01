@@ -3,6 +3,7 @@
 import pytest
 
 from services.rei_toei._suno_cleanup import (
+    has_chinese_grammar,
     replace_chinese_phrasing,
     split_inline_glosses,
     split_intro_block,
@@ -123,3 +124,37 @@ def test_ordinary_japanese_lines_keep_their_romaji_cue() -> None:
     )
 
     assert section == "[Verse 1]\nPulse\n信号\nデータの海\n[deeta no umi]\nThe tide turns"
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("電子火花在空中", True),
+        ("我们的梦", True),
+        ("夢が終了", False),
+        ("現在の存在", False),
+        ("在庫を了解", False),
+        ("空に在る", False),
+    ],
+)
+def test_chinese_grammar_is_detected_only_without_japanese_markers(
+    line: str, expected: bool
+) -> None:
+    assert has_chinese_grammar(line) is expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "電子火花在空中\n[denshi hibana zai kuuchuu]\nElectron sparks in air",
+            "[Drop]\n電子火花が空に舞う\n[denshi hibana ga sora ni mau]\nElectron sparks in air",
+        ),
+        (
+            "電子火花在空中\n[denshi hibana zai kuuchuu] [Sparks in the air]",
+            "[Drop]\n電子火花が空に舞う\n[denshi hibana ga sora ni mau] [Sparks in the air]",
+        ),
+    ],
+)
+def test_repaired_chinese_line_gets_a_fresh_cue(source: str, expected: str) -> None:
+    assert _append_normalized_section([], source, "Drop") == expected

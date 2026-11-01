@@ -36,10 +36,14 @@ from ._song_structure import (
     MIN_BRIDGE_SUNG_LINES,
     bridge_is_underdeveloped,
     verse_two_repeats_verse_one,
+    borrowed_lines,
+    borrowed_lines_feedback,
+    MAX_BORROWED_LINES,
 )
 from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
 from services.rei_toei._suno_cleanup import (
+    has_chinese_grammar,
     replace_chinese_phrasing,
     split_inline_glosses,
     split_intro_block,
@@ -217,15 +221,40 @@ def _format_learning_cue_block(
 def _clean_script_contamination(text: str) -> str:
     """Remove stray non-Japanese script fragments from Japanese lyric lines."""
     cleaned_lines: List[str] = []
+    rewritten = ""
     for line in text.splitlines():
         cleaned = line
-        if _JAPANESE_CHAR_RE.search(cleaned):
+        if rewritten:
+            # The cue under a rewritten line spelled the old words; regenerate it.
+            cleaned = _refresh_stale_cue(rewritten, line)
+            rewritten = ""
+        elif _JAPANESE_CHAR_RE.search(cleaned):
             cleaned = replace_chinese_phrasing(cleaned)
             for old, new in _SCRIPT_CONTAMINATION_REPLACEMENTS.items():
                 cleaned = cleaned.replace(old, new)
             cleaned = _NON_JAPANESE_SCRIPT_CONTAMINATION_RE.sub("", cleaned)
+            if cleaned != line:
+                rewritten = cleaned
         cleaned_lines.append(cleaned)
     return "\n".join(cleaned_lines)
+
+
+_LEADING_CUE_RE = re.compile(r"^(?P<lead>\s*\[)(?P<romaji>[^\[\]]+)(?P<rest>\][^\n]*)$")
+
+
+def _refresh_stale_cue(japanese: str, line: str) -> str:
+    """Replace the Romaji in a ``[romaji]`` cue line with the repaired line's reading."""
+    match = _LEADING_CUE_RE.fullmatch(line)
+    if (
+        not match
+        or _JAPANESE_CHAR_RE.search(line)
+        or _is_stage_cue_phrase(match.group("romaji"))
+    ):
+        return line
+    reading = _generate_hepburn_romaji(_japanese_lyric_phrase(japanese))
+    if not reading:
+        return line
+    return f"{match.group('lead')}{reading}{match.group('rest')}"
 
 
 def _strip_markdown_fences(value: str) -> str:
@@ -761,8 +790,8 @@ def _line_looks_like_chinese_not_japanese(line: str) -> bool:
     # If hiragana/katakana is present, it is valid Japanese
     if _KANA_RE.search(line):
         return False
-    # Explicit Chinese punctuation/particles (e.g., ， or 的)
-    if _CHINESE_ONLY_MARKER_RE.search(line):
+    # Explicit Chinese punctuation/particles (e.g., ， or 的) or grammar (在, 了)
+    if _CHINESE_ONLY_MARKER_RE.search(line) or has_chinese_grammar(line):
         return True
     
     # Allow short kanji compound phrases (up to 8 kanji); only flag long un-inflected hanzi runs
@@ -779,7 +808,8 @@ def _has_chinese_leakage(section_payload: Dict[str, Any]) -> bool:
             line = raw_line.strip()
             if not line:
                 continue
-            if _line_looks_like_chinese_not_japanese(line):
+            # Forms the formatter repairs (信號, 在空中) need no retry.
+            if _line_looks_like_chinese_not_japanese(replace_chinese_phrasing(line)):
                 return True
     return False
 
@@ -1611,6 +1641,7 @@ def compose_lyrics(
             "STRUCTURE & SCRIPT RULES:\n"
             "- Japanese lines MUST be written in natural Kanji and Kana (Hiragana/Katakana).\n"
             "- Use standard modern Japanese only (信号, not 信號); never Chinese characters, pinyin, or Chinese word order.\n"
+            "- Japanese lines need Japanese grammar with particles (が, を, に, の): write 火花が空に舞う, never Chinese 火花在空中.\n"
             "- Never append Japanese or Romaji in parentheses to an English line; put the Japanese phrase on its own line.\n"
             "- Use complete Japanese phrases or lines for chorus hooks and emotional beats; do not output isolated vocabulary words.\n"
             "- Use English for momentum, technical imagery, and contrasting lines.\n"
@@ -1708,7 +1739,9 @@ Suno Formatting Rules:
 17. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly.
 18. Verse 2 must develop the story, never restate Verse 1: no shared lines and no reworded copies. Show what happens after the turning point and what the new state reveals.
 19. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
-20. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections."""
+20. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections.
+21. Keep rhymes natural. Never bend grammar or pick an odd word just to rhyme (not 'seek death' to rhyme with 'breath', not 'soft clutch' against 'growth'); a near rhyme is better than a forced one.
+22. Keep meter steady: lines sung as a pair should be within about two syllables of each other, so Suno does not stretch or cram syllables."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -1882,6 +1915,16 @@ Each field should contain the complete lyrics for that section, including any se
                     )
                     continue
                 logger.warning("Verse 2 still repeats Verse 1 after %s attempt(s); keeping draft.", attempt)
+            copied = borrowed_lines(response_data)
+            if len(copied) > MAX_BORROWED_LINES:
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Draft reused %d line(s) across sections on attempt %s. Retrying.",
+                        len(copied), attempt,
+                    )
+                    structure_feedback = borrowed_lines_feedback(copied)
+                    continue
+                logger.warning("Draft still reuses %d line(s) across sections; keeping it.", len(copied))
             if bridge_is_underdeveloped(response_data):
                 logger.info(
                     "Bridge has fewer than %d sung lines; climax may be thin.",

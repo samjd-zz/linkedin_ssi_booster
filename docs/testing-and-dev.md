@@ -46,18 +46,18 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1245** | **1243** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1256** | **1254** | **0** | **0** | **2** | **70%** | All executed tests passed |
 
 - **Latest Run Date:** October 30, 2026
-- **Latest Changes:** 12 new Rei song-structure cases verify that a Verse 2 copying Verse 1 is detected and retried with targeted feedback, and that concept and lyric prompts request a central chorus metaphor, a post-turning-point Verse 2, and a climactic bridge. 19 Romaji-coverage cases verify joined verb endings (`sareru`, `hikatte`, `mirarenakatta`), re-joining of existing split cues such as `[segumentoka sa reru]`, and a cue on every uncued Japanese line, alongside 68 Rei lyric-cue cases covering contextual Japanese readings, explicit and ambiguous cue formats, inline pronunciations, translations and stage cues, particle pronunciation, unknown characters, tokenizer fallbacks, technical acronyms, prompt leakage, and CLI/console formatting. Prior Romaji cue-hygiene, Rei enforcement, nav-chrome, launcher, relevance, and performance regressions remain.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,243 passed, 0 failed, 2 deselected** in 43.25 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
+- **Latest Changes:** 11 new Rei cases verify Chinese-grammar detection and repair (`在空中` → `が空に舞う` with a refreshed cue) and retries when the Chorus, Verse 2, or Bridge copies lines from earlier sections. 12 new Rei song-structure cases verify that a Verse 2 copying Verse 1 is detected and retried with targeted feedback, and that concept and lyric prompts request a central chorus metaphor, a post-turning-point Verse 2, and a climactic bridge. 19 Romaji-coverage cases verify joined verb endings (`sareru`, `hikatte`, `mirarenakatta`), re-joining of existing split cues such as `[segumentoka sa reru]`, and a cue on every uncued Japanese line, alongside 68 Rei lyric-cue cases covering contextual Japanese readings, explicit and ambiguous cue formats, inline pronunciations, translations and stage cues, particle pronunciation, unknown characters, tokenizer fallbacks, technical acronyms, prompt leakage, and CLI/console formatting. Prior Romaji cue-hygiene, Rei enforcement, nav-chrome, launcher, relevance, and performance regressions remain.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,254 passed, 0 failed, 2 deselected** in 44.04 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,243 of 1,245 collected tests**, all passing with
+The latest run executed **1,254 of 1,256 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
@@ -103,8 +103,8 @@ private graph is not configured, those checks retain their existing skip behavio
 - **68** Rei lyric-cue regression cases (including parameterized reading and formatting cases)
 - **23** Rei Romaji-coverage cases (joined verb endings, re-joined split cues, simplified-Chinese word replacement, and every-line cue backfill)
 - **25** Rei Romaji-bracket cases (bare Romaji/pinyin wrapped in `[]`, extra guesses after a cue kept but bracketed, nested English glosses ignored, single-pass idempotent formatting, English lyrics and stage cues untouched)
-- **20** Rei Suno-cleanup cases (parenthetical Japanese glosses moved to their own line without a Romaji duplicate, traditional-Chinese characters and syntax converted, `(bass drop)` turned into `[Heavy Bass Drop]`, sung intro lines tagged `[Intro Verse]`)
-- **12** Rei song-structure cases (Verse 2 repetition retry, bridge depth, bridge-before-drop order, metaphor/turning-point prompts)
+- **28** Rei Suno-cleanup cases (Chinese-grammar detection such as `在空中` → `が空に舞う` with a refreshed Romaji cue, parenthetical Japanese glosses moved to their own line without a Romaji duplicate, traditional-Chinese characters and syntax converted, `(bass drop)` turned into `[Heavy Bass Drop]`, sung intro lines tagged `[Intro Verse]`)
+- **15** Rei song-structure cases (lines borrowed across sections retried with the copies named, natural rhyme/meter prompt rules, Verse 2 repetition retry, bridge depth, bridge-before-drop order, metaphor/turning-point prompts)
 
 - **6** Continuous knowledge extraction quality assertions
 - **5** Selection Learning database integration tests (Phase 5)

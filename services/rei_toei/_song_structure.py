@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import difflib
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 VERSE_REPEAT_THRESHOLD = 0.5
 NEAR_DUPLICATE_RATIO = 0.85
@@ -53,3 +53,36 @@ def verse_two_repeats_verse_one(
 def bridge_is_underdeveloped(section_payload: Dict[str, Any]) -> bool:
     """True when the bridge is too short to build a real climax."""
     return len(sung_line_signatures(section_payload.get("bridge"))) < MIN_BRIDGE_SUNG_LINES
+
+
+# Sections that must not lift lines from the sections listed for them. The
+# Chorus may return in the Drop and Outro, so those pairs are not checked.
+_BORROW_SOURCES = {
+    "chorus": ("verse_1", "pre_chorus"),
+    "verse_2": ("verse_1", "chorus"),
+    "bridge": ("verse_1", "pre_chorus", "chorus", "verse_2"),
+}
+MAX_BORROWED_LINES = 1
+
+
+def borrowed_lines(section_payload: Dict[str, Any]) -> List[Tuple[str, str, str]]:
+    """Return ``(section, source, line)`` for sung lines copied from an earlier section."""
+    found: List[Tuple[str, str, str]] = []
+    for section, sources in _BORROW_SOURCES.items():
+        for line in sung_line_signatures(section_payload.get(section)):
+            for source in sources:
+                if _is_repeat(line, sung_line_signatures(section_payload.get(source))):
+                    found.append((section, source, line))
+                    break
+    return found
+
+
+def borrowed_lines_feedback(found: List[Tuple[str, str, str]]) -> str:
+    """Revision note naming the copied lines so the retry can replace them."""
+    examples = "; ".join(f"{section} copies {source}: '{line}'" for section, source, line in found[:6])
+    return (
+        "\n\nREVISION REQUIRED: Sections reuse lines from earlier sections "
+        f"({examples}). Write new lines for each of them. The Chorus must not "
+        "repeat Verse 1, Verse 2 must not repeat Verse 1 or the Chorus, and the "
+        "Bridge must be all-new climax material."
+    )
