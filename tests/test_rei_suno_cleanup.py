@@ -158,3 +158,9 @@ def test_chinese_grammar_is_detected_only_without_japanese_markers(
 )
 def test_repaired_chinese_line_gets_a_fresh_cue(source: str, expected: str) -> None:
     assert _append_normalized_section([], source, "Drop") == expected
+
+
+@pytest.mark.parametrize("placeholder", ["(Blank Line)", "(BLANK LINE)", "(line break)"])
+def test_tag_instrument_cues_turns_layout_placeholders_into_blank_lines(placeholder):
+    text = f"Merge, split, a dance of stars\n{placeholder}\nTheir codes sync"
+    assert tag_instrument_cues(text) == "Merge, split, a dance of stars\n\nTheir codes sync"

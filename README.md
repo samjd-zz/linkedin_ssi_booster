@@ -151,7 +151,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 
 - 🎤 **Suno Vocal Songs** — Generate cyberpop industrial techno concepts with structured lyrics grounded in extracted knowledge (Suno integration ✅)
 - 🇯🇵 **Japanese-aware lyric production** — Rei supports English, Japanese, and bilingual lyrics with contextual Romaji checks, bracket/parenthetical cue cleanup, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
-- 🎚️ **Controlled lyric language selection** — `bilingual` mode is the default: Rei writes the song in English, then translates selected hook lines in one batched Ollama call (offline Argos en→ja fallback) so `REI_JAPANESE_LYRIC_PROBABILITY` holds by construction; explicit `english` or `japanese` modes are deterministic
+- 🎚️ **Controlled lyric language selection** — `bilingual` mode is the default: Rei writes the song in English, then translates selected hook lines in batched Ollama calls (offline Argos en→ja fallback) so `REI_JAPANESE_LYRIC_PROBABILITY` holds by construction; explicit `english` or `japanese` modes are deterministic
 - 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
 - 🎛️ **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅; Docker `full` profile)
 - 🛡️ **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,296 collected; 1,294 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 187 Japanese lyric-cue and Romaji-coverage regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,308 collected; 1,306 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 187 Japanese lyric-cue and Romaji-coverage regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

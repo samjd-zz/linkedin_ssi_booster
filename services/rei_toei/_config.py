@@ -58,7 +58,7 @@ class ReiToeiConfig:
         if strategy not in {"translate", "generate"}:
             raise ValueError("REI_BILINGUAL_STRATEGY must be one of: translate, generate")
         self.bilingual_strategy = strategy
-        max_hook_lines = int(os.getenv("REI_BILINGUAL_MAX_HOOK_LINES", "8"))
+        max_hook_lines = int(os.getenv("REI_BILINGUAL_MAX_HOOK_LINES", "40"))
         if max_hook_lines < 1:
             raise ValueError("REI_BILINGUAL_MAX_HOOK_LINES must be at least 1")
         self.bilingual_max_hook_lines = max_hook_lines

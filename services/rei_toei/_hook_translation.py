@@ -35,15 +35,19 @@ MIN_HOOK_WORDS = 2
 MAX_HOOK_WORDS = 12
 MAX_TRANSLATION_CHARS = 48
 TOKENS_PER_TRANSLATED_LINE = 64
+# Lines per Ollama translation call; smaller batches keep a 7B model aligned.
+TRANSLATION_BATCH_SIZE = 10
 
 _LATIN_RE = re.compile(r"[A-Za-z]")
 _KANA_RE = re.compile(r"[\u3040-\u30ff\uff66-\uff9f]")
 _CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 _CHINESE_MARKER_RE = re.compile(r"[，的]")
+# Untranslated English words inside Japanese ("周波数のswell"); acronyms like SQL are fine.
+_LOWERCASE_WORD_RE = re.compile(r"[a-z]{2,}")
 _NUMBER_PREFIX_RE = re.compile(r"^\s*\d+\s*[.):、]\s*")
 _TRAILING_ANNOTATION_RE = re.compile(r"\s*(?:\[[^\[\]]*\]|[(（][^()（）]*[)）])\s*$")
 _WRAPPING_QUOTES = "\"'“”‘’「」『』"
-# Argos tends to answer in polite (-masu) form, which sounds stiff in lyrics.
+# Translators often answer in polite (-masu) form, which sounds stiff in lyrics.
 _PLAIN_FORM_ENDINGS = (
     ("しています", "している"),
     ("ています", "ている"),
@@ -54,13 +58,18 @@ _PLAIN_FORM_ENDINGS = (
     ("あります", "ある"),
     ("です", ""),
 )
+# e-row + ます is always an ichidan/potential verb (消えます → 消える); 死にます → 死ぬ.
+_ICHIDAN_MASU_RE = re.compile(r"([えけげせぜてでねへべぺめれ])ます$")
+_GODAN_MASU_ENDINGS = (("にます", "ぬ"), ("みます", "む"))
 
 TRANSLATION_SYSTEM_PROMPT = (
     "You translate English song lyrics into natural, singable contemporary Japanese "
     "for a cyberpop vocalist. Translate the meaning and feeling, not word for word, "
     "and keep each line about as short as the English. Use standard Japanese kanji and "
     "kana with Japanese grammar and particles (が, を, に, の, へ). Never use Chinese "
-    "characters, Chinese grammar (在, 了, 们), pinyin, Romaji, or explanations."
+    "characters, Chinese grammar (在, 了, 们), pinyin, Romaji, or explanations. "
+    "Use plain (dictionary) verb forms such as 消える, not polite forms like 消えます, "
+    "and translate every English word; do not leave English inside a Japanese line."
 )
 
 
@@ -161,9 +170,11 @@ def _translation_source(text: str) -> str:
 
 def to_plain_form(line: str) -> str:
     """Turn a common polite sentence ending into lyric-friendly plain form."""
-    for polite, plain in _PLAIN_FORM_ENDINGS:
+    for polite, plain in _PLAIN_FORM_ENDINGS + _GODAN_MASU_ENDINGS:
         if line.endswith(polite) and len(line) > len(polite):
             return line[: -len(polite)] + plain
+    if len(line) > 3:
+        return _ICHIDAN_MASU_RE.sub(r"\1る", line)
     return line
 
 
@@ -175,14 +186,14 @@ def clean_translation(text: Any) -> Optional[str]:
     line = _NUMBER_PREFIX_RE.sub("", line)
     line = _TRAILING_ANNOTATION_RE.sub("", line).strip().rstrip("。.")
     line = line.strip(_WRAPPING_QUOTES).strip()
-    line = replace_chinese_phrasing(line).rstrip("。.")
+    line = to_plain_form(replace_chinese_phrasing(line).rstrip("。."))
     if not line or not _JAPANESE_CHAR_RE.search(line) or len(line) > MAX_TRANSLATION_CHARS:
         return None
     if _CHINESE_MARKER_RE.search(line) or has_chinese_grammar(line):
         return None
     if not _KANA_RE.search(line) and len(_CJK_RE.findall(line)) > 8:
         return None
-    if len(_LATIN_RE.findall(line)) > len(_JAPANESE_CHAR_RE.findall(line)):
+    if _LOWERCASE_WORD_RE.search(line):
         return None
     return line
 
@@ -192,27 +203,33 @@ def build_translation_prompt(lines: Sequence[str], context: str = "") -> str:
     about = f"Song context: {context}\n\n" if context else ""
     return (
         f"{about}Translate each numbered English lyric line into Japanese.\n"
-        f'Return only JSON: {{"translations": [...]}} with exactly {len(lines)} '
-        "Japanese strings, in the same order.\n\n"
+        'Return only a JSON object mapping each line number to its Japanese line, '
+        f'e.g. {{"1": "...", "2": "..."}}, with all {len(lines)} numbers.\n\n'
         f"{numbered}"
     )
 
 
-def _extract_items(data: Any) -> Optional[List[Any]]:
-    if isinstance(data, list):
-        return data
-    if not isinstance(data, dict):
+def _extract_items(data: Any, expected: int) -> Optional[List[Any]]:
+    """Return items aligned to line numbers; numbered keys allow partial replies."""
+    if isinstance(data, dict):
+        for key in ("translations", "lines", "japanese"):
+            if isinstance(data.get(key), (list, dict)):
+                return _extract_items(data[key], expected)
+        numbered = {
+            int(str(key).strip().rstrip(".")): value
+            for key, value in data.items()
+            if str(key).strip().rstrip(".").isdigit()
+        }
+        if numbered:
+            return [numbered.get(number) for number in range(1, expected + 1)]
         return None
-    for key in ("translations", "lines", "japanese"):
-        if isinstance(data.get(key), list):
-            return data[key]
-    if data and all(str(key).strip().isdigit() for key in data):
-        return [data[key] for key in sorted(data, key=lambda k: int(str(k).strip()))]
+    if isinstance(data, list) and len(data) == expected:
+        return data
     return None
 
 
 def parse_batched_translations(text: str, expected: int) -> List[Optional[str]]:
-    """Parse the batch reply; a count mismatch rejects every line to avoid misalignment."""
+    """Parse the batch reply; an unnumbered list with the wrong count is rejected."""
     empty: List[Optional[str]] = [None] * expected
     try:
         data = json.loads(text)
@@ -224,8 +241,8 @@ def parse_batched_translations(text: str, expected: int) -> List[Optional[str]]:
             data = json.loads(match.group(0))
         except json.JSONDecodeError:
             return empty
-    items = _extract_items(data)
-    if items is None or len(items) != expected:
+    items = _extract_items(data, expected)
+    if items is None:
         return empty
     results: List[Optional[str]] = []
     for item in items:
@@ -241,22 +258,24 @@ def translate_hook_texts(
     argos_model_dir: Optional[Path] = None,
     context: str = "",
 ) -> Tuple[List[Optional[str]], Dict[str, int]]:
-    """Translate lines with one Ollama call, then Argos for any that failed."""
+    """Translate lines in batched Ollama calls, then Argos for any that failed."""
     counts = {"ollama": 0, "argos": 0, "failed": 0}
     if not lines:
         return [], counts
-    translations: List[Optional[str]]
-    try:
-        reply = ollama._chat(
-            TRANSLATION_SYSTEM_PROMPT,
-            build_translation_prompt(lines, context),
-            max_tokens=TOKENS_PER_TRANSLATED_LINE * (len(lines) + 1),
-            format="json",
-        )
-        translations = parse_batched_translations(reply, len(lines))
-    except RuntimeError as exc:
-        logger.warning("Batched hook translation failed: %s", exc)
-        translations = [None] * len(lines)
+    translations: List[Optional[str]] = []
+    for start in range(0, len(lines), TRANSLATION_BATCH_SIZE):
+        batch = list(lines[start:start + TRANSLATION_BATCH_SIZE])
+        try:
+            reply = ollama._chat(
+                TRANSLATION_SYSTEM_PROMPT,
+                build_translation_prompt(batch, context),
+                max_tokens=TOKENS_PER_TRANSLATED_LINE * (len(batch) + 1),
+                format="json",
+            )
+            translations.extend(parse_batched_translations(reply, len(batch)))
+        except RuntimeError as exc:
+            logger.warning("Batched hook translation failed: %s", exc)
+            translations.extend([None] * len(batch))
     counts["ollama"] = sum(1 for item in translations if item)
 
     missing = [i for i, item in enumerate(translations) if not item]
@@ -267,7 +286,7 @@ def translate_hook_texts(
             for i, raw in zip(missing, fallback):
                 cleaned = clean_translation(raw)
                 if cleaned:
-                    translations[i] = to_plain_form(cleaned)
+                    translations[i] = cleaned
                     counts["argos"] += 1
     counts["failed"] = sum(1 for item in translations if not item)
     return translations, counts

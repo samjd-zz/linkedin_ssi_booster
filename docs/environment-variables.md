@@ -807,7 +807,7 @@ How bilingual songs are written.
 
 **Options:**
 
-- `translate` — Rei writes the whole song in English (one Ollama call, with at most one structural retry). Code then picks hook lines so Japanese reaches `REI_JAPANESE_LYRIC_PROBABILITY` of sung lines after insertion: the chorus hook first, then stanza openers in the verses, alternating Bridge lines, and other sections in turn. Those lines are translated together in one short JSON Ollama call. Each Japanese line is inserted above its English line, which stays as the sung echo, and assembly adds the bracketed Romaji cue. Replies with the wrong line count, Chinese grammar, or no Japanese fall back to the offline Argos en→ja model; lines that still fail stay English.
+- `translate` — Rei writes the whole song in English (one Ollama call, with at most one structural retry). Code then picks hook lines so Japanese reaches `REI_JAPANESE_LYRIC_PROBABILITY` of sung lines after insertion: the chorus hook first, then stanza openers in the verses, alternating Bridge lines, and other sections in turn. Those lines are translated in batches of 10 per Ollama call as numbered JSON. Each Japanese line is inserted above its English line, which stays as the sung echo, and assembly adds the bracketed Romaji cue. Missing lines, Chinese grammar, leftover English words, or no Japanese fall back to the offline Argos en→ja model; lines that still fail stay English.
 - `generate` — The model mixes both languages in a single pass; out-of-ratio drafts are retried up to five times. This is the previous behavior.
 
 ```bash
@@ -816,9 +816,9 @@ REI_BILINGUAL_STRATEGY=translate
 
 ### `REI_BILINGUAL_MAX_HOOK_LINES`
 
-Maximum number of lines translated into Japanese per song in `translate` mode.
+Maximum number of lines translated into Japanese per song in `translate` mode. The real count comes from `REI_JAPANESE_LYRIC_PROBABILITY` (0.33 on a ~50-line song is about 25 lines); this is only a safety ceiling. Lines are translated in batches of 10 per Ollama call, so each batch adds roughly 30–60 seconds on a laptop-class GPU.
 
-**Default:** `8`
+**Default:** `40`
 
 ### `REI_ARGOS_MODEL_DIR`
 

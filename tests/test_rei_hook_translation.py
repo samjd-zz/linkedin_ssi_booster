@@ -130,6 +130,8 @@ def test_select_hook_lines_skips_cues_japanese_short_and_duplicate_lines():
         ("「夜明けの光」。", "夜明けの光"),
         ("電子火花在空中", "電子火花が空に舞う"),
         ("SQLで探す", "SQLで探す"),
+        ("信号のサージ、周波数のswell", None),
+        ("ネオンの囁きが消えます", "ネオンの囁きが消える"),
         ("数据流动了", None),
         ("我们的数据", None),
         ("Blossom from data seeds", None),
@@ -151,6 +153,8 @@ def test_clean_translation_keeps_only_usable_japanese(raw, expected):
         ('{"translations": [{"ja": "光の種"}, "Not Japanese"]}', ["光の種", None]),
         ('Here you go: {"translations": ["光の種", "夢を描く"]}', ["光の種", "夢を描く"]),
         ('{"translations": ["光の種"]}', [None, None]),
+        ('{"2": "夢を描く"}', [None, "夢を描く"]),
+        ('{"translations": {"1": "光の種"}}', ["光の種", None]),
         ("not json", [None, None]),
     ],
 )
@@ -160,7 +164,8 @@ def test_parse_batched_translations_rejects_misaligned_replies(reply, expected):
 
 @pytest.mark.parametrize(
     ("line", "expected"),
-    [("流れを破壊します", "流れを破壊する"), ("光っています", "光っている"), ("これは夢です", "これは夢"), ("夢を描く", "夢を描く")],
+    [("流れを破壊します", "流れを破壊する"), ("囁きが死にます", "囁きが死ぬ"), ("光が見えます", "光が見える"),
+     ("夢を読みます", "夢を読む"), ("光っています", "光っている"), ("これは夢です", "これは夢"), ("夢を描く", "夢を描く")],
 )
 def test_to_plain_form_turns_polite_endings_into_lyric_form(line, expected):
     assert to_plain_form(line) == expected
@@ -180,7 +185,7 @@ def test_translate_hook_texts_uses_one_call_and_argos_for_rejected_lines(monkeyp
     assert counts == {"ollama": 1, "argos": 1, "failed": 0}
     assert ollama._chat.call_count == 1
     prompt = ollama._chat.call_args.args[1]
-    assert "1. Seeds of light" in prompt and "exactly 2" in prompt and "Data Seeds" in prompt
+    assert "1. Seeds of light" in prompt and "all 2 numbers" in prompt and "Data Seeds" in prompt
     assert argos.calls == [["A glitch disrupts the flow"]]
 
 
@@ -241,7 +246,7 @@ def test_config_defaults_to_translate_strategy(monkeypatch):
     monkeypatch.delenv("REI_BILINGUAL_STRATEGY", raising=False)
     config = ReiToeiConfig()
     assert config.bilingual_strategy == "translate"
-    assert config.bilingual_max_hook_lines == 8
+    assert config.bilingual_max_hook_lines == 40
 
 
 def test_compose_lyrics_translate_mode_writes_english_then_adds_japanese_hooks(translate_env):
@@ -274,3 +279,33 @@ def test_compose_lyrics_translate_mode_keeps_english_song_when_translation_fails
     assert "Binary leaves of code" in lyrics.verse_1
     assert "No hook lines were translated" in caplog.text
     assert "Bilingual mix rejected" not in caplog.text
+
+
+def test_select_hook_lines_meets_a_high_ratio_with_several_lines_per_section():
+    payload = {field: value for field, value in SONG.items()}
+    payload["verse_1"] += "\nSilver rain on the server farm\nWe hum the boot song soft and low"
+    payload["verse_2"] += "\nThe old core sleeps beneath the snow\nNew sparks remember how to glow"
+
+    hooks = select_hook_lines(payload, 0.33, 40)
+
+    sung = sum(1 for v in payload.values() for l in v.splitlines() if l.strip() and l.strip()[0] not in "[(")
+    assert len(hooks) == japanese_line_target(sung, 0.33, 40) > 8
+    assert len(hooks) / (sung + len(hooks)) == pytest.approx(0.33, abs=0.03)
+    assert all(sum(1 for h in hooks if h.field == f) >= 2 for f in ("chorus", "verse_1", "verse_2", "bridge"))
+
+
+def test_translate_hook_texts_batches_long_lists(monkeypatch, tmp_path):
+    monkeypatch.setattr(_hook_translation, "get_argos_translator", lambda _: None)
+    lines = [f"Line number {i} glows" for i in range(13)]
+    ollama = MagicMock()
+    ollama._chat.side_effect = [
+        json.dumps({str(i + 1): f"光る行{i}" for i in range(_hook_translation.TRANSLATION_BATCH_SIZE)}, ensure_ascii=False),
+        json.dumps({"1": "光る行十", "3": "光る行十二"}, ensure_ascii=False),
+    ]
+
+    translations, counts = translate_hook_texts(lines, ollama, tmp_path)
+
+    assert ollama._chat.call_count == 2
+    assert translations[0] == "光る行0" and translations[10] == "光る行十"
+    assert translations[11] is None and translations[12] == "光る行十二"
+    assert counts == {"ollama": 12, "argos": 0, "failed": 1}

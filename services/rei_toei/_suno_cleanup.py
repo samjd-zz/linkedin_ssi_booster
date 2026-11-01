@@ -65,6 +65,8 @@ _INSTRUMENT_CUE_TAGS = {
     "instrumental solo": "[Instrumental Solo]",
     "instrumental": "[Instrumental]",
 }
+# Layout placeholders the model copies from the prompt; they become real blank lines.
+_LAYOUT_PLACEHOLDERS = {"blank line", "blank", "empty line", "line break", "stanza break"}
 _INTRO_VERSE_LABEL = "Intro Verse"
 
 
@@ -140,7 +142,11 @@ def tag_instrument_cues(text: str) -> str:
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith(("(", "（")) and stripped.endswith((")", "）")):
-            tag = _INSTRUMENT_CUE_TAGS.get(re.sub(r"\s+", " ", stripped[1:-1]).strip().lower())
+            cue = re.sub(r"\s+", " ", stripped[1:-1]).strip().lower()
+            if cue in _LAYOUT_PLACEHOLDERS:
+                lines.append("")
+                continue
+            tag = _INSTRUMENT_CUE_TAGS.get(cue)
             if tag:
                 lines.append(tag)
                 continue
