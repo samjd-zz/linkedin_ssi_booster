@@ -38,6 +38,7 @@ from ._song_structure import (
     verse_two_repeats_verse_one,
 )
 from services.content_curator._text_utils import looks_like_nav_chrome
+from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
 from services.rei_toei._lyric_romaji import (
     _BRACKET_LEARNING_CUE_RE,
     _BRACKET_PAREN_LEARNING_CUE_RE,
@@ -165,6 +166,7 @@ _SCRIPT_CONTAMINATION_REPLACEMENTS = {
     "电子": "電子",
     "梦想": "夢",
     "信息": "情報",
+    "重组": "再構成",
 }
 
 
@@ -1053,6 +1055,7 @@ def _append_normalized_section(
     block = _normalize_suno_section(text, label, uppercase_body=uppercase_body)
     if block:
         payload = {"section": block}
+        bracket_bare_romaji_lines(payload)
         corrected = _verify_and_correct_romaji_lines(payload)
         if corrected:
             logger.info("Corrected %d formatted Romaji cue(s) in %s.", corrected, label)
@@ -1891,6 +1894,9 @@ Each field should contain the complete lyrics for that section, including any se
             for field, value in response_data.items():
                 if isinstance(value, str):
                     response_data[field] = _join_split_japanese_acronyms(value)
+            bracketed = bracket_bare_romaji_lines(response_data)
+            if bracketed:
+                logger.info("Bracketed or removed %d bare Romaji line(s).", bracketed)
             corrected_romaji = _verify_and_correct_romaji_lines(response_data)
             if corrected_romaji:
                 logger.info(
