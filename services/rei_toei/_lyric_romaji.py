@@ -5,6 +5,7 @@ from __future__ import annotations
 import difflib
 import logging
 import re
+import unicodedata
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
@@ -37,7 +38,10 @@ _ROMAJI_MARKER_RE = re.compile(
 )
 _PARTICLE_ROMAJI = {"は": "wa", "へ": "e", "を": "o"}
 _ATTACHED_CONJUNCTIVE_PARTICLES = {"て", "で", "ば", "たり", "だり"}
-_SOUND_CUE_PHRASES = {"bass drop", "silence", "glitch noise", "chaos"}
+_SOUND_CUE_PHRASES = {
+    "bass drop", "silence", "glitch noise", "chaos",
+    "heavy bass drop", "synthesizer drop", "synth drop", "instrumental",
+}
 _STAGE_CUE_RE = re.compile(
     r"^(?:instrumental(?: build)?|verse\s*\d*|pre-chorus|chorus|drop|bridge|"
     r"solo|breakdown|outro|intro|(?:guitar|drum|synth|instrumental)\s+solo|"
@@ -303,6 +307,9 @@ def _normalize_romaji_for_match(text: str) -> str:
         .replace("ā", "aa").replace("ī", "ii").replace("ū", "uu")
         .replace("ē", "ee").replace("ō", "ou")
     )
+    folded = "".join(
+        char for char in unicodedata.normalize("NFKD", folded) if not unicodedata.combining(char)
+    )
     folded = re.sub(r"[^a-z0-9\s]", " ", folded)
     particle_map = {"wa": "ha", "e": "he", "o": "wo"}
     return " ".join(particle_map.get(token, token) for token in folded.split())
@@ -321,6 +328,9 @@ def _is_romaji_attempt(text: str, expected: str) -> bool:
     reading = _canonical_reading(expected)
     if not candidate or not reading:
         return False
+    repeats = len(candidate) // len(reading)
+    if repeats >= 2 and candidate == reading * repeats:
+        return True
     ratio = difflib.SequenceMatcher(None, candidate, reading).ratio()
     return ratio >= 0.8 or (ratio >= 0.5 and _looks_like_romaji_cue(text))
 

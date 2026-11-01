@@ -404,7 +404,7 @@ def test_console_fallback_cleans_only_identifiable_song_sections(monkeypatch):
     assert reply.startswith("Title: Signal\nGenre Tags: cyberpop")
     assert "[shingou ga tobichiru] [Signals scatter]" in reply
     assert "[yoake no hikari] [Dawn's light]" in reply
-    assert "(bass drop)" in reply and "then '(" not in reply.lower()
+    assert "[Heavy Bass Drop]" in reply and "then '(" not in reply.lower()
     assert "atmospheric resolution and fade text" not in reply
     assert reply.endswith("Suno Prompt: bright synthwave")
     assert history[-1] == {"role": "assistant", "content": reply}
@@ -487,7 +487,7 @@ def test_composition_and_suno_assembly_repair_the_preview(monkeypatch):
     assert "[Signals scatter]" in prompt.lyrics
     assert "[Latency vanishes,]" in prompt.lyrics
     assert "(Ahh ahh ahh)" in prompt.lyrics
-    assert "(bass drop)" in prompt.lyrics
+    assert "[Heavy Bass Drop]" in prompt.lyrics
     assert "then '(" not in prompt.lyrics.lower()
     assert "atmospheric resolution and fade text" not in prompt.lyrics
 

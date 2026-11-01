@@ -39,6 +39,12 @@ from ._song_structure import (
 )
 from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
+from services.rei_toei._suno_cleanup import (
+    replace_chinese_phrasing,
+    split_inline_glosses,
+    split_intro_block,
+    tag_instrument_cues,
+)
 from services.rei_toei._lyric_romaji import (
     _BRACKET_LEARNING_CUE_RE,
     _BRACKET_PAREN_LEARNING_CUE_RE,
@@ -214,6 +220,7 @@ def _clean_script_contamination(text: str) -> str:
     for line in text.splitlines():
         cleaned = line
         if _JAPANESE_CHAR_RE.search(cleaned):
+            cleaned = replace_chinese_phrasing(cleaned)
             for old, new in _SCRIPT_CONTAMINATION_REPLACEMENTS.items():
                 cleaned = cleaned.replace(old, new)
             cleaned = _NON_JAPANESE_SCRIPT_CONTAMINATION_RE.sub("", cleaned)
@@ -531,6 +538,8 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
     """Normalize a lyric section into deterministic Suno-friendly section format."""
     body = _join_split_japanese_acronyms(_normalize_serialized_lyric_text(text or ""))
     body = _SECTION_HEADER_RE.sub("", body, count=1)
+    # Replace Chinese forms before any Romaji check reads the Japanese lines.
+    body = _clean_script_contamination(body)
     body = _EMBEDDED_SECTION_LABEL_RE.sub("\n", body)
 
     lines = [line.rstrip() for line in body.splitlines()]
@@ -1060,7 +1069,12 @@ def _append_normalized_section(
         if corrected:
             logger.info("Corrected %d formatted Romaji cue(s) in %s.", corrected, label)
         _backfill_missing_romaji_cues(payload)
-        block = payload["section"]
+        # Glosses split last so any Romaji under a gloss line is dropped with
+        # it: the moved Japanese line is sung without a phonetic duplicate.
+        block = tag_instrument_cues(split_inline_glosses(payload["section"]))
+        if label == "Instrumental Build":
+            instrumental, intro_verse = split_intro_block(block)
+            block = f"{instrumental}\n\n{intro_verse}" if intro_verse else instrumental
         lyric_blocks.append(block)
     return block
 
@@ -1596,6 +1610,8 @@ def compose_lyrics(
             f"Write a bilingual song blending Japanese and English (Target: {japanese_target_percent}% Japanese lines).\n\n"
             "STRUCTURE & SCRIPT RULES:\n"
             "- Japanese lines MUST be written in natural Kanji and Kana (Hiragana/Katakana).\n"
+            "- Use standard modern Japanese only (信号, not 信號); never Chinese characters, pinyin, or Chinese word order.\n"
+            "- Never append Japanese or Romaji in parentheses to an English line; put the Japanese phrase on its own line.\n"
             "- Use complete Japanese phrases or lines for chorus hooks and emotional beats; do not output isolated vocabulary words.\n"
             "- Use English for momentum, technical imagery, and contrasting lines.\n"
             "- Reserve parentheses () exclusively for Suno vocal cues (e.g., (guitar solo), (echo)).\n\n"
@@ -1687,10 +1703,12 @@ Suno Formatting Rules:
 12. Avoid stock cyberpop filler used as padding: 'signal flows', 'data streams', 'code descends', 'circuits sing', 'bits dance', 'neon', 'latency', 'packets', 'glitch', 'cyber realms', 'silicon dreams'. Use at most one such phrase in the whole song; invent fresh, specific imagery instead.
 13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns.
 14. Use varied line lengths, concrete sensory detail, surprising metaphors, humor or wonder where the theme invites it, and a clear emotional arc from setup to climax to resolution.
-15. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly.
-16. Verse 2 must develop the story, never restate Verse 1: no shared lines and no reworded copies. Show what happens after the turning point and what the new state reveals.
-17. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
-18. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections."""
+15. Never gloss an English line with Japanese, Romaji, or pinyin in parentheses, e.g. 'Signal pulse (信号 shingou)'. If a line should be Japanese, write it on its own line.
+16. Put sung intro lines in the intro after the vocalization; they are formatted as an [Intro Verse] section.
+17. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly.
+18. Verse 2 must develop the story, never restate Verse 1: no shared lines and no reworded copies. Show what happens after the turning point and what the new state reveals.
+19. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
+20. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library

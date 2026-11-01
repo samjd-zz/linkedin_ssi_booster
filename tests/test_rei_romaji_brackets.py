@@ -114,20 +114,24 @@ def test_assembled_section_keeps_extra_guesses_bracketed() -> None:
         ("Protecting systems from malicious actions. (記憶 (memory))", "[kioku]"),
     ],
 )
-def test_nested_english_gloss_is_not_romanized(line: str, cue: str) -> None:
+def test_nested_english_gloss_moves_to_own_line_without_romaji(line: str, cue: str) -> None:
     payload = {"verse_1": line}
     _backfill_missing_romaji_cues(payload)
 
     section = _append_normalized_section([], payload["verse_1"], "Verse 1")
 
-    assert section.endswith(f"{line}\n{cue}")
-    assert "( " not in section.split(line, 1)[1]
+    english, japanese = line.split(" (", 1)
+    japanese = japanese.split(" (", 1)[0]
+
+    # The moved Japanese line is a translation, so it gets no phonetic cue.
+    assert section.endswith(f"{english}\n{japanese}")
+    assert "(" not in section and cue not in section
 
 
 @pytest.mark.parametrize(
     "source",
     [
-        "data (データ (data))\nWe are the coders",
+        "データの海\nWe are the coders",
         "新たな連結\n[aratana renketsu]\nAtarashii ryokin\nnew connections,",
         "電子の灰が舞う\ndenshi no hai ga mau\nelectrons fall,",
         "信号が飛び散る\nA candle waits",

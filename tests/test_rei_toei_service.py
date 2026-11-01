@@ -2029,8 +2029,9 @@ def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_k
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "Signal enters the field (フィールドにサインが混じる)" in suno_prompt.lyrics
-    assert "Cascade flow, it opens now (カスケード・フロー、今、開く)" in suno_prompt.lyrics
+    assert "Signal enters the field\nフィールドにサインが混じる\n" in suno_prompt.lyrics
+    assert "Cascade flow, it opens now\nカスケード・フロー、今、開く\n" in suno_prompt.lyrics
+    assert "(フィールド" not in suno_prompt.lyrics
 
 
 def test_assemble_suno_prompt_normalizes_learning_cue_order(mock_domain_knowledge_data):
@@ -2293,7 +2294,7 @@ def test_assemble_suno_prompt_strips_prompt_schema_leakage(mock_domain_knowledge
     assert "400 chars" not in suno_prompt.lyrics
     assert "600 chars" not in suno_prompt.lyrics
     assert "on its own line" not in suno_prompt.lyrics
-    assert "(bass drop)" in suno_prompt.lyrics
+    assert "[Heavy Bass Drop]" in suno_prompt.lyrics
     assert "データの始まりに、心が焦れる" in suno_prompt.lyrics
     assert "データが上昇します、信号が混乱する" in suno_prompt.lyrics
 
