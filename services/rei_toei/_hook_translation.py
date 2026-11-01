@@ -184,9 +184,9 @@ def clean_translation(text: Any) -> Optional[str]:
         return None
     line = text.strip().splitlines()[0]
     line = _NUMBER_PREFIX_RE.sub("", line)
-    line = _TRAILING_ANNOTATION_RE.sub("", line).strip().rstrip("。.")
+    line = _TRAILING_ANNOTATION_RE.sub("", line).strip().rstrip("。.、，, ")
     line = line.strip(_WRAPPING_QUOTES).strip()
-    line = to_plain_form(replace_chinese_phrasing(line).rstrip("。."))
+    line = to_plain_form(replace_chinese_phrasing(line).rstrip("。.、，, "))
     if not line or not _JAPANESE_CHAR_RE.search(line) or len(line) > MAX_TRANSLATION_CHARS:
         return None
     if _CHINESE_MARKER_RE.search(line) or has_chinese_grammar(line):

@@ -43,6 +43,7 @@ from ._song_structure import (
 from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
 from services.rei_toei._hook_translation import apply_bilingual_hooks
+from services.rei_toei._song_tidy import tidy_song_sections
 from services.rei_toei._suno_cleanup import (
     has_chinese_grammar,
     replace_chinese_phrasing,
@@ -1963,6 +1964,7 @@ Each field should contain the complete lyrics for that section, including any se
             logger.info(f"Lyric composition succeeded on attempt {attempt}")
             break
 
+        tidy_song_sections(response_data)
         if translate_mode:
             hook_summary = apply_bilingual_hooks(
                 response_data,

@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,308 collected; 1,306 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 187 Japanese lyric-cue and Romaji-coverage regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,318 collected; 1,316 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 197 Japanese lyric-cue and Romaji-coverage regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
