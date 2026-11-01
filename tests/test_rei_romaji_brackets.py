@@ -3,7 +3,10 @@
 import pytest
 
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
-from services.rei_toei._suno_pipeline import _append_normalized_section
+from services.rei_toei._suno_pipeline import (
+    _append_normalized_section,
+    _backfill_missing_romaji_cues,
+)
 
 
 @pytest.mark.parametrize(
@@ -100,3 +103,38 @@ def test_assembled_section_keeps_extra_guesses_bracketed() -> None:
     assert "[Atarashii ryokin]\nnew connections," in result
     assert "\nKokoro no code" not in result
     assert "\nAtarashii ryokin" not in result
+
+
+@pytest.mark.parametrize(
+    ("line", "cue"),
+    [
+        ("data (データ (data))", "[deeta]"),
+        ("connection cut (接続切断 (connection cut))", "[setsuzoku setsudan]"),
+        ("Unity's our shield in this digital dance. (データ (data))", "[deeta]"),
+        ("Protecting systems from malicious actions. (記憶 (memory))", "[kioku]"),
+    ],
+)
+def test_nested_english_gloss_is_not_romanized(line: str, cue: str) -> None:
+    payload = {"verse_1": line}
+    _backfill_missing_romaji_cues(payload)
+
+    section = _append_normalized_section([], payload["verse_1"], "Verse 1")
+
+    assert section.endswith(f"{line}\n{cue}")
+    assert "( " not in section.split(line, 1)[1]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "data (データ (data))\nWe are the coders",
+        "新たな連結\n[aratana renketsu]\nAtarashii ryokin\nnew connections,",
+        "電子の灰が舞う\ndenshi no hai ga mau\nelectrons fall,",
+        "信号が飛び散る\nA candle waits",
+    ],
+)
+def test_section_formatting_is_idempotent(source: str) -> None:
+    once = _append_normalized_section([], source, "Verse 1")
+    twice = _append_normalized_section([], once.split("\n", 1)[1], "Verse 1")
+
+    assert twice == once

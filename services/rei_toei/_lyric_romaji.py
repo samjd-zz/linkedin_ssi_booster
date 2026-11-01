@@ -95,6 +95,8 @@ _SINGLE_CUE_PATTERNS = (
     re.compile(r"^\s*\((?P<romaji>[^()]*)\)\s*$"),
     re.compile(r"^\s*(?P<romaji>[^\[\]()]+?)\s*$"),
 )
+# A bracketed group, closed or left open at the end of the line.
+_BRACKET_GROUP_RE = re.compile(r"[\(（\[][^()（）\[\]]*(?:[\)）\]]|$)")
 _ACRONYM_PATTERN = r"[A-Z][A-Z0-9]{1,}(?:[-/][A-Z0-9]+)*"
 _SPLIT_ACRONYM_RE = re.compile(
     rf"(?m)^(?P<acronym>{_ACRONYM_PATTERN})[ \t]*\n[ \t]*"
@@ -283,7 +285,16 @@ def _japanese_lyric_phrase(line: str) -> str:
             stripped = match.group("japanese")
             break
     _, phrase = _split_english_lead_from_japanese(_strip_cue_noise(stripped))
-    return phrase
+    return _drop_non_japanese_glosses(phrase)
+
+
+def _drop_non_japanese_glosses(phrase: str) -> str:
+    """Remove English glosses like ``データ (data`` so only Japanese is romanized."""
+    def _keep_japanese(match: re.Match[str]) -> str:
+        return match.group(0) if _JAPANESE_CHAR_RE.search(match.group(0)) else ""
+
+    cleaned = _BRACKET_GROUP_RE.sub(_keep_japanese, phrase)
+    return re.sub(r"[()（）\[\]]", "", cleaned).strip()
 
 
 def _normalize_romaji_for_match(text: str) -> str:

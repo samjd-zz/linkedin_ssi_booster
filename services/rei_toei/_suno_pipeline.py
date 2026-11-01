@@ -1894,25 +1894,14 @@ Each field should contain the complete lyrics for that section, including any se
             for field, value in response_data.items():
                 if isinstance(value, str):
                     response_data[field] = _join_split_japanese_acronyms(value)
-            bracketed = bracket_bare_romaji_lines(response_data)
-            if bracketed:
-                logger.info("Bracketed or removed %d bare Romaji line(s).", bracketed)
-            corrected_romaji = _verify_and_correct_romaji_lines(response_data)
-            if corrected_romaji:
-                logger.info(
-                    "Corrected %d inconsistent Romaji cue(s).",
-                    corrected_romaji,
-                )
+            # Romaji bracketing, correction and backfill run once, in
+            # assemble_suno_prompt, after section normalization. Running them
+            # here too created cues from un-normalized lines that then
+            # survived next to freshly generated ones.
             cues_ok, cue_summary = _learning_annotations_ok(response_data, lyric_language)
-            added_cues = _backfill_missing_romaji_cues(response_data)
-            if added_cues:
+            if not cues_ok:
                 logger.info(
-                    "Backfilled %d Hepburn Romaji cue(s) (%s).", added_cues, cue_summary
-                )
-            elif not cues_ok:
-                logger.warning(
-                    "Romaji learner cues below target (%s); pykakasi unavailable "
-                    "or lines unconvertible.",
+                    "Model left Romaji cues below target (%s); assembly will backfill.",
                     cue_summary,
                 )
         

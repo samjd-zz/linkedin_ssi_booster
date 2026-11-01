@@ -480,8 +480,8 @@ def test_composition_and_suno_assembly_repair_the_preview(monkeypatch):
     prompt = assemble_suno_prompt(concept, lyrics, domain)
 
     assert ollama._chat.call_count == 1
-    assert "tobichiru" in lyrics.verse_1.lower()
-    assert "chien wa kieru" in lyrics.chorus.lower()
+    assert "tobichiru" in prompt.lyrics.lower()
+    assert "chien wa kieru" in prompt.lyrics.lower()
     assert "SQLで探査" in lyrics.verse_2
     assert "SQL de tansa" in prompt.lyrics
     assert "[Signals scatter]" in prompt.lyrics
