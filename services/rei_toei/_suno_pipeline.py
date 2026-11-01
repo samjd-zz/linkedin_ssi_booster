@@ -32,6 +32,11 @@ from ._models import (
     ReiDomainKnowledge
 )
 from ._config import ReiToeiConfig
+from ._song_structure import (
+    MIN_BRIDGE_SUNG_LINES,
+    bridge_is_underdeveloped,
+    verse_two_repeats_verse_one,
+)
 from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._lyric_romaji import (
     _BRACKET_LEARNING_CUE_RE,
@@ -1085,8 +1090,9 @@ def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
 
     _append_normalized_section(lyric_blocks, lyrics.verse_2, "Verse 2")
 
-    _append_normalized_section(lyric_blocks, lyrics.drop, "Drop")
+    # The bridge climax builds into the final drop.
     _append_normalized_section(lyric_blocks, lyrics.bridge, "Bridge")
+    _append_normalized_section(lyric_blocks, lyrics.drop, "Drop")
     _append_normalized_section(lyric_blocks, lyrics.solo, "Solo")
     _append_normalized_section(lyric_blocks, lyrics.breakdown, "Breakdown")
     _append_normalized_section(lyric_blocks, lyrics.outro, "Outro")
@@ -1427,10 +1433,11 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown):
   "mood": "Technical mood (e.g., playful_technical, fun_brooding, bratty_bounce)",
   "bpm": <integer between 130-155>,
   "genre_tags": ["tag1", "tag2", "tag3"] (3-5 genre/style tags),
-  "narrative_arc": "A 2-3 sentence description of the song's emotional/conceptual journey from intro to outro, using technical metaphors"
+  "narrative_arc": "3-4 sentences that name (1) one central metaphor the chorus will be built on, (2) the opening situation, (3) the turning point or crash, and (4) what happens after it: what the new state, code, or connection reveals and how the song resolves. Make each stage different so the verses cannot repeat each other."
 }}
 
-Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, glitchy-cute energy, futuristic charm."""
+Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, glitchy-cute energy, futuristic charm.
+The arc must move forward: the second half of the song should show consequences or discoveries that the first half could not."""
     
     # Call Ollama LLM with JSON format to ensure structured output
     response_text = ollama._chat(system_prompt, user_prompt, max_tokens=512, format="json")
@@ -1594,10 +1601,13 @@ def compose_lyrics(
 
     chorus_json_instruction = (
         "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. "
-        "4-8 lines of a punchy, highly repetitive hook. (Character Cap: 400 chars)"
+        "4-8 lines built on the song's central metaphor: one short, memorable hook line (3-7 words) that states "
+        "the emotional thesis, repeated or answered, plus lines that give it feeling. Do not list tech nouns. "
+        "(Character Cap: 400 chars)"
         if lyric_language == "english"
-        else "[Chorus] 4-8 lines of a punchy, highly repetitive hook. Preserve natural script/casing "
-             "for Japanese and mixed-language lines. (Character Cap: 400 chars)"
+        else "[Chorus] 4-8 lines built on the song's central metaphor: one short, memorable hook line that states "
+             "the emotional thesis, repeated or answered, plus lines that give it feeling. Do not list tech nouns. "
+             "Preserve natural script/casing for Japanese and mixed-language lines. (Character Cap: 400 chars)"
     )
 
     final_rule = (
@@ -1663,7 +1673,10 @@ Suno Formatting Rules:
 12. Avoid stock cyberpop filler used as padding: 'signal flows', 'data streams', 'code descends', 'circuits sing', 'bits dance', 'neon', 'latency', 'packets', 'glitch', 'cyber realms', 'silicon dreams'. Use at most one such phrase in the whole song; invent fresh, specific imagery instead.
 13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns.
 14. Use varied line lengths, concrete sensory detail, surprising metaphors, humor or wonder where the theme invites it, and a clear emotional arc from setup to climax to resolution.
-15. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly."""
+15. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly.
+16. Verse 2 must develop the story, never restate Verse 1: no shared lines and no reworded copies. Show what happens after the turning point and what the new state reveals.
+17. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
+18. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections."""
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -1695,7 +1708,7 @@ Suno Formatting Rules:
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 
-CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. Verse 1 sets the scene and characters, Pre-Chorus raises the stakes, Chorus delivers an original emotional hook, Verse 2 escalates or twists the story, Bridge offers a new perspective, and Outro resolves it. Use fresh, specific imagery and avoid generic tech buzzword chains or repeating the same line patterns.
+CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. Verse 1 sets the scene and characters, Pre-Chorus raises the stakes, Chorus delivers an original emotional hook built on one central metaphor, Verse 2 shows what happens after the turning point (new events, new imagery, no repeated lines), Bridge pivots and climbs to the emotional or thematic climax, and Outro resolves it. Use fresh, specific imagery and avoid generic tech buzzword chains or repeating the same line patterns.
 
 Title: {concept.title}
 Theme: {concept.theme}
@@ -1712,9 +1725,9 @@ Each field should contain the complete lyrics for that section, including any se
   "verse_1": "[Verse 1] Two stanzas of vivid, story-driven narrative that sets the scene. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
     "chorus": "{chorus_json_instruction}",
-  "verse_2": "[Verse 2] Two distinct stanzas that escalate or twist the story from Verse 1 with new imagery. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
-  "drop": "[Drop] then '(bass drop)' on its own line as a Suno energy-shift cue, then 4-5 lines of high-energy electronic phrases. Optionally use '(silence)' or '(chaos)' for further energy shifts. (Character Cap: 400 chars)",
-  "bridge": "[Bridge] A distinct 4-8 line rhythm/perspective shift. (Character Cap: 400 chars)",
+  "verse_2": "[Verse 2] Two new stanzas set after the turning point: show the consequences and what the new state reveals. Do not reuse or reword any Verse 1 line. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
+  "bridge": "[Bridge] 6-8 lines: a pivot line that breaks the established pattern, then 3-5 lines expanding it into the song's emotional and thematic climax, rising into the final drop. (Character Cap: 450 chars)",
+  "drop": "[Drop] the final drop released by the bridge climax: '(bass drop)' on its own line as a Suno energy-shift cue, then 4-5 lines of high-energy electronic phrases. Optionally use '(silence)' or '(chaos)' for further energy shifts. (Character Cap: 400 chars)",
   "solo": "[Solo] followed by 3-4 lines describing the instrumental solo moment (total). (Character Cap: 300 chars)",
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
@@ -1725,6 +1738,7 @@ Each field should contain the complete lyrics for that section, including any se
         max_attempts = 5 if lyric_language in {"japanese", "bilingual"} else 1
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
+        structure_feedback = ""
 
         for attempt in range(1, max_attempts + 1):
             if lyric_language == "bilingual" and attempt == 2:
@@ -1748,6 +1762,8 @@ Each field should contain the complete lyrics for that section, including any se
                 )
             else:
                 attempt_user_prompt = user_prompt
+            if structure_feedback:
+                attempt_user_prompt += structure_feedback
 
             response_text = ollama._chat(
                 system_prompt,
@@ -1822,6 +1838,23 @@ Each field should contain the complete lyrics for that section, including any se
                     logger.warning("Lyric sections were too repetitive on attempt %s. Retrying.", attempt)
                     continue
                 raise ValueError("Lyric sections were too repetitive after retry")
+
+            # 5b. Song development: Verse 2 must move the story on; bridge should climb
+            if verse_two_repeats_verse_one(response_data):
+                if attempt < max_attempts:
+                    logger.warning("Verse 2 repeated Verse 1 on attempt %s. Retrying.", attempt)
+                    structure_feedback = (
+                        "\n\nREVISION REQUIRED: The previous draft's Verse 2 repeated Verse 1. "
+                        "Write a completely new Verse 2 set after the turning point, showing "
+                        "consequences and what the new state reveals. Do not reuse any Verse 1 line."
+                    )
+                    continue
+                logger.warning("Verse 2 still repeats Verse 1 after %s attempt(s); keeping draft.", attempt)
+            if bridge_is_underdeveloped(response_data):
+                logger.info(
+                    "Bridge has fewer than %d sung lines; climax may be thin.",
+                    MIN_BRIDGE_SUNG_LINES,
+                )
 
             # 6. Bilingual Ratio Threshold Validation
             if lyric_language == "bilingual":

@@ -34,4 +34,8 @@ For Japanese and bilingual songs, Rei checks inline, bracketed, parenthesized, a
 
 Readings use SudachiPy's contextual tokenization and pykakasi's Hepburn conversion; both are already included by the core requirements. If Sudachi is unavailable, Rei warns and falls back to pykakasi alone. If a Japanese character cannot be read, Rei warns and leaves its existing cue unchanged rather than producing a partial reading. These checks do not guarantee correct Japanese, resolve every ambiguous reading, or verify English translations: review the preview before submitting. They do not add an LLM call.
 
+## Song Development
+
+Concept prompts ask for a central chorus metaphor, an opening situation, a turning point, and what happens after it. Lyric prompts require Verse 2 to continue after the turning point without reusing Verse 1 lines, a chorus hook built on the metaphor, and a 6-8 line climactic bridge that leads into the final Drop; assembled songs place `[Bridge]` before `[Drop]`. For Japanese and bilingual songs, a Verse 2 that mostly repeats Verse 1 triggers a retry with revision feedback; English songs make one attempt and only log a warning. Bridge length is guided by the prompt, not enforced.
+
 See [regression coverage](../../testing-and-dev.md#rei-cli-preview-preparation-and-timing) for isolated CLI tests and current suite results.

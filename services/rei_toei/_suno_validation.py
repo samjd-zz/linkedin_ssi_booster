@@ -46,8 +46,8 @@ def validate_lyrics_with_dot(
         lyrics.pre_chorus or "",
         lyrics.chorus,
         lyrics.verse_2,
-        lyrics.drop or "",
         lyrics.bridge,
+        lyrics.drop or "",
         lyrics.solo or "",
         lyrics.outro or ""
     ])
