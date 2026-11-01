@@ -799,6 +799,33 @@ For example, `0.50` targets a roughly even bilingual song. A result from 30% to 
 REI_JAPANESE_LYRIC_PROBABILITY=0.25
 ```
 
+### `REI_BILINGUAL_STRATEGY`
+
+How bilingual songs are written.
+
+**Default:** `translate`
+
+**Options:**
+
+- `translate` — Rei writes the whole song in English (one Ollama call, with at most one structural retry). Code then picks hook lines so Japanese reaches `REI_JAPANESE_LYRIC_PROBABILITY` of sung lines after insertion: the chorus hook first, then stanza openers in the verses, alternating Bridge lines, and other sections in turn. Those lines are translated together in one short JSON Ollama call. Each Japanese line is inserted above its English line, which stays as the sung echo, and assembly adds the bracketed Romaji cue. Replies with the wrong line count, Chinese grammar, or no Japanese fall back to the offline Argos en→ja model; lines that still fail stay English.
+- `generate` — The model mixes both languages in a single pass; out-of-ratio drafts are retried up to five times. This is the previous behavior.
+
+```bash
+REI_BILINGUAL_STRATEGY=translate
+```
+
+### `REI_BILINGUAL_MAX_HOOK_LINES`
+
+Maximum number of lines translated into Japanese per song in `translate` mode.
+
+**Default:** `8`
+
+### `REI_ARGOS_MODEL_DIR`
+
+Directory of the unpacked Argos Translate `translate-en_ja` model used as the offline fallback. It runs with `ctranslate2` and `sentencepiece` only (no torch). The `argos-init` compose service, which runs before `app` under both profiles, downloads it into `./models/argos/`; outside Docker run `bash scripts/download-argos-en-ja.sh`. When the model is missing, Rei logs a hint and uses the Ollama translations alone.
+
+**Default:** `models/argos/translate-en_ja`
+
 > Both settings apply identically to `--rei-generate` (CLI) and `/rei` console requests,
 > including the console's direct-LLM fallback path used when no extracted knowledge is
 > available yet. Suno chorus ALL-CAPS formatting is only forced for `english` lyrics —

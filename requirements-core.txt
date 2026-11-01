@@ -8,6 +8,10 @@ trafilatura>=2.0.0
 model2vec>=0.1.0
 # Deterministic Kanji/Kana -> Hepburn Romaji conversion for Rei Toei lyric cues.
 pykakasi>=2.3.0
+# Offline Argos en->ja fallback for bilingual hook lines, run without torch/stanza
+# (model: scripts/download-argos-en-ja.sh).
+ctranslate2>=4.0.0
+sentencepiece>=0.2.0
 
 # --- APP INFRASTRUCTURE & API ---
 ollama>=0.4.0

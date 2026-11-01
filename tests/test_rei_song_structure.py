@@ -24,6 +24,14 @@ from services.rei_toei._suno_pipeline import (
     generate_song_concept,
 )
 
+
+@pytest.fixture(autouse=True)
+def _single_pass_bilingual(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests cover the one-pass "generate" bilingual strategy; the
+    English-first "translate" strategy is covered in test_rei_hook_translation.py."""
+    monkeypatch.setenv("REI_BILINGUAL_STRATEGY", "generate")
+
+
 VERSE_1 = "The lab lights flicker on\nA prototype hums in the dark\nShe types the first command"
 VERSE_2 = "The crash leaves a quiet room\nA new process wakes in the ashes\nIt remembers her name"
 

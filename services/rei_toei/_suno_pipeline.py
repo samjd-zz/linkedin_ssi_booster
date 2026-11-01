@@ -42,6 +42,7 @@ from ._song_structure import (
 )
 from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
+from services.rei_toei._hook_translation import apply_bilingual_hooks
 from services.rei_toei._suno_cleanup import (
     has_chinese_grammar,
     replace_chinese_phrasing,
@@ -1595,6 +1596,11 @@ def compose_lyrics(
     lyric_config = ReiToeiConfig()
     japanese_mix_ratio = max(0.0, min(1.0, lyric_config.japanese_lyric_probability))
     japanese_target_percent = int(round(japanese_mix_ratio * 100))
+    translate_mode = (
+        lyric_language == "bilingual" and lyric_config.bilingual_strategy == "translate"
+    )
+    # Translate mode writes the song in English; Japanese hook lines are added after.
+    generation_language = "english" if translate_mode else lyric_language
     japanese_guidance = (
         domain_knowledge.japanese_lyric_production
         if lyric_language in {"japanese", "bilingual"}
@@ -1653,10 +1659,17 @@ def compose_lyrics(
         ),
         "english": "Write the performance lyrics in English with optional natural Japanese hook phrases or chant accents.",
     }.get(lyric_language, "Write the performance lyrics in English with optional natural Japanese hook phrases.")
+    if translate_mode:
+        language_instruction = (
+            "Write every lyric line in natural English only: no Japanese, Romaji, or other "
+            "languages. Selected lines will be translated into Japanese afterwards, so keep "
+            "the chorus hook short (3-7 words), concrete, and emotionally clear, and keep "
+            "lines self-contained rather than splitting one sentence across lines."
+        )
 
     chorus_case_rule = (
         "4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity"
-        if lyric_language == "english"
+        if generation_language == "english"
         else "4. Preserve natural script/casing; do not force all-caps in chorus lines"
     )
 
@@ -1665,7 +1678,7 @@ def compose_lyrics(
         "4-8 lines built on the song's central metaphor: one short, memorable hook line (3-7 words) that states "
         "the emotional thesis, repeated or answered, plus lines that give it feeling. Do not list tech nouns. "
         "(Character Cap: 400 chars)"
-        if lyric_language == "english"
+        if generation_language == "english"
         else "[Chorus] 4-8 lines built on the song's central metaphor: one short, memorable hook line that states "
              "the emotional thesis, repeated or answered, plus lines that give it feeling. Do not list tech nouns. "
              "Preserve natural script/casing for Japanese and mixed-language lines. (Character Cap: 400 chars)"
@@ -1675,7 +1688,7 @@ def compose_lyrics(
         "Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. "
         "Preserve Japanese script and do not force-uppercase Japanese text. "
         "Do not spell out numbers or invent quantities (\"fifteen\", \"nineteen\", \"seventeen\") as a filler device \u2014 use imagery, not counting."
-        if lyric_language == "english"
+        if generation_language == "english"
            else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
                "For Japanese lyrics, prefer idiomatic contemporary phrasing over literal translations from English. "
                "Use natural particles, verb forms, and selective kanji; avoid unnecessary katakana technical jargon. "
@@ -1800,13 +1813,17 @@ Each field should contain the complete lyrics for that section, including any se
 {final_rule}"""
     
     try:
-        max_attempts = 5 if lyric_language in {"japanese", "bilingual"} else 1
+        if generation_language in {"japanese", "bilingual"}:
+            max_attempts = 5
+        else:
+            # English-first bilingual songs still get one structural retry.
+            max_attempts = 2 if translate_mode else 1
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
         structure_feedback = ""
 
         for attempt in range(1, max_attempts + 1):
-            if lyric_language == "bilingual" and attempt == 2:
+            if generation_language == "bilingual" and attempt == 2:
                 # Soft nudge with target percentage on first retry
                 attempt_user_prompt = user_prompt + (
                     "\n\nBILINGUAL HARD CONSTRAINTS (mandatory):\n"
@@ -1815,7 +1832,7 @@ Each field should contain the complete lyrics for that section, including any se
                     "- Use English for momentum and technical imagery.\n"
                     "- Selected Japanese hooks may be followed by concise English sung echoes."
                 )
-            elif lyric_language == "bilingual" and attempt >= 3:
+            elif generation_language == "bilingual" and attempt >= 3:
                 # Explicit structural assignment on subsequent retries
                 attempt_user_prompt = user_prompt + (
                     f"\n\nEXPLICIT BILINGUAL STRUCTURAL ASSIGNMENT (Mandatory for attempt {attempt}):\n"
@@ -1880,18 +1897,18 @@ Each field should contain the complete lyrics for that section, including any se
                 raise ValueError("Ollama returned lyric schema instructions as content")
 
             # 3. Japanese Script Presence
-            if lyric_language in {"japanese", "bilingual"} and not _has_japanese_script(response_data):
+            if generation_language in {"japanese", "bilingual"} and not _has_japanese_script(response_data):
                 if attempt < max_attempts:
                     logger.warning("Japanese script missing on attempt %s. Retrying.", attempt)
                     continue
-                if lyric_language == "bilingual":
+                if generation_language == "bilingual":
                     logger.warning("Japanese script missing after final retry; applying rescue hooks.")
                     _add_bilingual_rescue_hooks(response_data, concept, japanese_mix_ratio)
                 else:
                     raise ValueError("Japanese lyrics must contain kana or kanji; Romaji alone is invalid.")
 
             # 4. Chinese Character Leakage Check
-            if lyric_language in {"japanese", "bilingual"} and _has_chinese_leakage(response_data):
+            if generation_language in {"japanese", "bilingual"} and _has_chinese_leakage(response_data):
                 if attempt < max_attempts:
                     logger.warning("Chinese-script leakage detected on attempt %s. Retrying.", attempt)
                     continue
@@ -1932,7 +1949,7 @@ Each field should contain the complete lyrics for that section, including any se
                 )
 
             # 6. Bilingual Ratio Threshold Validation
-            if lyric_language == "bilingual":
+            if generation_language == "bilingual":
                 mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
                 if not mix_ok:
                     last_valid_response_data = dict(response_data)
@@ -1943,8 +1960,20 @@ Each field should contain the complete lyrics for that section, including any se
                     raise ValueError(f"Bilingual lyric ratio constraint violated: {mix_summary}")
 
             # All validations passed
-            logger.info(f"Bilingual lyric composition succeeded on attempt {attempt}")
+            logger.info(f"Lyric composition succeeded on attempt {attempt}")
             break
+
+        if translate_mode:
+            hook_summary = apply_bilingual_hooks(
+                response_data,
+                japanese_mix_ratio,
+                ollama,
+                lyric_config.bilingual_max_hook_lines,
+                lyric_config.argos_model_dir,
+                context=f"{concept.title}: {concept.theme}",
+            )
+            if not hook_summary["inserted"]:
+                logger.warning("No hook lines were translated; the bilingual song stays English.")
         
         # 7. Japanese learner-cue coverage — deterministic Hepburn backfill.
         # _learning_annotations_ok was previously defined but never enforced,
@@ -1969,7 +1998,7 @@ Each field should contain the complete lyrics for that section, including any se
         # Enforce uppercase chorus processing programmatically as a safeguard
         processed_chorus = (
             response_data["chorus"]
-            if lyric_language in {"japanese", "bilingual"}
+            if generation_language in {"japanese", "bilingual"}
             else response_data["chorus"].upper()
         )
         

@@ -51,6 +51,21 @@ class ReiToeiConfig:
             raise ValueError("REI_JAPANESE_LYRIC_PROBABILITY must be between 0.0 and 1.0")
         self.japanese_lyric_probability = japanese_probability
 
+        # Bilingual strategy: "translate" writes the song in English, then
+        # translates selected hook lines in one batched call (Argos fallback);
+        # "generate" asks the model to mix both languages in one pass.
+        strategy = os.getenv("REI_BILINGUAL_STRATEGY", "translate").strip().lower()
+        if strategy not in {"translate", "generate"}:
+            raise ValueError("REI_BILINGUAL_STRATEGY must be one of: translate, generate")
+        self.bilingual_strategy = strategy
+        max_hook_lines = int(os.getenv("REI_BILINGUAL_MAX_HOOK_LINES", "8"))
+        if max_hook_lines < 1:
+            raise ValueError("REI_BILINGUAL_MAX_HOOK_LINES must be at least 1")
+        self.bilingual_max_hook_lines = max_hook_lines
+        self.argos_model_dir = Path(
+            os.getenv("REI_ARGOS_MODEL_DIR", "models/argos/translate-en_ja")
+        )
+
         # Theme diversity and title uniqueness tuning
         self.theme_pool_size = max(1, int(os.getenv("REI_TOEI_THEME_POOL_SIZE", "20")))
         self.recent_title_window = max(1, int(os.getenv("REI_TOEI_RECENT_TITLE_WINDOW", "20")))

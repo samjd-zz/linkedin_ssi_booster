@@ -88,6 +88,25 @@ services:
     command: [ "python", "agents/buffer_mcp_agent.py" ]
     restart: on-failure:3
 
+  # ── Argos Translate en→ja model downloader ────────────────────────────────
+  # One-shot: downloads Rei's offline translation fallback into ./models/argos/
+  # (skipped when already present). Runs before app under core and full.
+  argos-init:
+    image: alpine:latest
+    container_name: ssi_booster_argos_init
+    profiles: [ "core", "full" ]
+    volumes:
+      - ./models/argos:/app/models/argos
+      - ./scripts:/app/scripts:ro
+    environment:
+      - REI_ARGOS_MODEL_DIR=/app/models/argos/translate-en_ja
+    command: >
+      sh -c "
+        apk add --no-cache curl bash python3 >/dev/null &&
+        bash /app/scripts/download-argos-en-ja.sh
+      "
+    restart: "no"
+
   # ── FLUX.1-schnell model downloader ───────────────────────────────────────
   # One-shot: downloads the GGUF weights from Civitai into ./models/flux/
   # Run manually: docker compose run --rm flux-init
@@ -234,6 +253,9 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
+      argos-init:
+        condition: service_completed_successfully
+        required: false # Translation fallback is optional; Rei keeps the Ollama path
       strudel-ws-bridge:
         condition: service_started
         required: false # Strudel is available only under --profile full
@@ -262,6 +284,7 @@ services:
       - ./yt-vid-data:/app/yt-vid-data
       - ./content_calendar.py:/app/content_calendar.py:ro
       - ./models/flux:/app/models/flux
+      - ./models/argos:/app/models/argos
       - hf_cache:/root/.cache/huggingface
     stdin_open: true
     tty: true

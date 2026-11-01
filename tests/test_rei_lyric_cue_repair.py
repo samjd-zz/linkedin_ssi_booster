@@ -24,6 +24,13 @@ from services.rei_toei._suno_pipeline import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _single_pass_bilingual(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests cover the one-pass "generate" bilingual strategy; the
+    English-first "translate" strategy is covered in test_rei_hook_translation.py."""
+    monkeypatch.setenv("REI_BILINGUAL_STRATEGY", "generate")
+
+
 @pytest.mark.parametrize(
     ("source", "expected", "incorrect", "meaning"),
     [

@@ -60,6 +60,13 @@ from services.avatar_intelligence._models import ExtractedEvidenceFact
 # Test Fixtures
 # ============================================================================
 
+@pytest.fixture(autouse=True)
+def _single_pass_bilingual(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests cover the one-pass "generate" bilingual strategy; the
+    English-first "translate" strategy is covered in test_rei_hook_translation.py."""
+    monkeypatch.setenv("REI_BILINGUAL_STRATEGY", "generate")
+
+
 @pytest.fixture
 def mock_persona_data():
     """Mock persona graph data"""
