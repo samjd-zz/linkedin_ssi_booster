@@ -384,6 +384,8 @@ def test_console_reports_score_quietly_without_truth_gate(
     out = capsys.readouterr().out
     assert "truth-gate=OFF" in out
     assert "Sam> A grounded reply." in out
+    assert "/verify  /avatar-explain  /dot-report" in out
+    assert "/truth-gate  /graph-stats  /katzilla <query>" in out
 
 
 def test_console_truth_gate_toggle_shows_filtered_reply(
