@@ -1241,6 +1241,7 @@ def run_console(
             except Exception as e:
                 _clear_console_status(24)
                 _print_console_error("sam", str(e))
+                history.pop()
                 continue
             reply, _gate_meta = _apply_console_truth_gate(reply, learned_facts)
             if not reply:
@@ -1367,6 +1368,7 @@ def run_console(
         except Exception as e:
             _clear_console_status(24)
             _print_console_error("sam", str(e))
+            history.pop()
             continue
         reply, _gate_meta = _apply_console_truth_gate(reply, facts)
         if not reply:

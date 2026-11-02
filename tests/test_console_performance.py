@@ -242,6 +242,27 @@ def test_console_verifies_once_without_duplicate_truth_bar(
     assert capsys.readouterr().out.count("DoT 0.80") == 1
 
 
+def test_console_chat_error_drops_unanswered_user_turn(
+    console: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    from services.ollama_service import GarbledOutputError
+
+    seen: list[list[str]] = []
+
+    def chat(history: list[dict[str, str]], **_: Any) -> str:
+        seen.append([m["role"] for m in history])
+        if len(seen) == 1:
+            raise GarbledOutputError("returned garbled output twice")
+        return "A grounded reply."
+
+    console.ai.chat_as_persona.side_effect = chat
+    inputs = iter(["Explain retrieval", "Explain retrieval again", "/exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+    main.run_console(console.ai)
+    assert seen == [["user"], ["user"]]
+    assert "garbled output twice" in capsys.readouterr().out
+
+
 def test_console_tag_relationships_reuse_snapshot_and_refresh_on_reload(
     console: SimpleNamespace, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

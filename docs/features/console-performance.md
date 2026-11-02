@@ -70,8 +70,19 @@ The truth gate filters the shown reply only when `/truth-gate` is on; the report
 toggles score quietly and reuse the gate result when both are on.
 Inline verification now prints one truth bar, not a duplicate report bar.
 
+Sam's console replies pass through a garbled-output guard
+(`services/llm_output_guard.py`) before display or the truth gate. Some local
+runtimes, notably IPEX-LLM on Intel iGPUs, can decode long prefix-cached prompts
+into token salad: Latin glued to Chinese characters, code identifiers, symbol
+runs, and stray scripts. When a reply looks garbled, `chat_as_persona` unloads
+the model to drop its KV/prefix cache and retries once; a second garbled reply
+raises `GarbledOutputError`, the console prints a clear error, and the turn is
+dropped from history. All compose files set `OLLAMA_NUM_PARALLEL=1` on the
+Ollama server so one request owns the whole context and cache.
+
 No background speech, reduced grounding checks, shorter generation limits, or
-between-turn model unloads were introduced. Operation-count regressions verify
+between-turn model unloads were introduced (the garbled-reply retry unloads
+only after a token-salad reply). Operation-count regressions verify
 the removed work; actual latency depends on the loaded models and hardware.
 
 See [regression coverage](../testing-and-dev.md#console-performance-regressions)

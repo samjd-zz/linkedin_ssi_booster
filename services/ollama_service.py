@@ -28,6 +28,7 @@ from services.console_grounding import (
     TruthGateMeta,
 )
 from services.avatar_intelligence import build_extracted_grounding_context, ExtractedEvidenceFact
+from services.llm_output_guard import analyse_garble
 from services.performance import log_ollama_timings, timed_stage
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,10 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL = "llama3.2"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_NUM_CTX = 16384
+
+
+class GarbledOutputError(RuntimeError):
+    """Raised when the model keeps returning token salad after a cache reset."""
 
 
 def _describe_ollama_error(exc: Exception, base_url: str) -> str:
@@ -289,15 +294,33 @@ You are in interactive console chat mode.
                 normalized_messages.append({"role": role, "content": content})
 
         try:
-            with timed_stage(logger, "console.sam.chat"):
-                response = self.client.chat(
-                    model=self.model,
-                    think=self.think,
-                    options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
-                    messages=[{"role": "system", "content": system_prompt}, *normalized_messages],
+            for attempt in (1, 2):
+                with timed_stage(logger, "console.sam.chat"):
+                    response = self.client.chat(
+                        model=self.model,
+                        think=self.think,
+                        options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
+                        messages=[{"role": "system", "content": system_prompt}, *normalized_messages],
+                    )
+                log_ollama_timings(logger, self.model, response)
+                reply = clean_llm_text((response.message.content or "").strip())
+                report = analyse_garble(reply)
+                if not report.is_garbled:
+                    return reply
+                logger.warning(
+                    "Garbled model output detected (attempt %d, anomalies=%d, density=%.1f/100 chars)",
+                    attempt, report.anomalies, report.density,
                 )
-            log_ollama_timings(logger, self.model, response)
-            return clean_llm_text((response.message.content or "").strip())
+                if attempt == 1:
+                    # Unloading drops the runner's KV/prefix cache so the retry re-evaluates the prompt.
+                    self.unload(wait_seconds=15.0)
+            raise GarbledOutputError(
+                f"Model {self.model} returned garbled output twice (token salad). "
+                "This is a runtime decoding fault, not a retrieval problem; "
+                "try a shorter question, /reset the history, or restart the ollama container."
+            )
+        except GarbledOutputError:
+            raise
         except ollama.ResponseError as e:
             raise RuntimeError(f"Ollama API error (model={self.model}): {e}") from e
         except Exception as e:

@@ -194,6 +194,9 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      # Server-side setting (ollama-init's copy only affects the client).
+      - OLLAMA_NUM_PARALLEL=1
     # No GPU reservation: Ollama runs CPU-only by default so --profile core works on non-GPU hosts.
     # If an NVIDIA GPU + nvidia-container-toolkit are available, add a deploy.resources.reservations block back.
     healthcheck:
