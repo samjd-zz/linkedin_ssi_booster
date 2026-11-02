@@ -155,8 +155,13 @@ def truth_gate_result(
     channel: str = "linkedin",
     suggest_facts: bool = True,
     dot_facts: list[ProjectFact] | None = None,
+    log_removals: bool = True,
 ) -> tuple[str, TruthGateMeta]:
-    """Truth gate that returns both the filtered text and scoring metadata."""
+    """Truth gate that returns both the filtered text and scoring metadata.
+
+    ``log_removals=False`` keeps removal lines at DEBUG, for callers that only
+    want the scores (console /verify, /avatar-explain, /dot-report).
+    """
     if not text:
         return text, TruthGateMeta(removed_count=0, total_sentences=0)
 
@@ -421,9 +426,10 @@ def truth_gate_result(
         else:
             kept.append(sentence)
 
+    _log_removal = logger.info if log_removals else logger.debug
     if removed:
         for full_sentence, reason in removed:
-            logger.info(
+            _log_removal(
                 "%s🛑 Truth gate removed [channel=%s] [%s]: %s%s",
                 str(Fore.RED),
                 channel,
@@ -431,7 +437,7 @@ def truth_gate_result(
                 full_sentence,
                 str(Style.RESET_ALL),
             )
-        logger.info(
+        _log_removal(
             "%s⚖️  Truth gate summary [channel=%s]: removed %d of %d sentences%s",
             str(Fore.YELLOW),
             channel,
@@ -454,6 +460,7 @@ def truth_gate_result(
         removed_count=len(removed),
         total_sentences=len(sentences),
         reason_codes=[r.split(":")[0] for _, r in removed],
+        removed_sentences=[s for s, _ in removed],
         dot_per_sentence_scores=dot_per_sentence_scores,
         spacy_sim_scores=spacy_sim_scores,
         fact_sim_scores=fact_sim_scores,

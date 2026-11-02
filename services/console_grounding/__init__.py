@@ -63,6 +63,7 @@ from services.console_grounding._gate_helpers import (
 )
 
 # Truth gate public API
+from services.console_grounding._console_gate import remove_gated_sentences
 from services.console_grounding._truth_gate import (
     truth_gate,
     truth_gate_result,
@@ -115,6 +116,7 @@ __all__ = [
     "get_all_persona_facts_from_avatar_state",
     "get_domain_facts_from_avatar_state",
     # truth gate
+    "remove_gated_sentences",
     "truth_gate",
     "truth_gate_result",
 ]

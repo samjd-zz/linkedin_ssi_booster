@@ -32,6 +32,7 @@ class TruthGateMeta:
     removed_count: int
     total_sentences: int
     reason_codes: list[str] = field(default_factory=list)
+    removed_sentences: list[str] = field(default_factory=list)
     truth_gradient: float = 1.0
     dot_uncertainty: float = 0.0
     dot_flagged: bool = False

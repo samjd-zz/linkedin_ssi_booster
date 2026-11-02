@@ -65,7 +65,9 @@ limits, Japanese/bilingual lyric checks, and retries are unchanged.
 Replies print before voice playback and Sam's optional art/verification work.
 Piper intentionally blocks until audio completes; set `CONSOLE_USE_VOICE=false`
 in `.env` before starting the process for text-only conversations. Verification
-is off by default; `/verify`, `/avatar-explain`, and `/dot-report` add work.
+is off by default; `/verify`, `/avatar-explain`, `/dot-report`, and `/truth-gate` add work.
+The truth gate filters the shown reply only when `/truth-gate` is on; the report
+toggles score quietly and reuse the gate result when both are on.
 Inline verification now prints one truth bar, not a duplicate report bar.
 
 No background speech, reduced grounding checks, shorter generation limits, or

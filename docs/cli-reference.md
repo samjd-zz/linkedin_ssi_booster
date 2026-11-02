@@ -239,6 +239,7 @@ python main.py --console --verify --avatar-explain --dot-report
 | `/verify`             | Toggle DoT + similarity verification on/off                                                                          |
 | `/avatar-explain`     | Toggle avatar-explain report (evidence IDs and grounding summary) on/off                                             |
 | `/dot-report`         | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off                                            |
+| `/truth-gate`         | Toggle the truth gate (off by default): unsupported sentences are removed and the filtered reply is shown            |
 | `/graph-stats`        | Show knowledge graph statistics plus domain-knowledge profiles for both Sam and Rei                                  |
 | `/katzilla <query>`   | Show deterministic external evidence citations for a query                                                           |
 | `/rei` or `/rei-toei` | Switch to Rei Toei music avatar mode                                                                                 |
@@ -577,7 +578,9 @@ python main.py --curate --learn --type post
 # Console mode with all diagnostic modes
 python main.py --console --verify --avatar-explain --dot-report
 
-# Or toggle modes during session with /verify, /avatar-explain, /dot-report
+# Or toggle modes during session with /verify, /avatar-explain, /dot-report, /truth-gate
+# Start with the truth gate ON (off by default)
+python main.py --console --truth-gate
 python main.py --console
 ```
 

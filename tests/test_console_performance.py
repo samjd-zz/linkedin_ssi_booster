@@ -4,6 +4,7 @@ import asyncio
 import logging
 import sys
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
@@ -49,13 +50,14 @@ def test_embeddings_preserve_order_duplicates_and_model_changes() -> None:
 
 def test_incomplete_embedding_batch_is_not_cached() -> None:
     service = Model2VecService()
-    service._model = Mock()
-    service._model.encode.return_value = [[1]]
+    model = Mock()
+    service._model = model
+    model.encode.return_value = [[1]]
     with pytest.raises(ValueError, match="incomplete embedding batch"):
         service._encode_cached(["one", "two"])
-    service._model.encode.return_value = [[1], [2]]
+    model.encode.return_value = [[1], [2]]
     assert service._encode_cached(["one", "two"]) == [[1], [2]]
-    assert service._model.encode.call_count == 2
+    assert model.encode.call_count == 2
 
 
 def test_hybrid_batches_tokenization_and_refreshes_same_id_edits() -> None:
@@ -143,7 +145,8 @@ def test_rei_pattern_uses_active_console_client(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(rei, "load_recent_rei_titles", Mock(return_value=[]))
     monkeypatch.setattr(rei, "choose_diverse_theme", Mock(return_value=SimpleNamespace(name="Async")))
     template = Mock()
-    monkeypatch.setattr(rei, "map_concept_to_pattern", Mock(return_value=template))
+    map_pattern = Mock(return_value=template)
+    monkeypatch.setattr(rei, "map_concept_to_pattern", map_pattern)
     generate = Mock(return_value=SimpleNamespace(strudel_code="note('c3')"))
     monkeypatch.setattr(rei, "generate_strudel_code", generate)
     monkeypatch.setattr(rei, "validate_strudel_syntax", Mock(return_value=SimpleNamespace(valid=True)))
@@ -151,7 +154,7 @@ def test_rei_pattern_uses_active_console_client(monkeypatch: pytest.MonkeyPatch)
     assert "note('c3')" in reply
     assert history[-1]["_rei_pending_pattern"] == "note('c3')"
     assert generate.call_args.kwargs["ollama"] is ai
-    assert rei.map_concept_to_pattern.call_args.args[1] is service.pattern_library
+    assert map_pattern.call_args.args[1] is service.pattern_library
 
 
 @pytest.fixture
@@ -303,14 +306,14 @@ def test_console_llm_timings_preserve_replies_and_errors(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
     avatar_name: str, fail: bool,
 ) -> None:
-    from ollama import ChatResponse
+    from ollama import ChatResponse, Message
     from services.ollama_service import OllamaService
 
     client = Mock()
     monkeypatch.setattr("services.ollama_service.ollama.Client", Mock(return_value=client))
     ai = OllamaService(model="test-model")
     client.chat.return_value = ChatResponse(
-        message={"role": "assistant", "content": "A reply"},
+        message=Message(role="assistant", content="A reply"),
         load_duration=1_000_000_000, eval_duration=2_000_000_000,
     )
     if fail:
@@ -341,10 +344,43 @@ def test_disabled_reports_skip_reporting_imports(monkeypatch: pytest.MonkeyPatch
 
     original_import = builtins.__import__
 
-    def guarded_import(name: str, *args: object, **kwargs: object) -> object:
+    def guarded_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name in {"services.console_grounding", "services.avatar_intelligence"}:
             raise AssertionError("Disabled reporting must not import validation services")
         return original_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", guarded_import)
     print_validation_reports("Reply", "", [], [], [], [], [], [])
+
+
+def test_console_reports_score_quietly_without_truth_gate(
+    console: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    inputs = iter(["Explain retrieval", "/exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+    main.run_console(console.ai, verify=True)
+    assert console.gate.call_args.kwargs["log_removals"] is False
+    out = capsys.readouterr().out
+    assert "truth-gate=OFF" in out
+    assert "Sam> A grounded reply." in out
+
+
+def test_console_truth_gate_toggle_shows_filtered_reply(
+    console: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    console.ai.chat_as_persona.return_value = "Certainly! Retrieval ranks facts.\nGreeting:\n  - Hello!"
+    console.gate.return_value = ("", SimpleNamespace(
+        truth_gradient=0.8, fact_sim_scores={}, total_sentences=3,
+        removed_sentences=["Certainly!", "Greeting:\n  - Hello!"],
+    ))
+    inputs = iter(["/truth-gate", "Explain retrieval", "/exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+    main.run_console(console.ai, verify=True)
+    console.gate.assert_called_once()
+    assert "log_removals" not in console.gate.call_args.kwargs
+    out = capsys.readouterr().out
+    assert "truth-gate=ON" in out
+    assert "Truth gate removed 2 of 3 sentences" in out
+    assert "Sam> Retrieval ranks facts." in out
+    assert "Certainly!" not in out
+    assert out.count("DoT 0.80") == 1

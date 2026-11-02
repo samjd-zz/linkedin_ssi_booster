@@ -119,7 +119,7 @@ When you run `--console`, the startup screen explains the three query modes and 
     - 10% claim support (facts with more supporting edges rank higher)
   • Use /graph-stats to inspect graph structure and both domain-knowledge profiles (Sam + Rei)
 
-  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /graph-stats, /katzilla, /rei, /rei-toei, /art
+  Commands: /help, /reset, /reload, /exit, /quit, /verify, /avatar-explain, /dot-report, /truth-gate, /graph-stats, /katzilla, /rei, /rei-toei, /art
   Art note: /art uses the most recent AI reply in this session as source text, or an explicit topic if provided (e.g. /art "shrine maiden"). Asking Sam to draw or depict Japanese characters/artwork automatically triggers a FLUX render.
 ```
 
@@ -155,6 +155,7 @@ Console mode supports the following slash commands:
 | `/verify`          | Toggle DoT + similarity verification on/off                               |
 | `/avatar-explain`  | Toggle avatar-explain report (evidence IDs and grounding summary) on/off  |
 | `/dot-report`      | Toggle Derivative of Truth report (truth gradient and uncertainty) on/off |
+| `/truth-gate`      | Toggle the truth gate; when on, the filtered reply is shown (off by default) |
 | `/graph-stats`     | Show graph metrics and both domain-knowledge profiles (Sam + Rei)         |
 
 `/graph-stats` output now includes:
@@ -164,9 +165,11 @@ Console mode supports the following slash commands:
 3. Sam domain knowledge totals from `domain_knowledge.json` + `domain_knowledge_*.json` packs
 4. Rei domain knowledge structural summary from `rei_toei_domain_knowledge.json`
 
-**Status Display**: The status line shows the current state of all three diagnostic modes. When a mode is enabled, it displays in **green**; when disabled, it displays in **red**.
+**Status Display**: The status line shows the current state of all four diagnostic modes. When a mode is enabled, it displays in **green**; when disabled, it displays in **red**.
 
 **Toggle Behavior**: When you toggle a mode with `/verify`, `/avatar-explain`, or `/dot-report`, the command displays confirmation and updates the status line. You can enable/disable any combination of modes during your session without restarting console mode.
+
+**Truth gate**: `/truth-gate` (or `--truth-gate` at startup) is a separate toggle, off by default. When on, the 4-layer truth gate filters each Sam reply before it is printed and spoken, a dim line reports how many sentences were removed, and the filtered reply (with its line layout kept) is shown and stored in history. `/verify`, `/avatar-explain`, and `/dot-report` still score replies but no longer log `🛑 Truth gate removed` lines or change the displayed text.
 
 **Runtime and latency:** Sam reuses batched retrieval corpora rather than reparsing every fact on each turn. Rei caches persona/domain files and only loads Strudel templates for pattern requests; songs and patterns reuse the active console Ollama client. Voice playback remains synchronous, so a long spoken reply delays the next prompt. See [console performance and stage timings](features/console-performance.md) for details.
 

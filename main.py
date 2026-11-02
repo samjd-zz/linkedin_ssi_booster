@@ -597,13 +597,21 @@ from services.ollama_service import OllamaService
 from services.github_service import build_github_profile_context
 from services.piper_service import speak_text
 
-def run_console(ai: OllamaService, github_context: str = "", verify: bool = False, avatar_explain: bool = False, dot_report: bool = False) -> None:
+def run_console(
+    ai: OllamaService,
+    github_context: str = "",
+    verify: bool = False,
+    avatar_explain: bool = False,
+    dot_report: bool = False,
+    truth_gate: bool = False,
+) -> None:
     """Run interactive persona chat mode in the terminal.
     
     When verify=True, DoT report scanning and spaCy similarity checks are displayed
     for each generated response.
     When avatar_explain=True, evidence IDs and grounding summary are printed after each LLM reply.
     When dot_report=True, Derivative of Truth report is printed after each LLM reply.
+    When truth_gate=True, unsupported sentences are removed before the reply is shown.
     """
     # Patterns that should always route to LLM (not deterministic fact citation)
     GENERATIVE_REQUEST_PHRASES = [
@@ -619,6 +627,8 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         _status_line += str(Fore.GREEN if avatar_explain else Fore.RED) + f"avatar-explain={'ON' if avatar_explain else 'OFF'}" + str(Style.RESET_ALL)
         _status_line += str(Style.DIM) + " | " + str(Style.RESET_ALL)
         _status_line += str(Fore.GREEN if dot_report else Fore.RED) + f"dot-report={'ON' if dot_report else 'OFF'}" + str(Style.RESET_ALL)
+        _status_line += str(Style.DIM) + " | " + str(Style.RESET_ALL)
+        _status_line += str(Fore.GREEN if truth_gate else Fore.RED) + f"truth-gate={'ON' if truth_gate else 'OFF'}" + str(Style.RESET_ALL)
         print(_status_line)
 
     print(str(Fore.CYAN) + str(Style.BRIGHT) + "\n🧠 Persona Console Mode — Enhanced Query Routing" + str(Style.RESET_ALL))
@@ -657,7 +667,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     print(str(Fore.WHITE) + str(Style.BRIGHT) + "  Commands" + str(Style.RESET_ALL))
     print(str(Fore.CYAN) + f"  {_hr}" + str(Style.RESET_ALL))
     print(str(Fore.YELLOW) + "  Session   " + str(Style.RESET_ALL) + str(Fore.WHITE) + "/help  /reset  /reload  /exit  /quit" + str(Style.RESET_ALL))
-    print(str(Fore.YELLOW) + "  Reports   " + str(Style.RESET_ALL) + str(Fore.WHITE) + "/verify  /avatar-explain  /dot-report  /graph-stats  /katzilla <query>" + str(Style.RESET_ALL))
+    print(str(Fore.YELLOW) + "  Reports   " + str(Style.RESET_ALL) + str(Fore.WHITE) + "/verify  /avatar-explain  /dot-report  /truth-gate  /graph-stats  /katzilla <query>" + str(Style.RESET_ALL))
     print(str(Fore.YELLOW) + "  Identity  " + str(Style.RESET_ALL) + str(Fore.WHITE) + "/rei  /rei-toei  (sticky Rei mode)    /sam  (back to Sam)" + str(Style.RESET_ALL))
     print(str(Fore.YELLOW) + "  Creative  " + str(Style.RESET_ALL) + str(Fore.WHITE) + "/art [topic]  — FLUX render from most recent AI reply" + str(Style.RESET_ALL))
     print(str(Fore.CYAN) + f"  {_hr}" + str(Style.RESET_ALL))
@@ -833,8 +843,30 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
     sys.excepthook = _console_excepthook
 
     from services.console_grounding import truth_gate_result as _tg_result
+    from services.console_grounding import TruthGateMeta, remove_gated_sentences
 
-    def _print_truth_score(reply: str, facts: list) -> object | None:
+    def _apply_console_truth_gate(reply: str, facts: list) -> tuple[str, TruthGateMeta | None]:
+        """Filter the reply through the truth gate when /truth-gate is ON."""
+        if not truth_gate:
+            return reply, None
+        print(str(Fore.CYAN) + "🛡️ Truth gate..." + str(Style.RESET_ALL), end="", flush=True)
+        with timed_stage(logger, "console.truth_gate"):
+            _, _meta = _tg_result(reply, "", facts, channel="console", dot_facts=facts)
+        print("\r" + " " * 20 + "\r", end="", flush=True)
+        removed = list(getattr(_meta, "removed_sentences", []) or [])
+        if not removed:
+            return reply, _meta
+        gated = remove_gated_sentences(reply, removed)
+        print(
+            str(Style.DIM)
+            + f"  🛡️ Truth gate removed {len(removed)} of {getattr(_meta, 'total_sentences', len(removed))} sentences"
+            + str(Style.RESET_ALL)
+        )
+        if not gated:
+            print(str(Fore.YELLOW) + "  Truth gate removed every sentence; nothing grounded to show." + str(Style.RESET_ALL))
+        return gated, _meta
+
+    def _print_truth_score(reply: str, facts: list, gate_meta: TruthGateMeta | None = None) -> TruthGateMeta | None:
         """Print a minimal 1-line DoT + fact-sim bar after a generated reply.
 
         spaCy article sim is intentionally excluded — it requires a source article
@@ -846,8 +878,10 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
         if not verify:
             return None
         try:
-            with timed_stage(logger, "console.verification"):
-                _, _meta = _tg_result(reply, "", facts)
+            _meta = gate_meta
+            if _meta is None:
+                with timed_stage(logger, "console.verification"):
+                    _, _meta = _tg_result(reply, "", facts, channel="console", log_removals=False)
             dot = _meta.truth_gradient
 
             if dot >= 0.75:
@@ -1009,6 +1043,7 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             print("  /verify          toggle DoT + similarity verification on/off")
             print("  /avatar-explain  toggle avatar-explain report on/off")
             print("  /dot-report      toggle DoT report on/off")
+            print("  /truth-gate      toggle truth gate on/off (shows the filtered reply)")
             print("  /graph-stats     show knowledge graph statistics")
             print("  /katzilla <q>    deterministic external evidence citations")
             print()
@@ -1063,6 +1098,12 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             dot_report = not dot_report
             _status = str(Fore.GREEN) + "ON" + str(Style.RESET_ALL) if dot_report else str(Fore.RED) + "OFF" + str(Style.RESET_ALL)
             print(f"DoT report mode: {_status}")
+            _print_status()
+            continue
+        if cmd == "/truth-gate":
+            truth_gate = not truth_gate
+            _status = str(Fore.GREEN) + "ON" + str(Style.RESET_ALL) if truth_gate else str(Fore.RED) + "OFF" + str(Style.RESET_ALL)
+            print(f"Truth gate mode: {_status}")
             _print_status()
             continue
         if cmd == "/graph-stats":
@@ -1201,20 +1242,25 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
                 _clear_console_status(24)
                 _print_console_error("sam", str(e))
                 continue
+            reply, _gate_meta = _apply_console_truth_gate(reply, learned_facts)
+            if not reply:
+                history.pop()
+                continue
             history.append({"role": "assistant", "content": reply})
             _print_console_reply("sam", reply)
             speak_text(reply)
             _auto_render_art_if_requested(ai, reply, constraints, user_input)
-            _gate_meta = None
             if verify:
                 print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
-                _gate_meta = _print_truth_score(reply, learned_facts)
+                _gate_meta = _print_truth_score(reply, learned_facts, _gate_meta)
                 print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
-            elif avatar_explain or dot_report:
+            elif (avatar_explain or dot_report) and _gate_meta is None:
                 if avatar_explain:
                     print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
                 with timed_stage(logger, "console.verification"):
-                    _, _gate_meta = _tg_result(reply, "", learned_facts, dot_facts=learned_facts)
+                    _, _gate_meta = _tg_result(
+                        reply, "", learned_facts, channel="console", dot_facts=learned_facts, log_removals=False,
+                    )
             
             
             from services.shared import print_validation_reports
@@ -1322,20 +1368,23 @@ def run_console(ai: OllamaService, github_context: str = "", verify: bool = Fals
             _clear_console_status(24)
             _print_console_error("sam", str(e))
             continue
+        reply, _gate_meta = _apply_console_truth_gate(reply, facts)
+        if not reply:
+            history.pop()
+            continue
         history.append({"role": "assistant", "content": reply})
         _print_console_reply("sam", reply)
         speak_text(reply)
         _auto_render_art_if_requested(ai, reply, constraints, user_input)
-        _gate_meta = None
         if verify:
             print(str(Fore.CYAN) + "📊 Verifying..." + str(Style.RESET_ALL), end="", flush=True)
-            _gate_meta = _print_truth_score(reply, facts)
+            _gate_meta = _print_truth_score(reply, facts, _gate_meta)
             print("\r" + " " * 20 + "\r", end="", flush=True)  # Clear the "Verifying..." line
-        elif avatar_explain or dot_report:
+        elif (avatar_explain or dot_report) and _gate_meta is None:
             if avatar_explain:
                 print(f"{Fore.CYAN}🧠 Generating avatar-explain...{Style.RESET_ALL}", end="", flush=True)
             with timed_stage(logger, "console.verification"):
-                _, _gate_meta = _tg_result(reply, "", facts, dot_facts=facts)
+                _, _gate_meta = _tg_result(reply, "", facts, channel="console", dot_facts=facts, log_removals=False)
 
         from services.shared import print_validation_reports
         print_validation_reports(
@@ -1359,6 +1408,7 @@ def main():
     parser.add_argument("--curate",    action="store_true", help="Curate AI news and create ideas in Buffer")
     parser.add_argument("--console",   action="store_true", help="Open interactive persona chat mode (no Buffer calls)")
     parser.add_argument("--verify",    action="store_true", help="Enable DoT report scanning and spaCy similarity checks in console mode (requires --console)")
+    parser.add_argument("--truth-gate", action="store_true", help="Start console mode with the truth gate ON: unsupported sentences are removed before replies are shown (requires --console)")
     parser.add_argument("--report",    action="store_true", help="Print SSI component report")
     parser.add_argument("--save-ssi",  nargs=4, metavar=("BRAND", "FIND", "ENGAGE", "BUILD"),
                         type=float, help="Record today's SSI scores: --save-ssi 10.49 9.69 11.0 12.15")
@@ -1600,7 +1650,14 @@ def main():
     )
 
     if args.console:
-        run_console(ai=ai, github_context=_github_context, verify=args.verify, avatar_explain=args.avatar_explain, dot_report=args.dot_report)
+        run_console(
+            ai=ai,
+            github_context=_github_context,
+            verify=args.verify,
+            avatar_explain=args.avatar_explain,
+            dot_report=args.dot_report,
+            truth_gate=args.truth_gate,
+        )
         return
 
     # Handle Rei Toei CLI commands — Phase 1E full implementation
