@@ -78,3 +78,21 @@ def test_compose_lyrics_tidies_before_translation(monkeypatch, tmp_path):
     assert "PULSE CODE\n" in lyrics.chorus and "(PULSE CODE)" not in lyrics.chorus
     assert "bass drop" not in lyrics.bridge.lower()
     assert "Pulse code" not in lyrics.bridge
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("A fragmented mind cries for light. (34 chars)", "A fragmented mind cries for light."),
+        ("COMMAND REIGNS SUPREME IN THE DATA VORTEX (38 chars, UPPERCASE)",
+         "COMMAND REIGNS SUPREME IN THE DATA VORTEX"),
+        ("A new order, syntax rectified. ()", "A new order, syntax rectified."),
+        ("LOUD LINE (ALL-CAPS)", "LOUD LINE"),
+        ("No leak here (Oh oh)", "No leak here (Oh oh)"),
+        ("Count it (3 times)", "Count it (3 times)"),
+    ],
+)
+def test_character_count_notes_leave_no_empty_parentheses(raw: str, expected: str) -> None:
+    from services.rei_toei._suno_pipeline import _normalize_suno_section
+
+    assert _normalize_suno_section(raw, "Verse 1").splitlines()[1] == expected

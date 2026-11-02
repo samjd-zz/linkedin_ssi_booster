@@ -128,7 +128,11 @@ _LEARNING_PLACEHOLDER_RE = re.compile(
 _PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
     r"(?:"
     r"\(?Character Cap:\s*\d+\s*(?:chars?)?\)?|"
+    # "(34 chars)" or "(38 chars, UPPERCASE)": drop the whole note, not just the count.
+    r"\s*[(（][^()（）\n]*\b\d+\s*(?:chars?|characters)\b[^()（）\n]*[)）]|"
     r"\b\d+\s*chars?\b|"
+    r"\s*[(（]\s*[)）]|"
+    r"\s*[(（]\s*(?:all[- ]?caps|uppercase)\s*[)）]|"
     r"Two stanzas of (?:deep )?technical narrative(?: building on [^\n]+)?\.?|"
     r"followed by \d+(?:-\d+)? lines (?:describing|of)[^\n]*|"
     r"(?:then )?on its own line as a vocalization primer(?:, then)?|"
