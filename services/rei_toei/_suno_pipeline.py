@@ -2005,7 +2005,7 @@ Each field should contain the complete lyrics for that section, including any se
             )
             if not hook_summary["inserted"]:
                 logger.warning("No hook lines were translated; the bilingual song stays English.")
-        
+
         # 7. Japanese learner-cue coverage — deterministic Hepburn backfill.
         # _learning_annotations_ok was previously defined but never enforced,
         # so songs often shipped with little or no Romaji. Small models drop

@@ -657,22 +657,9 @@ Executed: true
 
 ## Environment Variables
 
-Add to `.env` and `.env.example`:
-
-```bash
-# Rei Toei Music Avatar
-REI_TOEI_ENABLED=true                     # Enable Rei Toei features
-REI_TOEI_DEFAULT_BPM=142                  # Default tempo for songs
-REI_TOEI_DEFAULT_GENRE="industrial techno cyberpunk"
-REI_TOEI_MAX_SONG_LENGTH_SECONDS=180     # Suno limit: ~3 minutes
-REI_TOEI_CONSOLE_ENABLED=true            # Enable /rei-toei in console
-REI_TOEI_AUTO_EVIDENCE_TRACKING=true     # Track evidence IDs in lyrics
-
-# Strudel Integration
-REI_TOEI_STRUDEL_ENABLED=true            # Enable Strudel pattern generation
-REI_TOEI_STRUDEL_DEFAULT_BARS=16         # Default pattern length in bars
-REI_TOEI_STRUDEL_AUTO_EXECUTE=false      # Auto-execute patterns (vs preview only)
-```
+This feature idea predates the current configuration. For supported options
+and defaults, see [`.env.example`](../../../.env.example) and the
+[Rei music-generation settings](../../environment-variables.md#rei-toei-music-generation).
 
 ## Testing Strategy
 

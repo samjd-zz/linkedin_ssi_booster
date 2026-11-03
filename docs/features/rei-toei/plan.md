@@ -867,20 +867,9 @@ class StrudelPatternTemplate:
 
 3. **Update `.env.example`**
 
-   ```bash
-   # Rei Toei Music Avatar
-   REI_TOEI_ENABLED=true
-   REI_TOEI_DEFAULT_BPM=142
-   REI_TOEI_DEFAULT_GENRE="industrial techno cyberpunk"
-   REI_TOEI_MAX_SONG_LENGTH_SECONDS=180
-   REI_TOEI_CONSOLE_ENABLED=true
-   REI_TOEI_AUTO_EVIDENCE_TRACKING=true
-
-   # Strudel Integration
-   REI_TOEI_STRUDEL_ENABLED=true
-   REI_TOEI_STRUDEL_DEFAULT_BARS=16
-   REI_TOEI_STRUDEL_AUTO_EXECUTE=false
-   ```
+   For current supported settings and defaults, see
+   [`.env.example`](../../../.env.example) and the
+   [Rei music-generation settings](../../environment-variables.md#rei-toei-music-generation).
 
 4. **Update Testing Documentation**
    - `docs/testing-and-dev.md` - Update test count (565 → 620)
