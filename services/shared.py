@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # (tests/test_version.py enforces this).
 # ---------------------------------------------------------------------------
 
-__version__ = "beta-v0.0.3.7"
+__version__ = "beta-v0.0.3.8"
 
 # ---------------------------------------------------------------------------
 # Generated content storage (local-first, configurable root)
