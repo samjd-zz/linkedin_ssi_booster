@@ -137,6 +137,12 @@ class OllamaService:
     def __init__(self, model: str = DEFAULT_MODEL, base_url: str = DEFAULT_BASE_URL):
         self.model = model
         self.base_url = base_url
+        structured_output = os.getenv("OLLAMA_STRUCTURED_OUTPUT", "true").strip().lower()
+        if structured_output not in {"true", "false", "1", "0", "yes", "no"}:
+            raise ValueError("OLLAMA_STRUCTURED_OUTPUT must be true or false")
+        self.structured_output = structured_output in {"true", "1", "yes"}
+        if not self.structured_output:
+            logger.info("Native JSON grammar disabled; using prompted JSON with response validation")
         raw_num_ctx = (os.getenv("OLLAMA_NUM_CTX") or str(DEFAULT_NUM_CTX)).strip()
         try:
             self.num_ctx = max(1024, int(raw_num_ctx))
@@ -177,7 +183,7 @@ class OllamaService:
                     model=model,
                     think=self.think,
                     options={"num_predict": max_tokens, "num_ctx": self.num_ctx},
-                    format=format,
+                    format=format if self.structured_output else None,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user",   "content": user_prompt},
@@ -444,8 +450,7 @@ Do NOT include hashtags in your output â€” they will be appended automatica
     ) -> "Optional[list[str]]":
         """
         Generate a 2-post thread (X or Bluesky) from an article.
-        Uses Ollama structured JSON output (format schema) for reliable splitting â€”
-        no regex parsing required.
+        Uses prompted JSON, plus a native format schema when supported.
         Returns a list of exactly 2 strings, or None if article_text is too short.
         """
         if not article_text or len(article_text.strip()) < 100:
@@ -465,6 +470,7 @@ post_1 (hook): bold claim, surprising stat, or sharp question that stops the scr
 post_2 (insight + close): your technical take, ending with {github_url} and a CTA. Max {char_limit} chars.
 
 Rules: plain text only, no hashtags, no markdown, no "1/2"/"2/2" numbering.
+Return only a JSON object with string keys "post_1" and "post_2".
 
 SSI goal: {ssi_instruction}
 
@@ -484,7 +490,7 @@ Article: {article_text[:3000]}"""
                 model=model,
                 think=self.think,
                 options={"num_predict": 600, "num_ctx": self.num_ctx},
-                format=_thread_schema,
+                format=_thread_schema if self.structured_output else None,
                 messages=[
                     {"role": "system", "content": PERSONA_SYSTEM_PROMPT},
                     {"role": "user",   "content": prompt},

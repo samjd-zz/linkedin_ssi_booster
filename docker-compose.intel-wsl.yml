@@ -1,6 +1,11 @@
 # Intel GPU override for Windows WSL 2 / Docker Desktop.
 # The WSL GPU bridge requires privileged access and the /usr/lib/wsl runtime.
 services:
+  app:
+    environment:
+      # IPEX-LLM's JSON grammar sampler can abort the model runner.
+      - OLLAMA_STRUCTURED_OUTPUT=false
+
   ollama:
     image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
     privileged: true

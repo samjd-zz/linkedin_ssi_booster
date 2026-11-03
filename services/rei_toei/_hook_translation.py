@@ -274,8 +274,12 @@ def translate_hook_texts(
             )
             translations.extend(parse_batched_translations(reply, len(batch)))
         except RuntimeError as exc:
-            logger.warning("Batched hook translation failed: %s", exc)
-            translations.extend([None] * len(batch))
+            logger.warning(
+                "Batched hook translation failed; skipping remaining Ollama batches "
+                "and using Argos where available: %s", exc,
+            )
+            translations.extend([None] * (len(lines) - start))
+            break
     counts["ollama"] = sum(1 for item in translations if item)
 
     missing = [i for i, item in enumerate(translations) if not item]

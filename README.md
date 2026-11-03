@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — October 30, 2026: 1,343 collected; 1,341 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 203 Japanese lyric-cue and Romaji-coverage regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 2, 2026: 1,357 collected; 1,355 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 203 Japanese lyric-cue and Romaji-coverage regressions, 14 JSON-grammar compatibility and translation-failure regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
@@ -483,7 +483,7 @@ same GPU, audio, and service-discovery settings are applied consistently.
 Copy `.env.example` to `.env` and fill in required values. Key variables include:
 
 - `BUFFER_API_KEY` — Buffer API access
-- `OLLAMA_MODEL` / `OLLAMA_MODEL_FALLBACK` — LLM models (e.g., `gemma4:e4b`, `qwen3.5:9b`)
+- `OLLAMA_MODEL` / `OLLAMA_MODEL_FALLBACK` — LLM models; `OLLAMA_STRUCTURED_OUTPUT` defaults to `true`, but Intel Compose overrides set `false` to avoid IPEX-LLM JSON grammar crashes while retaining JSON prompts and validation
 - `TRUTH_GATE_BM25_THRESHOLD` — Evidence scoring threshold
 - `MODEL2VEC_ENABLED` — Static embedding classification
 - `CONSOLE_USE_VOICE` — Wyoming Piper TTS

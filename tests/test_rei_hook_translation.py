@@ -212,6 +212,24 @@ def test_translate_hook_texts_without_argos_leaves_failed_lines_english(monkeypa
     assert counts["failed"] == 1
 
 
+def test_translation_runner_failure_stops_batches_and_preserves_prior_results(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    lines = ["Seeds of light"] * 25
+    argos = FakeArgos(["光の種"] * 15)
+    monkeypatch.setattr(_hook_translation, "get_argos_translator", lambda _: argos)
+    ollama = MagicMock()
+    ollama._chat.side_effect = [
+        json.dumps({str(i): "光の種" for i in range(1, 11)}, ensure_ascii=False),
+        RuntimeError("model runner unexpectedly stopped"),
+    ]
+    translations, counts = translate_hook_texts(lines, ollama, tmp_path)
+    assert translations == ["光の種"] * 25
+    assert counts == {"ollama": 10, "argos": 15, "failed": 0}
+    assert ollama._chat.call_count == 2
+    assert argos.calls == [lines[10:]]
+
+
 def test_insert_hook_translations_puts_japanese_above_its_english_line():
     payload = {"bridge": "[Bridge]\nRoots of code\nEvery seed is found\nOne last bloom"}
     hooks = [HookLine("bridge", 1, "Roots of code"), HookLine("bridge", 3, "One last bloom")]

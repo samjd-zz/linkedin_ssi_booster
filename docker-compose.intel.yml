@@ -3,6 +3,11 @@
 # Offloads Ollama LLM operations to Intel GPU via Level Zero / OneAPI (SYCL).
 # Heavy generative image workloads (FLUX) remain restricted to NVIDIA full profile.
 services:
+  app:
+    environment:
+      # IPEX-LLM's JSON grammar sampler can abort the model runner.
+      - OLLAMA_STRUCTURED_OUTPUT=false
+
   ollama:
     image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
     devices:

@@ -4,7 +4,7 @@ import logging
 from unittest.mock import Mock, patch
 
 import pytest
-from ollama import ChatResponse
+from ollama import ChatResponse, Message
 
 from services.ollama_service import OllamaService
 from services.performance import log_ollama_timings, timed_stage
@@ -49,7 +49,7 @@ def test_decorated_stages_measure_each_call(caplog: pytest.LogCaptureFixture) ->
 
 def test_ollama_nanosecond_metrics_are_seconds(caplog: pytest.LogCaptureFixture) -> None:
     response = ChatResponse(
-        message={"role": "assistant", "content": "private output"},
+        message=Message(role="assistant", content="private output"),
         load_duration=2_000_000_000, prompt_eval_duration=3_000_000_000,
         eval_duration=7_000_000_000, total_duration=12_000_000_000,
         prompt_eval_count=100, eval_count=50,
@@ -68,7 +68,7 @@ def test_ollama_nanosecond_metrics_are_seconds(caplog: pytest.LogCaptureFixture)
 def test_missing_ollama_metrics_are_explicit(caplog: pytest.LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
         log_ollama_timings(
-            LOGGER, "local-model", ChatResponse(message={"role": "assistant", "content": ""}),
+            LOGGER, "local-model", ChatResponse(message=Message(role="assistant", content="")),
         )
     assert "load_s=None" in caplog.text
     assert "generated_tokens=None" in caplog.text
@@ -82,11 +82,12 @@ def test_chat_emits_wall_and_server_timings_without_content(
     ai = OllamaService.__new__(OllamaService)
     ai.model = "local-model"
     ai.think = False
+    ai.structured_output = True
     ai.num_ctx = 1024
     ai.base_url = "http://localhost:11434"
     ai.client = Mock()
     ai.client.chat.return_value = ChatResponse(
-        message={"role": "assistant", "content": "private output"}, load_duration=0,
+        message=Message(role="assistant", content="private output"), load_duration=0,
         done_reason="length",
     )
     with caplog.at_level(logging.INFO):

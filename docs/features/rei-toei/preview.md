@@ -28,6 +28,22 @@ The lyric composer currently allows up to five attempts for Japanese/bilingual o
 
 The launcher performs its GPU passthrough probe before Python's stage logs. One-off runs reuse the existing app image unless `run --build` is supplied.
 
+### Intel JSON Grammar Compatibility
+
+IPEX-LLM can abort during JSON-constrained decoding with
+`Unexpected empty grammar stack after accepting piece: G`. Both Intel Compose
+overrides set `OLLAMA_STRUCTURED_OUTPUT=false` on the app, disabling the native
+JSON/schema sampler for all OllamaService format requests, including fallback
+models. Prompts still request JSON and existing parsing and validation remain
+in place. Other runtimes retain native structured output by default. For a
+host Python process using IPEX-LLM, set `OLLAMA_STRUCTURED_OUTPUT=false` yourself.
+
+If a hook-translation call raises an error, the remaining Ollama batches are
+skipped instead of repeatedly hitting a failed runner. Valid results from
+earlier batches are retained; missing lines use Argos when available, or stay
+English with the failed count reported. Rebuild the app image after updating
+and start a new preview run to pick up both the code and Compose environment.
+
 ## Japanese Lyric Cues
 
 Bilingual songs are written English-first by default (`REI_BILINGUAL_STRATEGY=translate`). The first Ollama call writes the whole song in English, so structure, rhyme, and copied-line checks apply to clean English. Code then picks hook lines (chorus hook first, then verse stanza openers, alternating Bridge lines, and other sections) so Japanese reaches `REI_JAPANESE_LYRIC_PROBABILITY` of sung lines, capped by `REI_BILINGUAL_MAX_HOOK_LINES` (default 40). Batches of 10 lines are translated per call as numbered JSON, so a partial reply keeps its good lines. Missing lines, Chinese grammar, leftover English words, or no Japanese fall back to the offline Argos en→ja model (CTranslate2, no torch; downloaded by the `argos-init` compose service), polite endings such as `します` or `消えます` become plain `する`/`消える`; lines that still fail stay English. Each Japanese line goes above its English line, which stays as the sung echo. A typical bilingual preview now uses three or four Ollama calls instead of up to five full-song attempts. Set `REI_BILINGUAL_STRATEGY=generate` for the previous one-pass behavior.
