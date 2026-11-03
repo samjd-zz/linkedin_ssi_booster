@@ -44,6 +44,23 @@ earlier batches are retained; missing lines use Argos when available, or stay
 English with the failed count reported. Rebuild the app image after updating
 and start a new preview run to pick up both the code and Compose environment.
 
+## Required Sections and Instrumental Solo
+
+Suno assembly and recognizable full-song console replies always include a sung
+`[Intro Verse]` and `[Drop]` immediately followed by `[Heavy Bass Drop]`.
+Existing sections are kept. A missing or empty intro reuses the first sung
+chorus hook (or a verse line), retaining its adjacent pronunciation cues; an
+omitted drop becomes an instrumental drop after the bridge or last verse/chorus.
+Duplicate bass-drop markers are collapsed, and repairs are logged without
+another model call. A song with no usable hook fails explicitly instead of
+inventing an intro. Metadata reflects the repaired output.
+
+`[Solo]` is instrumental-only: every direction is wrapped in square brackets,
+for example `[Synthesizer whispers in the mix]`. Existing bracketed cues stay
+bracketed, and no Romaji is generated for instrumental instructions. Solo lines
+are bracketed before bilingual hook selection so they are not counted as sung
+lyrics. Unstructured console replies remain unchanged.
+
 ## Japanese Lyric Cues
 
 Bilingual songs are written English-first by default (`REI_BILINGUAL_STRATEGY=translate`). The first Ollama call writes the whole song in English, so structure, rhyme, and copied-line checks apply to clean English. Code then picks hook lines (chorus hook first, then verse stanza openers, alternating Bridge lines, and other sections) so Japanese reaches `REI_JAPANESE_LYRIC_PROBABILITY` of sung lines, capped by `REI_BILINGUAL_MAX_HOOK_LINES` (default 40). Batches of 10 lines are translated per call as numbered JSON, so a partial reply keeps its good lines. Missing lines, Chinese grammar, leftover English words, or no Japanese fall back to the offline Argos en→ja model (CTranslate2, no torch; downloaded by the `argos-init` compose service), polite endings such as `します` or `消えます` become plain `する`/`消える`; lines that still fail stay English. Each Japanese line goes above its English line, which stays as the sung echo. A typical bilingual preview now uses three or four Ollama calls instead of up to five full-song attempts. Set `REI_BILINGUAL_STRATEGY=generate` for the previous one-pass behavior.

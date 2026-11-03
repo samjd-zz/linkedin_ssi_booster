@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict
 
 from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
+from services.rei_toei._suno_quality import bracket_solo_directions
 
 # "PULSE CODE (PULSE CODE)": an echo of the line in parentheses, which Suno sings.
 _ECHO_RE = re.compile(r"^(?P<lead>.*\S)\s*[(（](?P<echo>[^()（）]+)[)）]\s*$")
@@ -49,7 +50,10 @@ def tidy_song_sections(payload: Dict[str, Any]) -> None:
             if _is_sung(line) and _JAPANESE_CHAR_RE.search(line):
                 line = line.rstrip(_TRAILING_COMMA_CHARS)
             lines.append(line)
-        payload[field] = "\n".join(lines)
+        payload[field] = (
+            bracket_solo_directions("\n".join(lines))
+            if field == "solo" else "\n".join(lines)
+        )
 
     chorus = payload.get("chorus")
     bridge = payload.get("bridge")

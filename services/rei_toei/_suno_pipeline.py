@@ -44,6 +44,7 @@ from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
 from services.rei_toei._hook_translation import apply_bilingual_hooks
 from services.rei_toei._song_tidy import tidy_song_sections
+from services.rei_toei._suno_quality import bracket_solo_directions, ensure_suno_quality
 from services.rei_toei._suno_cleanup import (
     has_chinese_grammar,
     replace_chinese_phrasing,
@@ -79,13 +80,17 @@ logger = logging.getLogger(__name__)
 _SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balances richness vs safety
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
 _BPM_TAG_RE = re.compile(r"\b(\d{2,3})\s*bpm\b", re.IGNORECASE)
-_SECTION_HEADER_RE = re.compile(r"^\s*\[[^\]]+\]\s*\n?", re.IGNORECASE)
+_SECTION_HEADER_RE = re.compile(
+    r"^\s*\[(?:Instrumental Build|Intro Verse|Intro|Verse\s*\d*|Pre-Chorus|"
+    r"Chorus|Drop|Bridge|Solo|Breakdown|Outro)\]\s*\n?",
+    re.IGNORECASE,
+)
 _EMBEDDED_SECTION_LABEL_RE = re.compile(
-    r"\s*\[(?:Instrumental Build|Verse\s*\d*|Pre-Chorus|Chorus|Drop|Bridge|Solo|Breakdown|Outro)\]\s*",
+    r"\s*\[(?:Instrumental Build|Intro Verse|Verse\s*\d*|Pre-Chorus|Chorus|Drop|Bridge|Solo|Breakdown|Outro)\]\s*",
     re.IGNORECASE,
 )
 _FREEFORM_SECTION_HEADER_RE = re.compile(
-    r"(?im)^[ \t]*\[(?P<label>Instrumental Build|Intro|Verse\s*\d*|Pre-Chorus|"
+    r"(?im)^[ \t]*\[(?P<label>Instrumental Build|Intro Verse|Intro|Verse\s*\d*|Pre-Chorus|"
     r"Chorus|Drop|Bridge|Solo|Breakdown|Outro)\][ \t]*"
 )
 _FREEFORM_METADATA_RE = re.compile(
@@ -1097,6 +1102,12 @@ def _append_normalized_section(
     uppercase_body: bool = False,
 ) -> str:
     """Normalize and append a Suno lyric section when it has content."""
+    if label.casefold() == "solo":
+        text = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", _normalize_serialized_lyric_text(text or ""))
+        block = bracket_solo_directions(text)
+        if block:
+            lyric_blocks.append(block)
+        return block
     block = _normalize_suno_section(text, label, uppercase_body=uppercase_body)
     if block:
         payload = {"section": block}
@@ -1128,12 +1139,18 @@ def _normalize_freeform_suno_reply(reply: str) -> str:
     for index, header in enumerate(headers):
         next_start = headers[index + 1].start() if index + 1 < len(headers) else end
         label = header.group("label")
+        if label.casefold() == "intro":
+            label = "Instrumental Build"
         body = reply[header.end():next_start].strip("\r\n")
         if not _append_normalized_section(blocks, body, label):
             blocks.append(f"[{label}]")
 
+    formatted = "\n\n".join(blocks)
+    if any(header.group("label").casefold() == "chorus"
+           or header.group("label").casefold().startswith("verse") for header in headers):
+        formatted = ensure_suno_quality(formatted)
     suffix = reply[end:]
-    return reply[:headers[0].start()] + "\n\n".join(blocks) + ("\n\n" if suffix else "") + suffix
+    return reply[:headers[0].start()] + formatted + ("\n\n" if suffix else "") + suffix
 
 
 def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
@@ -1804,14 +1821,14 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown outs
 Each field should contain the complete lyrics for that section, including any section markers:
 
 {{
-  "intro": "[Instrumental Build] then a blank line, then '(Ahh ahh ahh)' on its own line as a vocalization primer, then 4-5 lines of atmospheric build-up text. (Character Cap: 400 chars)",
+  "intro": "[Instrumental Build] with '(Ahh ahh ahh)' as a vocalization primer, followed by [Intro Verse] and 2-4 sung opening lines. Both intro sections are required. (Character Cap: 400 chars)",
   "verse_1": "[Verse 1] Two stanzas of vivid, story-driven narrative that sets the scene. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
     "chorus": "{chorus_json_instruction}",
   "verse_2": "[Verse 2] Two new stanzas set after the turning point: show the consequences and what the new state reveals. Do not reuse or reword any Verse 1 line. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "bridge": "[Bridge] 6-8 lines: a pivot line that breaks the established pattern, then 3-5 lines expanding it into the song's emotional and thematic climax, rising into the final drop. (Character Cap: 450 chars)",
-  "drop": "[Drop] the final drop released by the bridge climax: '(bass drop)' on its own line as a Suno energy-shift cue, then 4-5 lines of high-energy electronic phrases. Optionally use '(silence)' or '(chaos)' for further energy shifts. (Character Cap: 400 chars)",
-  "solo": "[Solo] followed by 3-4 lines describing the instrumental solo moment (total). (Character Cap: 300 chars)",
+  "drop": "[Drop] followed immediately by [Heavy Bass Drop], then 4-5 high-energy lyric lines. Both tags are required. (Character Cap: 400 chars)",
+  "solo": "[Solo] followed by 3-4 instrumental directions, each entirely inside square brackets. No sung lyrics, vocalizations, translations, or Romaji in this section. (Character Cap: 300 chars)",
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
 
@@ -2185,7 +2202,7 @@ def assemble_suno_prompt(
     lyric_blocks = _build_suno_lyric_blocks(concept, lyrics)
 
     # Join structural blocks cleanly with double line breaks
-    formatted_lyrics = "\n\n".join(lyric_blocks)
+    formatted_lyrics = ensure_suno_quality("\n\n".join(lyric_blocks))
     
     # Create metadata for tracking
     metadata = {
@@ -2196,10 +2213,10 @@ def assemble_suno_prompt(
         "narrative_arc": concept.narrative_arc,
         "suno_description_prompt": _build_suno_description_prompt(concept),
         "template_used": template_key,
-        "has_intro": lyrics.intro is not None,
+        "has_intro": "[Intro Verse]" in formatted_lyrics,
         "has_pre_chorus": lyrics.pre_chorus is not None,
-        "has_drop": lyrics.drop is not None,
-        "has_solo": lyrics.solo is not None,
+        "has_drop": "[Drop]\n[Heavy Bass Drop]" in formatted_lyrics,
+        "has_solo": "[Solo]" in formatted_lyrics,
         "has_outro": lyrics.outro is not None,
         "style_tag_count": len(_split_csv_descriptors(suno_tags)),
         "style_tags_length": len(suno_tags),
