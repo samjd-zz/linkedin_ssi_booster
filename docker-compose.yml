@@ -21,7 +21,7 @@ services:
       - DISPLAY=${DISPLAY:-:0}
       - XAUTHORITY=${XAUTHORITY:-/root/.Xauthority}
       - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/1000}
-      - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
+      - PULSE_SERVER=unix:/run/pulse/native
       - PULSE_COOKIE=/root/.config/pulse/cookie
     command:
       - sh
@@ -32,7 +32,8 @@ services:
     ports:
       - "4321:4321"
     volumes:
-      - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
+      # Host socket chosen by run.sh (WSLg: /mnt/wslg/PulseServer, which needs no cookie).
+      - ${PULSE_SOCKET:-/run/user/1000/pulse/native}:/run/pulse/native
       - ~/.config/pulse/cookie:/root/.pulse-cookie:ro
       - ~/.config/pulse/cookie:/root/.config/pulse/cookie:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
@@ -236,7 +237,8 @@ services:
     command: --voice en_US-libritts_r-medium
     healthcheck:
       # The 'printf' check is the most reliable for this slim image
-      test: [ "CMD-SHELL", "printf '' > /dev/tcp/127.0.0.1/10200 || exit 1" ]
+      # /dev/tcp is a bash feature; CMD-SHELL runs dash in this image.
+      test: [ "CMD", "bash", "-c", "printf '' > /dev/tcp/127.0.0.1/10200" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -270,7 +272,7 @@ services:
         required: false # FLUX is available only under --profile full
     env_file: .env
     environment:
-      - PULSE_SERVER=unix:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
+      - PULSE_SERVER=unix:/run/pulse/native
       - OLLAMA_BASE_URL=http://ollama:11434
       - WYOMING_PIPER_HOST=piper
       - WYOMING_PIPER_PORT=10200
@@ -281,7 +283,8 @@ services:
       - REI_TOEI_SUBDIR=rei_toei
       - DATABASE_URL=postgresql://${POSTGRES_USER:-ssi_booster}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-linkedin_ssi_booster}
     volumes:
-      - ${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native:${PULSE_RUNTIME_DIR:-/run/user/1000/pulse}/native
+      # Host socket chosen by run.sh (WSLg: /mnt/wslg/PulseServer, which needs no cookie).
+      - ${PULSE_SOCKET:-/run/user/1000/pulse/native}:/run/pulse/native
       - ~/.config/pulse/cookie:/root/.pulse-cookie:ro
       - ./data:/app/data
       - ./yt-vid-data:/app/yt-vid-data

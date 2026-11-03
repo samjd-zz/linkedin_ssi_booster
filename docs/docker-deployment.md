@@ -13,8 +13,8 @@ This document covers Docker Compose setup, profiles, GPU passthrough, and deploy
 
 The system uses **Docker Compose with profiles** to manage hardware resources efficiently:
 
-- **`core` profile:** Lightweight daily operations (Ollama LLM + Wyoming Piper TTS + app)
-- **`full` profile:** Includes FLUX.1-schnell image generation (requires RTX 3060 12GB or better)
+- **`core` profile:** Lightweight daily operations (Ollama LLM + app)
+- **`full` profile:** Adds Wyoming Piper TTS, FLUX.1-schnell image generation (requires RTX 3060 12GB or better), and MCP agents
 
 `ollama` and `ollama-init` run **CPU-only by default** (no GPU required for `core`), while `app` is always GPU-neutral. `run.sh`
 auto-detects a usable NVIDIA GPU + container runtime and layers in `docker-compose.gpu.yml` to add
@@ -311,7 +311,7 @@ behavior automatically — no `nvidia` driver error. To force a specific GPU pro
 | `./yt-vid-data/`        | `/app/yt-vid-data/`     | Generated-content root (images/scripts/artifacts) |
 | `./agents/`             | `/app/agents/`          | Agent source code (read-only)                     |
 | `./models/flux/`        | `/app/models/flux/`     | FLUX GGUF weights (read-only)                     |
-| `~/.pulse/`             | `/home/appuser/.pulse/` | PulseAudio socket (via `run.sh`)                  |
+| `$PULSE_SOCKET`         | `/run/pulse/native`     | PulseAudio socket (chosen by `run.sh`)            |
 | `./strudel-mcp-server/` | `/app/strudel/`         | Strudel MCP server repo (auto-cloned)             |
 | `./postgres-data/`      | `/var/lib/postgresql/`  | PostgreSQL database files (if enabled)            |
 
@@ -334,10 +334,20 @@ Voice synthesis requires PulseAudio passthrough from host to container.
 
 ### Automatic Setup (Recommended)
 
-Use `run.sh` — it exports `USER_UID` and mounts the PulseAudio socket automatically:
+Use `run.sh` — it exports `USER_UID` and picks the host PulseAudio socket as
+`PULSE_SOCKET`. On WSL2 with WSLg it uses `/mnt/wslg/PulseServer`, which
+accepts anonymous clients; the `/run/user/<uid>/pulse/native` socket rejects
+container cookies with `Access denied`. Elsewhere it uses
+`$XDG_RUNTIME_DIR/pulse/native`. The socket is mounted at `/run/pulse/native`,
+and the image routes ALSA's default device to PulseAudio (`/etc/asound.conf`)
+so `sounddevice` can play Piper audio.
+
+Piper is in the `full` profile. To use voice with a `core` console, start Piper
+on its own first:
 
 ```bash
-bash run.sh --profile core up -d
+bash run.sh --profile full up -d --no-deps piper
+bash run.sh --profile core run --rm app python main.py --console
 ```
 
 ### Manual Setup
@@ -346,6 +356,7 @@ Export `USER_UID` before running `docker compose`:
 
 ```bash
 export USER_UID=$(id -u)
+export PULSE_SOCKET=/mnt/wslg/PulseServer   # WSLg; else $XDG_RUNTIME_DIR/pulse/native
 docker compose --profile core up -d
 ```
 
@@ -363,8 +374,8 @@ docker compose --profile core run --rm -it app python main.py --console
 
 Type a query and listen for TTS output. If silent, check:
 
-1. PulseAudio is running on host: `pulseaudio --check && echo "OK"`
-2. `USER_UID` is exported: `echo $USER_UID`
+1. Piper is healthy: `docker ps --filter name=ssi_booster_piper`
+2. PulseAudio accepts the container: `bash run.sh --profile core run --rm --no-deps --entrypoint pactl app info`
 3. Socket is mounted: `docker compose config | grep pulse`
 
 ---
@@ -583,9 +594,10 @@ Examples:
 **Solution:**
 
 1. Use `bash run.sh` instead of `docker compose` directly
-2. Verify PulseAudio on host: `pulseaudio --check && echo "OK"`
-3. Check socket mount: `docker compose config | grep pulse`
-4. Verify `USER_UID` is exported: `echo $USER_UID`
+2. Start Piper (`full` profile) and confirm it is healthy: `docker ps --filter name=ssi_booster_piper`
+3. Check PulseAudio access: `bash run.sh --profile core run --rm --no-deps --entrypoint pactl app info` (`Access denied` on WSL means the wrong socket; set `PULSE_SOCKET=/mnt/wslg/PulseServer`)
+4. Check socket mount: `docker compose config | grep pulse`
+5. `Error querying device -1` means the app image predates `/etc/asound.conf`; rebuild it with `bash run.sh --profile core build app`
 
 ### Port Conflicts
 

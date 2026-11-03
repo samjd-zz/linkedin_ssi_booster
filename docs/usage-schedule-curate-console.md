@@ -22,7 +22,7 @@ bash run.sh --profile core run --rm -it app python main.py --console
 bash run.sh --profile full up -d
 ```
 
-> **Voice and GPU note:** Piper TTS runs in the `full` profile. `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket. On WSL2 it detects `/dev/dxg` and enables the Intel Ollama runtime. Running `docker compose` directly is reserved for low-level maintenance and requires reproducing these settings yourself.
+> **Voice and GPU note:** Piper TTS runs in the `full` profile. Start it with `bash run.sh --profile full up -d --no-deps piper` before a `core` console and set `CONSOLE_USE_VOICE=true`. `run.sh` exports `USER_UID=$(id -u)` and mounts the PulseAudio socket (WSLg's `/mnt/wslg/PulseServer` on WSL2). On WSL2 it detects `/dev/dxg` and enables the Intel Ollama runtime. Running `docker compose` directly is reserved for low-level maintenance and requires reproducing these settings yourself.
 
 After source changes, rebuild the app image before running it:
 

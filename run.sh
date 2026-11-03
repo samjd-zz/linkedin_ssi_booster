@@ -7,9 +7,18 @@ export PULSE_RUNTIME_DIR=${PULSE_RUNTIME_DIR:-$XDG_RUNTIME_DIR/pulse}
 export DISPLAY=${DISPLAY:-:0}
 export XAUTHORITY=${XAUTHORITY:-$HOME/.Xauthority}
 
-# 2. Check if the PulseAudio socket exists (Astro3 check)
-if [ ! -S "$PULSE_RUNTIME_DIR/native" ]; then
-    echo "⚠️ Warning: PulseAudio socket not found at $PULSE_RUNTIME_DIR/native"
+# 2. Pick the host PulseAudio socket. WSLg's /mnt/wslg/PulseServer accepts
+# anonymous clients; its runtime-dir socket rejects container cookies.
+if [ -z "${PULSE_SOCKET:-}" ]; then
+    if [ -S /mnt/wslg/PulseServer ]; then
+        PULSE_SOCKET=/mnt/wslg/PulseServer
+    else
+        PULSE_SOCKET=$PULSE_RUNTIME_DIR/native
+    fi
+fi
+export PULSE_SOCKET
+if [ ! -S "$PULSE_SOCKET" ]; then
+    echo "⚠️ Warning: PulseAudio socket not found at $PULSE_SOCKET"
     echo "Audio might not work in the container."
 fi
 

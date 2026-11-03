@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && npx -y playwright install-deps chromium \
     && rm -rf /var/lib/apt/lists/*
 
+# Route ALSA's default device to PulseAudio so PortAudio/sounddevice can play Piper audio.
+RUN printf 'pcm.!default pulse\nctl.!default pulse\n' > /etc/asound.conf
+
 # Install a clean, dedicated pip for Python 3.11
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
 
