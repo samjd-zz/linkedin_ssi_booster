@@ -424,6 +424,17 @@
       "length": "4-8 bars",
       "style": "Poetic abstraction, quiet observations before the storm."
     },
+    "solo": {
+      "purpose": "Feature an instrumental lead or rhythmic break suited to the song's dynamics.",
+      "instrumental_options": [
+        "Epic Guitar Solo",
+        "Melodic Synth Solo",
+        "Arpeggiated Synth Solo",
+        "Glitch Synth Solo",
+        "Industrial Percussion Solo",
+        "Modulated Bass Solo"
+      ]
+    },
     "breakdown": {
       "purpose": "Deconstruct the framework. Let the glitch take over.",
       "length": "4-8 bars",

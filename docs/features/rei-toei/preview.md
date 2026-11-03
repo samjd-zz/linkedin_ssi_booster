@@ -61,11 +61,26 @@ bracketed, and no Romaji is generated for instrumental instructions. Solo lines
 are bracketed before bilingual hook selection so they are not counted as sung
 lyrics. Unstructured console replies remain unchanged.
 
+The optional solo palette includes `[Epic Guitar Solo]`, `[Melodic Synth Solo]`,
+`[Arpeggiated Synth Solo]`, `[Glitch Synth Solo]`, `[Industrial Percussion Solo]`,
+and `[Modulated Bass Solo]`. Both song-generation prompts ask the model to pick
+what suits the song, honor a requested instrument, or invent another fitting
+style; guitar is not required in every song. These are suggestions, not a
+guaranteed rotation, and they do not add another model call.
+
+Customize the `lyrical_structure.solo.instrumental_options` list in
+[Rei's domain knowledge](../../../data/avatar/rei_toei_domain_knowledge.json)
+with unbracketed, single-line names. An empty list disables the suggestions;
+malformed lists or names raise a configuration error. Known instrument-solo
+cues are also recognized as stage directions so they are not copied as Romaji
+when an intro is repaired.
+
 Parenthetical production directions in `[Drop]` and `[Outro]` are converted to
 square-bracket tags when they mention instruments, sounds, or production
 actions, for example `(Frequency sync, glitch surge)` becomes
 `[Frequency sync, glitch surge]`. Vocal ad-libs such as `(Ahh ahh ahh)` and
-parentheticals in other song sections remain unchanged.
+ordinary parentheticals in other sections remain unchanged; known instrument
+solo cues can be tagged in any section.
 
 ## Japanese Lyric Cues
 

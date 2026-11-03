@@ -194,6 +194,7 @@ class TestReiSystemPrompt:
     def _make_domain(self):
         d = MagicMock()
         d.genre_production_techniques = {"jungle": {}, "techno": {}, "industrial": {}}
+        d.lyrical_structure = {}
         return d
 
     def test_prompt_contains_rei_identity(self):

@@ -44,6 +44,7 @@ from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
 from services.rei_toei._hook_translation import apply_bilingual_hooks
 from services.rei_toei._song_tidy import tidy_song_sections
+from services.rei_toei._solo_options import build_solo_style_guidance
 from services.rei_toei._suno_quality import bracket_solo_directions, ensure_suno_quality
 from services.rei_toei._suno_cleanup import (
     has_chinese_grammar,
@@ -1807,6 +1808,8 @@ Suno Formatting Rules:
                 sam_context += f"\n- Companies: {', '.join(company_names)}"
             sam_context += "\n(You may naturally weave these into the lyrics if thematically relevant, but it's optional.)"
     
+    solo_guidance = build_solo_style_guidance(domain_knowledge.lyrical_structure)
+
     # Build user prompt with Suno-compatible formatting
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
@@ -1834,6 +1837,8 @@ Each field should contain the complete lyrics for that section, including any se
   "solo": "[Solo] followed by 3-4 instrumental directions, each entirely inside square brackets. No sung lyrics, vocalizations, translations, or Romaji in this section. (Character Cap: 300 chars)",
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}
+
+{solo_guidance}
 
 {final_rule}"""
     

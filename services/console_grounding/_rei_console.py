@@ -31,6 +31,7 @@ from services.rei_toei_service import (
 )
 from services.ollama_service import OllamaService
 from services.performance import log_ollama_timings, timed_stage
+from services.rei_toei._solo_options import build_solo_style_guidance
 from services.rei_toei._suno_pipeline import _normalize_freeform_suno_reply
 from services.avatar_intelligence import (
     load_avatar_state as _lav_rei_console,
@@ -239,6 +240,10 @@ def _build_rei_system_prompt(rei_persona: Any, rei_domain: Any) -> str:
     if hasattr(rei_domain, "genre_production_techniques") and rei_domain.genre_production_techniques:
         genres = list(rei_domain.genre_production_techniques.keys())[:4]
         lines.append(f"Genre specialties: {', '.join(genres)}.")
+
+    solo_guidance = build_solo_style_guidance(getattr(rei_domain, "lyrical_structure", {}))
+    if solo_guidance:
+        lines.append(solo_guidance)
 
     # Keep this fallback path aligned with the CLI/grounded pipeline's language policy
     # (REI_LYRIC_LANGUAGE / REI_JAPANESE_LYRIC_PROBABILITY via ReiToeiConfig).

@@ -159,6 +159,9 @@ def tag_instrument_cues(text: str, *, production_directions: bool = False) -> st
             if tag:
                 lines.append(tag)
                 continue
+            if cue.endswith(" solo") and _is_stage_cue_phrase(cue_text):
+                lines.append(f"[{cue_text}]")
+                continue
             if (
                 production_directions
                 and not _is_vocalization(cue_text)

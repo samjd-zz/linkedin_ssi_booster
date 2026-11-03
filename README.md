@@ -149,7 +149,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 
 **Current capabilities:**
 
-- 🎤 **Suno Vocal Songs** — Generate grounded cyberpop industrial techno songs with a required `[Intro Verse]`, `[Drop]` followed by `[Heavy Bass Drop]`, and bracketed instrumental-only Solo directions; missing sections are repaired automatically (Suno integration ✅)
+- 🎤 **Suno Vocal Songs** — Generate grounded cyberpop industrial techno songs with a required `[Intro Verse]`, `[Drop]`/`[Heavy Bass Drop]`, and bracketed instrumental solos; Rei can choose epic guitar, synth, industrial percussion, or modulated bass to suit each song, and missing sections are repaired automatically (Suno integration ✅)
 - 🇯🇵 **Japanese-aware lyric production** — Rei supports English, Japanese, and bilingual lyrics with contextual Romaji checks, bracket/parenthetical cue cleanup, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
 - 🎚️ **Controlled lyric language selection** — `bilingual` mode is the default: Rei writes the song in English, then translates selected hook lines in batched Ollama calls (offline Argos en→ja fallback) so `REI_JAPANESE_LYRIC_PROBABILITY` holds by construction; explicit `english` or `japanese` modes are deterministic
 - 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 2, 2026: 1,377 collected; 1,375 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 2, 2026: 1,408 collected; 1,406 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

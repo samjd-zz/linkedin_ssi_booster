@@ -44,7 +44,11 @@ _SOUND_CUE_PHRASES = {
 }
 _STAGE_CUE_RE = re.compile(
     r"^(?:instrumental(?: build)?|verse\s*\d*|pre-chorus|chorus|drop|bridge|"
-    r"solo|breakdown|outro|intro|(?:guitar|drum|synth|instrumental)\s+solo|"
+    r"solo|breakdown|outro|intro|"
+    r"(?!(?:i|we|you|he|she|they|it|my|our|your|his|her|their)\b)"
+    r"(?:[a-z0-9][a-z0-9'/-]*\s+)*"
+    r"(?:guitar|drums?|synth|synthesizer|percussion|bass|instrumental|"
+    r"theremin|piano|keyboard|keytar|sax(?:ophone)?|flute|violin|cello|strings?)\s+solo|"
     r"(?:ah+|oh+)(?:[\s,]+(?:ah+|oh+))*)$",
     re.IGNORECASE,
 )
