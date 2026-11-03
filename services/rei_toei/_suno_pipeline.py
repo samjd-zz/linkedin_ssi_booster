@@ -1118,7 +1118,10 @@ def _append_normalized_section(
         _backfill_missing_romaji_cues(payload)
         # Glosses split last so any Romaji under a gloss line is dropped with
         # it: the moved Japanese line is sung without a phonetic duplicate.
-        block = tag_instrument_cues(split_inline_glosses(payload["section"]))
+        block = tag_instrument_cues(
+            split_inline_glosses(payload["section"]),
+            production_directions=label.casefold() in {"drop", "outro"},
+        )
         if label == "Instrumental Build":
             instrumental, intro_verse = split_intro_block(block)
             block = f"{instrumental}\n\n{intro_verse}" if intro_verse else instrumental

@@ -62,6 +62,39 @@ def test_instrument_cues_become_meta_tags_but_vocalizations_stay() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("section", "source", "expected"),
+    [
+        (
+            "Drop",
+            "[Drop]\n[Heavy Bass Drop]\n(Frequency sync, glitch surge)\n"
+            "信号が融合し、ノイズは沈静化\n[shingou ga yuugou shi]",
+            "[Drop]\n[Heavy Bass Drop]\n[Frequency sync, glitch surge]\n"
+            "信号が融合し、ノイズは沈静化\n[shingou ga yuugou shi, noizu wa chinsei ka]",
+        ),
+        (
+            "Outro",
+            "[Outro]\n(Chill synth pads, fade)\n信号が融合し、パターン形成",
+            "[Outro]\n[Chill synth pads, fade]\n信号が融合し、パターン形成\n[shingou ga yuugou shi, pataan keisei]",
+        ),
+        (
+            "Drop",
+            "[Drop]\n(Ahh ahh ahh)\n(Oh oh)\nSignals surge",
+            "[Drop]\n(Ahh ahh ahh)\n(Oh oh)\nSignals surge",
+        ),
+        (
+            "Chorus",
+            "[Chorus]\n(Chill synth pads, fade)\nA sung lyric",
+            "[Chorus]\n(Chill synth pads, fade)\nA sung lyric",
+        ),
+    ],
+)
+def test_production_direction_parentheticals_are_bracketed_only_in_drop_and_outro(
+    section: str, source: str, expected: str,
+) -> None:
+    assert _append_normalized_section([], source, section) == expected
+
+
 def test_intro_lyrics_move_to_intro_verse() -> None:
     block = "[Instrumental Build]\n(Ahh ahh ahh)\n\nShadows dance on screens,\nData rivers flow."
 

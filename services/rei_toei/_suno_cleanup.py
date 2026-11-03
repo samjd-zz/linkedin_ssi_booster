@@ -65,6 +65,14 @@ _INSTRUMENT_CUE_TAGS = {
     "instrumental solo": "[Instrumental Solo]",
     "instrumental": "[Instrumental]",
 }
+_PRODUCTION_DIRECTION_RE = re.compile(
+    r"\b(?:ambient|bass|beat|beats|build|distort(?:ed|ion)?|drum|"
+    r"fade|filter|frequency|glitch|guitar|mix|noise|pad|pads|"
+    r"percussion|pulse|pulsing|release|reverb|rhythm|signal|"
+    r"static|strings|surge|sustain(?:ed)?|swell|synth|synthesizer|"
+    r"tempo|texture|vocal)\b",
+    re.IGNORECASE,
+)
 # Layout placeholders the model copies from the prompt; they become real blank lines.
 _LAYOUT_PLACEHOLDERS = {"blank line", "blank", "empty line", "line break", "stanza break"}
 _INTRO_VERSE_LABEL = "Intro Verse"
@@ -136,13 +144,14 @@ def split_inline_glosses(text: str) -> str:
     return "\n".join(lines)
 
 
-def tag_instrument_cues(text: str) -> str:
-    """Turn own-line instrument cues like ``(bass drop)`` into Suno meta tags."""
+def tag_instrument_cues(text: str, *, production_directions: bool = False) -> str:
+    """Turn instrument cues and section-specific production directions into tags."""
     lines: List[str] = []
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith(("(", "（")) and stripped.endswith((")", "）")):
-            cue = re.sub(r"\s+", " ", stripped[1:-1]).strip().lower()
+            cue_text = re.sub(r"\s+", " ", stripped[1:-1]).strip()
+            cue = cue_text.lower()
             if cue in _LAYOUT_PLACEHOLDERS:
                 lines.append("")
                 continue
@@ -150,8 +159,20 @@ def tag_instrument_cues(text: str) -> str:
             if tag:
                 lines.append(tag)
                 continue
+            if (
+                production_directions
+                and not _is_vocalization(cue_text)
+                and _PRODUCTION_DIRECTION_RE.search(cue_text)
+            ):
+                lines.append(f"[{cue_text}]")
+                continue
         lines.append(line)
     return "\n".join(lines)
+
+
+def _is_vocalization(text: str) -> bool:
+    """Keep sung ad-libs such as ``Ahh ahh ahh`` in parentheses."""
+    return bool(re.fullmatch(r"(?:ah+|oh+|ooh+|whoa+|la+|mm+)(?:[\s,.-]+(?:ah+|oh+|ooh+|whoa+|la+|mm+))*", text, re.IGNORECASE))
 
 
 def _is_intro_cue_line(line: str) -> bool:
