@@ -1,12 +1,10 @@
-"""English-first bilingual lyrics: pick hook lines and translate them in one batch.
+"""English-first bilingual lyrics: select hooks and translate them in batches.
 
-A small local model cannot reliably write a song, hit a Japanese-line ratio and
-write correct Japanese in one pass. Instead the song is written in English,
-code picks which lines become Japanese (so the ratio holds by construction),
-and those lines are translated together in a single short Ollama call. Lines
-the model gets wrong fall back to the offline Argos en→ja model; anything
-still untranslated stays English. Each Japanese line is inserted above its
-English line, which remains as the sung echo.
+The song is written in English, and selected hooks are translated toward the
+Japanese-line target in short Ollama batches. Failed lines can use offline
+Argos when available; anything still untranslated stays English. Each accepted
+Japanese line is inserted above its English echo, so the resulting ratio
+depends on available hooks and translation results.
 """
 
 from __future__ import annotations

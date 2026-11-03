@@ -52,8 +52,8 @@ class ReiToeiConfig:
         self.japanese_lyric_probability = japanese_probability
 
         # Bilingual strategy: "translate" writes the song in English, then
-        # translates selected hook lines in one batched call (Argos fallback);
-        # "generate" asks the model to mix both languages in one pass.
+        # translates selected hook lines in batches (Argos fallback);
+        # "generate" asks the model to write bilingual lyrics directly.
         strategy = os.getenv("REI_BILINGUAL_STRATEGY", "translate").strip().lower()
         if strategy not in {"translate", "generate"}:
             raise ValueError("REI_BILINGUAL_STRATEGY must be one of: translate, generate")

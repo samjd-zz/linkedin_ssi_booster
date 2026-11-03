@@ -773,11 +773,14 @@ Controls the language policy for Rei's generated lyrics.
 
 **Options:**
 
-- `bilingual` — Rei mixes English and Japanese within the same song.
-- `japanese` — Always generate full Japanese lyrics; the probability setting is ignored.
-- `english` — Always generate full English lyrics; the probability setting is ignored.
+- `bilingual` — Request a mix of English and Japanese within the same song.
+- `japanese` — Request Japanese lyrics; the probability setting is ignored.
+- `english` — Request English lyrics; the probability setting is ignored.
 
-When bilingual mode is enabled, `REI_JAPANESE_LYRIC_PROBABILITY` is used as a target ratio of lyric lines containing Japanese script during lyric composition. Rei retries an out-of-target draft with explicit Japanese-only and English-only line instructions. A draft is accepted within normal line-level rounding, with a minimum tolerance of 20 percentage points.
+In bilingual mode, `REI_JAPANESE_LYRIC_PROBABILITY` is a target ratio of
+Japanese lyric lines, not the probability of choosing a language for the whole
+song. The structured pipeline's handling depends on `REI_BILINGUAL_STRATEGY`;
+the final mix is not guaranteed.
 
 ```bash
 REI_LYRIC_LANGUAGE=bilingual
@@ -793,7 +796,13 @@ Target ratio of lyric lines containing Japanese script when `REI_LYRIC_LANGUAGE=
 
 This setting is ignored when `REI_LYRIC_LANGUAGE=japanese` or `REI_LYRIC_LANGUAGE=english`.
 
-For example, `0.50` targets a roughly even bilingual song. A result from 30% to 70% Japanese-script lyric lines is accepted; materially out-of-range drafts are regenerated once, then receive one measured line-repair attempt before being rejected prior to saving or Suno submission.
+For example, `0.50` targets a roughly even bilingual song. In `translate`
+mode, hook availability, the selection limit, and failed translations can
+reduce the final ratio. Each translated line is inserted alongside its English
+echo, so an English-only draft cannot exceed 50% Japanese sung lines at the
+translation step.
+At `0.0`, `translate` selects no hooks; `generate` still requires both
+languages. Use `english` mode when requesting English-only lyrics.
 
 ```bash
 REI_JAPANESE_LYRIC_PROBABILITY=0.25
@@ -807,8 +816,16 @@ How bilingual songs are written.
 
 **Options:**
 
-- `translate` — Rei writes the whole song in English (one Ollama call, with at most one structural retry). Code then picks hook lines so Japanese reaches `REI_JAPANESE_LYRIC_PROBABILITY` of sung lines after insertion: the chorus hook first, then stanza openers in the verses, alternating Bridge lines, and other sections in turn. Those lines are translated in batches of 10 per Ollama call as numbered JSON. Each Japanese line is inserted above its English line, which stays as the sung echo, and assembly adds the bracketed Romaji cue. Missing lines, Chinese grammar, leftover English words, or no Japanese fall back to the offline Argos en→ja model; lines that still fail stay English.
-- `generate` — The model mixes both languages in a single pass; out-of-ratio drafts are retried up to five times. This is the previous behavior.
+- `translate` — The structured pipeline writes the song in English, then
+  chooses hooks toward the target and translates them in batches of 10 per
+  Ollama call as numbered JSON. Valid Japanese lines are inserted above their
+  English echoes, and assembly checks and backfills bracketed Romaji cues.
+  Missing or rejected translations use offline Argos when available; lines
+  that still fail stay English. An Ollama runtime error stops later Ollama
+  batches while preserving earlier valid results.
+- `generate` — The model writes a bilingual draft directly. Language mix and
+  other checks can trigger retries, for up to five total attempts; if validation
+  ultimately fails, the existing fallback lyrics are used.
 
 ```bash
 REI_BILINGUAL_STRATEGY=translate
@@ -816,7 +833,11 @@ REI_BILINGUAL_STRATEGY=translate
 
 ### `REI_BILINGUAL_MAX_HOOK_LINES`
 
-Maximum number of lines translated into Japanese per song in `translate` mode. The real count comes from `REI_JAPANESE_LYRIC_PROBABILITY` (0.33 on a ~50-line song is about 25 lines); this is only a safety ceiling. Lines are translated in batches of 10 per Ollama call, so each batch adds roughly 30–60 seconds on a laptop-class GPU.
+Hook-selection limit in structured `translate` mode. The number translated
+depends on the ratio, eligible unique lines, and translation results. For a target
+strictly between 0 and 1 and at least eight sung lines, the selector targets at
+least two hooks even when this setting is 1. Lines are translated in batches
+of up to 10 per Ollama call.
 
 **Default:** `40`
 
@@ -826,10 +847,11 @@ Directory of the unpacked Argos Translate `translate-en_ja` model used as the of
 
 **Default:** `models/argos/translate-en_ja`
 
-> Both settings apply identically to `--rei-generate` (CLI) and `/rei` console requests,
-> including the console's direct-LLM fallback path used when no extracted knowledge is
-> available yet. Suno chorus ALL-CAPS formatting is only forced for `english` lyrics —
-> `japanese`/`bilingual` lyrics preserve natural script and casing.
+> The structured pipeline is used by `--rei-generate` and knowledge-grounded
+> `/rei` songs. The direct-LLM console fallback prompts for the requested
+> language and mix but does not run structured hook translation or ratio
+> validation. Structured Suno assembly forces ALL-CAPS only for `english`
+> lyrics; `japanese`/`bilingual` lyrics preserve natural script and casing.
 
 ### `SUNO_API_KEY` (required for Suno integration)
 
