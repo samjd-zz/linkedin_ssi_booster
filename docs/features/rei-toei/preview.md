@@ -24,6 +24,13 @@ Rei-only CLI runs skip GitHub profile enrichment because it is not used by the m
 
 INFO timing records distinguish `rei.preparation`, `rei.concept`, `rei.lyrics`, `rei.suno_formatting`, and optional `rei.dot_validation`; Strudel generation uses `rei.strudel`. Existing `ollama.chat` wall times and server timing metrics identify each underlying model request.
 
+After structured bilingual lyrics pass validation, each attempted translation
+batch logs `🌐 Bilingual lyric translation: batch 1/3 (line count: 10)` before
+its Ollama request. The message includes counts, not lyric text. It appears
+within the CLI's `rei.lyrics` or console's `console.rei.lyrics` timing stage;
+no batch message is emitted when no hooks are selected or for batches skipped
+after a runner failure.
+
 The lyric composer currently allows up to five attempts for Japanese/bilingual output and one for English, with up to 4,096 generated tokens per attempt. Structural, language-mix, script, and repetitiveness failures can trigger a complete regeneration. These checks and retry limits are unchanged by the startup optimization; warning logs give retry reasons. Formatting includes deterministic Japanese/Romaji normalization and does not make another LLM call. Use timings to distinguish retries from post-generation CPU work.
 
 The launcher performs its GPU passthrough probe before Python's stage logs. One-off runs reuse the existing app image unless `run --build` is supplied.

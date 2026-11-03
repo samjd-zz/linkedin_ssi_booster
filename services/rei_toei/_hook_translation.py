@@ -261,8 +261,15 @@ def translate_hook_texts(
     if not lines:
         return [], counts
     translations: List[Optional[str]] = []
+    total_batches = (len(lines) + TRANSLATION_BATCH_SIZE - 1) // TRANSLATION_BATCH_SIZE
     for start in range(0, len(lines), TRANSLATION_BATCH_SIZE):
         batch = list(lines[start:start + TRANSLATION_BATCH_SIZE])
+        logger.info(
+            "🌐 Bilingual lyric translation: batch %d/%d (line count: %d)",
+            start // TRANSLATION_BATCH_SIZE + 1,
+            total_batches,
+            len(batch),
+        )
         try:
             reply = ollama._chat(
                 TRANSLATION_SYSTEM_PROMPT,

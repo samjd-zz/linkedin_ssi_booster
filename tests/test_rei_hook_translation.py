@@ -213,7 +213,7 @@ def test_translate_hook_texts_without_argos_leaves_failed_lines_english(monkeypa
 
 
 def test_translation_runner_failure_stops_batches_and_preserves_prior_results(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture,
 ) -> None:
     lines = ["Seeds of light"] * 25
     argos = FakeArgos(["光の種"] * 15)
@@ -223,11 +223,23 @@ def test_translation_runner_failure_stops_batches_and_preserves_prior_results(
         json.dumps({str(i): "光の種" for i in range(1, 11)}, ensure_ascii=False),
         RuntimeError("model runner unexpectedly stopped"),
     ]
-    translations, counts = translate_hook_texts(lines, ollama, tmp_path)
+    with caplog.at_level(logging.INFO):
+        translations, counts = translate_hook_texts(lines, ollama, tmp_path)
+
     assert translations == ["光の種"] * 25
     assert counts == {"ollama": 10, "argos": 15, "failed": 0}
     assert ollama._chat.call_count == 2
     assert argos.calls == [lines[10:]]
+    progress = [
+        record.getMessage() for record in caplog.records
+        if record.name == _hook_translation.__name__
+        and record.getMessage().startswith("🌐 Bilingual lyric translation:")
+    ]
+    assert progress == [
+        "🌐 Bilingual lyric translation: batch 1/3 (line count: 10)",
+        "🌐 Bilingual lyric translation: batch 2/3 (line count: 10)",
+    ]
+    assert "skipping remaining Ollama batches" in caplog.text
 
 
 def test_insert_hook_translations_puts_japanese_above_its_english_line():
@@ -267,17 +279,31 @@ def test_config_defaults_to_translate_strategy(monkeypatch):
     assert config.bilingual_max_hook_lines == 40
 
 
-def test_compose_lyrics_translate_mode_writes_english_then_adds_japanese_hooks(translate_env):
+def test_compose_lyrics_translate_mode_writes_english_then_adds_japanese_hooks(
+    translate_env: Path, caplog: pytest.LogCaptureFixture,
+) -> None:
     ollama = MagicMock()
-    ollama._chat.side_effect = [
+    replies = iter([
         json.dumps(SONG),
         json.dumps({"translations": ["データの種から咲け", "コードの葉、光の種", "グリッチが流れを乱す", "壊れた地面を貫く根"]}, ensure_ascii=False),
-    ]
+    ])
+    logs_at_call: list[list[str]] = []
 
-    lyrics = compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
-    prompt = assemble_suno_prompt(_concept(), lyrics, _domain())
+    def respond(*_args: object, **_kwargs: object) -> str:
+        logs_at_call.append([record.getMessage() for record in caplog.records])
+        return next(replies)
+
+    ollama._chat.side_effect = respond
+
+    with caplog.at_level(logging.INFO):
+        lyrics = compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
+        prompt = assemble_suno_prompt(_concept(), lyrics, _domain())
 
     assert ollama._chat.call_count == 2
+    assert not any("🌐 Bilingual lyric translation:" in message for message in logs_at_call[0])
+    assert logs_at_call[1].index("Lyric composition succeeded on attempt 1") < logs_at_call[1].index(
+        "🌐 Bilingual lyric translation: batch 1/1 (line count: 4)"
+    )
     song_system_prompt = ollama._chat.call_args_list[0].args[0]
     assert "natural English only" in song_system_prompt
     assert "Target:" not in song_system_prompt
@@ -312,7 +338,9 @@ def test_select_hook_lines_meets_a_high_ratio_with_several_lines_per_section():
     assert all(sum(1 for h in hooks if h.field == f) >= 2 for f in ("chorus", "verse_1", "verse_2", "bridge"))
 
 
-def test_translate_hook_texts_batches_long_lists(monkeypatch, tmp_path):
+def test_translate_hook_texts_batches_long_lists(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+) -> None:
     monkeypatch.setattr(_hook_translation, "get_argos_translator", lambda _: None)
     lines = [f"Line number {i} glows" for i in range(13)]
     ollama = MagicMock()
@@ -321,9 +349,24 @@ def test_translate_hook_texts_batches_long_lists(monkeypatch, tmp_path):
         json.dumps({"1": "光る行十", "3": "光る行十二"}, ensure_ascii=False),
     ]
 
-    translations, counts = translate_hook_texts(lines, ollama, tmp_path)
+    with caplog.at_level(logging.INFO):
+        translations, counts = translate_hook_texts(lines, ollama, tmp_path)
+        progress = [
+            record.getMessage() for record in caplog.records
+            if record.name == _hook_translation.__name__
+            and record.getMessage().startswith("🌐 Bilingual lyric translation:")
+        ]
+        caplog.clear()
+        empty_translations, empty_counts = translate_hook_texts([], ollama, tmp_path)
 
     assert ollama._chat.call_count == 2
     assert translations[0] == "光る行0" and translations[10] == "光る行十"
     assert translations[11] is None and translations[12] == "光る行十二"
     assert counts == {"ollama": 12, "argos": 0, "failed": 1}
+    assert progress == [
+        "🌐 Bilingual lyric translation: batch 1/2 (line count: 10)",
+        "🌐 Bilingual lyric translation: batch 2/2 (line count: 3)",
+    ]
+    assert empty_translations == []
+    assert empty_counts == {"ollama": 0, "argos": 0, "failed": 0}
+    assert not caplog.records
