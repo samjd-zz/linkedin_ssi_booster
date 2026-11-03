@@ -46,12 +46,12 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1408** | **1406** | **0** | **0** | **2** | **70%** | All executed tests passed |
+| **1408** | **1406** | **0** | **0** | **2** | **73%** | All executed tests passed |
 
 - **Latest Run Date:** November 3, 2026
 - **Latest Changes:** 11 new garbled-output guard cases verify that token-salad replies (Latin glued to Chinese characters, code identifiers, symbol runs, stray scripts) are detected while English, Japanese teaching, mixed Japanese/English, technical, and French replies pass; that `chat_as_persona` unloads the model and retries once, then raises `GarbledOutputError`; and that a failed console turn is dropped from history. 8 new console truth-gate cases verify the separate `/truth-gate` toggle (off by default) shows the filtered reply with its layout kept, report toggles score quietly without removal logs, and quiet logging works in the gate itself. 16 new Rei song-tidy cases verify that leaked character-count notes such as `(34 chars)` or `(38 chars, UPPERCASE)` are removed whole instead of leaving `()` behind, and that echo parentheticals such as `PULSE CODE (Pulse Code)` are removed, stray `[Heavy Bass Drop]` cues outside the Drop are dropped, Bridge lines copied from the Chorus are removed, and dangling `、` endings are stripped. 11 new Rei hook-translation and Suno-cleanup cases verify that a 0.33 Japanese ratio now places several translated lines per section (default cap raised from 8 to 40), translation runs in batches of 10 with numbered JSON so partial replies keep their good lines, Ollama polite endings (`消えます`, `死にます`) become plain form, Japanese lines with leftover English words fall back to Argos, and `(Blank Line)` placeholders become real blank lines. 40 Rei hook-translation cases cover the English-first bilingual strategy (one song call plus one batched translation call, with an offline Argos en→ja fallback); legacy one-pass bilingual tests pin `REI_BILINGUAL_STRATEGY=generate`. 11 new Rei cases verify Chinese-grammar detection and repair (`在空中` → `が空に舞う` with a refreshed cue) and retries when the Chorus, Verse 2, or Bridge copies lines from earlier sections. 12 new Rei song-structure cases verify that a Verse 2 copying Verse 1 is detected and retried with targeted feedback, and that concept and lyric prompts request a central chorus metaphor, a post-turning-point Verse 2, and a climactic bridge. 19 Romaji-coverage cases verify joined verb endings (`sareru`, `hikatte`, `mirarenakatta`), re-joining of existing split cues such as `[segumentoka sa reru]`, and a cue on every uncued Japanese line, alongside 68 Rei lyric-cue cases covering contextual Japanese readings, explicit and ambiguous cue formats, inline pronunciations, translations and stage cues, particle pronunciation, unknown characters, tokenizer fallbacks, technical acronyms, prompt leakage, and CLI/console formatting. Prior Romaji cue-hygiene, Rei enforcement, nav-chrome, launcher, relevance, and performance regressions remain.
 - **Latest Fix:** 31 solo-palette regressions cover the loaded persona-aligned options, structured and console prompts, model-selected solos, custom and missing options, explicit invalid-configuration errors, stage-cue handling, preserved vocal parentheses, and structured/freeform cleanup. 4 prior Drop/Outro regressions cover parenthetical production directions and vocal ad-libs; 16 required-section/Solo regressions cover automatic repairs and instrumental formatting.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,406 passed, 0 failed, 2 deselected** in 49.84 seconds (coverage not re-measured; the 70% figure below is from the October 28 coverage run). One existing non-terminal `term_image` warning remains.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,406 passed, 0 failed, 2 deselected** in 57.03 seconds. One existing non-terminal `term_image` warning remains.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
@@ -62,13 +62,13 @@ The latest run executed **1,406 of 1,408 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
-The **70% source-coverage figure was measured October 28, 2026**: 12,822
-executable statements, 3,829 missed, and 8,993 executed (70.14%, rounded to 70%
-by the report). This replaces the historical September 14 figure of 66%.
+The **73% source-coverage figure was measured November 3, 2026**: 13,971
+executable statements, 3,804 missed, and 10,167 executed (rounded to 73% by
+the report). This replaces the historical October 28 figure of 70%.
 It measures statement coverage, not branch coverage or live API correctness.
 `content_calendar` was not imported by the suite and is absent from the total;
 19 fully covered files were omitted from the terminal listing but included in
-the total. Entry-point coverage was 55% for `main.py` and 68% for `scheduler.py`.
+the total. Entry-point coverage was 58% for `main.py` and 68% for `scheduler.py`.
 
 The recent performance work added **90 regression tests**:
 
