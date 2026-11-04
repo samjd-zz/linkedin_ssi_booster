@@ -296,14 +296,14 @@ The system now includes a NetworkX-powered knowledge graph for incremental learn
 
 **Integration Philosophy:**
 
-- BM25 (lexical retrieval) remains the primary candidate selector for claims, project details, facts, narrative memory, and learned article summaries.
+- BM25 provides the largest-weight lexical relevance signal. Candidate eligibility is handled by the calling retrieval path; the hybrid scorer ranks the candidates it receives.
 
-- The NetworkX knowledge graph is used as a secondary, persona-aware reranker and explainer: it links persona ↔ skills ↔ projects ↔ claims ↔ domain facts.
+- Model2Vec adds a semantic-similarity signal, while the NetworkX knowledge graph contributes persona-to-fact proximity and a connectivity-based support score. The graph also links persona ↔ skills ↔ projects ↔ claims ↔ domain facts.
 
-- Final candidate scoring is a hybrid:
+- The default hybrid score is:
 
   $$
-  ext{final} = 0.7 \times \text{bm25} + 0.2 \times \text{graph proximity} + 0.1 \times \text{claim support}
+  \text{final} = 0.60 \times \text{BM25} + 0.15 \times \text{Model2Vec similarity} + 0.15 \times \text{graph proximity} + 0.10 \times \text{graph connectivity}
   $$
 
 ### 🧬 Hybrid Retrieval and Scoring Architecture
@@ -312,10 +312,12 @@ The system now includes a NetworkX-powered knowledge graph for incremental learn
 flowchart TD
     UserInput["User Interactions / Content Curation"] -->|"New Knowledge"| Learning["Avatar Learning Subsystem"]
     Learning -->|"Add/Update"| KnowledgeGraph["Knowledge Graph (networkx)"]
-    UserQuery["User Query / Generation Request"] --> BM25["BM25 Lexical Retriever"]
-    BM25 -->|"Top Candidates"| GraphRerank["Graph Proximity & Claim Support"]
-    KnowledgeGraph -->|"Proximity/Support"| GraphRerank
-    GraphRerank -->|"Hybrid Score"| Generation["Post Generation / Explanation"]
+    UserQuery["User Query / Generation Request"] --> BM25["BM25 Lexical Score"]
+    UserQuery --> Semantic["Model2Vec Semantic Similarity"]
+    BM25 --> Hybrid["Weighted Hybrid Ranker"]
+    Semantic --> Hybrid
+    KnowledgeGraph -->|"Proximity & Connectivity"| Hybrid
+    Hybrid -->|"Ranked Candidates"| Generation["Post Generation / Explanation"]
     Generation -->|"Citations/Explanations"| UserInput
 ```
 
