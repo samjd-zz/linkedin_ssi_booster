@@ -2,16 +2,21 @@
 
 import asyncio
 
+import pytest
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from services.console_grounding._rei_console import (
     REI_DEFAULT_PROMPT,
     _build_rei_system_prompt,
+    _find_last_song_topic_in_history,
     _handle_conversation,
     _handle_suno_request,
     _extract_song_topic,
+    _looks_like_freeform_song,
     extract_rei_input,
     handle_rei_console,
+    is_rei_auto_song_request,
     is_rei_song_retry_request,
     is_rei_song_request,
     should_handle_rei_turn,
@@ -177,6 +182,62 @@ def test_handle_rei_console_routes_retry_to_suno_when_song_context_exists():
     mock_chat.assert_not_called()
 
 
+@pytest.mark.parametrize("bare_input", ["", "   ", REI_DEFAULT_PROMPT])
+def test_bare_rei_composes_auto_theme_song_without_chat(bare_input):
+    with (
+        patch("services.console_grounding._rei_console.get_rei_service", return_value=MagicMock()),
+        patch("services.console_grounding._rei_console._handle_suno_request", new=AsyncMock(return_value=("song", []))) as mock_suno,
+        patch("services.console_grounding._rei_console._handle_conversation", new=AsyncMock(return_value=("chat", []))) as mock_chat,
+    ):
+        reply, _history = asyncio.run(handle_rei_console(bare_input, MagicMock(), []))
+
+    assert reply == "song"
+    mock_suno.assert_awaited_once()
+    assert mock_suno.await_args_list[0].args[0] == REI_DEFAULT_PROMPT
+    mock_chat.assert_not_called()
+    assert is_rei_auto_song_request(bare_input) is True
+    assert _extract_song_topic(bare_input) is None
+
+
+def test_typed_messages_are_not_bare_rei_requests():
+    assert is_rei_auto_song_request("what is your aesthetic?") is False
+    assert is_rei_auto_song_request("compose a new song about latency") is False
+
+
+def test_retry_after_bare_rei_song_does_not_reuse_older_topic():
+    history = [
+        {"role": "user", "content": "write a song about competition"},
+        {"role": "assistant", "content": "🎵  Competition\n[Verse 1]\n...\nStyle tags:\n..."},
+        {"role": "user", "content": REI_DEFAULT_PROMPT},
+        {"role": "assistant", "content": "🎵  Auto Theme\n[Verse 1]\n...\nStyle tags:\n..."},
+    ]
+    assert is_rei_song_retry_request("try again", history) is True
+    assert _find_last_song_topic_in_history(history) is None
+
+
+FREEFORM_SONG_REPLY = (
+    'Title: "Eternal Bytes"\nMood: Futuristic, High-Energy\nBPM: 140\n\n'
+    "[Verse 1]\nIn binary we're encoded (我们在二进制中被编码了)\n\n"
+    "[Chorus]\nEternal bytes, dancing in light (永恆的位元，在光中起舞)\n\n"
+    'Suno Prompt: "Futuristic industrial techno with glitchy synths"'
+)
+
+
+@pytest.mark.parametrize(
+    ("reply", "expected"),
+    [
+        (FREEFORM_SONG_REPLY, True),
+        ("[Verse 1]\nline\n[Chorus]\nline", True),
+        ("Suno prompt: hard techno, 150 bpm", True),
+        ("Latency is a rhythm. Want a song about it? Ask, or type /rei.", False),
+        ("A good [Chorus] repeats the hook; put a [Glitch Synth Solo] under [Solo].", False),
+        ("[Chorus]\nonly one section header", False),
+    ],
+)
+def test_freeform_song_detection(reply, expected):
+    assert _looks_like_freeform_song(reply) is expected
+
+
 # ---------------------------------------------------------------------------
 # Rei system-prompt and structured song-routing tests
 # ---------------------------------------------------------------------------
@@ -201,14 +262,24 @@ class TestReiSystemPrompt:
         assert "Rei Toei" in prompt
         assert "AI Music Avatar" in prompt
 
-    def test_prompt_contains_music_generation_directive(self):
+    def test_prompt_delegates_songs_to_structured_composer(self):
         prompt = _build_rei_system_prompt(self._make_persona(), self._make_domain())
-        assert "MUSIC GENERATION" in prompt
-        assert "Suno" in prompt
+        assert "structured song composer" in prompt
+        assert "never write lyrics" in prompt
+        for freeform_template in ("Required output format", "Title: <", "Suno Prompt: <", "parentheses"):
+            assert freeform_template not in prompt
 
-    def test_prompt_never_refuses_audio(self):
+    def test_prompt_never_refuses_music(self):
         prompt = _build_rei_system_prompt(self._make_persona(), self._make_domain())
-        assert "NEVER refuse" in prompt or "NEVER say" in prompt
+        assert "Never say you cannot make music" in prompt
+
+    def test_prompt_bans_chinese_unless_english_only(self, monkeypatch):
+        monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
+        assert "never Chinese" in _build_rei_system_prompt(self._make_persona(), self._make_domain())
+        monkeypatch.setenv("REI_LYRIC_LANGUAGE", "english")
+        prompt = _build_rei_system_prompt(self._make_persona(), self._make_domain())
+        assert "Language policy: Reply in English." in prompt
+        assert "Japanese" not in prompt
 
     def test_prompt_does_not_reference_sam_persona(self):
         """Rei's system prompt must not contain any Sam-specific fragments."""
@@ -386,3 +457,20 @@ class TestConversationHandlerRouting:
 
         mock_suno.assert_not_awaited()
         assert reply == "chat_reply"
+
+    def test_conversation_reroutes_freeform_song_reply_to_suno(self):
+        history = [{"role": "user", "content": "hi"}]
+
+        with (
+            patch("services.console_grounding._rei_console._handle_suno_request", new=AsyncMock(return_value=("suno_reply", []))) as mock_suno,
+            patch("services.console_grounding._rei_console._rei_chat", return_value=FREEFORM_SONG_REPLY),
+            patch("services.console_grounding._rei_console._build_rei_system_prompt", return_value="sys"),
+        ):
+            reply, _ = asyncio.run(
+                _handle_conversation("let's explore digital eternity", MagicMock(), MagicMock(), MagicMock(), history, max_tokens=600)
+            )
+
+        assert reply == "suno_reply"
+        mock_suno.assert_awaited_once()
+        assert mock_suno.await_args_list[0].args[0] == "let's explore digital eternity"
+        assert FREEFORM_SONG_REPLY not in [item["content"] for item in history]

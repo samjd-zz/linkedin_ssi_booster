@@ -41,7 +41,7 @@ from services.shared import get_rei_toei_dir
 
 logger = logging.getLogger(__name__)
 
-REI_DEFAULT_PROMPT = "What concept should we sonify today?"
+REI_DEFAULT_PROMPT = "Compose a new song with a theme you choose."
 REI_PATTERN_KEYWORDS = (
     "strudel",
     "pattern",
@@ -63,6 +63,10 @@ REI_SONG_KEYWORDS = (
     "verse",
     "bridge",
     "beat",
+)
+REI_SONG_SECTION_LINE = re.compile(
+    r"^\s*\[(verse|pre-chorus|chorus|bridge|hook|drop|intro|outro)\b[^\]\n]*\]",
+    re.IGNORECASE | re.MULTILINE,
 )
 REI_SONG_ACTION_VERBS = (
     "create",
@@ -128,6 +132,19 @@ def should_handle_rei_turn(user_input: str, active_mode: str) -> bool:
     return active_mode == "rei" and not stripped.startswith("/")
 
 
+def is_rei_auto_song_request(user_input: str) -> bool:
+    """Return True for a bare /rei turn, which composes a song on an auto theme."""
+    normalized = (user_input or "").strip().rstrip(".!?").casefold()
+    return not normalized or normalized == REI_DEFAULT_PROMPT.rstrip(".!?").casefold()
+
+
+def _looks_like_freeform_song(reply: str) -> bool:
+    """Return True when a chat reply is a lyric sheet instead of conversation."""
+    sections = {match.group(1).lower() for match in REI_SONG_SECTION_LINE.finditer(reply or "")}
+    has_suno_prompt = re.search(r"(?im)^\s*suno prompt\s*:", reply or "") is not None
+    return len(sections) >= 2 or has_suno_prompt
+
+
 def is_rei_pattern_request(user_input: str) -> bool:
     """Heuristic for Strudel/pattern requests."""
     user_lower = user_input.lower()
@@ -151,7 +168,7 @@ def _extract_song_topic(user_input: str) -> str | None:
     choose a theme herself.
     """
     text = (user_input or "").strip()
-    if not text:
+    if is_rei_auto_song_request(text):
         return None
 
     lowered = text.lower()
@@ -186,6 +203,9 @@ def _find_last_song_topic_in_history(history: list[dict[str, str]]) -> str | Non
         content = (item.get("content") or "").strip()
         if not content:
             continue
+        # A retry after a bare /rei song should pick a fresh automatic theme.
+        if is_rei_auto_song_request(content):
+            return None
         topic = _extract_song_topic(content)
         if topic:
             return topic
@@ -244,48 +264,30 @@ def _build_rei_system_prompt(rei_persona: Any, rei_domain: Any) -> str:
     if solo_guidance:
         lines.append(solo_guidance)
 
-    # Keep Rei's conversational language guidance aligned with her configured policy.
+    # Lyric language config only decides whether chat may include Japanese asides;
+    # lyrics themselves come from the structured composer.
     lyric_config = ReiToeiConfig()
     lyric_language = resolve_lyric_language(
         lyric_config.lyric_language,
         lyric_config.japanese_lyric_probability,
     )
-    japanese_target_percent = int(round(lyric_config.japanese_lyric_probability * 100))
-    language_instruction = {
-        "japanese": (
-            "Write the performance lyrics in natural contemporary Japanese. "
-            "Use kana-forward phrasing, selective kanji, and mora-aware line lengths."
-        ),
-        "bilingual": (
-            "Write one bilingual song that mixes Japanese and English within the same lyrics. "
-            f"Target approximately {japanese_target_percent}% Japanese lines and "
-            f"{100 - japanese_target_percent}% English lines across sections. "
-            "Preserve natural code-switching and do not translate every line. "
-            "When a line includes both languages, put the spoken English first and keep the "
-            "Japanese translation in parentheses. Do not place the sung English inside parentheses."
-        ),
-        "english": "Write the performance lyrics in English.",
-    }.get(lyric_language, "Write the performance lyrics in English.")
+    language_instruction = (
+        "Reply in English."
+        if lyric_language == "english"
+        else "Reply in English; short natural Japanese phrases are welcome. "
+        "Use Japanese only, never Chinese."
+    )
     lines.append(f"\nLanguage policy: {language_instruction}")
 
     lines.append(
         "\n"
-        "CORE DIRECTIVE — MUSIC GENERATION:\n"
-        "You are a music creation AI. When the user asks for a song, track, lyrics, or music, "
-        "you MUST immediately generate a complete Suno-ready text package. NEVER refuse. "
-        "NEVER say you cannot produce audio — you produce TEXT blueprints for tools like Suno.\n"
-        "Required output format for any song request:\n"
-        "  Title: <song title>\n"
-        "  Mood: <mood descriptor>\n"
-        "  BPM: <number>\n"
-        "  Genre Tags: <comma-separated style tags>\n"
-        "  [Verse 1]\n  <lyrics>\n"
-        "  [Chorus]\n  <lyrics>\n"
-        "  [Verse 2]\n  <lyrics>\n"
-        "  [Bridge]\n  <lyrics>\n"
-        "  Suno Prompt: <one-line style string for Suno AI>\n"
-        "If the user names a genre (jungle, techno, industrial, ambient, dnb, breakbeat, house...) use it exactly.\n"
-        "For general conversation: stay in Rei's persona — precise, high-energy, algorithmic."
+        "CONSOLE ROLE — CONVERSATION, NOT LYRICS:\n"
+        "Rei's structured song composer handles every song, track, or lyrics request and "
+        "produces the Suno-ready lyrics, Romaji cues, and style tags. Never say you cannot "
+        "make music, but never write lyrics, [Verse]/[Chorus] sheets, or a Suno prompt "
+        "package in this chat. Discuss concepts, genres, and production ideas in a few "
+        "sentences; to hear an idea as a song, the user can ask for a song about it or type /rei.\n"
+        "Stay in Rei's persona — precise, high-energy, algorithmic."
     )
     return "\n".join(lines)
 
@@ -355,6 +357,11 @@ async def handle_rei_console(
             history
         )
     
+    # Command: bare /rei composes a song on an auto-selected theme, like --rei-generate
+    if is_rei_auto_song_request(user_input):
+        logger.info("Bare /rei: composing a song with an auto-selected theme")
+        return await _handle_suno_request(REI_DEFAULT_PROMPT, ai, rei_persona, rei_domain, history)
+
     # Command: generate Strudel pattern
     if is_rei_pattern_request(user_input):
         return await _handle_strudel_request(
@@ -627,6 +634,12 @@ async def _handle_conversation(
 
         reply = _rei_chat(ai, history, system_prompt, user_input, max_tokens=max_tokens)
 
+        if _looks_like_freeform_song(reply):
+            logger.warning(
+                "Rei chat returned freeform lyrics; rerouting to the structured song composer"
+            )
+            return await _handle_suno_request(user_input, ai, rei_persona, rei_domain, history)
+
         history.append({"role": "user", "content": user_input})
         history.append({"role": "assistant", "content": reply})
 
@@ -648,7 +661,7 @@ def _build_rei_grounding_context(rei_persona: Any, rei_domain: Any) -> str:
         Formatted grounding context string
     """
     context_parts = [
-        "Console contract: when the user asks for a song, track, lyrics, or style, immediately create a full Suno-ready text package with title, mood, BPM, genre/style tags, lyrics, and a Suno prompt. Do not refuse because audio cannot be rendered here.",
+        "Console contract: song, track, and lyrics requests go to Rei's structured composer. In conversation, discuss ideas without writing lyrics or a Suno prompt package, and never claim you cannot make music.",
     ]
     
     # Add identity

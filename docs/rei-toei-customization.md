@@ -674,8 +674,8 @@ python main.py --console
 
 # Inside console:
 Sam> /rei-toei
-Rei> [Rei's introduction]
-Sam> Generate a song about neural networks
+Rei> [Structured song on an auto-selected theme]
+You> Generate a song about neural networks
 ```
 
 ### 5. Run Unit Tests

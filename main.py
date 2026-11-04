@@ -591,7 +591,7 @@ def run_console(
             print("  /katzilla <q>    deterministic external evidence citations")
             print()
             print(str(Fore.YELLOW) + "Identity" + str(Style.RESET_ALL))
-            print("  /rei  /rei-toei  switch to Rei Toei music avatar (sticky until /sam)")
+            print("  /rei  /rei-toei  switch to Rei Toei (sticky until /sam); alone, composes a song")
             print("  /sam             switch back to Sam")
             print()
             print(str(Fore.YELLOW) + "Creative" + str(Style.RESET_ALL))

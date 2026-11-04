@@ -852,14 +852,18 @@ Directory of the unpacked Argos Translate `translate-en_ja` model used as the of
 
 **Default:** `models/argos/translate-en_ja`
 
-> `--rei-generate` and `/rei` song requests share the structured composer,
-> translation or ratio validation, and Suno assembly. Without an explicit
-> topic or extracted theme, the console chooses from Rei's metaphor library,
-> or uses a general digital-creativity theme if the library is empty. A
-> propagated generation error is reported rather than replaced by an
-> unvalidated freeform song. General conversation remains separate. Suno
-> assembly forces ALL-CAPS only for `english` lyrics; `japanese`/`bilingual`
-> lyrics preserve natural script and casing.
+> `--rei-generate`, a bare `/rei`, and `/rei` song requests share the
+> structured composer, translation or ratio validation, and Suno assembly.
+> A bare `/rei` has no explicit topic, so it picks from extracted themes like
+> `--rei-generate` without `--rei-theme`. Without an explicit topic or
+> extracted theme, the console chooses from Rei's metaphor library, or uses a
+> general digital-creativity theme if the library is empty. A propagated
+> generation error is reported rather than replaced by an unvalidated freeform
+> song.
+> General conversation does not write lyrics; a chat reply containing a lyric
+> sheet is replaced by a structured song. Suno assembly forces ALL-CAPS only
+> for `english` lyrics; `japanese`/`bilingual` lyrics preserve natural script
+> and casing.
 
 ### `SUNO_API_KEY` (required for Suno integration)
 

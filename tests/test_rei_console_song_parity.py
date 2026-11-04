@@ -399,3 +399,44 @@ def test_console_without_facts_or_metaphors_still_uses_structured_generation(
     assert "[Chorus]" in reply
     assert "No extracted themes or Rei metaphor themes" in caplog.text
     model.client.chat.assert_not_called()
+
+
+@pytest.mark.parametrize("bare_input", ["", rei.REI_DEFAULT_PROMPT])
+def test_bare_rei_uses_structured_pipeline_with_auto_theme(
+    bare_input: str, console_setup: ReiDomainKnowledge,
+) -> None:
+    model = _model()
+
+    reply, updated = asyncio.run(rei.handle_rei_console(bare_input, model, []))
+
+    assert "recursion" in model._chat.call_args_list[0].args[1].lower()
+    assert reply.startswith("🎵") and "[Chorus]" in reply and "Style tags:" in reply
+    assert updated == [
+        {"role": "user", "content": rei.REI_DEFAULT_PROMPT},
+        {"role": "assistant", "content": reply},
+    ]
+    model.client.chat.assert_not_called()
+
+
+def test_freeform_chat_song_is_replaced_by_structured_song(
+    console_setup: ReiDomainKnowledge, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    freeform = (
+        "Title: Eternal Bytes\nBPM: 140\n[Verse 1]\n"
+        "In binary we're encoded (我们在二进制中被编码了)\n"
+        "[Chorus]\nEternal bytes\nSuno Prompt: glitchy techno"
+    )
+    model = _model()
+    model.client.chat.side_effect = None
+    model.client.chat.return_value = SimpleNamespace(message=SimpleNamespace(content=freeform))
+    monkeypatch.setattr(rei, "log_ollama_timings", lambda *args, **kwargs: None)
+
+    reply, updated = asyncio.run(rei.handle_rei_console("let's explore eternity", model, []))
+
+    model.client.chat.assert_called_once()
+    assert "我们" not in reply and "Eternal bytes" not in reply
+    assert reply.startswith("🎵") and "Style tags:" in reply
+    assert updated == [
+        {"role": "user", "content": "let's explore eternity"},
+        {"role": "assistant", "content": reply},
+    ]

@@ -242,7 +242,7 @@ python main.py --console --verify --avatar-explain --dot-report
 | `/truth-gate`         | Toggle the truth gate (off by default): unsupported sentences are removed and the filtered reply is shown            |
 | `/graph-stats`        | Show knowledge graph statistics plus domain-knowledge profiles for both Sam and Rei                                  |
 | `/katzilla <query>`   | Show deterministic external evidence citations for a query                                                           |
-| `/rei` or `/rei-toei` | Switch to Rei Toei music avatar mode                                                                                 |
+| `/rei` or `/rei-toei` | Switch to Rei Toei (sticky until `/sam`); alone, composes a song on an auto-selected theme                           |
 | `/art [topic]`        | Render FLUX art avatar from the most recent AI reply in this session. Optional topic hint narrows the visual prompt. |
 
 `/art` always uses the previous assistant message in the current console session as source text. If you have not generated an AI reply yet, ask a question or produce a response first, then run `/art` with an optional topic hint.
@@ -773,7 +773,7 @@ python main.py --console
 
 **Console commands:**
 
-- `/rei-toei` or `/rei` — Switch to Rei Toei music avatar mode
+- `/rei-toei` or `/rei` — Switch to Rei Toei music avatar mode; with no message, compose a song on an auto-selected theme through the same structured pipeline as `--rei-generate`
 - General conversation with Rei about music, technical concepts, or knowledge
 - Request Strudel pattern generation: "generate a strudel pattern about microservices"
 - Request Suno song generation: "write a song about async programming"

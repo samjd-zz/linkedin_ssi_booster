@@ -82,8 +82,8 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1432%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1432 passed, 0 failed, 2 live API tests deselected"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-73%25-yellow.svg" alt="Source coverage: 73%, measured November 3, 2026"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1448%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1448 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-73%25-yellow.svg" alt="Source coverage: 73%, measured November 4, 2026"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -165,16 +165,16 @@ python main.py --console
 Sam> Teach me the kanji 夢 from the loaded domain knowledge
 Sam> Teach me the kanji 夢 and draw it in golden calligraphy
 Sam> /art "kanji 夢 in golden calligraphy"
-Sam> /rei-toei                    # Switch to Rei's persona
-Rei> What concept should we sonify today?
+Sam> /rei-toei                    # Switch to Rei; alone, it composes a song on an auto-selected theme
+Rei> [Structured song with Suno style tags, same pipeline as --rei-generate]
 You> Generate a song about async programming
-Rei> [Generates song with Suno prompt and evidence IDs]
+Rei> [Structured song on your topic]
 You> /sam                         # Switch back to Sam when you're done
 ```
 
 Sam's normal Kanji-teaching response is text-first and uses domain-backed meanings plus deterministic Hepburn readings. Add `draw`, `render`, or another image request verb to auto-trigger FLUX, or run `/art [topic]` afterward to turn the latest Sam lesson into a visual. FLUX rendering must be enabled with `FLUX_CAPACITOR_ENABLED=true` and is normally run through the Docker `full` profile.
 
-After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console. For a CLI-only preview, run `bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview --rei-theme "async programming"`; omit `--rei-theme` for automatic selection. Add `--build` immediately after `run` to rebuild the app image after code changes. Preview still generates full lyrics locally but does not save or submit them. Rei-only runs skip unused GitHub context and share one Ollama client; explicit themes skip avatar loading unless `--rei-explain` needs evidence. INFO timings separate preparation, concept generation, lyrics (including retries), and Suno formatting; see [Rei CLI runtime behavior](docs/features/rei-toei/preview.md).
+After you enter Rei mode, plain follow-up messages stay with Rei until you switch back with `/sam` or exit the console. Song requests and a bare `/rei` use the same structured composer as `--rei-generate`; Rei's general chat does not write lyrics, and a chat reply that turns into a lyric sheet is regenerated through that composer. For a CLI-only preview, run `bash run.sh --profile core run --rm app python main.py --rei-generate --rei-preview --rei-theme "async programming"`; omit `--rei-theme` for automatic selection. Add `--build` immediately after `run` to rebuild the app image after code changes. Preview still generates full lyrics locally but does not save or submit them. Rei-only runs skip unused GitHub context and share one Ollama client; explicit themes skip avatar loading unless `--rei-explain` needs evidence. INFO timings separate preparation, concept generation, lyrics (including retries), and Suno formatting; see [Rei CLI runtime behavior](docs/features/rei-toei/preview.md).
 
 ---
 
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 3, 2026: 1,434 collected; 1,432 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **73%**. Includes 21 console/CLI lyric-parity cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,450 collected; 1,448 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **73%**. Includes 24 console/CLI lyric-parity cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
