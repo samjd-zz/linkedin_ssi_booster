@@ -42,7 +42,7 @@ not the knowledge snapshot.
 | `console.preparation` | Sam's snapshot preparation and graph bootstrap, including `/reload` |
 | `retrieval.hybrid` | BM25, semantic scoring, and graph reranking |
 | `console.sam.chat` | Sam's direct chat request wall time |
-| `console.rei.chat` | Rei's direct conversation/fallback request wall time |
+| `console.rei.chat` | Rei's direct conversation request wall time |
 | `console.rei.turn` | Rei dispatch, preparation, and generation, excluding voice playback |
 | `console.rei.concept`, `console.rei.lyrics` | Song concept and lyric generation, including existing retries |
 | `console.rei.suno_formatting` | Deterministic Suno output formatting |

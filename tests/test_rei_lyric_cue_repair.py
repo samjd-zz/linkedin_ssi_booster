@@ -1,6 +1,5 @@
 """Regression tests for Rei's Japanese pronunciation and Suno lyric cleanup."""
 
-import asyncio
 import json
 import logging
 from unittest.mock import MagicMock
@@ -17,6 +16,7 @@ from services.rei_toei._suno_pipeline import (
     _backfill_missing_romaji_cues,
     _generate_hepburn_romaji,
     _learning_annotation_stats,
+    _normalize_freeform_suno_reply,
     _normalize_suno_section,
     _verify_and_correct_romaji_lines,
     assemble_suno_prompt,
@@ -388,9 +388,7 @@ def test_romaji_first_english_translation_is_not_mistaken_for_a_cue():
     assert source in _normalize_suno_section(source, "Verse 1")
 
 
-def test_console_fallback_cleans_only_identifiable_song_sections(monkeypatch):
-    from services.console_grounding import _rei_console
-
+def test_freeform_formatter_cleans_only_identifiable_song_sections():
     original = (
         "Title: Signal\nGenre Tags: cyberpop\n\n"
         "[Verse 1]\n信号が飛び散る\n[Shingō ga tonikzaru] [Signals scatter]\n"
@@ -399,14 +397,7 @@ def test_console_fallback_cleans_only_identifiable_song_sections(monkeypatch):
         "夜明けの光\n[Yukigenke no hikari] [Dawn's light]\n\n"
         "Suno Prompt: bright synthwave"
     )
-    monkeypatch.setattr(_rei_console, "_build_rei_system_prompt", lambda *_: "system")
-    monkeypatch.setattr(_rei_console, "_rei_chat", lambda *_, **__: original)
-
-    reply, history = asyncio.run(
-        _rei_console._handle_llm_song_generation(
-            "Make a song", MagicMock(), MagicMock(), MagicMock(), []
-        )
-    )
+    reply = _normalize_freeform_suno_reply(original)
 
     assert reply.startswith("Title: Signal\nGenre Tags: cyberpop")
     assert "[shingou ga tobichiru] [Signals scatter]" in reply
@@ -414,23 +405,10 @@ def test_console_fallback_cleans_only_identifiable_song_sections(monkeypatch):
     assert "[Heavy Bass Drop]" in reply and "then '(" not in reply.lower()
     assert "atmospheric resolution and fade text" not in reply
     assert reply.endswith("Suno Prompt: bright synthwave")
-    assert history[-1] == {"role": "assistant", "content": reply}
-
-
-def test_console_fallback_leaves_unstructured_replies_unchanged(monkeypatch):
-    from services.console_grounding import _rei_console
+def test_freeform_formatter_leaves_unstructured_replies_unchanged():
 
     original = "Here's an idea about 信号.\nWe can expand it into a song."
-    monkeypatch.setattr(_rei_console, "_build_rei_system_prompt", lambda *_: "system")
-    monkeypatch.setattr(_rei_console, "_rei_chat", lambda *_, **__: original)
-
-    reply, _ = asyncio.run(
-        _rei_console._handle_llm_song_generation(
-            "Make a song", MagicMock(), MagicMock(), MagicMock(), []
-        )
-    )
-
-    assert reply == original
+    assert _normalize_freeform_suno_reply(original) == original
 
 
 def test_composition_and_suno_assembly_repair_the_preview(monkeypatch):

@@ -32,7 +32,6 @@ from services.rei_toei_service import (
 from services.ollama_service import OllamaService
 from services.performance import log_ollama_timings, timed_stage
 from services.rei_toei._solo_options import build_solo_style_guidance
-from services.rei_toei._suno_pipeline import _normalize_freeform_suno_reply
 from services.avatar_intelligence import (
     load_avatar_state as _lav_rei_console,
     normalize_extracted_facts as _normalize_extracted_rei,
@@ -245,8 +244,7 @@ def _build_rei_system_prompt(rei_persona: Any, rei_domain: Any) -> str:
     if solo_guidance:
         lines.append(solo_guidance)
 
-    # Keep this fallback path aligned with the CLI/grounded pipeline's language policy
-    # (REI_LYRIC_LANGUAGE / REI_JAPANESE_LYRIC_PROBABILITY via ReiToeiConfig).
+    # Keep Rei's conversational language guidance aligned with her configured policy.
     lyric_config = ReiToeiConfig()
     lyric_language = resolve_lyric_language(
         lyric_config.lyric_language,
@@ -475,28 +473,6 @@ async def _handle_strudel_request(
         return reply, history
 
 
-async def _handle_llm_song_generation(
-    user_input: str,
-    ai: OllamaService,
-    rei_persona: Any,
-    rei_domain: Any,
-    history: list[dict[str, str]],
-    max_tokens: int = 800,
-) -> tuple[str, list[dict[str, str]]]:
-    """Generate a full Suno-ready song package via LLM using Rei's own system prompt.
-
-    Used as the primary path when extracted knowledge is unavailable.
-    """
-    system_prompt = _build_rei_system_prompt(rei_persona, rei_domain)
-    reply = _normalize_freeform_suno_reply(
-        _rei_chat(ai, history, system_prompt, user_input, max_tokens=max_tokens)
-    )
-    updated = list(history)
-    updated.append({"role": "user", "content": user_input})
-    updated.append({"role": "assistant", "content": reply})
-    return reply, updated
-
-
 async def _handle_suno_request(
     user_input: str,
     ai: OllamaService,
@@ -504,32 +480,18 @@ async def _handle_suno_request(
     rei_domain: Any,
     history: list[dict[str, str]],
 ) -> tuple[str, list[dict[str, str]]]:
-    """Generate a Suno song concept with lyrics.
-
-    Attempts knowledge-grounded generation first; falls back to direct LLM
-    generation via Rei's own system prompt when extracted knowledge is absent.
-    """
+    """Generate console songs with the same structured composer as the CLI."""
     try:
         # Prefer user-directed topics when provided (e.g. "song about X").
-        # If the user gives no topic ("just give me a song"), Rei should choose
-        # her own theme from extracted knowledge as before.
+        # Without a topic, prefer extracted knowledge and then Rei's own themes.
         user_topic = _extract_song_topic(user_input)
-        if not user_topic and _contains_retry_signal(user_input):
-            user_topic = _find_last_song_topic_in_history(history)
-
-        # Load extracted knowledge graph
-        _avatar_state = _lav_rei_console()
-        extracted_facts = _normalize_extracted_rei(_avatar_state)
-
-        if not extracted_facts:
-            logger.info("No extracted knowledge — using direct LLM song generation")
-            return await _handle_llm_song_generation(user_input, ai, rei_persona, rei_domain, history)
-
-        themes = extract_themes(extracted_facts, limit=REI_CONFIG.theme_pool_size)
-
-        if not themes:
-            logger.info("No themes extracted — using direct LLM song generation")
-            return await _handle_llm_song_generation(user_input, ai, rei_persona, rei_domain, history)
+        if _contains_retry_signal(user_input) and not re.search(r"\babout\b", user_input, re.IGNORECASE):
+            previous_topic = _find_last_song_topic_in_history(history)
+            if previous_topic:
+                user_topic = previous_topic
+                retry_text = user_input.strip()
+                if retry_text.lower().rstrip(".!?") not in {"try again", "again", "redo", "regenerate", "another"}:
+                    user_topic = f"{previous_topic}; {retry_text}"
 
         recent_titles = load_recent_rei_titles(
             get_rei_toei_dir(create=False),
@@ -540,13 +502,45 @@ async def _handle_suno_request(
             logger.info("Using user-directed song topic: %s", user_topic[:120])
             theme = Theme(
                 id="user_directed_topic",
-                name=user_topic[:120],
+                name=user_topic,
                 technical_concepts=[user_topic],
                 evidence_ids=[],
                 frequency=1,
                 recency_score=1.0,
             )
         else:
+            avatar_state = _lav_rei_console()
+            extracted_facts = _normalize_extracted_rei(avatar_state)
+            themes = (
+                extract_themes(extracted_facts, limit=REI_CONFIG.theme_pool_size)
+                if extracted_facts else []
+            )
+            if not themes:
+                logger.info("No extracted themes; choosing from Rei's metaphor library")
+                themes = [
+                    Theme(
+                        id=f"rei_metaphor_{index}",
+                        name=term.strip().replace("_", " ").title(),
+                        technical_concepts=[term.strip()],
+                        evidence_ids=[],
+                        frequency=1,
+                        recency_score=1.0,
+                    )
+                    for index, term in enumerate(rei_domain.technical_metaphor_library)
+                    if isinstance(term, str) and term.strip()
+                ][:REI_CONFIG.theme_pool_size]
+            if not themes:
+                logger.warning(
+                    "No extracted themes or Rei metaphor themes; using digital creativity."
+                )
+                themes = [Theme(
+                    id="rei_default_theme",
+                    name="Digital creativity",
+                    technical_concepts=["digital creativity"],
+                    evidence_ids=[],
+                    frequency=1,
+                    recency_score=1.0,
+                )]
             theme = choose_diverse_theme(
                 themes,
                 recent_theme_names=recent_titles,
@@ -595,14 +589,9 @@ async def _handle_suno_request(
         
         return reply, history
         
-    except Exception as e:
-        logger.error(f"Suno generation failed: {e}")
-        try:
-            logger.info("Knowledge-grounded path failed — falling back to LLM song generation")
-            return await _handle_llm_song_generation(user_input, ai, rei_persona, rei_domain, history)
-        except Exception as e2:
-            logger.error(f"LLM song generation fallback also failed: {e2}")
-            return f"⚠️ Song generation failed: {str(e2)}", history
+    except (RuntimeError, ValueError, TypeError, OSError, KeyError) as exc:
+        logger.error("Suno generation failed: %s", exc)
+        return f"⚠️ Song generation failed: {exc}", history
 
 
 async def _handle_conversation(

@@ -53,7 +53,7 @@ and start a new preview run to pick up both the code and Compose environment.
 
 ## Required Sections and Instrumental Solo
 
-Suno assembly and recognizable full-song console replies always include a sung
+Suno assembly for CLI and console songs always includes a sung
 `[Intro Verse]` and `[Drop]` immediately followed by `[Heavy Bass Drop]`.
 Existing sections are kept. A missing or empty intro reuses the first sung
 chorus hook (or a verse line), retaining its adjacent pronunciation cues; an
@@ -66,11 +66,11 @@ inventing an intro. Metadata reflects the repaired output.
 for example `[Synthesizer whispers in the mix]`. Existing bracketed cues stay
 bracketed, and no Romaji is generated for instrumental instructions. Solo lines
 are bracketed before bilingual hook selection so they are not counted as sung
-lyrics. Unstructured console replies remain unchanged.
+lyrics. Ordinary console conversation is not formatted as a song.
 
 The optional solo palette includes `[Epic Guitar Solo]`, `[Melodic Synth Solo]`,
 `[Arpeggiated Synth Solo]`, `[Glitch Synth Solo]`, `[Industrial Percussion Solo]`,
-and `[Modulated Bass Solo]`. Both song-generation prompts ask the model to pick
+and `[Modulated Bass Solo]`. The structured lyric prompt asks the model to pick
 what suits the song, honor a requested instrument, or invent another fitting
 style; guitar is not required in every song. These are suggestions, not a
 guaranteed rotation, and they do not add another model call.
@@ -91,7 +91,7 @@ solo cues can be tagged in any section.
 
 ## Japanese Lyric Cues
 
-Structured bilingual songs are written English-first by default
+CLI and console bilingual songs are written English-first by default
 (`REI_BILINGUAL_STRATEGY=translate`), so structure and copied-line checks
 apply before translation. The composer chooses eligible hooks (chorus first,
 then verse stanza openers, alternating bridge lines, and other sections)
@@ -109,10 +109,63 @@ Docker service. Polite endings such as `します` or `消えます` become plai
 `する` or `消える`; lines that still fail stay English. An Ollama runtime
 error stops later batches without discarding earlier results.
 Set `REI_BILINGUAL_STRATEGY=generate` for direct bilingual drafting and mix
-validation. The console's direct-LLM fallback prompts for the mix instead of
-running structured translation or ratio validation.
+validation. If the composer exhausts its retries on an unusable draft, either
+strategy can use built-in fallback lyrics; in `translate` mode those lyrics
+are not hook-translated and may not meet the target. Console song requests use
+the same structured composer even when extracted knowledge is unavailable.
+Without an explicit topic or extracted theme, Rei chooses from her metaphor
+library, or uses a general digital creativity theme if it is empty. A
+propagated generation error is reported instead of switching to an unvalidated
+freeform song.
 
-For Japanese and bilingual songs, Rei checks inline, bracketed, parenthesized, and recognizable bare Romaji against their Japanese lyric lines. Every uncued Japanese line receives a generated Romaji cue, with auxiliary verbs and conjunctive particles joined to their verb (`segumentoka sareru`, `hikatte`). Existing cues that differ only by such splits, like `[segumentoka sa reru]`, are re-joined while keeping their macrons and capitalization. Bare Romaji written directly under a Japanese line is wrapped in `[]` so Suno does not sing it, and an extra bare guess below an existing cue is kept but also bracketed, never deleted. English translation lines remain sung. Recognized inline pronunciations count toward cue coverage; when only an English translation is present, backfilling uses the Japanese phrase without incorporating the translation. Explicit pronunciation/meaning pairs retain their English meaning; ambiguous English lyrics and sound cues are handled conservatively. Formatting also removes leaked quoted stage instructions and keeps technical acronyms such as `SQL` attached to Japanese phrases. Common simplified-Chinese words (for example `和谐`, `数据`, `连接`, `重组`) are replaced with Japanese equivalents (`調和`, `データ`, `接続`, `再構成`) before Romaji is added; other Chinese characters still need review. If the model adds an English gloss inside the Japanese parentheses, such as `(データ (data))`, only the Japanese is romanized (`[deeta]`). Japanese glossed in parentheses after an English line, such as `Signal flux pulse (信號流脈 shingō ryūme)`, is moved to its own sung line, because Suno sings parenthetical text. That moved Japanese line is a translation of the English line, so it gets no Romaji cue: the model's inline Romaji/pinyin and any cue line directly below it (for example `[yori tsuyoi yóri tsuyoi.]`) are dropped. Other Japanese lyric lines keep their bracketed learner cue. Traditional-Chinese characters and syntax (`信號`, `由程式重塑`) become Japanese (`信号`, `プログラムで再構築`), Chinese grammar such as `電子火花在空中` becomes `電子火花が空に舞う` and the cue below it is regenerated (`[denshi hibana ga sora ni mau]`), and kana-free lines with Chinese grammar (`在`, `了`, `们`, `吗`) trigger a retry; and accented or doubled cues elsewhere are matched against the expected reading. Own-line instrument cues such as `(bass drop)` and `(guitar solo)` become Suno meta tags (`[Heavy Bass Drop]`, `[Guitar Solo]`); vocalizations like `(Ahh ahh ahh)` stay in parentheses. If the Chorus, Verse 2, or Bridge copies more than one line from an earlier section, the draft is retried with the copied lines named (Drop and Outro may still reprise the Chorus); the prompt also asks for natural rhymes and steady meter. Before translation and assembly, a tidy pass removes echo parentheticals that repeat their line (`PULSE CODE (Pulse Code)` becomes `PULSE CODE`), deletes drop cues outside `[Drop]` so the drop plays once, removes Bridge lines copied from the Chorus (unless nothing would remain), and strips a dangling `、` or `,` from Japanese lines. Leaked prompt notes such as `(34 chars)`, `(38 chars, UPPERCASE)`, or `(ALL-CAPS)` are removed whole, so no empty `()` is left for Suno to sing. Sung lines in the intro are moved under an `[Intro Verse]` tag after `[Instrumental Build]`. Romaji cleanup runs once, during Suno assembly after section normalization, so formatting already-formatted lyrics adds nothing (except that a line moved out of a gloss looks like an ordinary Japanese line on a second pass). The direct console fallback applies the same cleanup to recognizable section-marked songs; unstructured replies are unchanged.
+For Japanese and bilingual songs, Rei checks inline, bracketed, parenthesized,
+and recognizable bare Romaji against their Japanese lyric lines. Every uncued
+Japanese line receives a generated Romaji cue, with auxiliary verbs and
+conjunctive particles joined to their verb (`segumentoka sareru`, `hikatte`).
+Existing cues that differ only by such splits, like `[segumentoka sa reru]`,
+are re-joined while keeping their macrons and capitalization. Bare Romaji
+written directly under a Japanese line is wrapped in `[]` so Suno does not
+sing it, and an extra bare guess below an existing cue is kept but also
+bracketed, never deleted. English translation lines remain sung. Recognized
+inline pronunciations count toward cue coverage; when only an English
+translation is present, backfilling uses the Japanese phrase without
+incorporating the translation. Explicit pronunciation/meaning pairs retain
+their English meaning; ambiguous English lyrics and sound cues are handled
+conservatively. Formatting also removes leaked quoted stage instructions and
+keeps technical acronyms such as `SQL` attached to Japanese phrases. Common
+simplified-Chinese words (for example `和谐`, `数据`, `连接`, `重组`) are
+replaced with Japanese equivalents (`調和`, `データ`, `接続`, `再構成`) before
+Romaji is added; other Chinese characters still need review. If the model adds
+an English gloss inside the Japanese parentheses, such as `(データ (data))`,
+only the Japanese is romanized (`[deeta]`). Japanese glossed in parentheses
+after an English line, such as `Signal flux pulse (信號流脈 shingō ryūme)`,
+is moved to its own sung line, because Suno sings parenthetical text. That moved
+Japanese line is a translation of the English line, so it gets no Romaji cue:
+the model's inline Romaji/pinyin and any cue line directly below it (for example
+`[yori tsuyoi yóri tsuyoi.]`) are dropped. Other Japanese lyric lines keep
+their bracketed learner cue. Traditional-Chinese characters and syntax
+(`信號`, `由程式重塑`) become Japanese (`信号`, `プログラムで再構築`),
+Chinese grammar such as `電子火花在空中` becomes `電子火花が空に舞う` and
+the cue below it is regenerated (`[denshi hibana ga sora ni mau]`), and
+kana-free lines with Chinese grammar (`在`, `了`, `们`, `吗`) trigger a retry;
+and accented or doubled cues elsewhere are matched against the expected
+reading. Own-line instrument cues such as `(bass drop)` and `(guitar solo)`
+become Suno meta tags (`[Heavy Bass Drop]`, `[Guitar Solo]`); vocalizations
+like `(Ahh ahh ahh)` stay in parentheses. If the Chorus, Verse 2, or Bridge
+copies more than one line from an earlier section, the draft is retried with
+the copied lines named (Drop and Outro may still reprise the Chorus); the
+prompt also asks for natural rhymes and steady meter. Before translation and
+assembly, a tidy pass removes echo parentheticals that repeat their line
+(`PULSE CODE (Pulse Code)` becomes `PULSE CODE`), deletes drop cues outside
+`[Drop]` so the drop plays once, removes Bridge lines copied from the Chorus
+(unless nothing would remain), and strips a dangling `、` or `,` from Japanese
+lines. Leaked prompt notes such as `(34 chars)`, `(38 chars, UPPERCASE)`, or
+`(ALL-CAPS)` are removed whole, so no empty `()` is left for Suno to sing.
+Sung lines in the intro are moved under an `[Intro Verse]` tag after
+`[Instrumental Build]`. Romaji cleanup runs once, during Suno assembly after
+section normalization, so formatting already-formatted lyrics adds nothing
+(except that a line moved out of a gloss looks like an ordinary Japanese line
+on a second pass). Console song output follows the same assembly path.
 
 Readings use SudachiPy's contextual tokenization and pykakasi's Hepburn conversion; both are already included by the core requirements. If Sudachi is unavailable, Rei warns and falls back to pykakasi alone. If a Japanese character cannot be read, Rei warns and leaves its existing cue unchanged rather than producing a partial reading. These checks do not guarantee correct Japanese, resolve every ambiguous reading, or verify English translations: review the preview before submitting. They do not add an LLM call.
 

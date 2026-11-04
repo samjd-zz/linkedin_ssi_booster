@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1406%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1406 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1425%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1425 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-73%25-yellow.svg" alt="Source coverage: 73%, measured November 3, 2026"></a>
 </p>
 
@@ -151,7 +151,7 @@ Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd4
 
 - 🎤 **Suno Vocal Songs** — Generate grounded cyberpop industrial techno songs with a required `[Intro Verse]`, `[Drop]`/`[Heavy Bass Drop]`, and bracketed instrumental solos; Rei can choose epic guitar, synth, industrial percussion, or modulated bass to suit each song, and missing sections are repaired automatically (Suno integration ✅)
 - 🇯🇵 **Japanese-aware lyric production** — Rei supports English, Japanese, and bilingual lyrics with contextual Romaji checks, bracket/parenthetical cue cleanup, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
-- 🎚️ **Controlled lyric language selection** — `bilingual` mode defaults to English-first structured generation, with selected hooks translated toward `REI_JAPANESE_LYRIC_PROBABILITY` (per-batch progress logs and offline Argos en→ja fallback); the final mix can vary, and the direct console fallback prompts for it
+- 🎚️ **Controlled lyric language selection** — CLI and console songs share bilingual generation, defaulting to English-first with selected hooks translated toward `REI_JAPANESE_LYRIC_PROBABILITY` (per-batch progress logs and offline Argos en→ja fallback); the final mix can vary
 - 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
 - 🎛️ **Strudel Live-Coding Patterns** — Translate technical themes into algorithmic music (Strudel MCP integration ✅; Docker `full` profile)
 - 🛡️ **Strudel Runtime Guardrails** — Auto-reject known runtime-invalid constructs (for example `.wrap(...)`) and enforce strict workshop syntax (`sound(...)` / `.sound(...)`, no legacy `s(...)` aliases)
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 3, 2026: 1,408 collected; 1,406 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **70%** in the October 28 run. Includes 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 3, 2026: 1,427 collected; 1,425 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **73%**. Includes 21 console/CLI lyric-parity cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

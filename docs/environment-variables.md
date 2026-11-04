@@ -777,6 +777,9 @@ Controls the language policy for Rei's generated lyrics.
 - `japanese` — Request Japanese lyrics; the probability setting is ignored.
 - `english` — Request English lyrics; the probability setting is ignored.
 
+These are model instructions, not a guarantee of language correctness; review
+the generated lyrics.
+
 In bilingual mode, `REI_JAPANESE_LYRIC_PROBABILITY` is a target ratio of
 Japanese lyric lines, not the probability of choosing a language for the whole
 song. The structured pipeline's handling depends on `REI_BILINGUAL_STRATEGY`;
@@ -822,7 +825,9 @@ How bilingual songs are written.
   English echoes, and assembly checks and backfills bracketed Romaji cues.
   Missing or rejected translations use offline Argos when available; lines
   that still fail stay English. An Ollama runtime error stops later Ollama
-  batches while preserving earlier valid results.
+  batches while preserving earlier valid results. If the English draft is
+  unusable after two attempts, built-in fallback lyrics are used without
+  hook translation and may not meet the target.
 - `generate` — The model writes a bilingual draft directly. Language mix and
   other checks can trigger retries, for up to five total attempts; if validation
   ultimately fails, the existing fallback lyrics are used.
@@ -847,11 +852,14 @@ Directory of the unpacked Argos Translate `translate-en_ja` model used as the of
 
 **Default:** `models/argos/translate-en_ja`
 
-> The structured pipeline is used by `--rei-generate` and knowledge-grounded
-> `/rei` songs. The direct-LLM console fallback prompts for the requested
-> language and mix but does not run structured hook translation or ratio
-> validation. Structured Suno assembly forces ALL-CAPS only for `english`
-> lyrics; `japanese`/`bilingual` lyrics preserve natural script and casing.
+> `--rei-generate` and `/rei` song requests share the structured composer,
+> translation or ratio validation, and Suno assembly. Without an explicit
+> topic or extracted theme, the console chooses from Rei's metaphor library,
+> or uses a general digital-creativity theme if the library is empty. A
+> propagated generation error is reported rather than replaced by an
+> unvalidated freeform song. General conversation remains separate. Suno
+> assembly forces ALL-CAPS only for `english` lyrics; `japanese`/`bilingual`
+> lyrics preserve natural script and casing.
 
 ### `SUNO_API_KEY` (required for Suno integration)
 

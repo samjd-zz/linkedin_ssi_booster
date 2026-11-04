@@ -8,7 +8,6 @@ from services.console_grounding._rei_console import (
     REI_DEFAULT_PROMPT,
     _build_rei_system_prompt,
     _handle_conversation,
-    _handle_llm_song_generation,
     _handle_suno_request,
     _extract_song_topic,
     extract_rei_input,
@@ -179,7 +178,7 @@ def test_handle_rei_console_routes_retry_to_suno_when_song_context_exists():
 
 
 # ---------------------------------------------------------------------------
-# Rei system-prompt + LLM fallback tests
+# Rei system-prompt and structured song-routing tests
 # ---------------------------------------------------------------------------
 
 class TestReiSystemPrompt:
@@ -224,51 +223,11 @@ class TestReiSystemPrompt:
         assert "jungle" in prompt or "techno" in prompt
 
 
-class TestSunoRequestFallback:
-    """When no extracted knowledge exists, _handle_suno_request must delegate to LLM."""
+class TestSunoRequestRouting:
+    """Song requests retain user-directed and autonomous theme selection."""
 
     def _persona_and_domain(self):
         return MagicMock(), MagicMock()
-
-    def test_suno_request_falls_back_to_llm_when_no_knowledge(self):
-        mock_ai = MagicMock()
-        p, d = self._persona_and_domain()
-
-        with (
-            patch("services.console_grounding._rei_console._lav_rei_console", return_value=MagicMock()),
-            patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=[]),
-            patch(
-                "services.console_grounding._rei_console._handle_llm_song_generation",
-                new=AsyncMock(return_value=("llm_song", [])),
-            ) as mock_llm,
-        ):
-            reply, _ = asyncio.run(
-                _handle_suno_request("create me a jungle song", mock_ai, p, d, [])
-            )
-
-        assert reply == "llm_song"
-        mock_llm.assert_awaited_once()
-
-    def test_suno_request_falls_back_to_llm_when_no_themes(self):
-        mock_ai = MagicMock()
-        p, d = self._persona_and_domain()
-        fake_facts = [MagicMock()]
-
-        with (
-            patch("services.console_grounding._rei_console._lav_rei_console", return_value=MagicMock()),
-            patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
-            patch("services.console_grounding._rei_console.extract_themes", return_value=[]),
-            patch(
-                "services.console_grounding._rei_console._handle_llm_song_generation",
-                new=AsyncMock(return_value=("llm_song_no_themes", [])),
-            ) as mock_llm,
-        ):
-            reply, _ = asyncio.run(
-                _handle_suno_request("write me a jungle track", mock_ai, p, d, [])
-            )
-
-        assert reply == "llm_song_no_themes"
-        mock_llm.assert_awaited_once()
 
     def test_suno_request_uses_user_topic_when_provided(self):
         mock_ai = MagicMock()

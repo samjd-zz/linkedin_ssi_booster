@@ -1632,6 +1632,9 @@ def compose_lyrics(
         if lyric_language in {"japanese", "bilingual"}
         else {}
     )
+    english_only_instruction = (
+        "Write every lyric line in natural English only: no Japanese, Romaji, or other languages."
+    )
     language_instruction = {
         "japanese": (
             "Write the performance lyrics primarily in natural contemporary Japanese, not translated technical English. "
@@ -1683,12 +1686,11 @@ def compose_lyrics(
             "- Never put Romaji or translations inside parentheses ().\n\n"
             f"Production context: {json.dumps(japanese_guidance, ensure_ascii=False)}"
         ),
-        "english": "Write the performance lyrics in English with optional natural Japanese hook phrases or chant accents.",
-    }.get(lyric_language, "Write the performance lyrics in English with optional natural Japanese hook phrases.")
+        "english": english_only_instruction,
+    }.get(lyric_language, english_only_instruction)
     if translate_mode:
         language_instruction = (
-            "Write every lyric line in natural English only: no Japanese, Romaji, or other "
-            "languages. Selected lines will be translated into Japanese afterwards, so keep "
+            f"{english_only_instruction} Selected lines will be translated into Japanese afterwards, so keep "
             "the chorus hook short (3-7 words), concrete, and emotionally clear, and keep "
             "lines self-contained rather than splitting one sentence across lines."
         )
@@ -1712,7 +1714,7 @@ def compose_lyrics(
 
     final_rule = (
         "Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. "
-        "Preserve Japanese script and do not force-uppercase Japanese text. "
+        "Do not include Japanese, Romaji, or other languages. "
         "Do not spell out numbers or invent quantities (\"fifteen\", \"nineteen\", \"seventeen\") as a filler device \u2014 use imagery, not counting."
         if generation_language == "english"
            else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
