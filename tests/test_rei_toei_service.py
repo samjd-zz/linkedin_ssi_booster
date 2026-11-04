@@ -2042,7 +2042,7 @@ def test_assemble_suno_prompt_flips_japanese_first_bilingual_lines(mock_domain_k
 
 
 def test_assemble_suno_prompt_normalizes_learning_cue_order(mock_domain_knowledge_data):
-    """Learning cues are normalized to Japanese, then separate bracket cues."""
+    """Learning cues become Japanese, a Romaji cue, then a sung meaning."""
     concept = SongConcept(
         song_id="song_learning_001",
         title="Learning Cue Order",
@@ -2069,9 +2069,10 @@ def test_assemble_suno_prompt_normalizes_learning_cue_order(mock_domain_knowledg
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "信号が揺れる\n[Shingou ga yureru] [The signal wavers]" in suno_prompt.lyrics
+    assert "信号が揺れる\n[shingou ga yureru]\nThe signal wavers" in suno_prompt.lyrics
     assert "信号が揺れる\n[Shingou ga yureru]" in suno_prompt.lyrics
-    assert "データが流れる\n[Deeta ga nagareru] [Data flows]" in suno_prompt.lyrics
+    assert "データが流れる\n[deeta ga nagareru]\nData flows" in suno_prompt.lyrics
+    assert "] [" not in suno_prompt.lyrics
 
 
 def test_generate_hepburn_romaji_converts_kanji_to_expected_hepburn():
@@ -2181,13 +2182,13 @@ def test_assemble_suno_prompt_splits_inline_learning_cue_with_sung_tail(mock_dom
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "解析する、このノイズの層を\n[kaiseki suru, kono noizu no sō o] [analyze, this layer of noise]\na fragile map of where I must go." in suno_prompt.lyrics
-    assert "どこまで進む？さあ、もっと\n[Doko made susumu? Saa, motto] [How far will we go? Come on, more]" in suno_prompt.lyrics
+    assert "解析する、このノイズの層を\n[kaiseki suru, kono noizu no sō o]\nanalyze, this layer of noise\na fragile map of where I must go." in suno_prompt.lyrics
+    assert "どこまで進む？さあ、もっと\n[doko made susumu? Saa, motto]\nHow far will we go? Come on, more" in suno_prompt.lyrics
     assert "[How far will we go? Come on, more]." not in suno_prompt.lyrics
 
 
 def test_assemble_suno_prompt_splits_bracket_romaji_parenthetical_meaning(mock_domain_knowledge_data):
-    """Japanese [Romaji] (Meaning) cues should become bracket cue lines."""
+    """Japanese [Romaji] (Meaning) cues become a Romaji cue plus a sung meaning."""
     concept = SongConcept(
         song_id="song_learning_bracket_parenthetical",
         title="Bracket Parenthetical Cue",
@@ -2220,9 +2221,9 @@ def test_assemble_suno_prompt_splits_bracket_romaji_parenthetical_meaning(mock_d
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "Sample rate too high\nこの甘さがノイズなの？\n[Kono amasa ga noizu na no?] [Is this sweetness noise?]" in suno_prompt.lyrics
-    assert "シグナルは溢れる\n[Shigunaru wa afureru] [The signal overflows]" in suno_prompt.lyrics
-    assert "データは溶ける\n[Dēta wa tokeru] [The data melts]" in suno_prompt.lyrics
+    assert "Sample rate too high\nこの甘さがノイズなの？\n[kono amasa ga noizu na no?]\nIs this sweetness noise?" in suno_prompt.lyrics
+    assert "シグナルは溢れる\n[shigunaru wa afureru]\nThe signal overflows" in suno_prompt.lyrics
+    assert "データは溶ける\n[dēta wa tokeru]\nThe data melts" in suno_prompt.lyrics
     assert "[Kono amasa ga noizu na no?] (Is this sweetness noise?)" not in suno_prompt.lyrics
 
 
@@ -2257,7 +2258,7 @@ def test_assemble_suno_prompt_preserves_trailing_echo_after_parenthetical_meanin
 
     suno_prompt = assemble_suno_prompt(concept, lyrics, domain_knowledge)
 
-    assert "次の位相へ、シフトチェンジする\n[Tsugi no isō e, shifuto chenji suru] [To the next phase, shifting change]\nthis rave is real" in suno_prompt.lyrics
+    assert "次の位相へ、シフトチェンジする\n[tsugi no isō e, shifuto chenji suru]\nTo the next phase, shifting change\nthis rave is real" in suno_prompt.lyrics
 
 
 def test_assemble_suno_prompt_strips_prompt_schema_leakage(mock_domain_knowledge_data):

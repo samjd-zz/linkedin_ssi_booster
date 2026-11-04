@@ -390,3 +390,25 @@ def test_translate_hook_texts_batches_long_lists(
     assert empty_translations == []
     assert empty_counts == {"ollama": 0, "argos": 0, "failed": 0}
     assert not caplog.records
+
+
+def test_translate_mode_keeps_retried_draft_when_retry_json_is_unparseable(
+    translate_env: Path, caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A draft retried for reused lines survives a malformed retry instead of the template."""
+    borrowed = dict(
+        SONG,
+        bridge="[Bridge]\nBlossom from data seeds\nNew cyberforms arise\nOne last bloom outlives it all",
+    )
+    ollama = MagicMock()
+    ollama._chat.side_effect = [json.dumps(borrowed), '{"verse_1": "broken', "not json"]
+
+    with caplog.at_level(logging.WARNING):
+        lyrics = compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
+
+    assert ollama._chat.call_count == 3
+    assert "Draft reused" in caplog.text
+    assert "Reusing last valid draft" in caplog.text
+    assert "Reverting to formatted fallback" not in caplog.text
+    assert "Binary leaves of code" in lyrics.verse_1
+    assert "One last bloom outlives it all" in lyrics.bridge

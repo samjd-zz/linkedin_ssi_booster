@@ -189,7 +189,7 @@ def compose_lyrics(
             except json.JSONDecodeError as exc:
                 if last_valid_response_data:
                     logger.warning(
-                        "Ollama lyric repair response was malformed on attempt %s (%s). Revalidating last draft.",
+                        "Ollama lyrics response malformed on attempt %s (%s). Reusing last valid draft.",
                         attempt,
                         exc,
                     )
@@ -247,6 +247,9 @@ def compose_lyrics(
                     logger.warning("Lyric sections were too repetitive on attempt %s. Retrying.", attempt)
                     continue
                 raise ValueError("Lyric sections were too repetitive after retry")
+
+            # Hard checks passed: keep this draft in case a later retry is malformed.
+            last_valid_response_data = dict(response_data)
 
             # 5b. Song development: Verse 2 must move the story on; bridge should climb
             if verse_two_repeats_verse_one(response_data):

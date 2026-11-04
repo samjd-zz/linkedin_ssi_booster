@@ -121,6 +121,12 @@ _INTRO_LABEL_ECHO_RE = re.compile(
     r"[\[(（]\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*[\])）]", re.IGNORECASE
 )
 _VOCAL_WRAPPER_RE = re.compile(r"\[(?P<bracket>[^\[\]]+)\]|[(（](?P<paren>[^()（）]+)[)）]")
+# "[romaji cue] [English meaning]" on one line.
+_ROMAJI_GLOSS_RE = re.compile(r"\[(?P<romaji>[^\[\]]+)\]\s*\[(?P<gloss>[^\[\]]+)\]")
+_GLOSS_FUNCTION_WORDS = frozenset({
+    "a", "an", "the", "is", "are", "was", "were", "be", "to", "of", "in", "on",
+    "into", "through", "we", "i", "you", "it", "my", "our", "your", "their",
+})
 _TRAILING_TAGS_RE = re.compile(r"^(?P<lead>.+?)(?P<tags>(?:[ \t]*\[[^\[\]]+\])+)[ \t]*$")
 
 
@@ -346,6 +352,44 @@ def tidy_vocalization_cues(text: str, *, intro: bool = False) -> str:
             continue
         kept.append(stripped if intro else line)
     return "\n".join(kept)
+
+
+def unbracket_romaji_glosses(text: str) -> str:
+    """Move an English meaning out of brackets so Suno sings it.
+
+    ``[akai sureddo ga yami o hodoku] [Red threads unravel the dark]`` under its
+    Japanese line becomes the Romaji cue plus a sung ``Red threads unravel the
+    dark`` line, unless the next line already sings it. Production cues such as
+    ``[Synth sweep]`` stay bracketed.
+    """
+    source = text.splitlines()
+    out: List[str] = []
+    japanese = ""
+    for index, line in enumerate(source):
+        stripped = line.strip()
+        match = _ROMAJI_GLOSS_RE.fullmatch(stripped)
+        if match and japanese and _is_probable_romaji(japanese, match.group("romaji").strip()):
+            gloss = match.group("gloss").strip()
+            words = re.findall(r"[A-Za-z']+", gloss)
+            sentence_like = any(word.lower() in _GLOSS_FUNCTION_WORDS for word in words)
+            if not _is_stage_cue_phrase(gloss) and (
+                sentence_like or not _PRODUCTION_DIRECTION_RE.search(gloss)
+            ):
+                romaji = match.group("romaji").strip()
+                first_word = romaji.split(maxsplit=1)[0]
+                if not (len(first_word) > 1 and first_word.isupper()):
+                    romaji = romaji[:1].lower() + romaji[1:]
+                out.append(f"[{romaji}]")
+                following = next((item.strip() for item in source[index + 1 :] if item.strip()), "")
+                key = re.sub(r"[^a-z0-9]+", " ", gloss.lower()).strip()
+                if re.sub(r"[^a-z0-9]+", " ", following.lower()).strip() != key:
+                    out.append(gloss)
+                japanese = ""
+                continue
+        if stripped:
+            japanese = stripped if _JAPANESE_CHAR_RE.search(stripped) else ""
+        out.append(line)
+    return "\n".join(out)
 
 
 def _is_intro_cue_line(line: str) -> bool:

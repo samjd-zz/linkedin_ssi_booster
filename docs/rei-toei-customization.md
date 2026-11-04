@@ -458,10 +458,11 @@ For learning support, Rei targets square-bracket annotations on roughly one out 
 
 ```text
 接続はまだ終わらない
-[Setsuzoku wa mada owaranai] [The connection is not over yet]
+[setsuzoku wa mada owaranai]
+The connection is not over yet
 ```
 
-Use standard Hepburn-style Romaji in the first bracket, including `o` for を and macrons such as `ō`, `ū`, and `ā` when appropriate. Keep the Japanese lyric first, then put the cue on its own line. These annotations are selective enough to keep the result song-like, but dense enough for language learning. They are instructional text, not sung lyrics. Parentheses remain reserved for vocalizations and production cues such as `(Ahh ahh ahh)` or `(bass drop)`.
+Use standard Hepburn-style Romaji in the bracket, including `o` for を and macrons such as `ō`, `ū`, and `ā` when appropriate. Keep the Japanese lyric first, then put the cue on its own line. These annotations are selective enough to keep the result song-like, but dense enough for language learning. The bracketed Romaji is instructional and not sung; the English meaning follows on its own line and is sung. If the model writes `[romaji] [English meaning]` on one line, the formatter moves the meaning onto its own sung line (skipping it when the next line already sings it), while short production cues such as `[Synth sweep]` stay bracketed. Parentheses remain reserved for vocalizations and production cues such as `(Ahh ahh ahh)` or `(bass drop)`.
 
 The final Suno formatter normalizes common model variations such as `Japanese (Romaji) [Meaning]`, `Japanese [Romaji] (Meaning)`, either form with an extra English sung echo, standalone parenthetical Romaji after a Japanese line, and `Romaji (Japanese)` into the Japanese-first learning format. Leading or trailing English text around an inline cue is preserved as its own sung line. The formatter also repairs known non-Japanese script contamination in Japanese lyric lines, such as `サーಜ್` becoming `サージ`, and removes leaked instructional placeholders such as `[actual pronunciation] [actual English meaning]` before saving or submitting lyrics.
 

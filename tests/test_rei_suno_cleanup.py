@@ -188,7 +188,7 @@ def test_chinese_grammar_is_detected_only_without_japanese_markers(
         ),
         (
             "電子火花在空中\n[denshi hibana zai kuuchuu] [Sparks in the air]",
-            "[Drop]\n電子火花が空に舞う\n[denshi hibana ga sora ni mau] [Sparks in the air]",
+            "[Drop]\n電子火花が空に舞う\n[denshi hibana ga sora ni mau]\nSparks in the air",
         ),
     ],
 )

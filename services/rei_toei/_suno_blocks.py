@@ -14,6 +14,7 @@ from services.rei_toei._suno_cleanup import (
     strip_emoji_lines,
     tag_instrument_cues,
     tidy_vocalization_cues,
+    unbracket_romaji_glosses,
 )
 from services.rei_toei._suno_json import _normalize_serialized_lyric_text
 from services.rei_toei._suno_quality import bracket_solo_directions, ensure_suno_quality
@@ -61,6 +62,7 @@ def _append_normalized_section(
         # Glosses split last so any Romaji under a gloss line is dropped with
         # it: the moved Japanese line is sung without a phonetic duplicate.
         block = split_inline_glosses(payload["section"])
+        block = unbracket_romaji_glosses(block)
         is_instrumental_build = label.casefold() == "instrumental build"
         if is_instrumental_build:
             block = tidy_vocalization_cues(block, intro=True)

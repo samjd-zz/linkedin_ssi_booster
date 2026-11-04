@@ -66,6 +66,52 @@ def _extract_balanced_json_fragment(value: str) -> Optional[str]:
     return None
 
 
+# A value string followed by bare strings that are not keys:
+# "verse_1": "Line one",\n"Line two",\n"chorus": ...
+_ORPHAN_STRING_RE = re.compile(
+    r'(:\s*"(?:[^"\\]|\\.)*)"\s*,\s*"((?:[^"\\]|\\.)*")(?=\s*[,}])'
+)
+
+
+def _escape_stray_inner_quotes(value: str) -> str:
+    """Escape quotes inside strings that do not close them (``"said "run" now"``).
+
+    A quote closes a string only when the next non-space character is
+    structural (``, : } ]``) or the text ends; any other quote is escaped.
+    """
+    out: List[str] = []
+    in_string = False
+    index = 0
+    while index < len(value):
+        ch = value[index]
+        if not in_string:
+            in_string = ch == '"'
+            out.append(ch)
+        elif ch == "\\":
+            out.append(value[index : index + 2])
+            index += 1
+        elif ch == '"':
+            following = value[index + 1 :].lstrip()
+            if not following or following[0] in ",:}]":
+                in_string = False
+                out.append(ch)
+            else:
+                out.append('\\"')
+        else:
+            out.append(ch)
+        index += 1
+    return "".join(out)
+
+
+def _merge_orphan_string_lines(value: str) -> str:
+    """Join bare strings that follow a value back into it as extra lyric lines."""
+    previous = None
+    while previous != value:
+        previous = value
+        value = _ORPHAN_STRING_RE.sub(r"\1\\n\2", value)
+    return value
+
+
 def _json_normalization_variants(value: str) -> List[str]:
     """Build progressively relaxed JSON candidates for robust parsing."""
     cleaned = value.strip()
@@ -97,6 +143,14 @@ def _json_normalization_variants(value: str) -> List[str]:
     )
     if missing_commas_fixed != no_trailing_commas:
         variants.append(missing_commas_fixed.strip())
+
+    quotes_escaped = _escape_stray_inner_quotes(missing_commas_fixed)
+    if quotes_escaped != missing_commas_fixed:
+        variants.append(quotes_escaped.strip())
+
+    orphans_merged = _merge_orphan_string_lines(quotes_escaped)
+    if orphans_merged != quotes_escaped:
+        variants.append(orphans_merged.strip())
 
     deduped: List[str] = []
     seen: set[str] = set()

@@ -400,8 +400,8 @@ def test_freeform_formatter_cleans_only_identifiable_song_sections():
     reply = _normalize_freeform_suno_reply(original)
 
     assert reply.startswith("Title: Signal\nGenre Tags: cyberpop")
-    assert "[shingou ga tobichiru] [Signals scatter]" in reply
-    assert "[yoake no hikari] [Dawn's light]" in reply
+    assert "[shingou ga tobichiru]\nSignals scatter" in reply
+    assert "[yoake no hikari]\nDawn's light" in reply
     assert "[Heavy Bass Drop]" in reply and "then '(" not in reply.lower()
     assert "atmospheric resolution and fade text" not in reply
     assert reply.endswith("Suno Prompt: bright synthwave")
@@ -469,8 +469,10 @@ def test_composition_and_suno_assembly_repair_the_preview(monkeypatch):
     assert "chien wa kieru" in prompt.lyrics.lower()
     assert "SQLで探査" in lyrics.verse_2
     assert "SQL de tansa" in prompt.lyrics
-    assert "[Signals scatter]" in prompt.lyrics
-    assert "[Latency vanishes,]" in prompt.lyrics
+    assert "\nSignals scatter\n" in prompt.lyrics
+    assert "\nLatency vanishes,\n" in prompt.lyrics
+    assert "SQL de tansa]\nExploring with SQL" in prompt.lyrics
+    assert "] [" not in prompt.lyrics
     assert "(Ahh ahh ahh)" in prompt.lyrics
     assert "[Heavy Bass Drop]" in prompt.lyrics
     assert "then '(" not in prompt.lyrics.lower()

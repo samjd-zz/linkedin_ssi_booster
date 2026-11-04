@@ -374,3 +374,65 @@ def test_non_vocal_brackets_are_untouched() -> None:
     text = "[Heavy Bass Drop]\n[Synth sweep]\nSignals rise"
     assert tidy_vocalization_cues(text) == text
     assert tidy_vocalization_cues(text, intro=True) == text
+
+
+# --- Bracketed English meanings after Romaji cues ---------------------------
+
+from services.rei_toei._suno_cleanup import unbracket_romaji_glosses  # noqa: E402
+from services.rei_toei._suno_fallback import build_fallback_lyrics  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "赤いスレッドが闇をほどく。\n[Akai sureddo ga yami o hodoku] [Red threads unravel the dark]\nNext line",
+            "赤いスレッドが闇をほどく。\n[akai sureddo ga yami o hodoku]\nRed threads unravel the dark\nNext line",
+        ),
+        (
+            "システムを再起動する。\n[shisutemu o saikidou suru] [Restart the system]\nRestart the system.",
+            "システムを再起動する。\n[shisutemu o saikidou suru]\nRestart the system.",
+        ),
+        (
+            "データが流れる\n[Deeta ga nagareru] [Data flows]",
+            "データが流れる\n[deeta ga nagareru]\nData flows",
+        ),
+        (
+            "SQLで探査\n[SQL de tansa] [Exploring with SQL]",
+            "SQLで探査\n[SQL de tansa]\nExploring with SQL",
+        ),
+    ],
+    ids=["moves-meaning", "skips-duplicate", "short-meaning", "keeps-acronym"],
+)
+def test_bracketed_english_meaning_becomes_sung(source: str, expected: str) -> None:
+    assert unbracket_romaji_glosses(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "赤いスレッドが闇をほどく。\n[akai sureddo ga yami o hodoku] [Synth sweep]",
+        "赤いスレッドが闇をほどく。\n[akai sureddo ga yami o hodoku] [Heavy Bass Drop]",
+        "[Ambient drums] [Synth sweep]\nSignals rise",
+    ],
+)
+def test_stage_cues_after_romaji_stay_bracketed(source: str) -> None:
+    assert unbracket_romaji_glosses(source) == source
+
+
+def test_fallback_song_sings_every_english_meaning() -> None:
+    concept = SongConcept(
+        song_id="s", title="Java Loop", theme="Java", mood="playful", bpm=142,
+        genre_tags=["cyberpop"], narrative_arc="arc", evidence_ids=[],
+        generated_at="2026-11-04", lyric_language="bilingual",
+    )
+    lyrics = build_fallback_lyrics(concept, "bilingual")
+    blocks = [
+        _append_section([], getattr(lyrics, field), label)
+        for field, label in [("verse_1", "Verse 1"), ("verse_2", "Verse 2"), ("bridge", "Bridge")]
+    ]
+    rendered = "\n".join(blocks)
+
+    assert "] [" not in rendered
+    for meaning in ("Red threads unravel the dark", "Cross the boundary, rewrite the state", "Restart the system"):
+        assert f"\n{meaning}" in rendered

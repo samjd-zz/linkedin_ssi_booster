@@ -11,11 +11,13 @@ def build_fallback_lyrics(concept: SongConcept, lyric_language: str) -> Lyrics:
         {
             "verse_1": (
                 "データの波が走る、冷たい光の中で。\n"
-                "[Deeta no nami ga hashiru] [Data waves are running]\n"
+                "[deeta no nami ga hashiru, tsumetai hikari no naka de]\n"
+                "Data waves are running through the cold light.\n"
                 "回路の熱が夜をひらく。\n"
                 "Signal wakes inside the core.\n\n"
                 "キャッシュを洗い、境界を越える。\n"
-                "[Kyasshu o arai, kyoukai o koeru] [Flush the cache, cross the boundary]\n"
+                "[kyasshu o arai, kyoukai o koeru]\n"
+                "Flush the cache, cross the boundary.\n"
                 "静かなノイズが形になる。\n"
                 "We turn the noise into a shape.\n"
             ),
@@ -27,17 +29,20 @@ def build_fallback_lyrics(concept: SongConcept, lyric_language: str) -> Lyrics:
             ),
             "verse_2": (
                 "赤いスレッドが闇をほどく。\n"
-                "[Akai sureddo ga yami o hodoku] [Red threads unravel the dark]\n"
+                "[akai sureddo ga yami o hodoku]\n"
+                "Red threads unravel the dark.\n"
                 "バッファの鼓動が速くなる。\n"
                 "The buffer heartbeat starts to rise.\n\n"
                 "境界線を越えて、状態を書き換える。\n"
-                "[Kyoukaisen o koete, joutai o kakikaeru] [Cross the boundary, rewrite the state]\n"
+                "[kyoukaisen o koete, joutai o kakikaeru]\n"
+                "Cross the boundary, rewrite the state.\n"
                 "熱いコアが朝まで回る。\n"
                 "The hot core keeps turning till dawn.\n"
             ),
             "bridge": (
                 "システムを再起動する。\n"
-                "[Shisutemu o saikidou suru] [Restart the system]\n"
+                "[shisutemu o saikidou suru]\n"
+                "Restart the system.\n"
                 "ノイズの奥で声を見つける。\n"
                 "We find a voice inside the noise.\n"
             ),
