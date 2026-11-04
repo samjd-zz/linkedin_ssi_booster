@@ -56,6 +56,7 @@ _KANA_RE = re.compile(r"[\u3040-\u30ff\uff66-\uff9f]")
 # Own-line instrument cues Suno should play, not sing.
 _INSTRUMENT_CUE_TAGS = {
     "bass drop": "[Heavy Bass Drop]",
+    "heavy bass drop": "[Heavy Bass Drop]",
     "synth drop": "[Synthesizer Drop]",
     "glitch noise": "[Glitch Noise]",
     "silence": "[Silence]",
@@ -92,6 +93,30 @@ _ASCII_WORD_CHAR_RE = re.compile(r"[A-Za-z0-9]")
 _SPACE_RUN_RE = re.compile(r"[ \t]{2,}")
 _SPACE_AFTER_OPENER_RE = re.compile(r"([\[(（「『])\s+")
 _SPACE_BEFORE_CLOSER_RE = re.compile(r"\s+([\])）」』,.!?;:、。])")
+_CHAOS_CUE = r"chaos[ \t]*[.!?…！？。]*"
+_CHAOS_PARENTHESES = rf"(?:\([ \t]*{_CHAOS_CUE}[ \t]*\)|（[ \t]*{_CHAOS_CUE}[ \t]*）)"
+_CHAOS_TAG_RE = re.compile(rf"\[[ \t]*(?:{_CHAOS_PARENTHESES}|{_CHAOS_CUE})[ \t]*\]", re.IGNORECASE)
+_CHAOS_PAREN_RE = re.compile(_CHAOS_PARENTHESES, re.IGNORECASE)
+_CHAOS_LINE_RE = re.compile(
+    rf"^(?P<indent>[ \t]*)[*_`]*[ \t]*{_CHAOS_CUE}[ \t]*[*_`]*[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_CHAOS_REPEAT_LINE_RE = re.compile(
+    rf"^(?P<indent>[ \t]*){_CHAOS_CUE}[ \t]*(?:\[[ \t]*chaos[ \t]*\][ \t]*)+$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_SUNG_BASS_DROP_RE = re.compile(
+    r"(?:heavy[ \t]+)?bass[ \t]+drop[ \t]*[.!?,…！？。、，]*", re.IGNORECASE
+)
+_JAPANESE_BASS_DROP_RE = re.compile(
+    r"(?:重低音(?:の)?|(?:ヘビー)?ベース)ドロップ[ \t]*[.!?,…！？。、，]*"
+)
+_CUE_WITH_SUFFIX_RE = re.compile(
+    r"^\s*(?:\[(?P<bracket>[^\[\]]+)\]|\((?P<parenthetical>[^()]+)\)|"
+    r"(?P<bare>[^\[\]()]+?))\s*"
+    r"(?P<suffix>\[[^\[\]]+\]|\([^()]+\))?\s*$"
+)
+_TRAILING_TAGS_RE = re.compile(r"^(?P<lead>.+?)(?P<tags>(?:[ \t]*\[[^\[\]]+\])+)[ \t]*$")
 
 
 def has_emoji(text: str) -> bool:
@@ -126,6 +151,61 @@ def strip_emoji_lines(text: str) -> str:
         cleaned = strip_emoji(line)
         if cleaned or not line.strip():
             kept.append(cleaned)
+    return "\n".join(kept)
+
+
+def bracket_chaos_cues(text: str) -> str:
+    """Keep exact chaos directions in brackets, without changing lyric sentences."""
+    text = _CHAOS_TAG_RE.sub("[Chaos]", text)
+    text = _CHAOS_PAREN_RE.sub("[Chaos]", text)
+    text = _CHAOS_REPEAT_LINE_RE.sub(r"\g<indent>[Chaos]", text)
+    return _CHAOS_LINE_RE.sub(r"\g<indent>[Chaos]", text)
+
+
+def _after_romaji_cue(japanese: str, line: str) -> str | None:
+    match = _CUE_WITH_SUFFIX_RE.fullmatch(line)
+    if not match:
+        return None
+    candidate = match.group("bracket") or match.group("parenthetical") or match.group("bare")
+    if not candidate or not _is_probable_romaji(japanese, candidate.strip()):
+        return None
+    return match.group("suffix") or ""
+
+
+def strip_sung_bass_drop_cues(text: str) -> str:
+    """Remove standalone bass-drop lyrics and their adjacent pronunciation cues."""
+    source = text.splitlines()
+    kept: List[str] = []
+    index = 0
+    while index < len(source):
+        line = source[index]
+        tagged = _TRAILING_TAGS_RE.fullmatch(line.strip())
+        candidate = (tagged.group("lead") if tagged else line).strip().strip("*_`").strip()
+        tags = tagged.group("tags").strip() if tagged else ""
+        index += 1
+        if _SUNG_BASS_DROP_RE.fullmatch(candidate):
+            if tags:
+                kept.append(tags)
+            continue
+        if _JAPANESE_BASS_DROP_RE.fullmatch(candidate):
+            if tags:
+                suffix = _after_romaji_cue(candidate, tags)
+                if suffix is None:
+                    kept.append(tags)
+                elif suffix:
+                    kept.append(suffix)
+            while index < len(source) and _SUNG_BASS_DROP_RE.fullmatch(
+                source[index].strip().strip("*_`").strip()
+            ):
+                index += 1
+            if index < len(source):
+                suffix = _after_romaji_cue(candidate, source[index])
+                if suffix is not None:
+                    if suffix:
+                        kept.append(suffix)
+                    index += 1
+            continue
+        kept.append(line)
     return "\n".join(kept)
 
 
@@ -198,7 +278,7 @@ def split_inline_glosses(text: str) -> str:
 def tag_instrument_cues(text: str, *, production_directions: bool = False) -> str:
     """Turn instrument cues and section-specific production directions into tags."""
     lines: List[str] = []
-    for line in text.splitlines():
+    for line in bracket_chaos_cues(text).splitlines():
         stripped = line.strip()
         if stripped.startswith(("(", "（")) and stripped.endswith((")", "）")):
             cue_text = re.sub(r"\s+", " ", stripped[1:-1]).strip()

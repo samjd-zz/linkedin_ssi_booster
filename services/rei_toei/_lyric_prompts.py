@@ -58,7 +58,8 @@ def build_lyric_prompts(
             "- Never append Japanese or Romaji in parentheses to an English line; put the Japanese phrase on its own line.\n"
             "- Use complete Japanese phrases or lines for chorus hooks and emotional beats; do not output isolated vocabulary words.\n"
             "- Use English for momentum, technical imagery, and contrasting lines.\n"
-            "- Reserve parentheses () exclusively for Suno vocal cues (e.g., (guitar solo), (echo)).\n\n"
+            "- Use parentheses () for sung vocalizations such as (Ahh ahh ahh). "
+            "Put instrumental cues such as [Guitar Solo] and [Chaos] in square brackets.\n\n"
             "LEARNER CUES (OPTIONAL):\n"
             "- If adding a translation cue, place it in brackets after the line: Japanese Line [romaji] [English meaning].\n"
             "- Never put Romaji or translations inside parentheses ().\n\n"
@@ -109,7 +110,7 @@ def build_lyric_prompts(
                "Do not annotate every line. "
                "These annotations are instructional and not sung lyrics. "
                "Never put learning translations in parentheses. "
-               "Use parentheses only for vocalizations and sound cues. "
+               "Use parentheses for sung vocalizations and brackets for sound cues. "
                "Do not force-uppercase Japanese lines. "
                "For bilingual lyrics, use complete Japanese phrases or lines that carry emotional, narrative, or hook meaning. "
                f"Aim for approximately {japanese_target_percent}% Japanese content; allow natural variation for musical phrasing and do not force rigid line alternation. "
@@ -120,7 +121,7 @@ def build_lyric_prompts(
                "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. "
                "Do not annotate every Japanese line. "
                "These annotations are not sung lyrics. Never put learning translations in parentheses. "
-               "Use parentheses only for vocalizations and sound cues such as (Ahh ahh ahh) or (bass drop). "
+               "Use parentheses for vocalizations such as (Ahh ahh ahh), and brackets for [Heavy Bass Drop] and [Chaos]. "
                "Do not force-uppercase bilingual or Japanese lines. "
                "Do not spell out numbers or invent quantities as a filler device \u2014 use imagery, not counting."
     )
@@ -141,11 +142,12 @@ Suno Formatting Rules:
 1. Use section labels: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Drop], [Solo], [Outro]
 2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields
 3. DO NOT use editorial parenthetical instructions like '(Stanza 1)', '(this is the hook)', or '(More chaos)'.
-   DO use Suno vocalization/sound-cue hints in parentheses: '(Ahh ahh ahh)', '(Oh oh oh)', '(bass drop)', '(silence)', '(glitch noise)', '(chaos)' — these are how Suno models vocal and instrumental energy shifts.
+   Put sung vocalizations like '(Ahh ahh ahh)' and '(Oh oh oh)' in parentheses.
+   Put instrumental or sound cues in square brackets: [Heavy Bass Drop], [Silence], [Glitch Noise], [Chaos].
 {chorus_case_rule}
 5. Keep intros simple: [Instrumental Build] (not [Intro Drums], [Intro Bass], etc.)
 6. Start every Intro with a vocalization like (Ahh ahh ahh) on its own line right after the section label — this primes Suno to prioritize lyric rendering
-7. Use sound-cue parentheticals at high-energy transitions: '(bass drop)' before a Drop, '(silence)' for a breakdown pause, '(chaos)' before a chaotic breakdown
+7. Use bracketed sound cues at high-energy transitions: [Heavy Bass Drop] in the Drop, [Silence] for a breakdown pause, [Chaos] before a chaotic breakdown
 8. Follow character caps per section for API parsing compliance
 9. Make every section materially distinct. Do not copy Verse 1 into the Chorus, Drop, Bridge, Solo, or Outro.
 10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things.
@@ -213,7 +215,7 @@ Each field should contain the complete lyrics for that section, including any se
     "chorus": "{chorus_json_instruction}",
   "verse_2": "[Verse 2] Two new stanzas set after the turning point: show the consequences and what the new state reveals. Do not reuse or reword any Verse 1 line. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
   "bridge": "[Bridge] 6-8 lines: a pivot line that breaks the established pattern, then 3-5 lines expanding it into the song's emotional and thematic climax, rising into the final drop. (Character Cap: 450 chars)",
-  "drop": "[Drop] followed immediately by [Heavy Bass Drop], then 4-5 high-energy lyric lines. Both tags are required. (Character Cap: 400 chars)",
+  "drop": "[Drop] followed immediately by [Heavy Bass Drop], then 4-5 high-energy lyric lines. Both tags are required. Never sing or translate the instrumental tag. (Character Cap: 400 chars)",
   "solo": "[Solo] followed by 3-4 instrumental directions, each entirely inside square brackets. No sung lyrics, vocalizations, translations, or Romaji in this section. (Character Cap: 300 chars)",
   "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
 }}

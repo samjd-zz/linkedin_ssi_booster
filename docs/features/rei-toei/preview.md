@@ -59,8 +59,14 @@ Existing sections are kept. A missing or empty intro reuses the first sung
 chorus hook (or a verse line), retaining its adjacent pronunciation cues; an
 omitted drop becomes an instrumental drop after the bridge or last verse/chorus.
 Duplicate bass-drop markers are collapsed, and repairs are logged without
-another model call. A song with no usable hook fails explicitly instead of
-inventing an intro. Metadata reflects the repaired output.
+another model call. Exact standalone `Heavy Bass Drop` or `Bass Drop` lyric
+lines are removed before hook translation and during final formatting; so are
+recognized Japanese cue-only translations such as `重低音ドロップ` and their
+adjacent Romaji. Descriptive lyrics about a bass drop remain sung. Exact
+`(chaos)` or standalone `chaos` cues are formatted as `[Chaos]`, including
+inside a lyric line, while ordinary lyric sentences containing the word stay
+unchanged. A song with no usable hook fails explicitly instead of inventing an
+intro. Metadata reflects the repaired output.
 
 `[Solo]` is instrumental-only: every direction is wrapped in square brackets,
 for example `[Synthesizer whispers in the mix]`. Existing bracketed cues stay
@@ -150,9 +156,10 @@ Chinese grammar such as `電子火花在空中` becomes `電子火花が空に�
 the cue below it is regenerated (`[denshi hibana ga sora ni mau]`), and
 kana-free lines with Chinese grammar (`在`, `了`, `们`, `吗`) trigger a retry;
 and accented or doubled cues elsewhere are matched against the expected
-reading. Own-line instrument cues such as `(bass drop)` and `(guitar solo)`
-become Suno meta tags (`[Heavy Bass Drop]`, `[Guitar Solo]`); vocalizations
-like `(Ahh ahh ahh)` stay in parentheses. If the Chorus, Verse 2, or Bridge
+reading. Instrument cues such as `(bass drop)`, `(heavy bass drop)`,
+`(guitar solo)`, and `(chaos)` become Suno meta tags (`[Heavy Bass Drop]`,
+`[Guitar Solo]`, `[Chaos]`); vocalizations like `(Ahh ahh ahh)` stay in
+parentheses. If the Chorus, Verse 2, or Bridge
 copies more than one line from an earlier section, the draft is retried with
 the copied lines named (Drop and Outro may still reprise the Chorus); the
 prompt also asks for natural rhymes and steady meter. Before translation and

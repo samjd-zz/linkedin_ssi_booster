@@ -61,7 +61,7 @@ def test_instrument_cues_become_meta_tags_but_vocalizations_stay() -> None:
     source = "(bass drop)\n(Ahh ahh ahh)\n(guitar solo)\n(chaos)\nSignals surge"
 
     assert tag_instrument_cues(source) == (
-        "[Heavy Bass Drop]\n(Ahh ahh ahh)\n[Guitar Solo]\n(chaos)\nSignals surge"
+        "[Heavy Bass Drop]\n(Ahh ahh ahh)\n[Guitar Solo]\n[Chaos]\nSignals surge"
     )
 
 

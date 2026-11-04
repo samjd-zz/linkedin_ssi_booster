@@ -39,7 +39,7 @@ def test_tidy_fixes_the_agent_pulse_code_song():
 
     assert payload["chorus"].splitlines()[1] == "PULSE CODE"
     assert payload["bridge"].splitlines() == [
-        "[Bridge]", "(chaos)", "The truth unfolds in binary grace", "Electricity hums with clarity",
+        "[Bridge]", "[Chaos]", "The truth unfolds in binary grace", "Electricity hums with clarity",
     ]
     assert payload["drop"] == "[Drop]\n(bass drop)\nFrequencies resonate"
     # Japanese loses its dangling 、; English punctuation is left alone.

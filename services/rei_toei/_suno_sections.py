@@ -20,7 +20,11 @@ from services.rei_toei._lyric_romaji import (
     _normalize_romaji_for_match,
     _split_english_lead_from_japanese,
 )
-from services.rei_toei._suno_cleanup import replace_chinese_phrasing
+from services.rei_toei._suno_cleanup import (
+    bracket_chaos_cues,
+    replace_chinese_phrasing,
+    strip_sung_bass_drop_cues,
+)
 from services.rei_toei._suno_json import _normalize_serialized_lyric_text
 
 _SECTION_HEADER_RE = re.compile(
@@ -56,7 +60,8 @@ _PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
     re.IGNORECASE,
 )
 _PROMPT_CUE_INSTRUCTION_RE = re.compile(
-    r"(?:then\s+)?(?P<cue>['\"]?\((?:bass drop|silence|chaos|glitch noise)\)['\"]?)\s+"
+    r"(?:then\s+)?(?P<cue>['\"]?(?:\((?:bass drop|heavy bass drop|silence|chaos|glitch noise)\)"
+    r"|\[(?:bass drop|heavy bass drop|silence|chaos|glitch noise)\])['\"]?)\s+"
     r"on its own line(?: as (?:a )?(?:Suno )?energy-shift cue)?(?:, then)?[^\n]*",
     re.IGNORECASE,
 )
@@ -65,10 +70,10 @@ _PROMPT_METADATA_RE = re.compile(
     re.IGNORECASE,
 )
 _THEN_CUE_LINE_RE = re.compile(
-    r"^(?:and\s+)?then\s+['\"]?(?P<cue>\([^()]+\))['\"]?\s*[,.;]?\s*$",
+    r"^(?:and\s+)?then\s+['\"]?(?P<cue>\([^()]+\)|\[[^\[\]]+\])['\"]?\s*[,.;]?\s*$",
     re.IGNORECASE,
 )
-_THEN_CUE_PREFIX_RE = re.compile(r"^(?:and\s+)?then\s+(?=['\"]?\()", re.IGNORECASE)
+_THEN_CUE_PREFIX_RE = re.compile(r"^(?:and\s+)?then\s+(?=['\"]?[\(\[])", re.IGNORECASE)
 _THEN_SCHEMA_LINE_RE = re.compile(
     r"^(?:and\s+)?then\s+['\"]?\s*\d+(?:-\d+)?\s+lines\s+(?:of|describing)\s+"
     r"(?:atmospheric resolution|the instrumental solo moment)\b[^\n]*$",
@@ -356,9 +361,11 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
             normalized_lines.append(_normalize_bilingual_translation_order(normalized_segment))
             previous_blank = False
 
-    normalized_body = "\n".join(normalized_lines).strip()
+    normalized_body = bracket_chaos_cues("\n".join(normalized_lines).strip())
+    normalized_body = strip_sung_bass_drop_cues(normalized_body)
     if uppercase_body:
         normalized_body = normalized_body.upper()
+    normalized_body = bracket_chaos_cues(normalized_body)
     if not normalized_body:
         return ""
     return f"[{label}]\n{normalized_body}"

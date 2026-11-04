@@ -151,6 +151,28 @@ def test_console_translate_mode_batches_hooks_and_formats_romaji(
     model.client.chat.assert_not_called()
 
 
+def test_console_drop_cues_are_not_sung_or_sent_for_translation(
+    console_setup: ReiDomainKnowledge,
+) -> None:
+    song = dict(SONG)
+    song["drop"] = (
+        "[Drop]\n[Heavy Bass Drop]\nHeavy Bass Drop\n(chaos)\n"
+        "Bassline descends, energy ignites\nQuantum Nodes, Binary Dance"
+    )
+    model = _model([song])
+
+    reply, _ = asyncio.run(rei.handle_rei_console("give me a song", model, []))
+
+    assert reply.count("[Heavy Bass Drop]") == 1
+    assert re.search(r"(?im)^\s*Heavy\s+Bass\s+Drop\s*$", reply) is None
+    assert "[Chaos]" in reply and "(chaos)" not in reply.lower()
+    assert "Bassline descends, energy ignites" in reply
+    translations = _translation_calls(model)
+    assert translations
+    assert all("Heavy Bass Drop" not in prompt for prompt in translations)
+    model.client.chat.assert_not_called()
+
+
 def test_console_uses_argos_for_missing_batch_results(
     console_setup: ReiDomainKnowledge, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

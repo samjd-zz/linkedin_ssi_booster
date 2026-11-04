@@ -6,7 +6,11 @@ import logging
 import re
 
 from services.rei_toei._lyric_romaji import _is_stage_cue_phrase
-from services.rei_toei._suno_cleanup import tag_instrument_cues
+from services.rei_toei._suno_cleanup import (
+    bracket_chaos_cues,
+    strip_sung_bass_drop_cues,
+    tag_instrument_cues,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +73,11 @@ def ensure_suno_quality(text: str) -> str:
     sections: list[tuple[str, str]] = []
     for index, header in enumerate(headers):
         end = headers[index + 1].start() if index + 1 < len(headers) else len(text)
-        sections.append((header.group("label"), text[header.end():end].strip()))
+        label = header.group("label")
+        body = bracket_chaos_cues(text[header.end():end].strip())
+        if label.casefold() != "solo":
+            body = strip_sung_bass_drop_cues(body)
+        sections.append((label, body))
 
     intro_index = next(
         (i for i, (label, _) in enumerate(sections) if label.casefold() == "intro verse"),

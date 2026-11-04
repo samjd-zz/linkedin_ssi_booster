@@ -6,7 +6,11 @@ import re
 from typing import Any, Dict
 
 from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
-from services.rei_toei._suno_cleanup import strip_emoji_lines
+from services.rei_toei._suno_cleanup import (
+    bracket_chaos_cues,
+    strip_emoji_lines,
+    strip_sung_bass_drop_cues,
+)
 from services.rei_toei._suno_quality import bracket_solo_directions
 
 # "PULSE CODE (PULSE CODE)": an echo of the line in parentheses, which Suno sings.
@@ -16,6 +20,10 @@ _DROP_CUE_RE = re.compile(r"^[\[(（][^\[\]()（）]*\bdrop\b[^\[\]()（）]*[\]
 _SIGNATURE_RE = re.compile(r"[^\w\u3040-\u30ff\u3400-\u9fff]+")
 _TRAILING_COMMA_CHARS = "、，, "
 DROP_FIELDS = frozenset({"drop"})
+SUNG_LYRIC_FIELDS = frozenset({
+    "intro", "verse_1", "pre_chorus", "chorus", "verse_2", "bridge", "drop",
+    "breakdown", "outro",
+})
 
 
 def _signature(line: str) -> str:
@@ -39,21 +47,26 @@ def _is_sung(line: str) -> bool:
 
 
 def tidy_song_sections(payload: Dict[str, Any]) -> None:
-    """Fix emoji, echo parentheses, stray drop cues, chorus lines in the bridge, and dangling 、."""
+    """Tidy lyric cues, emoji, echoes, bridge repetition, and dangling punctuation."""
     for field, value in payload.items():
         if not isinstance(value, str):
             continue
+        value = strip_emoji_lines(value)
+        if field in SUNG_LYRIC_FIELDS or field == "solo":
+            value = bracket_chaos_cues(value)
         lines = []
-        for line in strip_emoji_lines(value).splitlines():
+        for line in value.splitlines():
             if field not in DROP_FIELDS and _DROP_CUE_RE.match(line.strip()):
                 continue
             line = strip_echo_parenthetical(line)
             if _is_sung(line) and _JAPANESE_CHAR_RE.search(line):
                 line = line.rstrip(_TRAILING_COMMA_CHARS)
             lines.append(line)
+        text = "\n".join(lines)
+        if field in SUNG_LYRIC_FIELDS:
+            text = strip_sung_bass_drop_cues(text)
         payload[field] = (
-            bracket_solo_directions("\n".join(lines))
-            if field == "solo" else "\n".join(lines)
+            bracket_solo_directions(text) if field == "solo" else text
         )
 
     chorus = payload.get("chorus")
