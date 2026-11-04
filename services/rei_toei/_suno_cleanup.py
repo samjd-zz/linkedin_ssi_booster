@@ -121,6 +121,11 @@ _INTRO_LABEL_ECHO_RE = re.compile(
     r"[\[(（]\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*[\])）]", re.IGNORECASE
 )
 _VOCAL_WRAPPER_RE = re.compile(r"\[(?P<bracket>[^\[\]]+)\]|[(（](?P<paren>[^()（）]+)[)）]")
+_TRAILING_ECHO_RE = re.compile(r"^(?P<lead>.*\S)\s*[(（](?P<echo>[^()（）]+)[)）]\s*$")
+# Repeated sung interjections that are kept like vocalizations.
+_SUNG_INTERJECTIONS = frozenset({
+    "yeah", "hey", "na", "da", "woo", "uh", "eh", "ha", "yo", "ay", "wo", "ooh",
+})
 # "[romaji cue] [English meaning]" on one line.
 _ROMAJI_GLOSS_RE = re.compile(r"\[(?P<romaji>[^\[\]]+)\]\s*\[(?P<gloss>[^\[\]]+)\]")
 _GLOSS_FUNCTION_WORDS = frozenset({
@@ -320,16 +325,44 @@ def _is_vocalization(text: str) -> bool:
     return bool(re.fullmatch(r"(?:ah+|oh+|ooh+|whoa+|la+|mm+)(?:[\s,.-]+(?:ah+|oh+|ooh+|whoa+|la+|mm+))*", text, re.IGNORECASE))
 
 
+def _is_word_echo(text: str) -> bool:
+    """True for ``Shine shine``-style ad-libs: one real word repeated, not a vocalization."""
+    words = re.findall(r"[^\W\d_]+(?:'[^\W\d_]+)?", text)
+    if len(words) < 2 or len({word.casefold() for word in words}) != 1:
+        return False
+    if re.sub(r"[\s,.!?~-]+", "", text) != "".join(words):
+        return False
+    word = words[0].casefold()
+    return word not in _SUNG_INTERJECTIONS and not _is_vocalization(word)
+
+
+def strip_word_echoes(line: str) -> str:
+    """Drop ``(Shine shine)`` ad-libs on their own line or after a lyric."""
+    stripped = line.strip()
+    whole = _VOCAL_WRAPPER_RE.fullmatch(stripped)
+    if whole and whole.group("paren") and _is_word_echo(whole.group("paren")):
+        return ""
+    match = _TRAILING_ECHO_RE.match(line)
+    if match and _is_word_echo(match.group("echo")):
+        return match.group("lead").rstrip()
+    return line
+
+
 def tidy_vocalization_cues(text: str, *, intro: bool = False) -> str:
     """Put sung vocalizations in parentheses; in intros, drop echoed section labels.
 
     ``[Ahh ahh ahh]`` becomes ``(Ahh ahh ahh)`` in any section. In an intro,
     ``(Instrumental Build)`` or ``[Intro Verse]`` copied inside a line is removed,
     bare vocalizations are parenthesized, and repeated vocalizations are dropped.
+    Repeated-word ad-libs such as ``(Shine shine)`` are dropped everywhere.
     """
     kept: List[str] = []
     seen: set[str] = set()
     for line in text.splitlines():
+        if line.strip():
+            line = strip_word_echoes(line)
+            if not line.strip():
+                continue
         stripped = line.strip()
         if intro and not _INTRO_HEADER_RE.fullmatch(stripped):
             stripped = _INTRO_LABEL_ECHO_RE.sub(" ", stripped).strip()
