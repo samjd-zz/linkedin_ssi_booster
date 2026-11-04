@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import cli._schedule_cli as schedule_cli
 import main
 import services.avatar_intelligence as avatar
 import services.derivative_of_truth as dot
@@ -52,15 +53,15 @@ def schedule(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     for component in ("ESTABLISH_BRAND", "FIND_RIGHT_PEOPLE", "ENGAGE_WITH_INSIGHTS", "BUILD_RELATIONSHIPS"):
         monkeypatch.setenv(f"SSI_FOCUS_{component}", "25")
     monkeypatch.delenv("SCHEDULER_POSTING_SLOTS", raising=False)
-    monkeypatch.setattr(main, "load_content_calendar", lambda: {"week_1": topics})
+    monkeypatch.setattr(schedule_cli, "load_content_calendar", lambda: {"week_1": topics})
     monkeypatch.setattr(main, "print_startup_notice", Mock())
     monkeypatch.setattr(main, "build_github_profile_context", github)
     monkeypatch.setattr(main, "OllamaService", Mock(return_value=ai))
     monkeypatch.setattr(main, "BufferService", buffer_factory)
-    monkeypatch.setattr(main, "get_flux_service", Mock(return_value=flux))
-    monkeypatch.setattr(main, "_optimize_flux_story_for_render", lambda ai, text, **kwargs: text)
-    monkeypatch.setattr(main, "_render_schedule_art_avatar", render)
-    monkeypatch.setattr(main, "_run_post_generation_cleanup", cleanup)
+    monkeypatch.setattr(schedule_cli, "get_flux_service", Mock(return_value=flux))
+    monkeypatch.setattr(schedule_cli, "_optimize_flux_story_for_render", lambda ai, text, **kwargs: text)
+    monkeypatch.setattr(schedule_cli, "_render_schedule_art_avatar", render)
+    monkeypatch.setattr(schedule_cli, "_run_post_generation_cleanup", cleanup)
     monkeypatch.setattr(avatar, "load_avatar_state", load)
     for name, normalizer in zip(
         ("normalize_evidence_facts", "normalize_domain_facts", "normalize_extracted_facts"), normalizers,
@@ -146,7 +147,7 @@ def test_ssi_selection_before_generation_matches_queue_selection(
 
     scheduler = Mock()
     scheduler.schedule_week.side_effect = queue
-    monkeypatch.setattr(main, "PostScheduler", Mock(
+    monkeypatch.setattr(schedule_cli, "PostScheduler", Mock(
         select_posts=PostScheduler.select_posts,
         _get_posting_slot_limit=PostScheduler._get_posting_slot_limit,
         return_value=scheduler,
@@ -163,7 +164,7 @@ def test_capped_linkedin_does_not_limit_youtube_or_confuse_grounding_cache(
     monkeypatch.setenv("SCHEDULER_POSTING_SLOTS", "monday@09:00")
     # SSI grouping selects topic 1, not topic 0.
     schedule.topics[0]["ssi_component"] = "build_relationships"
-    monkeypatch.setattr(main, "get_youtube_scripts_dir", lambda: tmp_path)
+    monkeypatch.setattr(schedule_cli, "get_youtube_scripts_dir", lambda: tmp_path)
     monkeypatch.setattr(sys, "argv", ["main.py", "--schedule", "--channel", "linkedin,youtube"])
     main.main()
     assert schedule.ai.generate_linkedin_post.call_count == 1

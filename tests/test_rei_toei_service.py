@@ -851,7 +851,7 @@ def test_choose_diverse_theme_penalizes_recent_repeats():
 
     # With the recent-repeat penalty, Hot Theme should be less likely than base scoring suggests.
     random.seed(42)
-    with patch("services.rei_toei._suno_pipeline.random.uniform", return_value=1.0):
+    with patch("services.rei_toei._suno_themes.random.uniform", return_value=1.0):
         picks = [
             choose_diverse_theme(themes, recent_theme_names=["Hot Theme"]).name
             for _ in range(500)

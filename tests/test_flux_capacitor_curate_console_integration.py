@@ -7,16 +7,32 @@ from types import SimpleNamespace
 import pytest
 
 from services.flux_capacitor import RenderStatus
+from services.ollama_service import OllamaService
 
-import main
+import cli._flux_render as flux_render
 
 
-class _MockOllamaAI:
+class _MockOllamaAI(OllamaService):
     def __init__(self) -> None:
         self.calls: list[dict] = []
 
-    def optimise_flux_art_prompt(self, story_text: str, **kwargs) -> str:
-        self.calls.append({"story_text": story_text, **kwargs})
+    def optimise_flux_art_prompt(
+        self,
+        story_text: str,
+        *,
+        title: str = "",
+        angle: str = "",
+        theme: str = "",
+        knowledge_context: str = "",
+        channel: str = "linkedin",
+        source_mode: str = "schedule",
+        max_tokens: int = 260,
+    ) -> str:
+        self.calls.append({
+            "story_text": story_text, "title": title, "angle": angle, "theme": theme,
+            "knowledge_context": knowledge_context, "channel": channel,
+            "source_mode": source_mode, "max_tokens": max_tokens,
+        })
         return f"OPTIMIZED: {story_text}"
 
 
@@ -27,10 +43,10 @@ class _MockOllamaAI:
 class TestDisplayArtInTerminal:
     def test_none_path_is_silent(self):
         # Should not raise
-        main._display_art_in_terminal(None)
+        flux_render._display_art_in_terminal(None)
 
     def test_missing_file_is_silent(self):
-        main._display_art_in_terminal("/tmp/does_not_exist_flux.png")
+        flux_render._display_art_in_terminal("/tmp/does_not_exist_flux.png")
 
     def test_renders_when_term_image_available(self, monkeypatch, tmp_path):
         """If term_image.from_file succeeds, draw() is called exactly once."""
@@ -49,7 +65,7 @@ class TestDisplayArtInTerminal:
             "term_image.image.from_file",
             lambda path, **kw: _FakeImg(),
         )
-        main._display_art_in_terminal(str(img_path))
+        flux_render._display_art_in_terminal(str(img_path))
         assert drawn == [True]
 
     def test_term_image_import_error_is_silent(self, monkeypatch, tmp_path):
@@ -68,7 +84,7 @@ class TestDisplayArtInTerminal:
 
         monkeypatch.setattr(builtins, "__import__", _block_term_image)
         # Should not raise
-        main._display_art_in_terminal(str(img_path))
+        flux_render._display_art_in_terminal(str(img_path))
 
 
 
@@ -108,40 +124,40 @@ def _mock_flux_service(status: RenderStatus = RenderStatus.RENDERED):
 class TestRenderCurateArtAvatar:
     def test_skips_youtube_channel(self):
         idea = {"generated_text": "some post", "title": "T", "channel": "youtube"}
-        result = main._render_curate_art_avatar(_MockOllamaAI(), idea, "youtube")
+        result = flux_render._render_curate_art_avatar(_MockOllamaAI(), idea, "youtube")
         assert result == {}
 
     def test_skips_all_channel(self):
         idea = {"generated_text": "some post", "title": "T", "channel": "all"}
-        result = main._render_curate_art_avatar(_MockOllamaAI(), idea, "all")
+        result = flux_render._render_curate_art_avatar(_MockOllamaAI(), idea, "all")
         assert result == {}
 
     def test_skips_empty_text(self):
         idea = {"generated_text": "", "title": "T", "channel": "linkedin"}
-        result = main._render_curate_art_avatar(_MockOllamaAI(), idea, "linkedin")
+        result = flux_render._render_curate_art_avatar(_MockOllamaAI(), idea, "linkedin")
         assert result == {}
 
     def test_skips_missing_text(self):
         idea = {"title": "T", "channel": "linkedin"}
-        result = main._render_curate_art_avatar(_MockOllamaAI(), idea, "linkedin")
+        result = flux_render._render_curate_art_avatar(_MockOllamaAI(), idea, "linkedin")
         assert result == {}
 
     def test_uses_text_field_as_fallback(self, monkeypatch):
         """idea dicts from YouTube path use 'text' key instead of 'generated_text'."""
         svc = _mock_flux_service(RenderStatus.RENDERED)
-        monkeypatch.setattr(main, "get_flux_service", lambda: svc)
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: svc)
         ai = _MockOllamaAI()
         idea = {"text": "video script body", "title": "VT", "channel": "linkedin"}
-        result = main._render_curate_art_avatar(ai, idea, "linkedin")
+        result = flux_render._render_curate_art_avatar(ai, idea, "linkedin")
         assert result["art_avatar_status"] == "rendered"
         assert svc._last_request["post_text"] == "OPTIMIZED: video script body"
 
     def test_rendered_path_returns_full_metadata(self, monkeypatch):
         svc = _mock_flux_service(RenderStatus.RENDERED)
-        monkeypatch.setattr(main, "get_flux_service", lambda: svc)
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: svc)
         ai = _MockOllamaAI()
         idea = {"generated_text": "great post", "title": "AI trends", "channel": "linkedin"}
-        result = main._render_curate_art_avatar(ai, idea, "linkedin")
+        result = flux_render._render_curate_art_avatar(ai, idea, "linkedin")
 
         assert result["art_avatar_status"] == "rendered"
         assert result["art_avatar_image_path"] == "/tmp/curate_img.png"
@@ -152,10 +168,10 @@ class TestRenderCurateArtAvatar:
 
     def test_deferred_path_returns_defer_reason(self, monkeypatch):
         svc = _mock_flux_service(RenderStatus.DEFERRED)
-        monkeypatch.setattr(main, "get_flux_service", lambda: svc)
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: svc)
         ai = _MockOllamaAI()
         idea = {"generated_text": "deferred post", "title": "T", "channel": "x"}
-        result = main._render_curate_art_avatar(ai, idea, "x")
+        result = flux_render._render_curate_art_avatar(ai, idea, "x")
 
         assert result["art_avatar_status"] == "deferred"
         assert result["art_avatar_defer_reason"] == "GPU busy"
@@ -168,10 +184,10 @@ class TestRenderCurateArtAvatar:
             def make_request(self, **kwargs):
                 raise RuntimeError("curate-boom")
 
-        monkeypatch.setattr(main, "get_flux_service", lambda: _BoomService())
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: _BoomService())
         ai = _MockOllamaAI()
         idea = {"generated_text": "body", "title": "T", "channel": "linkedin"}
-        result = main._render_curate_art_avatar(ai, idea, "linkedin")
+        result = flux_render._render_curate_art_avatar(ai, idea, "linkedin")
 
         assert result["art_avatar_status"] == "failed"
         assert "curate-boom" in result["art_avatar_render_error"]
@@ -202,9 +218,9 @@ class TestRenderCurateArtAvatar:
                 )
 
         ai = _MockOllamaAI()
-        monkeypatch.setattr(main, "get_flux_service", lambda: _RecordingService())
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: _RecordingService())
         idea = {"generated_text": "post body", "title": "My Topic", "channel": "linkedin"}
-        main._render_curate_art_avatar(ai, idea, "linkedin")
+        flux_render._render_curate_art_avatar(ai, idea, "linkedin")
 
         assert recorded.get("source_mode") == SourceMode.CURATE
         assert recorded.get("channel") == "linkedin"
@@ -218,14 +234,14 @@ class TestRenderCurateArtAvatar:
 
 class TestRenderConsoleArtAvatar:
     def test_skips_empty_text(self):
-        result = main._render_console_art_avatar(_MockOllamaAI(), "")
+        result = flux_render._render_console_art_avatar(_MockOllamaAI(), "")
         assert result == {}
 
     def test_rendered_path_returns_full_metadata(self, monkeypatch):
         svc = _mock_flux_service(RenderStatus.RENDERED)
-        monkeypatch.setattr(main, "get_flux_service", lambda: svc)
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: svc)
         ai = _MockOllamaAI()
-        result = main._render_console_art_avatar(ai, "some reply text", "AI trends")
+        result = flux_render._render_console_art_avatar(ai, "some reply text", "AI trends")
 
         assert result["art_avatar_status"] == "rendered"
         assert result["art_avatar_image_path"] == "/tmp/curate_img.png"
@@ -234,8 +250,8 @@ class TestRenderConsoleArtAvatar:
 
     def test_deferred_path_carries_reason(self, monkeypatch):
         svc = _mock_flux_service(RenderStatus.DEFERRED)
-        monkeypatch.setattr(main, "get_flux_service", lambda: svc)
-        result = main._render_console_art_avatar(_MockOllamaAI(), "text", None)
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: svc)
+        result = flux_render._render_console_art_avatar(_MockOllamaAI(), "text", None)
 
         assert result["art_avatar_status"] == "deferred"
         assert result["art_avatar_defer_reason"] == "GPU busy"
@@ -247,8 +263,8 @@ class TestRenderConsoleArtAvatar:
             def make_request(self, **kwargs):
                 raise RuntimeError("console-boom")
 
-        monkeypatch.setattr(main, "get_flux_service", lambda: _BoomService())
-        result = main._render_console_art_avatar(_MockOllamaAI(), "text")
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: _BoomService())
+        result = flux_render._render_console_art_avatar(_MockOllamaAI(), "text")
 
         assert result["art_avatar_status"] == "failed"
         assert "console-boom" in result["art_avatar_render_error"]
@@ -279,8 +295,8 @@ class TestRenderConsoleArtAvatar:
                 )
 
         ai = _MockOllamaAI()
-        monkeypatch.setattr(main, "get_flux_service", lambda: _RecordingService())
-        main._render_console_art_avatar(ai, "hello world", "topic hint")
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: _RecordingService())
+        flux_render._render_console_art_avatar(ai, "hello world", "topic hint")
 
         assert recorded.get("source_mode") == SourceMode.CONSOLE
         assert recorded.get("channel") == "linkedin"
@@ -289,8 +305,8 @@ class TestRenderConsoleArtAvatar:
 
     def test_topic_hint_none_is_accepted(self, monkeypatch):
         svc = _mock_flux_service(RenderStatus.TEXT_ONLY)
-        monkeypatch.setattr(main, "get_flux_service", lambda: svc)
-        result = main._render_console_art_avatar(_MockOllamaAI(), "text without hint")
+        monkeypatch.setattr(flux_render, "get_flux_service", lambda: svc)
+        result = flux_render._render_console_art_avatar(_MockOllamaAI(), "text without hint")
         assert "art_avatar_status" in result
 
     def test_auto_render_art_if_requested_triggers_render(self, monkeypatch):
@@ -300,8 +316,8 @@ class TestRenderConsoleArtAvatar:
             rendered_calls.append((reply_text, topic_hint))
             return {"art_avatar_status": "rendered", "art_avatar_image_path": "/tmp/test.png"}
 
-        monkeypatch.setattr(main, "_render_console_art_avatar", _mock_render)
-        monkeypatch.setattr(main, "_display_art_in_terminal", lambda path: None)
+        monkeypatch.setattr(flux_render, "_render_console_art_avatar", _mock_render)
+        monkeypatch.setattr(flux_render, "_display_art_in_terminal", lambda path: None)
 
         constraints = SimpleNamespace(
             is_japanese_art_request=True,
@@ -310,7 +326,7 @@ class TestRenderConsoleArtAvatar:
         )
 
         ai = _MockOllamaAI()
-        main._auto_render_art_if_requested(ai, "A serene Miko stands at the torii gate.", constraints, "draw a shrine maiden")
+        flux_render._auto_render_art_if_requested(ai, "A serene Miko stands at the torii gate.", constraints, "draw a shrine maiden")
 
         assert len(rendered_calls) == 1
         assert rendered_calls[0][0] == "A serene Miko stands at the torii gate."
@@ -318,7 +334,7 @@ class TestRenderConsoleArtAvatar:
 
     def test_auto_render_art_if_requested_skips_when_no_image_intent(self, monkeypatch):
         rendered_calls: list = []
-        monkeypatch.setattr(main, "_render_console_art_avatar", lambda *a: rendered_calls.append(a))
+        monkeypatch.setattr(flux_render, "_render_console_art_avatar", lambda *a: rendered_calls.append(a))
 
         constraints = SimpleNamespace(
             is_japanese_art_request=False,
@@ -327,6 +343,6 @@ class TestRenderConsoleArtAvatar:
         )
 
         ai = _MockOllamaAI()
-        main._auto_render_art_if_requested(ai, "Just normal text response", constraints, "hello sam")
+        flux_render._auto_render_art_if_requested(ai, "Just normal text response", constraints, "hello sam")
 
         assert len(rendered_calls) == 0

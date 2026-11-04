@@ -4,12 +4,13 @@ import logging
 import socket
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
 
-import main
+import cli._flux_render as flux_render
 from services.flux_capacitor import _pipeline as pipeline
 
 
@@ -30,11 +31,11 @@ def test_cleanup_only_unloads_used_remote_runtime_and_retains_failed_state(
     monkeypatch.setattr(pipeline, "_REMOTE_RUNTIME_USED", remote_used)
     monkeypatch.setattr(requests, "post", post)
     monkeypatch.setitem(sys.modules, "services.image_generation", SimpleNamespace(unload_flux_runtime=local))
-    monkeypatch.setattr(main.gc, "collect", Mock())
+    monkeypatch.setattr(flux_render.gc, "collect", Mock())
     # Do not trim the shared test process's heap.
     monkeypatch.setattr("ctypes.CDLL", Mock())
     with caplog.at_level(logging.INFO):
-        main._run_post_generation_cleanup(ai, "schedule")
+        flux_render._run_post_generation_cleanup(ai, "schedule")
     ai.unload.assert_called_once_with(wait_seconds=10.0)
     local.assert_called_once()
     if remote_used:
@@ -56,7 +57,7 @@ def test_cleanup_does_not_import_unused_local_runtime(
 
     original_import = builtins.__import__
 
-    def guarded_import(name: str, *args: object, **kwargs: object) -> object:
+    def guarded_import(name: str, *args: Any, **kwargs: Any) -> ModuleType:
         if name == "services.image_generation":
             raise AssertionError("Cleanup must not import an unused image runtime")
         return original_import(name, *args, **kwargs)
@@ -64,9 +65,9 @@ def test_cleanup_does_not_import_unused_local_runtime(
     monkeypatch.delitem(sys.modules, "services.image_generation", raising=False)
     monkeypatch.delenv("FLUX_SERVICE_URL", raising=False)
     monkeypatch.setattr(builtins, "__import__", guarded_import)
-    monkeypatch.setattr(main.gc, "collect", Mock())
+    monkeypatch.setattr(flux_render.gc, "collect", Mock())
     monkeypatch.setattr("ctypes.CDLL", Mock())
-    main._run_post_generation_cleanup(Mock(), "schedule")
+    flux_render._run_post_generation_cleanup(Mock(), "schedule")
 
 
 def test_cleanup_continues_if_ollama_unload_fails(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -75,9 +76,9 @@ def test_cleanup_continues_if_ollama_unload_fails(monkeypatch: pytest.MonkeyPatc
     local = Mock()
     monkeypatch.setitem(sys.modules, "services.image_generation", SimpleNamespace(unload_flux_runtime=local))
     monkeypatch.delenv("FLUX_SERVICE_URL", raising=False)
-    monkeypatch.setattr(main.gc, "collect", Mock())
+    monkeypatch.setattr(flux_render.gc, "collect", Mock())
     monkeypatch.setattr("ctypes.CDLL", Mock())
-    main._run_post_generation_cleanup(ai, "schedule")
+    flux_render._run_post_generation_cleanup(ai, "schedule")
     local.assert_called_once()
 
 

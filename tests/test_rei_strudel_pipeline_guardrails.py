@@ -1,7 +1,9 @@
 import asyncio
+from typing import Any, Literal
 
 import pytest
 
+from services.ollama_service import OllamaService
 from services.rei_toei._models import (
     ReiDomainKnowledge,
     ReiPersonaGraph,
@@ -85,8 +87,17 @@ def test_validate_strudel_syntax_rejects_known_runtime_invalid_construct() -> No
 
 
 def test_generate_strudel_code_replaces_runtime_invalid_output_with_safe_fallback() -> None:
-    class _FakeOllama:
-        def _chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 512) -> str:
+    class _FakeOllama(OllamaService):
+        def __init__(self) -> None:
+            pass
+
+        def _chat(
+            self,
+            system_prompt: str,
+            user_prompt: str,
+            max_tokens: int = 512,
+            format: Literal["", "json"] | dict[str, Any] | None = None,
+        ) -> str:
             return 'note("c2 e2").wrap("128")'
 
     pattern = generate_strudel_code(

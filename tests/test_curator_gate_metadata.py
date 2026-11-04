@@ -79,4 +79,5 @@ def test_channel_formatting_keeps_generation_meta(
     assert score.call_args.kwargs["gate_meta"] is meta
     first_gate.assert_called_once()
     second_gate.assert_not_called()
+    assert result is not None
     assert result[0]["generated_text"] != text

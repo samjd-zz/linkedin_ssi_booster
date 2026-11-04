@@ -138,9 +138,10 @@ def _run_main_with_rei_mocks(
         if env is not None:
             stack.enter_context(patch.dict(os.environ, env))
         if rei_output_dir is not None:
-            stack.enter_context(
-                patch("main.get_rei_toei_dir", return_value=rei_output_dir)
-            )
+            for target in ("cli._rei_suno", "cli._rei_strudel"):
+                stack.enter_context(
+                    patch(f"{target}.get_rei_toei_dir", return_value=rei_output_dir)
+                )
         # Infrastructure mocks
         stack.enter_context(
             patch("services.github_service.build_github_profile_context", return_value="")

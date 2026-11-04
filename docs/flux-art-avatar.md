@@ -155,11 +155,11 @@ See [docs/environment-variables.md](environment-variables.md) for the full refer
 
 Renders trigger automatically after post generation when `FLUX_CAPACITOR_ENABLED=true`:
 
-| Flow     | Function in `main.py`           |
-| -------- | ------------------------------- |
-| Schedule | `_render_schedule_art_avatar()` |
-| Curate   | `_render_curate_art_avatar()`   |
-| Console  | `_render_console_art_avatar()`  |
+| Flow     | Function in `cli/_flux_render.py` |
+| -------- | --------------------------------- |
+| Schedule | `_render_schedule_art_avatar()`   |
+| Curate   | `_render_curate_art_avatar()`     |
+| Console  | `_render_console_art_avatar()`    |
 
 Results merge into the idea/post record as metadata keys:
 

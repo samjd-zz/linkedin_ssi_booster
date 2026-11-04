@@ -126,9 +126,10 @@ def test_curator_filters_before_ranking_and_honors_type_quotas(
     curator._avatar_facts = [persona]
     curator._domain_facts = [domain]
     curator._extracted_facts = [bad, good]
+    retriever = Mock()
+    retriever.find_facts.side_effect = lambda q, facts, limit: facts
     if hybrid:
-        curator._hybrid_retriever = Mock()
-        curator._hybrid_retriever.find_facts.side_effect = lambda q, facts, limit: facts
+        curator._hybrid_retriever = retriever
     grounding, hits, external = curator._grounding_facts_for_article(
         "Replit autonomous agents", "", "establish_brand",
     )
@@ -136,10 +137,10 @@ def test_curator_filters_before_ranking_and_honors_type_quotas(
     assert hits == [good]
     assert external == []
     if hybrid:
-        _, candidates = curator._hybrid_retriever.find_facts.call_args.args
+        _, candidates = retriever.find_facts.call_args.args
         assert bad not in candidates
         assert len(candidates) == 3
-        assert curator._hybrid_retriever.find_facts.call_args.kwargs["limit"] == 3
+        assert retriever.find_facts.call_args.kwargs["limit"] == 3
 
 
 @pytest.mark.parametrize("hybrid", [False, True])

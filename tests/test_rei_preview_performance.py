@@ -8,6 +8,8 @@ from unittest.mock import Mock
 
 import pytest
 
+import cli._rei_strudel as rei_strudel
+import cli._rei_suno as rei_suno
 import main
 import services.avatar_intelligence as avatar
 import services.rei_toei_service as rei
@@ -41,7 +43,8 @@ def preview(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> SimpleNamespace:
     monkeypatch.setattr(main, "print_startup_notice", Mock())
     monkeypatch.setattr(main, "build_github_profile_context", github)
     monkeypatch.setattr(main, "OllamaService", constructor)
-    monkeypatch.setattr(main, "get_rei_toei_dir", lambda create=False: tmp_path)
+    monkeypatch.setattr(rei_suno, "get_rei_toei_dir", lambda create=False: tmp_path)
+    monkeypatch.setattr(rei_strudel, "get_rei_toei_dir", lambda create=False: tmp_path)
     monkeypatch.setattr(avatar, "load_avatar_state", load_state)
     monkeypatch.setattr(avatar, "normalize_extracted_facts", normalize)
     monkeypatch.setattr(rei, "load_rei_persona", Mock())

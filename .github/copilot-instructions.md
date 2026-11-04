@@ -25,7 +25,16 @@ Python automation tool that generates and schedules LinkedIn posts via the Buffe
 
 ```
 linkedin_ssi_booster/
-├── main.py                        # CLI entrypoint (argparse)
+├── main.py                        # CLI entrypoint: argument dispatch + interactive run_console
+├── cli/                           # main.py command handlers (split out of main.py)
+│   ├── _parser.py                 # build_parser() — argparse definition
+│   ├── _admin.py                  # report/SSI/reconcile/category admin commands
+│   ├── _schedule_cli.py           # --schedule flow + load_content_calendar()
+│   ├── _curate_cli.py             # --curate flow
+│   ├── _rei_cli.py                # --rei-generate / --rei-generate-strudel dispatcher
+│   ├── _rei_suno.py               # Suno song generation handler
+│   ├── _rei_strudel.py            # Strudel pattern generation handler
+│   └── _flux_render.py            # FLUX render helpers + post-generation cleanup
 ├── scheduler.py                   # Optimal posting-time logic
 ├── content_calendar.py            # 4-week topic list
 ├── docker-compose.yml             # Local orchestration (core/full profiles)
@@ -54,6 +63,11 @@ linkedin_ssi_booster/
 │   │   └── _truth_gate.py         # 4-layer truth gate: BM25 → DoT → spaCy sim → NER
 │   ├── content_curator/           # RSS curation pipeline
 │   │   ├── curator.py             # ContentCurator class — orchestrates full pipeline
+│   │   ├── _curator_base.py       # CuratorHost attribute contract + run ID
+│   │   ├── _articles.py           # published titles, article prefetch, --learn helpers
+│   │   ├── _channel_all.py        # all-channels generation mixin
+│   │   ├── _channel_single.py     # single-channel generation mixin
+│   │   ├── _reporting.py          # avatar-explain / DoT / article header printing
 │   │   ├── _config.py             # RSS feeds, keywords, SSI weights
 │   │   ├── _rss_fetcher.py        # fetch_relevant_articles(), fetch_article_text()
 │   │   ├── _text_utils.py         # truncate_at_sentence(), hashtag helpers
@@ -96,12 +110,18 @@ linkedin_ssi_booster/
 │   │   ├── _models.py             # request/result dataclasses
 │   │   ├── _pipeline.py           # GPU orchestrator + sequencing policy
 │   │   ├── _prompting.py          # style presets + hard clamps
-│   │   └── _storage.py            # local-first artifact persistence
+│   │   ├── _storage.py            # local-first artifact persistence
+│   │   └── _terminal.py           # terminal image display for rendered art
 │   └── rei_toei/                  # Rei Toei music avatar subsystem
-│       ├── _models.py             # song/pattern request contracts
-│       ├── _prompting.py          # lyric/prompt assembly
-│       ├── _storage.py            # song artifact persistence
-│       └── _strudel.py            # Strudel MCP execution helpers
+│       ├── _config.py / _models.py / _loaders.py  # config, contracts, persona loaders
+│       ├── service.py             # Rei service facade
+│       ├── _suno_pipeline.py      # compose_lyrics + assemble_suno_prompt orchestration
+│       ├── _suno_*.py             # concept, themes, tags, sections, blocks, JSON, cleanup, quality, validation, submission
+│       ├── _lyric_*.py            # lyric prompts, checks, Romaji cues
+│       ├── _hook_translation.py   # English-first hook translation batches
+│       ├── _argos_fallback.py     # offline Argos en→ja fallback
+│       ├── _suno_client.py        # Suno API client
+│       └── _strudel_pipeline.py   # Strudel pattern generation + execution
 ├── data/
 │   ├── avatar/
 │   │   ├── persona_graph.json     # persona facts, projects, companies, claims
@@ -114,7 +134,7 @@ linkedin_ssi_booster/
 ├── scripts/
 │   ├── download-flux1-schnell-Q4_K_S.sh # FLUX model download script
 │   └── init-db.sql                # PostgreSQL schema DDL
-├── tests/                         # pytest suite (775 collected; 773 passed, 2 skipped)
+├── tests/                         # pytest suite (1,434 collected; 1,432 passed, 2 deselected)
 └── docs/                          # architecture, features, usage docs
 ```
 
@@ -230,14 +250,14 @@ linkedin_ssi_booster/
   source .venv/bin/activate && python -m pytest -q   # full suite
   ```
 - **Write unit tests** for every new module or significant new function — place them in `tests/test_<module_name>.py` following the patterns in `tests/test_learning_report.py` and `tests/test_confidence_scoring.py`. Tests must pass before a task is considered complete.
-- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 1,406 passed, 0 failed, 2 deselected) or new behaviour is covered — keep the test table and count in sync.
+- **Update `docs/testing-and-dev.md`** whenever the test count changes (current: 1,432 passed, 0 failed, 2 deselected) or new behaviour is covered — keep the test table and count in sync.
 - **Update README.md** whenever you change how the tool is configured, how a feature works, or what env vars are required — keep the docs in sync with the code.
 - **Update relevant feature docs** in `docs/features/` when implementing new subsystems.
 
 ## Version & Test Status
 
 - **Version**: beta-v0.0.3.8
-- **Test Count**: 1,408 collected; 1,406 passed, 0 skipped, 0 failed, 2 deselected
+- **Test Count**: 1,434 collected; 1,432 passed, 0 skipped, 0 failed, 2 deselected
 - **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
 
 ## Docker & Deployment

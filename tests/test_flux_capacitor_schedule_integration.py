@@ -3,22 +3,38 @@
 from types import SimpleNamespace
 
 from services.flux_capacitor import RenderStatus
+from services.ollama_service import OllamaService
 
-import main
+import cli._flux_render as flux_render
 
 
-class _MockOllamaAI:
+class _MockOllamaAI(OllamaService):
     def __init__(self) -> None:
         self.calls: list[dict] = []
 
-    def optimise_flux_art_prompt(self, story_text: str, **kwargs) -> str:
-        self.calls.append({"story_text": story_text, **kwargs})
+    def optimise_flux_art_prompt(
+        self,
+        story_text: str,
+        *,
+        title: str = "",
+        angle: str = "",
+        theme: str = "",
+        knowledge_context: str = "",
+        channel: str = "linkedin",
+        source_mode: str = "schedule",
+        max_tokens: int = 260,
+    ) -> str:
+        self.calls.append({
+            "story_text": story_text, "title": title, "angle": angle, "theme": theme,
+            "knowledge_context": knowledge_context, "channel": channel,
+            "source_mode": source_mode, "max_tokens": max_tokens,
+        })
         return f"OPTIMIZED: {story_text}"
 
 
 def test_render_schedule_art_avatar_skips_youtube() -> None:
     topic = {"title": "Test Topic", "angle": "Test Angle"}
-    result = main._render_schedule_art_avatar(_MockOllamaAI(), "hello", "youtube", topic)
+    result = flux_render._render_schedule_art_avatar(_MockOllamaAI(), "hello", "youtube", topic)
     assert result == {}
 
 
@@ -46,10 +62,10 @@ def test_render_schedule_art_avatar_records_rendered(monkeypatch) -> None:
                 wait_time_seconds=0.0,
             )
 
-    monkeypatch.setattr(main, "get_flux_service", lambda: _MockFluxService())
+    monkeypatch.setattr(flux_render, "get_flux_service", lambda: _MockFluxService())
 
     topic = {"title": "Rust async", "angle": "queueing"}
-    result = main._render_schedule_art_avatar(ai, "post body", "linkedin", topic)
+    result = flux_render._render_schedule_art_avatar(ai, "post body", "linkedin", topic)
 
     assert recorded["request"]["post_text"] == "OPTIMIZED: post body"
     assert recorded["request"]["channel"] == "linkedin"
@@ -68,10 +84,10 @@ def test_render_schedule_art_avatar_returns_failed_on_exception(monkeypatch) -> 
         def make_request(self, **kwargs):
             raise RuntimeError("boom")
 
-    monkeypatch.setattr(main, "get_flux_service", lambda: _BoomFluxService())
+    monkeypatch.setattr(flux_render, "get_flux_service", lambda: _BoomFluxService())
 
     topic = {"title": "X", "angle": "Y"}
-    result = main._render_schedule_art_avatar(_MockOllamaAI(), "body", "linkedin", topic)
+    result = flux_render._render_schedule_art_avatar(_MockOllamaAI(), "body", "linkedin", topic)
 
     assert result["art_avatar_status"] == "failed"
     assert "boom" in result["art_avatar_render_error"]

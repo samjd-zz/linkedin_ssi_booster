@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-import main
+import cli._flux_render as flux_render
 from services.flux_capacitor import SourceMode
 
 
@@ -18,9 +18,9 @@ def test_text_only_preserves_story_without_llm(
     minimal_mode: bool,
 ) -> None:
     service = SimpleNamespace(config=SimpleNamespace(enabled=enabled, minimal_mode=minimal_mode))
-    monkeypatch.setattr(main, "get_flux_service", lambda: service)
+    monkeypatch.setattr(flux_render, "get_flux_service", lambda: service)
     ai = Mock()
-    result = main._optimize_flux_story_for_render(
+    result = flux_render._optimize_flux_story_for_render(
         ai, "  Original story.  ", source_mode=source_mode, channel="linkedin",
     )
     assert result == "Original story."
@@ -29,10 +29,10 @@ def test_text_only_preserves_story_without_llm(
 
 def test_enabled_render_optimizes_once(monkeypatch: pytest.MonkeyPatch) -> None:
     service = SimpleNamespace(config=SimpleNamespace(enabled=True, minimal_mode=False))
-    monkeypatch.setattr(main, "get_flux_service", lambda: service)
+    monkeypatch.setattr(flux_render, "get_flux_service", lambda: service)
     ai = Mock()
     ai.optimise_flux_art_prompt.return_value = "Visual story"
-    assert main._optimize_flux_story_for_render(
+    assert flux_render._optimize_flux_story_for_render(
         ai, "Original story", source_mode=SourceMode.CURATE, channel="x",
     ) == "Visual story"
     ai.optimise_flux_art_prompt.assert_called_once()

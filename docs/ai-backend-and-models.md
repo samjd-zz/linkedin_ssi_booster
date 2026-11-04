@@ -36,7 +36,7 @@ The README recommends `gemma4:26b` for best post quality, and lists `qwen2.5:14b
 
 **Do not use `qwen2.5-coder`** for creative/ghostwriting or Rei Toei lyric generation — it is code-specialized and a poor fit for that workload. Use a base `qwen2.5` model instead.
 
-**Qwen-family Chinese-script leakage risk:** Qwen models are heavily trained on Chinese text and can leak Simplified Chinese script into "Japanese" bilingual lyric output (e.g. via the fullwidth comma `，` or the particle `的`) instead of genuine Japanese kana/kanji. `services/rei_toei/_suno_pipeline.py` detects this (`_has_chinese_leakage`) and retries or falls back to hand-authored Japanese lyrics rather than submitting Chinese-mislabeled-as-Japanese content. See [rei-toei-customization.md](rei-toei-customization.md#bilingual-lyric-mix) for details.
+**Qwen-family Chinese-script leakage risk:** Qwen models are heavily trained on Chinese text and can leak Simplified Chinese script into "Japanese" bilingual lyric output (e.g. via the fullwidth comma `，` or the particle `的`) instead of genuine Japanese kana/kanji. `services/rei_toei/_lyric_checks.py` detects this (`_has_chinese_leakage`), and the Suno pipeline retries or falls back to hand-authored Japanese lyrics rather than submitting Chinese-mislabeled-as-Japanese content. See [rei-toei-customization.md](rei-toei-customization.md#bilingual-lyric-mix) for details.
 
 ## Fallback model for YouTube Short scripts
 

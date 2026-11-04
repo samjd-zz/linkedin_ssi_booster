@@ -151,7 +151,7 @@ The spaCy summarization preprocessing is **enabled by default** for all knowledg
 
 If you need to disable spaCy summarization preprocessing:
 
-- Set `enable_spacy_summarization=False` when creating `ContentCurator` instance in `main.py`
+- Set `enable_spacy_summarization=False` when creating the `ContentCurator` instance in `cli/_curate_cli.py`
 - Or pass `spacy_nlp=None` directly to `extract_and_append_knowledge()`
 
 The change is backward compatible — extraction works with or without the `spacy_nlp` parameter.
