@@ -209,7 +209,7 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
     "target_model": "V6_MINI",
     "source_note": "Official v6-family facts are separated from proxy limits and empirical prompt conventions.",
     "sources": {"suno_v6_models_faq": "https://help.suno.com/en/articles/13924481"},
-    "prompt_rules": ["Use parentheses only for intended sung vocalizations or ad-libs."]
+    "prompt_rules": ["Keep parentheses for the intro vocalization and rare non-word vocalizations such as (Oh oh oh); never add repeated-word echoes in parentheses after lyric lines."]
   }
 }
 ```

@@ -57,6 +57,13 @@ def test_domain_knowledge_file_has_sourced_suno_practices() -> None:
     assert practices["multilingual"]["official_v6_mini_guidance"] == []
 
 
+def test_prompt_rules_do_not_invite_parenthetical_word_echoes() -> None:
+    rules = " ".join(load_rei_domain_knowledge().suno_best_practices["prompt_rules"]).lower()
+
+    assert "ad-lib" not in rules
+    assert "never add repeated-word echoes" in rules
+
+
 def test_guidance_lists_rules_and_is_empty_without_them() -> None:
     guidance = build_suno_practice_guidance(_domain({"prompt_rules": RULES}))
 
