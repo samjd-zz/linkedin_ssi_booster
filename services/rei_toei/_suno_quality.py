@@ -18,6 +18,7 @@ _SECTION_RE = re.compile(
     r"(?im)^[ \t]*\[(?P<label>Instrumental Build|Intro Verse|Intro|Verse\s*\d*|"
     r"Pre-Chorus|Chorus|Drop|Bridge|Solo|Breakdown|Outro)\][ \t]*"
 )
+_INLINE_BASS_DROP_RE = re.compile(r"\s*\[(?:heavy\s+)?bass\s+drop\]\s*", re.IGNORECASE)
 _SOLO_HEADER_RE = re.compile(r"^\s*\[Solo\][ \t]*\n?", re.IGNORECASE)
 _BRACKETED_DIRECTIONS_RE = re.compile(r"(?:\[[^\[\]]+\]\s*)+")
 
@@ -111,8 +112,9 @@ def ensure_suno_quality(text: str) -> str:
             if not lines or lines[0].strip() != "[Heavy Bass Drop]":
                 logger.warning("Suno quality repair: added the Heavy Bass Drop cue")
             lines = [
-                line for line in lines
-                if line.strip().casefold() not in {"[heavy bass drop]", "[bass drop]"}
+                _INLINE_BASS_DROP_RE.sub(" ", line).strip() if line.strip() else line
+                for line in lines
+                if not line.strip() or _INLINE_BASS_DROP_RE.sub("", line).strip()
             ]
             body = "\n".join(["[Heavy Bass Drop]", *lines]).strip()
             label = "Drop"

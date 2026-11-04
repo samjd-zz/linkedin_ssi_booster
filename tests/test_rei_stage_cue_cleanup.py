@@ -436,3 +436,22 @@ def test_fallback_song_sings_every_english_meaning() -> None:
     assert "] [" not in rendered
     for meaning in ("Red threads unravel the dark", "Cross the boundary, rewrite the state", "Restart the system"):
         assert f"\n{meaning}" in rendered
+
+
+from services.rei_toei._suno_quality import ensure_suno_quality  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "drop",
+    [
+        "[Heavy Bass Drop]\n[Heavy Bass Drop] Frequencies merge, pulses surge\nSignals intertwine",
+        "[Heavy Bass Drop] Frequencies merge, pulses surge\nSignals intertwine [Bass Drop]",
+    ],
+    ids=["standalone-plus-inline", "inline-only"],
+)
+def test_drop_keeps_a_single_heavy_bass_drop_cue(drop: str) -> None:
+    song = ensure_suno_quality(f"[Intro Verse]\nHi\n\n[Verse 1]\nHi\n\n[Drop]\n{drop}\n\n[Outro]\nBye")
+
+    assert song.count("[Heavy Bass Drop]") == 1
+    assert "[Bass Drop]" not in song
+    assert "[Drop]\n[Heavy Bass Drop]\nFrequencies merge, pulses surge\nSignals intertwine" in song
