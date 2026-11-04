@@ -887,12 +887,12 @@ SUNO_API_BASE_URL=https://api.sunoapi.org
 
 ### `SUNO_MODEL` (optional)
 
-Model version passed to sunoapi.org. Available options: `V4`, `V4_5`, `V4_5PLUS`, `V4_5ALL`, `V5`, `V5_5`.
+Model version passed to sunoapi.org. Current options include `V6`, `V6_WILD`, and `V6_MINI`; legacy model values may be retained by the proxy for backward compatibility. See [the SunoAPI generation docs](https://docs.sunoapi.org/suno-api/generate-music) for the current model list.
 
-**Default:** `V4_5`
+**Default:** `V6_MINI`
 
 ```bash
-SUNO_MODEL=V4_5
+SUNO_MODEL=V6_MINI
 ```
 
 ### `REI_TOEI_USE_SAM_PERSONA`

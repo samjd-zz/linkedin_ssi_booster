@@ -23,7 +23,7 @@ Rei Toei's behavior is controlled by three main JSON configuration files:
 | File                             | Purpose                                                     | Location       |
 | -------------------------------- | ----------------------------------------------------------- | -------------- |
 | `rei_toei_persona_graph.json`    | Rei's identity, voice, musical expertise                    | `data/avatar/` |
-| `rei_toei_domain_knowledge.json` | Music theory, genre production techniques, prompt templates | `data/avatar/` |
+| `rei_toei_domain_knowledge.json` | Music theory, genre production techniques, prompt templates, Suno best practices | `data/avatar/` |
 | `rei_toei_strudel_patterns.json` | Reusable Tidal Cycles pattern templates                     | `data/avatar/` |
 
 All files use standard JSON format (no comments/trailing commas) and can be edited with any text editor.
@@ -204,9 +204,23 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
   "lyrical_structure": {},
   "technical_metaphor_library": {},
   "suno_prompt_templates": {},
-  "production_notes": {}
+  "production_notes": {},
+  "suno_best_practices": {
+    "target_model": "V6_MINI",
+    "source_note": "Official v6-family facts are separated from proxy limits and empirical prompt conventions.",
+    "sources": {"suno_v6_models_faq": "https://help.suno.com/en/articles/13924481"},
+    "prompt_rules": ["Use parentheses only for intended sung vocalizations or ad-libs."]
+  }
 }
 ```
+
+### Suno Best Practices
+
+`suno_best_practices` is scoped to the `V6_MINI` model selected by default through the SunoAPI.org proxy. Suno's official v6 FAQ explicitly includes v6-mini in the model family and says all three v6 models understand musical structure and other prompt concepts; Suno also documents the 8-minute generation limit across v6, v6-wild, and v6-mini. The API proxy documents the `V6_MINI` model identifier and its style, lyric, negative-tag, and title limits. Proxy limits are not official Suno help-center claims.
+
+Bracket syntax, whether stage directions are sung, parentheses for vocalizations, and Japanese lyric behavior are not documented by Suno specifically for v6-mini. Those rules are clearly marked as community/empirical conventions, not guaranteed model behavior. Only `prompt_rules` reaches the lyric-writing model. Up to 8 rules are added to the structured prompt under "Suno v6-mini lyric-formatting practices"; rules mentioning Japanese, Romaji, kana, or kanji are sent only when that model writes Japanese or bilingual lyrics. English-first translate mode skips them. The rest of the section is reference material. Edit `prompt_rules` to change the instructions.
+
+The app defaults to `V6_MINI`. An explicit `SUNO_MODEL` environment variable overrides that default, so set it to `V6_MINI` if you want to make the selection explicit.
 
 ### Example: Adding a New Genre
 
@@ -433,7 +447,7 @@ REI_TOEI_DOT_MIN_TRUTH_GRADIENT=0.60
 # Suno API integration (sunoapi.org — third-party proxy)
 SUNO_API_KEY=your_key_here
 SUNO_API_BASE_URL=https://api.sunoapi.org
-SUNO_MODEL=V4_5
+SUNO_MODEL=V6_MINI
 
 # Strudel MCP command (used by agents/strudel_mcp_agent.py)
 STRUDEL_MCP_COMMAND="npx -y @williamzujkowski/live-coding-music-mcp"

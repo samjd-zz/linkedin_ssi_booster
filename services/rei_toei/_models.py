@@ -39,6 +39,7 @@ class ReiDomainKnowledge:
     suno_prompt_templates: Dict[str, Any]
     production_notes: Dict[str, Any]
     japanese_lyric_production: Dict[str, Any] = field(default_factory=dict)
+    suno_best_practices: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -61,7 +62,7 @@ class SunoGenerateRequest:
     """Request payload for sunoapi.org /api/v1/generate endpoint (custom mode)."""
     custom_mode: bool = True
     instrumental: bool = False
-    model: str = "V4_5"   # Options: V4, V4_5, V4_5PLUS, V4_5ALL, V5, V5_5
+    model: str = "V6_MINI"
     style: str = ""        # Genre/BPM/vocal style tags → maps to sunoapi.org `style`
     title: str = ""
     prompt: str = ""       # Exact lyrics in custom mode → maps to sunoapi.org `prompt`

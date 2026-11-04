@@ -96,7 +96,8 @@ def load_rei_domain_knowledge() -> ReiDomainKnowledge:
         japanese_lyric_production=data.get("japanese_lyric_production", {}),
         technical_metaphor_library=data.get("technical_metaphor_library", {}),
         suno_prompt_templates=data.get("suno_prompt_templates", {}),
-        production_notes=data.get("production_notes", {})
+        production_notes=data.get("production_notes", {}),
+        suno_best_practices=data.get("suno_best_practices", {}),
     )
     
     logger.debug(f"Loaded Rei domain knowledge (schema: {knowledge.schema_version})")

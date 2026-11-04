@@ -23,7 +23,7 @@ from ._models import SunoTask
 logger = logging.getLogger(__name__)
 
 _DEFAULT_BASE_URL = "https://api.sunoapi.org"
-_DEFAULT_MODEL = "V4_5"
+_DEFAULT_MODEL = "V6_MINI"
 # Required by sunoapi.org schema; we poll instead of using callbacks, so a
 # placeholder URL is fine here.
 _CALLBACK_PLACEHOLDER = "https://example.com/suno-callback"
@@ -84,7 +84,7 @@ async def generate_music_api(
     The `tags` argument maps to the `style` field (genre, BPM, vocal style).
 
     Args:
-        title:   Song title (max 100 chars for V4_5+).
+        title:   Song title (max 80 chars per the v6-mini API documentation).
         tags:    Style/genre string sent as the `style` field.
         prompt:  Narrative description — used only when no lyrics are provided.
         lyrics:  Full formatted lyrics sent as the `prompt` field in custom mode.
@@ -112,7 +112,7 @@ async def generate_music_api(
         "instrumental": False,
         "model": model,
         "style": tags,
-        "title": title[:100],
+        "title": title[:80],
         "callBackUrl": _CALLBACK_PLACEHOLDER,
         # In custom mode, `prompt` is used as the exact lyrics.
         "prompt": lyrics if lyrics else prompt,
@@ -247,4 +247,3 @@ async def query_status_api(
     )
     logger.info(f"Task {task_id}: raw_status={raw_status!r} → {mapped_status!r}")
     return [task]
-

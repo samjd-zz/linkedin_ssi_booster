@@ -681,5 +681,72 @@
       "fun_brooding": "Oblivion by Grimes - playful darkness with charm",
       "hypnotic_industrial": "Not in Love by Crystal Castles - dark but playful industrial"
     }
+  },
+  "suno_best_practices": {
+    "target_model": "V6_MINI",
+    "source_note": "Scoped to Suno v6-mini. Suno's official documentation describes several capabilities across the v6 family, explicitly including v6-mini. Model identifiers and field limits are from SunoAPI.org, the third-party API proxy this project uses. Prompt syntax and Japanese lyric advice are community/empirical conventions, not officially documented or guaranteed to behave identically in v6-mini.",
+    "sources": {
+      "suno_v6_models_faq": "https://help.suno.com/en/articles/13924481",
+      "suno_song_length_faq": "https://help.suno.com/en/articles/13924929",
+      "sunoapi_generate_music": "https://docs.sunoapi.org/suno-api/generate-music",
+      "exclude_styles": "https://help.suno.com/en/articles/3161921",
+      "vocal_gender": "https://help.suno.com/en/articles/10153473"
+    },
+    "v6_mini_documented": [
+      "Suno describes v6-mini as the fastest and free version of its premium v6 models.",
+      "Suno says all three v6 models, including v6-mini, understand musical language such as vocals, instrumentation, structure, mood, references, and overall feel.",
+      "Suno documents up to 8 minutes of music in one generation across v6, v6-wild, and v6-mini."
+    ],
+    "sunoapi_org_v6_mini_limits": {
+      "model_identifier": "V6_MINI",
+      "style_characters_max": 1000,
+      "lyrics_characters_max": 5000,
+      "negative_tags_characters_max": 1000,
+      "title_characters_max": 80,
+      "note": "These are SunoAPI.org proxy endpoint limits, not limits published in Suno's own help center."
+    },
+    "style_prompt": {
+      "v6_family_official": [
+        "Suno's v6 FAQ says its Variety control adjusts style prompts; setting it to 0 retains the exact style tags.",
+        "The v6 FAQ covers the v6 family, including v6-mini, but does not document model-specific differences in prompt behavior."
+      ],
+      "generic_suno_official": [
+        "The Custom Mode Exclude field is documented for specifying unwanted instruments or other elements.",
+        "Custom Mode supports choosing vocal gender in Advanced Options and refining the style with adjectives such as 'gritty' or 'soft'.",
+        "These platform help articles do not specify whether behavior differs in v6-mini."
+      ],
+      "community_empirical_not_v6_mini_verified": [
+        "Order descriptors as genre, mood, vocal style, key instruments, then BPM.",
+        "Prefer a concise, coherent set of descriptive style tags over a long list of competing tags.",
+        "Describe musical qualities rather than relying on real-artist names."
+      ]
+    },
+    "lyrics_field": {
+      "v6_mini_official": [
+        "The v6 FAQ says all three v6 models, including v6-mini, understand musical language and building blocks such as vocals, instrumentation, structure, and mood.",
+        "SunoAPI.org documents a 5000-character lyrics limit for V6_MINI custom mode."
+      ],
+      "community_empirical_not_v6_mini_verified": [
+        "Mark structure with bracketed tags on their own line: [Intro], [Verse 1], [Pre-Chorus], [Chorus], [Bridge], [Drop], [Breakdown], [Instrumental], [Solo], [Outro], [End].",
+        "Keep section cues short and on their own line; bracket-tag interpretation is not specified in official Suno documentation.",
+        "Use parentheses only for sung vocalizations or ad-libs; this is a formatting convention, not an official v6-mini parsing guarantee.",
+        "Keep lyric lines concise and rhythmically natural; no v6-mini-specific line-length rule is published."
+      ]
+    },
+    "multilingual": {
+      "official_v6_mini_guidance": [],
+      "community_empirical_not_v6_mini_verified": [
+        "Suno publishes no Japanese-specific or multilingual lyric guidance for v6-mini.",
+        "Use native Japanese kana and kanji for sung Japanese; keep Romaji in a separate bracketed pronunciation cue.",
+        "Keep Japanese and English on separate lines to make the intended pronunciation clear."
+      ]
+    },
+    "prompt_rules": [
+      "Target Suno v6-mini custom mode. Treat bracketed section labels as formatting conventions, not guaranteed non-sung controls.",
+      "Put each section label on its own line and keep stage cues short; avoid putting directions in lyric text.",
+      "Use parentheses only for intended sung vocalizations or ad-libs.",
+      "Keep lyric lines concise and natural to sing; no exact v6-mini meter or syllable rule is documented.",
+      "Write Japanese in kana and kanji; keep Romaji in a separate bracketed pronunciation cue and English on its own line."
+    ]
   }
 }

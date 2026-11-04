@@ -2734,26 +2734,30 @@ def test_suno_api_generate_music_success():
         }
     }
 
-    with patch("urllib.request.urlopen") as mock_urlopen:
-        mock_response = MagicMock()
-        mock_response.getcode.return_value = 200
-        mock_response.read.return_value = json.dumps(mock_response_data).encode("utf-8")
+    with patch.dict(os.environ, {}, clear=True):
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.getcode.return_value = 200
+            mock_response.read.return_value = json.dumps(mock_response_data).encode("utf-8")
 
-        mock_context = MagicMock()
-        mock_context.__enter__.return_value = mock_response
-        mock_context.__exit__.return_value = None
-        mock_urlopen.return_value = mock_context
+            mock_context = MagicMock()
+            mock_context.__enter__.return_value = mock_response
+            mock_context.__exit__.return_value = None
+            mock_urlopen.return_value = mock_context
 
-        import asyncio
-        result = asyncio.run(generate_music_api(
-            title="Test Song",
-            tags="industrial techno, 142 bpm",
-            prompt="Test prompt",
-            lyrics="Test lyrics",
-            api_key="test_api_key"
-        ))
+            import asyncio
+            result = asyncio.run(generate_music_api(
+                title="T" * 100,
+                tags="industrial techno, 142 bpm",
+                prompt="Test prompt",
+                lyrics="Test lyrics",
+                api_key="test_api_key"
+            ))
+            payload = json.loads(mock_urlopen.call_args.args[0].data.decode("utf-8"))
     
     assert result["data"][0]["id"] == "task_001"
+    assert payload["model"] == "V6_MINI"
+    assert payload["title"] == "T" * 80
 def test_suno_api_generate_music_missing_key():
     """Test generate_music_api raises error when API key missing"""
     from services.rei_toei_service import generate_music_api

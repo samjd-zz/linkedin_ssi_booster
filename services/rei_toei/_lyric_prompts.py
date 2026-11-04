@@ -9,6 +9,23 @@ if TYPE_CHECKING:
 from services.rei_toei._models import ReiDomainKnowledge, ReiPersonaGraph, SongConcept
 from services.rei_toei._solo_options import build_solo_style_guidance
 
+MAX_SUNO_PRACTICE_RULES = 8
+_JAPANESE_RULE_WORDS = ("japanese", "romaji", "kana", "kanji")
+
+
+def build_suno_practice_guidance(
+    domain_knowledge: ReiDomainKnowledge, *, include_japanese: bool = True
+) -> str:
+    """Return the domain-knowledge Suno rules as a short prompt block, or ``""``."""
+    rules = (domain_knowledge.suno_best_practices or {}).get("prompt_rules", [])
+    lines = [str(rule).strip() for rule in rules if isinstance(rule, str) and rule.strip()]
+    if not include_japanese:
+        lines = [line for line in lines if not any(word in line.lower() for word in _JAPANESE_RULE_WORDS)]
+    if not lines:
+        return ""
+    bullets = "\n".join(f"- {line}" for line in lines[:MAX_SUNO_PRACTICE_RULES])
+    return f"Suno v6-mini lyric-formatting practices:\n{bullets}"
+
 
 def build_lyric_prompts(
     concept: SongConcept,
@@ -191,6 +208,11 @@ Suno Formatting Rules:
             sam_context += "\n(You may naturally weave these into the lyrics if thematically relevant, but it's optional.)"
     
     solo_guidance = build_solo_style_guidance(domain_knowledge.lyrical_structure)
+    suno_guidance = build_suno_practice_guidance(
+        domain_knowledge, include_japanese=generation_language in {"japanese", "bilingual"}
+    )
+    if suno_guidance:
+        solo_guidance = f"{solo_guidance}\n\n{suno_guidance}" if solo_guidance else suno_guidance
 
     # Build user prompt with Suno-compatible formatting
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
