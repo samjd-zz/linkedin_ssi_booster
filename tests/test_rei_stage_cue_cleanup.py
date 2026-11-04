@@ -315,3 +315,62 @@ def test_structured_song_preserves_drop_and_real_lyrics() -> None:
     assert "Bassline descends, energy ignites" in result.lyrics
     assert "[Chaos]" in result.lyrics
     assert result.metadata["has_drop"] is True
+
+
+# --- Intro vocalization / echoed label cleanup ------------------------------
+
+from services.rei_toei._song_tidy import tidy_song_sections as _tidy_sections  # noqa: E402
+from services.rei_toei._suno_blocks import _append_normalized_section as _append_section  # noqa: E402
+from services.rei_toei._suno_cleanup import tidy_vocalization_cues  # noqa: E402
+
+_REPORTED_INTRO = (
+    "[Instrumental Build]\n(Ahh ahh ahh)\n[Intro Verse]\n"
+    "[Ahh ahh ahh] (Instrumental Build)\nCode flows in the night, agents ignite"
+)
+
+
+@pytest.mark.parametrize("raw", [
+    _REPORTED_INTRO,
+    "[Instrumental Build]\n(Ahh ahh ahh) (Instrumental Build)\nCode flows in the night, agents ignite",
+    "(Ahh ahh ahh)\nAhh ahh ahh (Instrumental Build)\nCode flows in the night, agents ignite",
+    "[Ahh ahh ahh]\nInstrumental Build\nCode flows in the night, agents ignite",
+])
+def test_intro_keeps_single_parenthesized_vocalization(raw: str) -> None:
+    block = _append_section([], raw, "Instrumental Build")
+    assert block == (
+        "[Instrumental Build]\n(Ahh ahh ahh)\n\n"
+        "[Intro Verse]\nCode flows in the night, agents ignite"
+    )
+
+
+def test_song_tidy_cleans_intro_field() -> None:
+    payload = {"intro": _REPORTED_INTRO}
+    _tidy_sections(payload)
+    assert "[Ahh ahh ahh]" not in payload["intro"]
+    assert "(Instrumental Build)" not in payload["intro"]
+    assert payload["intro"].count("(Ahh ahh ahh)") == 1
+
+
+def test_bracketed_vocalization_in_verse_becomes_parenthesized() -> None:
+    assert tidy_vocalization_cues("[Ooh ooh]\nSignals rise") == "(Ooh ooh)\nSignals rise"
+
+
+def test_instrumental_build_parenthetical_directions_become_bracketed() -> None:
+    block = _append_section(
+        [],
+        "[Instrumental Build]\n(Ahh ahh ahh)\n"
+        "(Start with glitchy synth tones)\n[Intro Verse]\nCode flows in the night",
+        "Instrumental Build",
+    )
+
+    assert block == (
+        "[Instrumental Build]\n(Ahh ahh ahh)\n"
+        "[Start with glitchy synth tones]\n\n"
+        "[Intro Verse]\nCode flows in the night"
+    )
+
+
+def test_non_vocal_brackets_are_untouched() -> None:
+    text = "[Heavy Bass Drop]\n[Synth sweep]\nSignals rise"
+    assert tidy_vocalization_cues(text) == text
+    assert tidy_vocalization_cues(text, intro=True) == text

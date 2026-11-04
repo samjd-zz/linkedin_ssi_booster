@@ -116,6 +116,11 @@ _CUE_WITH_SUFFIX_RE = re.compile(
     r"(?P<bare>[^\[\]()]+?))\s*"
     r"(?P<suffix>\[[^\[\]]+\]|\([^()]+\))?\s*$"
 )
+_INTRO_HEADER_RE = re.compile(r"\[\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*\]", re.IGNORECASE)
+_INTRO_LABEL_ECHO_RE = re.compile(
+    r"[\[(（]\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*[\])）]", re.IGNORECASE
+)
+_VOCAL_WRAPPER_RE = re.compile(r"\[(?P<bracket>[^\[\]]+)\]|[(（](?P<paren>[^()（）]+)[)）]")
 _TRAILING_TAGS_RE = re.compile(r"^(?P<lead>.+?)(?P<tags>(?:[ \t]*\[[^\[\]]+\])+)[ \t]*$")
 
 
@@ -307,6 +312,40 @@ def tag_instrument_cues(text: str, *, production_directions: bool = False) -> st
 def _is_vocalization(text: str) -> bool:
     """Keep sung ad-libs such as ``Ahh ahh ahh`` in parentheses."""
     return bool(re.fullmatch(r"(?:ah+|oh+|ooh+|whoa+|la+|mm+)(?:[\s,.-]+(?:ah+|oh+|ooh+|whoa+|la+|mm+))*", text, re.IGNORECASE))
+
+
+def tidy_vocalization_cues(text: str, *, intro: bool = False) -> str:
+    """Put sung vocalizations in parentheses; in intros, drop echoed section labels.
+
+    ``[Ahh ahh ahh]`` becomes ``(Ahh ahh ahh)`` in any section. In an intro,
+    ``(Instrumental Build)`` or ``[Intro Verse]`` copied inside a line is removed,
+    bare vocalizations are parenthesized, and repeated vocalizations are dropped.
+    """
+    kept: List[str] = []
+    seen: set[str] = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if intro and not _INTRO_HEADER_RE.fullmatch(stripped):
+            stripped = _INTRO_LABEL_ECHO_RE.sub(" ", stripped).strip()
+            if stripped.casefold() in {"instrumental build", "intro verse"}:
+                stripped = ""
+            if not stripped and line.strip():
+                continue
+        inner = _VOCAL_WRAPPER_RE.fullmatch(stripped)
+        bracketed = inner.group("bracket") if inner else None
+        candidate = (bracketed or (inner.group("paren") if inner else None)
+                     or (stripped if intro else ""))
+        if candidate and _is_vocalization(candidate.strip()):
+            vocal = candidate.strip()
+            if intro:
+                key = re.sub(r"[\s,.-]+", " ", vocal).casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+            kept.append(f"({vocal})")
+            continue
+        kept.append(stripped if intro else line)
+    return "\n".join(kept)
 
 
 def _is_intro_cue_line(line: str) -> bool:

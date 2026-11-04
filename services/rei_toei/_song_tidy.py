@@ -10,6 +10,7 @@ from services.rei_toei._suno_cleanup import (
     bracket_chaos_cues,
     strip_emoji_lines,
     strip_sung_bass_drop_cues,
+    tidy_vocalization_cues,
 )
 from services.rei_toei._suno_quality import bracket_solo_directions
 
@@ -65,6 +66,7 @@ def tidy_song_sections(payload: Dict[str, Any]) -> None:
         text = "\n".join(lines)
         if field in SUNG_LYRIC_FIELDS:
             text = strip_sung_bass_drop_cues(text)
+            text = tidy_vocalization_cues(text, intro=field == "intro")
         payload[field] = (
             bracket_solo_directions(text) if field == "solo" else text
         )

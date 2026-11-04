@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1516%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1516 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1524%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1524 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-74%25-yellow.svg" alt="Source coverage: 74%, measured November 3, 2026"></a>
 </p>
 
@@ -416,7 +416,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 3, 2026: 1,518 collected; 1,516 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **74%**. Includes 25 console/CLI lyric-parity cases, 43 stage-cue cleanup cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,526 collected; 1,524 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **74%**. Includes 25 console/CLI lyric-parity cases, 51 stage-cue cleanup cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
