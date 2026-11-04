@@ -11,6 +11,7 @@ from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
 from services.rei_toei._suno_cleanup import (
     split_inline_glosses,
     split_intro_block,
+    strip_emoji_lines,
     tag_instrument_cues,
 )
 from services.rei_toei._suno_json import _normalize_serialized_lyric_text
@@ -40,8 +41,10 @@ def _append_normalized_section(
     uppercase_body: bool = False,
 ) -> str:
     """Normalize and append a Suno lyric section when it has content."""
+    # Emoji go first so Romaji cues generated below never copy them.
+    text = strip_emoji_lines(text or "")
     if label.casefold() == "solo":
-        text = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", _normalize_serialized_lyric_text(text or ""))
+        text = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", _normalize_serialized_lyric_text(text))
         block = bracket_solo_directions(text)
         if block:
             lyric_blocks.append(block)

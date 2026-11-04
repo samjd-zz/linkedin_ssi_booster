@@ -18,7 +18,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 from services.rei_toei._argos_fallback import get_argos_translator
 from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
-from services.rei_toei._suno_cleanup import has_chinese_grammar, replace_chinese_phrasing
+from services.rei_toei._suno_cleanup import (
+    has_chinese_grammar,
+    has_emoji,
+    replace_chinese_phrasing,
+    strip_emoji,
+)
 
 if TYPE_CHECKING:
     from services.ollama_service import OllamaService
@@ -64,7 +69,7 @@ TRANSLATION_SYSTEM_PROMPT = (
     "You translate English song lyrics into natural, singable contemporary Japanese "
     "for a cyberpop vocalist. Translate the meaning and feeling, not word for word, "
     "and keep each line about as short as the English. Use standard Japanese kanji and "
-    "kana with Japanese grammar and particles (が, を, に, の, へ). Never use Chinese "
+    "kana with Japanese grammar and particles (が, を, に, の, へ). Never use emoji, Chinese "
     "characters, Chinese grammar (在, 了, 们), pinyin, Romaji, or explanations. "
     "Use plain (dictionary) verb forms such as 消える, not polite forms like 消えます, "
     "and translate every English word; do not leave English inside a Japanese line."
@@ -162,7 +167,8 @@ def select_hook_lines(
 
 
 def _translation_source(text: str) -> str:
-    """De-shout ALL-CAPS chorus lines so translators read them as normal text."""
+    """De-shout ALL-CAPS chorus lines and drop emoji so translators read plain text."""
+    text = strip_emoji(text)
     return text.capitalize() if text.isupper() else text
 
 
@@ -191,7 +197,7 @@ def clean_translation(text: Any) -> Optional[str]:
         return None
     if not _KANA_RE.search(line) and len(_CJK_RE.findall(line)) > 8:
         return None
-    if _LOWERCASE_WORD_RE.search(line):
+    if _LOWERCASE_WORD_RE.search(line) or has_emoji(line):
         return None
     return line
 

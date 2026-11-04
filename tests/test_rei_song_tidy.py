@@ -54,6 +54,14 @@ def test_tidy_keeps_bridge_that_only_repeats_the_chorus():
     assert payload["bridge"] == "[Bridge]\nPulse code"
 
 
+def test_tidy_strips_emoji_before_hooks_are_chosen():
+    payload = {"verse_1": "[Verse 1]\n✨✨\nGlitching signals ⚡\n\n霧の中、📐が浮かぶ"}
+
+    tidy_song_sections(payload)
+
+    assert payload["verse_1"] == "[Verse 1]\nGlitching signals\n\n霧の中、が浮かぶ"
+
+
 def test_clean_translation_drops_dangling_comma():
     assert clean_translation("重要なクラッシュ、突然のバースト、") == "重要なクラッシュ、突然のバースト"
 

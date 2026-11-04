@@ -102,8 +102,9 @@ is inserted above its English sung echo; with an English-only draft, the
 translation step cannot exceed 50% Japanese sung lines.
 
 Ollama translates hooks as numbered JSON in batches of up to 10, retaining
-valid results from partial replies. Missing or rejected lines (including
-Chinese grammar or leftover English) use the offline Argos en→ja model when
+valid results from partial replies. Hook text is sent without emoji. Missing
+or rejected lines (including Chinese grammar, leftover English, or emoji such
+as `📐が揺れ動く`) use the offline Argos en→ja model when
 available; it runs with CTranslate2 and is downloaded by the `argos-init`
 Docker service. Polite endings such as `します` or `消えます` become plain
 `する` or `消える`; lines that still fail stay English. An Ollama runtime
@@ -155,14 +156,18 @@ like `(Ahh ahh ahh)` stay in parentheses. If the Chorus, Verse 2, or Bridge
 copies more than one line from an earlier section, the draft is retried with
 the copied lines named (Drop and Outro may still reprise the Chorus); the
 prompt also asks for natural rhymes and steady meter. Before translation and
-assembly, a tidy pass removes echo parentheticals that repeat their line
+assembly, a tidy pass removes emoji and pictographs such as `📐` or `✨`
+(dropping lines that held only emoji; Japanese marks like `ー`, `〜`, and `・`
+stay), removes echo parentheticals that repeat their line
 (`PULSE CODE (Pulse Code)` becomes `PULSE CODE`), deletes drop cues outside
 `[Drop]` so the drop plays once, removes Bridge lines copied from the Chorus
 (unless nothing would remain), and strips a dangling `、` or `,` from Japanese
 lines. Leaked prompt notes such as `(34 chars)`, `(38 chars, UPPERCASE)`, or
 `(ALL-CAPS)` are removed whole, so no empty `()` is left for Suno to sing.
 Sung lines in the intro are moved under an `[Intro Verse]` tag after
-`[Instrumental Build]`. Romaji cleanup runs once, during Suno assembly after
+`[Instrumental Build]`. Suno assembly strips any remaining emoji from every
+section, including Solo and console freeform songs, before Romaji cues are
+generated, so a cue never copies one. Romaji cleanup runs once, during Suno assembly after
 section normalization, so formatting already-formatted lyrics adds nothing
 (except that a line moved out of a gloss looks like an ordinary Japanese line
 on a second pass). Console song output follows the same assembly path.

@@ -4,9 +4,12 @@ import pytest
 
 from services.rei_toei._suno_cleanup import (
     has_chinese_grammar,
+    has_emoji,
     replace_chinese_phrasing,
     split_inline_glosses,
     split_intro_block,
+    strip_emoji,
+    strip_emoji_lines,
     tag_instrument_cues,
 )
 from services.rei_toei._suno_pipeline import _append_normalized_section
@@ -197,3 +200,59 @@ def test_repaired_chinese_line_gets_a_fresh_cue(source: str, expected: str) -> N
 def test_tag_instrument_cues_turns_layout_placeholders_into_blank_lines(placeholder):
     text = f"Merge, split, a dance of stars\n{placeholder}\nTheir codes sync"
     assert tag_instrument_cues(text) == "Merge, split, a dance of stars\n\nTheir codes sync"
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("📐が揺れ動く", "が揺れ動く"),
+        ("霧の中、📐が浮かぶ", "霧の中、が浮かぶ"),
+        ("[📐 ga yureugoku]", "[ga yureugoku]"),
+        ("Bouncing bytes ✨", "Bouncing bytes"),
+        ("Glitch⚡pulse", "Glitch pulse"),
+        ("Hold on ✨, tonight", "Hold on, tonight"),
+        ("(✨ shine ✨)", "(shine)"),
+        ("❤️ Love the code", "Love the code"),
+        ("👩\u200d💻 Coding all night", "Coding all night"),
+        ("🇯🇵 Tokyo nights", "Tokyo nights"),
+        ("1️⃣ more time", "1 more time"),
+        ("⏳ Time runs out", "Time runs out"),
+    ],
+)
+def test_strip_emoji_removes_pictographs_and_tidies_spacing(line: str, expected: str) -> None:
+    assert has_emoji(line)
+    assert strip_emoji(line) == expected
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["ゆっくり〜 時々ー・「光」", "Cooling to 4°C → zero", "○ signal ● noise", "データの海  (Oh oh)"],
+)
+def test_strip_emoji_keeps_japanese_marks_and_plain_symbols(line: str) -> None:
+    assert not has_emoji(line)
+    assert strip_emoji(line) == line
+
+
+def test_strip_emoji_lines_drops_emoji_only_lines_and_keeps_stanza_breaks() -> None:
+    text = "✨✨\nGlitching signals ⚡\n\nBouncing bytes"
+
+    assert strip_emoji_lines(text) == "Glitching signals\n\nBouncing bytes"
+    assert strip_emoji_lines("Clean line\n\n  Indented") == "Clean line\n\n  Indented"
+
+
+@pytest.mark.parametrize(
+    ("source", "label", "expected"),
+    [
+        (
+            "📐が揺れ動く\n[📐 ga yureugoku]\nGlitching signals,\n✨✨\nBouncing bytes ✨",
+            "Verse 1",
+            "[Verse 1]\nが揺れ動く\n[ga yureugoku]\nGlitching signals,\nBouncing bytes",
+        ),
+        ("データの盾 🛡️\nDATA SHIELD", "Chorus", "[Chorus]\nデータの盾\n[deeta no tate]\nDATA SHIELD"),
+        ("✨ Melodic synth solo ✨", "Solo", "[Solo]\n[Melodic synth solo]"),
+    ],
+)
+def test_assembled_sections_and_romaji_cues_have_no_emoji(
+    source: str, label: str, expected: str
+) -> None:
+    assert _append_normalized_section([], source, label) == expected

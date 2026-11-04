@@ -82,8 +82,8 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1448%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1448 passed, 0 failed, 2 live API tests deselected"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-73%25-yellow.svg" alt="Source coverage: 73%, measured November 4, 2026"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1472%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1472 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-74%25-yellow.svg" alt="Source coverage: 74%, measured November 4, 2026"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -414,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,450 collected; 1,448 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **73%**. Includes 24 console/CLI lyric-parity cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,474 collected; 1,472 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **74%**. Includes 24 console/CLI lyric-parity cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

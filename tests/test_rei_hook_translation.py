@@ -135,6 +135,8 @@ def test_select_hook_lines_skips_cues_japanese_short_and_duplicate_lines():
         ("数据流动了", None),
         ("我们的数据", None),
         ("Blossom from data seeds", None),
+        ("📐が揺れ動く", None),
+        ("霧の中、📐が浮かぶ", None),
         ("", None),
         (None, None),
         ("あ" * 60, None),
@@ -187,6 +189,24 @@ def test_translate_hook_texts_uses_one_call_and_argos_for_rejected_lines(monkeyp
     prompt = ollama._chat.call_args.args[1]
     assert "1. Seeds of light" in prompt and "all 2 numbers" in prompt and "Data Seeds" in prompt
     assert argos.calls == [["A glitch disrupts the flow"]]
+
+
+def test_translate_hook_texts_sends_no_emoji_and_rejects_emoji_replies(monkeypatch, tmp_path):
+    argos = FakeArgos(["信号が揺れ動く"])
+    monkeypatch.setattr(_hook_translation, "get_argos_translator", lambda _: argos)
+    ollama = MagicMock()
+    ollama._chat.return_value = json.dumps({"1": "📐が揺れ動く", "2": "データの盾"}, ensure_ascii=False)
+
+    translations, counts = translate_hook_texts(
+        ["Glitching signals ⚡", "DATA SHIELD ✨"], ollama, tmp_path
+    )
+
+    assert translations == ["信号が揺れ動く", "データの盾"]
+    assert counts == {"ollama": 1, "argos": 1, "failed": 0}
+    prompt = ollama._chat.call_args.args[1]
+    assert "1. Glitching signals\n2. Data shield" in prompt
+    assert "emoji" in ollama._chat.call_args.args[0]
+    assert argos.calls == [["Glitching signals"]]
 
 
 def test_translate_hook_texts_falls_back_when_ollama_fails(monkeypatch, tmp_path):

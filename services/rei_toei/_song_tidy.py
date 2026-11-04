@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict
 
 from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
+from services.rei_toei._suno_cleanup import strip_emoji_lines
 from services.rei_toei._suno_quality import bracket_solo_directions
 
 # "PULSE CODE (PULSE CODE)": an echo of the line in parentheses, which Suno sings.
@@ -38,12 +39,12 @@ def _is_sung(line: str) -> bool:
 
 
 def tidy_song_sections(payload: Dict[str, Any]) -> None:
-    """Fix echo parentheses, stray drop cues, chorus lines in the bridge, and dangling 、."""
+    """Fix emoji, echo parentheses, stray drop cues, chorus lines in the bridge, and dangling 、."""
     for field, value in payload.items():
         if not isinstance(value, str):
             continue
         lines = []
-        for line in value.splitlines():
+        for line in strip_emoji_lines(value).splitlines():
             if field not in DROP_FIELDS and _DROP_CUE_RE.match(line.strip()):
                 continue
             line = strip_echo_parenthetical(line)

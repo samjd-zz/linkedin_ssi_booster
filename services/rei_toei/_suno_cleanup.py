@@ -1,4 +1,4 @@
-"""Suno-facing lyric cleanup: inline glosses, Chinese phrasing, cue tags, intro split."""
+"""Suno-facing lyric cleanup: inline glosses, Chinese phrasing, emoji, cue tags, intro split."""
 
 from __future__ import annotations
 
@@ -76,6 +76,57 @@ _PRODUCTION_DIRECTION_RE = re.compile(
 # Layout placeholders the model copies from the prompt; they become real blank lines.
 _LAYOUT_PLACEHOLDERS = {"blank line", "blank", "empty line", "line break", "stanza break"}
 _INTRO_VERSE_LABEL = "Intro Verse"
+# Emoji and pictographs plus their joiners, presentation selectors, keycaps and
+# flag tags. Japanese marks such as ー, 々, 〜 and ・ are outside these ranges.
+_EMOJI_RE = re.compile(
+    "["
+    "\U0001F000-\U0001FAFF"
+    "\u2600-\u27BF"
+    "\u2B00-\u2BFF"
+    "\u231A\u231B\u23E9-\u23F3\u23F8-\u23FA"
+    "\u200D\u20E3\uFE0E\uFE0F"
+    "\U000E0020-\U000E007F"
+    "]+"
+)
+_ASCII_WORD_CHAR_RE = re.compile(r"[A-Za-z0-9]")
+_SPACE_RUN_RE = re.compile(r"[ \t]{2,}")
+_SPACE_AFTER_OPENER_RE = re.compile(r"([\[(（「『])\s+")
+_SPACE_BEFORE_CLOSER_RE = re.compile(r"\s+([\])）」』,.!?;:、。])")
+
+
+def has_emoji(text: str) -> bool:
+    """True when text contains an emoji or pictograph."""
+    return bool(_EMOJI_RE.search(text))
+
+
+def _emoji_gap(match: "re.Match[str]") -> str:
+    """Keep two words apart when an emoji sat directly between them."""
+    text, start, end = match.string, match.start(), match.end()
+    before = text[start - 1] if start else ""
+    after = text[end] if end < len(text) else ""
+    joined = _ASCII_WORD_CHAR_RE.match(before) and _ASCII_WORD_CHAR_RE.match(after)
+    return " " if joined else ""
+
+
+def strip_emoji(line: str) -> str:
+    """Remove emoji from one line and tidy the spacing they leave behind."""
+    if not _EMOJI_RE.search(line):
+        return line
+    cleaned = _SPACE_RUN_RE.sub(" ", _EMOJI_RE.sub(_emoji_gap, line))
+    cleaned = _SPACE_AFTER_OPENER_RE.sub(r"\1", cleaned)
+    return _SPACE_BEFORE_CLOSER_RE.sub(r"\1", cleaned).strip()
+
+
+def strip_emoji_lines(text: str) -> str:
+    """Strip emoji from every line, dropping lines that held only emoji."""
+    if not _EMOJI_RE.search(text):
+        return text
+    kept: List[str] = []
+    for line in text.splitlines():
+        cleaned = strip_emoji(line)
+        if cleaned or not line.strip():
+            kept.append(cleaned)
+    return "\n".join(kept)
 
 
 def replace_chinese_phrasing(text: str) -> str:
