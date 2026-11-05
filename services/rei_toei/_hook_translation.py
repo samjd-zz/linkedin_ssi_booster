@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 from services.rei_toei._argos_fallback import get_argos_translator
-from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
+from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE, is_readable_japanese
 from services.rei_toei._suno_cleanup import (
     has_chinese_grammar,
     has_emoji,
+    non_japanese_kanji,
     replace_chinese_phrasing,
     strip_emoji,
 )
@@ -190,14 +191,23 @@ def clean_translation(text: Any) -> Optional[str]:
     line = _NUMBER_PREFIX_RE.sub("", line)
     line = _TRAILING_ANNOTATION_RE.sub("", line).strip().rstrip("。.、，, ")
     line = line.strip(_WRAPPING_QUOTES).strip()
+    raw = line
     line = to_plain_form(replace_chinese_phrasing(line).rstrip("。.、，, "))
     if not line or not _JAPANESE_CHAR_RE.search(line) or len(line) > MAX_TRANSLATION_CHARS:
         return None
-    if _CHINESE_MARKER_RE.search(line) or has_chinese_grammar(line):
+    # Judge kana on the raw reply: 数据→データ adds kana to a Chinese sentence.
+    if _CHINESE_MARKER_RE.search(line) or has_chinese_grammar(line, kana_source=raw):
         return None
     if not _KANA_RE.search(line) and len(_CJK_RE.findall(line)) > 8:
         return None
     if _LOWERCASE_WORD_RE.search(line) or has_emoji(line):
+        return None
+    leftover = non_japanese_kanji(line)
+    if leftover or not is_readable_japanese(line):
+        logger.info(
+            "Rejected translation %r (%s); keeping the English line.",
+            line, f"non-Japanese kanji {leftover}" if leftover else "unreadable kanji",
+        )
         return None
     return line
 

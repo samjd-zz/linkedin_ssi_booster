@@ -184,15 +184,32 @@ def _get_sudachi_dictionary() -> Optional[SudachiDictionary]:
         return None
 
 
-def _warn_unreadable(text: str) -> None:
-    characters = sorted({f"U+{ord(char):04X}" for char in text if _CJK_CHAR_RE.fullmatch(char)})
+_WARNED_UNREADABLE_LINES: set[str] = set()
+
+
+def _warn_unreadable(text: str, line: str = "") -> None:
+    """Log one warning per lyric line, naming the characters and the line."""
+    line = (line or text).strip()
+    if line in _WARNED_UNREADABLE_LINES:
+        return
+    _WARNED_UNREADABLE_LINES.add(line)
+    characters = sorted({char for char in text if _CJK_CHAR_RE.fullmatch(char)})
     logger.warning(
-        "Unreadable Japanese character(s) %s; pronunciation cue requires review.",
-        ", ".join(characters) or "(unknown)",
+        "Unreadable Japanese character(s) %s in lyric line %r; pronunciation cue requires review.",
+        ", ".join(f"U+{ord(char):04X} ({char})" for char in characters) or "(unknown)",
+        line,
     )
 
 
-def _pykakasi_reading(text: str, kakasi: Any) -> str:
+def is_readable_japanese(text: str) -> bool:
+    """Quietly report whether pykakasi can read every Japanese character."""
+    kakasi = _get_kakasi()
+    if kakasi is None:
+        return True
+    return bool(_pykakasi_reading(text, kakasi, warn=False)) or not _JAPANESE_CHAR_RE.search(text)
+
+
+def _pykakasi_reading(text: str, kakasi: Any, line: str = "", warn: bool = True) -> str:
     try:
         chunks = kakasi.convert(text)
     except (TypeError, ValueError, UnicodeError) as exc:
@@ -210,7 +227,8 @@ def _pykakasi_reading(text: str, kakasi: Any) -> str:
         and not chunk.get("hepburn")
     )
     if unreadable or source_chars != converted_chars:
-        _warn_unreadable(unreadable or source_chars)
+        if warn:
+            _warn_unreadable(unreadable or source_chars, line or text)
         return ""
     words = [str(chunk["hepburn"]) for chunk in chunks if chunk.get("hepburn")]
     return re.sub(r"\s+([,.!?])", r"\1", " ".join(words)).strip()
@@ -252,7 +270,7 @@ def _generate_hepburn_romaji(japanese_text: str) -> str:
 
         reading = morpheme.reading_form()
         if _CJK_CHAR_RE.search(reading):
-            _warn_unreadable(reading)
+            _warn_unreadable(reading, japanese_text)
             return ""
         pos = morpheme.part_of_speech()
         if pos[0] == "助詞" and surface in _PARTICLE_ROMAJI:
@@ -271,9 +289,9 @@ def _generate_hepburn_romaji(japanese_text: str) -> str:
         if not is_reading:
             words.append(text)
             continue
-        romanized = _pykakasi_reading(text, kakasi)
+        romanized = _pykakasi_reading(text, kakasi, line=japanese_text)
         if not romanized:
-            _warn_unreadable(text)
+            _warn_unreadable(text, japanese_text)
             return ""
         words.append(romanized.replace(" ", ""))
 

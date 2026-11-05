@@ -94,6 +94,17 @@ def _reset_ollama_service_cache():
         pass
 
 
+@pytest.fixture(autouse=True)
+def _reset_unreadable_warning_cache():
+    """Clear the once-per-line unreadable-kanji warning cache between tests."""
+    yield
+    try:
+        from services.rei_toei import _lyric_romaji
+        _lyric_romaji._WARNED_UNREADABLE_LINES.clear()
+    except ImportError:
+        pass
+
+
 @pytest.fixture()
 def avatar_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Create a temp avatar data dir and point AVATAR_DATA_DIR at it.

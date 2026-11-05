@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from services.rei_toei._lyric_romaji import (
     _ENGLISH_CHAR_RE,
@@ -25,16 +25,25 @@ _INLINE_GLOSS_RE = re.compile(
 )
 # "由X重塑" is Chinese "reshaped by X"; Japanese puts the agent first: "Xで再構築".
 _CHINESE_BY_RESHAPE_RE = re.compile(r"(?<![理自経])由(?P<agent>[^\s、。，,]+?)重塑")
-# Traditional/Taiwanese forms; longer keys first so 數據 wins over 數.
+# Traditional/simplified words, longer keys first so 數據 wins over 數; whole
+# words also run before the per-character simplified fallback below.
 _CHINESE_PHRASE_REPLACEMENTS = {
     # Chinese "在空中" (in the air) has no verb in Japanese; "空に舞う" does.
     "在空中": "が空に舞う",
     "數據": "データ",
+    "数据": "データ",
     "資料庫": "データベース",
     "網絡": "ネットワーク",
     "網路": "ネットワーク",
+    "网络": "ネットワーク",
     "連接": "接続",
+    "连接": "接続",
     "系統": "システム",
+    "系统": "システム",
+    "和谐": "調和",
+    "梦想": "夢",
+    "信息": "情報",
+    "重组": "再構成",
     "資訊": "情報",
     "訊號": "信号",
     "程式": "プログラム",
@@ -44,6 +53,20 @@ _CHINESE_PHRASE_REPLACEMENTS = {
     "體": "体",
     "據": "拠",
 }
+# Simplified-Chinese characters the translator leaks into otherwise Japanese
+# lines (ネオンの脉动が辉く); each maps to its Japanese shinjitai form.
+_SIMPLIFIED_TO_JAPANESE = str.maketrans({
+    "动": "動", "脉": "脈", "辉": "輝", "发": "発", "时": "時", "对": "対", "说": "説",
+    "电": "電", "脑": "脳", "进": "進", "运": "運", "闪": "閃", "爱": "愛", "环": "環",
+    "线": "線", "终": "終", "结": "結", "构": "構", "变": "変", "换": "換", "转": "転",
+    "开": "開", "关": "関", "门": "門", "间": "間", "题": "題", "记": "記", "忆": "憶",
+    "见": "見", "觉": "覚", "视": "視", "观": "観", "现": "現", "实": "実", "风": "風",
+    "飞": "飛", "乐": "楽", "归": "帰", "组": "組", "织": "織", "经": "経", "络": "絡",
+    "传": "伝", "层": "層", "级": "級", "长": "長", "东": "東", "读": "読", "语": "語",
+    "话": "話", "认": "認", "识": "識", "战": "戦", "连": "連", "统": "統", "响": "響",
+    "满": "満", "锁": "鎖", "扩": "拡", "击": "撃",
+})
+_CJK_IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\U00020000-\U0002fa1f]")
 # Chinese-only grammar in a kana-free line: locative 在, aspect 了, and
 # simplified pronouns/particles. Japanese compounds such as 存在, 現在, 完了
 # and 了解 are excluded.
@@ -230,12 +253,27 @@ def replace_chinese_phrasing(text: str) -> str:
     cleaned = _CHINESE_BY_RESHAPE_RE.sub(r"\g<agent>で再構築", text)
     for old, new in _CHINESE_PHRASE_REPLACEMENTS.items():
         cleaned = cleaned.replace(old, new)
-    return cleaned
+    return cleaned.translate(_SIMPLIFIED_TO_JAPANESE)
 
 
-def has_chinese_grammar(line: str) -> bool:
-    """True for a kana-free line that uses Chinese grammar words such as 在 or 了."""
-    return not _KANA_RE.search(line) and bool(_CHINESE_GRAMMAR_RE.search(line))
+def non_japanese_kanji(line: str) -> str:
+    """Return ideographs outside the Japanese (Shift-JIS) set, e.g. simplified 动."""
+    found = []
+    for char in _CJK_IDEOGRAPH_RE.findall(line):
+        try:
+            char.encode("cp932")
+        except UnicodeEncodeError:
+            found.append(char)
+    return "".join(dict.fromkeys(found))
+
+
+def has_chinese_grammar(line: str, kana_source: Optional[str] = None) -> bool:
+    """True for a kana-free line that uses Chinese grammar words such as 在 or 了.
+
+    ``kana_source`` judges kana on the raw text when repairs (数据→データ) added it.
+    """
+    source = line if kana_source is None else kana_source
+    return not _KANA_RE.search(source) and bool(_CHINESE_GRAMMAR_RE.search(line))
 
 
 def _split_gloss_line(line: str) -> List[str]:
