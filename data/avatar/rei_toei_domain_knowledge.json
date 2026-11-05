@@ -301,6 +301,16 @@
     }
   },
   "bpm_and_mood": {
+    "lyric_density_to_bpm": {
+      "description": "The concept BPM is picked before lyrics exist. After composition, the median syllables per sung line (Japanese mora x japanese_mora_weight) raises the tempo: base_bpm at base_syllables, plus bpm_per_syllable for each extra syllable, capped at max_bpm. Tempo is never lowered. Long syllable-dense lines sounded cramped at 145 BPM and right at 170.",
+      "base_bpm": 145,
+      "base_syllables": 9,
+      "bpm_per_syllable": 6.25,
+      "max_bpm": 175,
+      "japanese_mora_weight": 0.6,
+      "dense_syllables": 12,
+      "sparse_syllables": 8
+    },
     "bpm_ranges": {
       "120-130": "Subterranean ambient, dark neon drifting",
       "130-140": "The golden ratio of cybercore and industrial techno",

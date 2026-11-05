@@ -89,8 +89,13 @@ def _build_rich_suno_tags(
     concept: SongConcept,
     domain_knowledge: ReiDomainKnowledge,
     template_key: str,
+    delivery: str = "",
 ) -> str:
-    """Build richer, bounded Suno style tags from templates + concept + production hints."""
+    """Build richer, bounded Suno style tags from templates + concept + production hints.
+
+    ``delivery`` is a vocal-phrasing descriptor fitted to the finished lyrics; it
+    sits right after the BPM tag so the item cap never drops it.
+    """
     templates = domain_knowledge.suno_prompt_templates or {}
     template_value = templates.get(template_key, templates.get("industrial_techno_template", ""))
     try:
@@ -101,10 +106,14 @@ def _build_rich_suno_tags(
     descriptors: List[str] = []
     descriptors.extend(_split_csv_descriptors(rendered_template))
     descriptors.append(f"{concept.bpm} bpm")
+    if delivery:
+        descriptors.append(delivery)
     descriptors.append(concept.mood.replace("_", " "))
     descriptors.extend(concept.genre_tags[:4])
 
-    if concept.bpm >= 150:
+    if concept.bpm >= 165:
+        descriptors.append("breakneck hyperspeed vocaloid energy")
+    elif concept.bpm >= 150:
         descriptors.append("relentless peak-energy drive")
     elif concept.bpm >= 142:
         descriptors.append("high-velocity club propulsion")

@@ -194,6 +194,12 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
   "bpm_and_mood": {
     "mood_to_bpm": {
       "playful_technical": [145, 155]
+    },
+    "lyric_density_to_bpm": {
+      "base_bpm": 145,
+      "base_syllables": 9,
+      "bpm_per_syllable": 6.25,
+      "max_bpm": 175
     }
   },
   "synth_selection_guidelines": {
@@ -294,6 +300,12 @@ The app defaults to `V6_MINI`. An explicit `SUNO_MODEL` environment variable ove
 ```
 
 ### Example: Operational Constraints (Current Implementation)
+
+### Lyric-Fitted Tempo
+
+The concept BPM is chosen before any lyric exists, so Suno assembly treats it as a starting point. After the lyrics are finished, Rei measures the median syllables per sung line (Japanese mora count at `japanese_mora_weight`, default 0.6; labels, Romaji cues, and parenthesized vocalizations are skipped). The tempo floor is `base_bpm` at `base_syllables`, plus `bpm_per_syllable` for each extra syllable, capped at `max_bpm`. The BPM is only ever raised. With the defaults, 13-syllable lines lift a 145 BPM concept to 170, while short hook lines keep it.
+
+Line density also adds a vocal-delivery style tag right after the BPM tag: `rapid-fire syllabic vocaloid delivery` at `dense_syllables` (12) or more, `spacious punchy hook phrasing` at `sparse_syllables` (8) or fewer. Tempos of 165 BPM and up use `breakneck hyperspeed vocaloid energy`. The CLI, console, and saved metadata show the fitted BPM; metadata also keeps `concept_bpm`, `median_line_syllables`, and `vocal_delivery`.
 
 Runtime constraints are primarily configured via environment variables (for example, `REI_TOEI_DEFAULT_BPM`, `REI_TOEI_DEFAULT_GENRE`, `REI_TOEI_STRUDEL_DEFAULT_BARS`) rather than a `technical_constraints` object in `rei_toei_domain_knowledge.json`.
 

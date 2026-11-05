@@ -54,6 +54,7 @@ from services.rei_toei._song_structure import (
     BACKFILLABLE_SECTIONS,
     verse_two_repeats_verse_one,
 )
+from services.rei_toei._song_tempo import fit_tempo_to_lyrics
 from services.rei_toei._song_tidy import tidy_song_sections
 from services.rei_toei._suno_blocks import (
     _append_normalized_section as _append_normalized_section,
@@ -395,23 +396,42 @@ def assemble_suno_prompt(
 
     template_key = _select_suno_template_key(concept)
 
-    # Build richer Suno tags string (genre, BPM, texture, production hints)
-    suno_tags = _build_rich_suno_tags(concept, domain_knowledge, template_key)
-    
-    # Check style tag character boundaries (Suno style tags can truncate if overlong)
-    if len(suno_tags) > 220:
-        logger.warning(f"Suno style tags string length ({len(suno_tags)}) is high. Potential truncation risk.")
-
     lyric_blocks = _build_suno_lyric_blocks(concept, lyrics)
 
     # Join structural blocks cleanly with double line breaks
     formatted_lyrics = ensure_suno_quality("\n\n".join(lyric_blocks))
+
+    # The concept BPM predates the lyrics; let the finished lines set the tempo.
+    # concept.bpm is updated so callers display the BPM the tags carry.
+    tempo = fit_tempo_to_lyrics(
+        concept.bpm,
+        formatted_lyrics,
+        (domain_knowledge.bpm_and_mood or {}).get("lyric_density_to_bpm"),
+    )
+    if tempo.raised:
+        logger.info(
+            "Raised tempo %d -> %d BPM for %.1f median syllables per sung line.",
+            tempo.concept_bpm, tempo.bpm, tempo.median_syllables,
+        )
+        concept.bpm = tempo.bpm
+
+    # Build richer Suno tags string (genre, BPM, delivery, texture, production hints)
+    suno_tags = _build_rich_suno_tags(
+        concept, domain_knowledge, template_key, delivery=tempo.delivery
+    )
+
+    # Check style tag character boundaries (Suno style tags can truncate if overlong)
+    if len(suno_tags) > 220:
+        logger.warning(f"Suno style tags string length ({len(suno_tags)}) is high. Potential truncation risk.")
     
     # Create metadata for tracking
     metadata = {
         "theme": concept.theme,
         "mood": concept.mood,
         "bpm": concept.bpm,
+        "concept_bpm": tempo.concept_bpm,
+        "median_line_syllables": tempo.median_syllables,
+        "vocal_delivery": tempo.delivery,
         "genre_tags": concept.genre_tags,
         "narrative_arc": concept.narrative_arc,
         "suno_description_prompt": _build_suno_description_prompt(concept),
