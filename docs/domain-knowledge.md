@@ -22,6 +22,24 @@ Previously, these claims would be flagged by the truth gate unless they appeared
 
 This source serves as a structured knowledge graph that maps the intricate connections between modern AI and machine learning, software engineering, and data engineering. It organizes technical information into a formal schema consisting of distinct domains, verified factual statements, and the interconnected relationships that bind them together. The primary focus of the text is the architectural synergy within AI pipelines, specifically highlighting how Retrieval-Augmented Generation (RAG) utilizes tools like vector search and Large Language Models to produce grounded outputs. By documenting the dependencies between programming languages, frameworks, and emerging technologies like agentic systems, the source provides a comprehensive blueprint for understanding how contemporary computing components function as a unified ecosystem.
 
+## SSI Booster Technology and Project Context
+
+The LinkedIn SSI Booster applies these ideas in a local-first content workflow. The knowledge file includes a small, explicitly `project_specific` profile so relevant implementation and technology details can be retrieved. Personal career history and claims still belong in the persona/project graph; general technical principles should remain scoped as `general`.
+
+| Area | Technologies | Role in the project |
+|---|---|---|
+| Local generation | Ollama | Runs the main language models locally for grounded generation and summarization. |
+| Retrieval and knowledge graph | BM25, Model2Vec, NetworkX | Retrieves lexical evidence, adds lightweight semantic classification/reranking, and links persona, domain, extracted, and narrative facts in an in-memory graph. |
+| NLP and Japanese | spaCy, `en_core_web_md`, `ja_core_news_md`, SudachiPy, pykakasi | Supports English/Japanese language processing, extraction, semantic similarity, contextual Japanese analysis, and Hepburn Romaji cues. |
+| Grounding and validation | Truth Gate, Derivative of Truth (DoT), Probabilistic Logic Networks (PLN) | Scores evidence and filters unsupported claims after generation; these checks complement the LLM rather than replacing source verification. |
+| Curation and publishing | `feedparser`, `trafilatura`, Buffer API/GraphQL, optional Buffer MCP | Fetches and extracts RSS article content, then routes content to Buffer for review or scheduling. |
+| Learning and persistence | JSON/JSONL, optional PostgreSQL with SQLAlchemy | Stores persona and learning data locally; optional database integration adds queryable persistence while retaining file-based data paths. |
+| Optional evidence and media | Katzilla, FLUX.1, Wyoming Piper, Strudel MCP | Adds cited external evidence or local image, voice, and music workflows when enabled. |
+
+The content workflow balances LinkedIn's four SSI components: **establishing a professional brand**, **finding the right people**, **engaging with insights**, and **building relationships**. Article ranking and selection feedback help vary the content mix; Buffer remains the publishing and scheduling integration.
+
+This stack is project context, not a claim that every technology is appropriate for every system. When adding domain facts, describe broadly applicable behavior separately from the Booster's specific implementation and mark optional integrations as optional.
+
 ## Schema
 
 ### Visual Structure
@@ -110,7 +128,7 @@ The domain knowledge graph uses a JSON structure similar to the persona graph:
 - `statement`: The factual claim or knowledge statement
 - `tags`: Array of relevant keywords/topics (used for retrieval)
 - `confidence`: Confidence level (`high`, `medium`, `low`)
-- `scope`: Scope of applicability (typically `general`)
+- `scope`: Scope of applicability (`general` or, for explicitly labeled implementation details, `project_specific`)
 
 **Relationships** (optional):
 
@@ -241,7 +259,7 @@ This means a sentence like "kNN is commonly used in RAG pipelines" will pass the
 1. **Be truthful**: Only add facts you're confident are accurate and widely accepted
 2. **Be specific**: Precise statements are more useful than vague generalizations
 3. **Use rich tags**: Good tags improve retrieval (use synonyms, abbreviations, full names)
-4. **Avoid project details**: Save project-specific claims for the persona graph
+4. **Separate scopes**: Save personal project history and outcomes for the persona graph; label any deliberately included implementation facts `project_specific`
 
 ### Organizing Domains
 
@@ -373,9 +391,9 @@ python -c "import json; json.load(open('data/avatar/domain_knowledge.json'))"
 **Debug**:
 Check logs for "Truth gate using X project facts + Y domain facts" to confirm domain facts are loaded.
 
-## Advanced: Version-Specific Knowledge
+## Advanced: Domain Knowledge Packs
 
-You can maintain different domain knowledge files for different contexts:
+You can keep related knowledge in separate files:
 
 ```bash
 # Default (general knowledge)
@@ -392,7 +410,7 @@ data/avatar/domain_knowledge_romaji.json
 data/avatar/domain_knowledge_japanese_language.json
 ```
 
-The system currently loads only `domain_knowledge.json`, but you can swap files as needed.
+The standard avatar loader reads `domain_knowledge.json` and automatically merges sibling files matching `domain_knowledge_*.json`. The main file contains general facts plus explicitly `project_specific` SSI Booster technology facts. Rei Toei's `rei_toei_domain_knowledge.json` is loaded separately and is not one of these Sam domain packs.
 
 ### Japanese-Language Teaching Pack
 
