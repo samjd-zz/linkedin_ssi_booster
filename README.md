@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1567%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1567 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1591%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1591 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-74%25-yellow.svg" alt="Source coverage: 74%, measured November 4, 2026"></a>
 </p>
 
@@ -416,7 +416,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,569 collected; 1,567 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **74%**. Includes 25 console/CLI lyric-parity cases, 61 stage-cue cleanup cases, 5 lyric JSON-repair cases, 8 Suno best-practice cases, 19 word-echo ad-lib cleanup cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,593 collected; 1,591 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **74%**. Includes 25 console/CLI lyric-parity cases, 61 stage-cue cleanup cases, 5 lyric JSON-repair cases, 8 Suno best-practice cases, 19 word-echo ad-lib cleanup cases, 24 required-section gate cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

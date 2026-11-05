@@ -49,6 +49,9 @@ from services.rei_toei._song_structure import (
     bridge_is_underdeveloped,
     MAX_BORROWED_LINES,
     MIN_BRIDGE_SUNG_LINES,
+    missing_required_sections,
+    missing_sections_feedback,
+    BACKFILLABLE_SECTIONS,
     verse_two_repeats_verse_one,
 )
 from services.rei_toei._song_tidy import tidy_song_sections
@@ -143,8 +146,8 @@ def compose_lyrics(
         if generation_language in {"japanese", "bilingual"}:
             max_attempts = 5
         else:
-            # English-first bilingual songs still get one structural retry.
-            max_attempts = 2 if translate_mode else 1
+            # English songs get one structural retry so a missing section is rewritten.
+            max_attempts = 2
         response_data: Dict[str, Any] = {}
         last_valid_response_data: Dict[str, Any] = {}
         structure_feedback = ""
@@ -208,13 +211,25 @@ def compose_lyrics(
                         break
 
             # 1. Structural Validation
-            required_fields = ["verse_1", "chorus", "verse_2", "bridge"]
-            missing_fields = [f for f in required_fields if f not in response_data]
+            # Judge sections as they will ship: tidying can empty a cue-only section.
+            gate_view = dict(response_data)
+            tidy_song_sections(gate_view)
+            missing_fields = missing_required_sections(gate_view)
             if missing_fields:
                 if attempt < max_attempts:
                     logger.warning("Missing required fields %s on attempt %s. Retrying.", missing_fields, attempt)
+                    structure_feedback = missing_sections_feedback(missing_fields)
                     continue
-                raise ValueError(f"Missing required fields after retry: {missing_fields}")
+                if not set(missing_fields) <= BACKFILLABLE_SECTIONS:
+                    raise ValueError(f"Missing required fields after retry: {missing_fields}")
+                fallback = build_fallback_lyrics(concept, lyric_language)
+                for field in missing_fields:
+                    key = "intro" if field == "intro_verse" else field
+                    response_data[key] = getattr(fallback, key)
+                logger.warning(
+                    "Sections %s still missing after %s attempt(s); filled from fallback.",
+                    missing_fields, attempt,
+                )
 
             # 2. Schema Leakage Check
             if _has_prompt_schema_leakage(response_data):

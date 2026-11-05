@@ -456,6 +456,7 @@ def test_composition_and_suno_assembly_repair_the_preview(monkeypatch):
         "verse_2": "SQL\nで探査\n[SQL de saisaku] [Exploring with SQL]\nShe checks the map",
         "bridge": "We find our way\nThe window opens",
         "drop": "then '(bass drop)',",
+        "solo": "[Glitch Synth Solo]",
         "outro": "then '4 lines of atmospheric resolution and fade text',\nThe night fades",
     }
     ollama = MagicMock()

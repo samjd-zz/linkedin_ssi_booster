@@ -228,6 +228,7 @@ Genre tags: {', '.join(concept.genre_tags)}
 Narrative arc: {concept.narrative_arc}{metaphor_context}{sam_context}
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown outside the JSON structure). 
+Every field below is required: never omit a field or leave it empty. The intro needs sung [Intro Verse] lines, the drop needs sung lines after [Heavy Bass Drop], the solo needs instrumental directions, and the outro needs closing lines.
 Each field should contain the complete lyrics for that section, including any section markers:
 
 {{

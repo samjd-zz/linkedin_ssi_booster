@@ -1005,6 +1005,9 @@ def test_compose_lyrics_with_ollama(mock_domain_knowledge_data):
         "chorus": "Tokio runtime, execute the protocol",
         "verse_2": "Futures await in digital streams\\nConcurrent patterns weave the seams",
         "bridge": "Ownership verified, no race conditions",
+        "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+        "drop": "[Heavy Bass Drop]\nJump the gap",
+        "solo": "[Glitch Synth Solo]",
         "breakdown": "[Compile—time—safety]",
         "outro": "Signal complete"
     })
@@ -1060,6 +1063,10 @@ def test_compose_lyrics_parses_fenced_json_with_trailing_comma(mock_domain_knowl
   "chorus": "Drain the pipeline now",
   "verse_2": "Backpressure melts into signal rain",
   "bridge": "State machine pivots on the break",
+  "intro": "(Ahh ahh ahh)\\nThe signal hums awake",
+  "drop": "[Heavy Bass Drop]\\nJump the gap",
+  "solo": "[Glitch Synth Solo]",
+  "outro": "The night fades",
   // optional debug note
 }
 ```"""
@@ -1287,6 +1294,10 @@ def test_compose_lyrics_rejects_romaji_only_bilingual_response(
             "chorus": "Break the circuit now",
             "verse_2": "Kokoro to shinshin no aida ni",
             "bridge": "Signal wakes inside the core",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         }
     )
     with patch.object(OllamaService, "_chat", return_value=romaji_response):
@@ -1340,6 +1351,10 @@ def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
             "chorus": "BREAK THE CIRCUIT NOW",
             "verse_2": "The buffer heartbeat starts to rise",
             "bridge": "We find a voice inside the noise",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         }
     )
     with patch.object(OllamaService, "_chat", return_value=english_response) as mock_chat:
@@ -1481,6 +1496,10 @@ def test_compose_lyrics_retries_when_romaji_cues_are_sparse(
             "chorus": "信号、信号、無限ループ\nSignal, signal, infinite loop",
             "verse_2": "この境界線上で、パターンを辿る\nFiltering noise\n時間軸を超えて、ノイズを濾過する\nOverload",
             "bridge": "君の意識は、デジタルな奔流になる\nReconnect in the next cycle",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         },
         ensure_ascii=False,
     )
@@ -1490,6 +1509,10 @@ def test_compose_lyrics_retries_when_romaji_cues_are_sparse(
             "chorus": "信号、信号、無限ループ\nSignal, signal, infinite loop",
             "verse_2": "この境界線上で、パターンを辿る\nFiltering noise\n時間軸を超えて、ノイズを濾過する\n[Jikanjiku o koete, noizu o roka suru] [Filtering noise beyond the timeline]\nOverload",
             "bridge": "君の意識は、デジタルな奔流になる\nReconnect in the next cycle",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         },
         ensure_ascii=False,
     )
@@ -1548,6 +1571,10 @@ def test_compose_lyrics_keeps_last_valid_draft_when_repair_json_is_malformed(
             "chorus": "流れろ、流れろ、テラフロー\nRiver pulse, never stop",
             "verse_2": "境界線が泥に溶ける\nWe rewrite the channel\n記憶の層を越えていく\nSignal returns",
             "bridge": "次の岸へ接続する\nAcross the divide",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         },
         ensure_ascii=False,
     )
@@ -1616,6 +1643,10 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
             "chorus": "信号を追いかける\n[Shingou wo oikakeru] [Chasing the signal]",
             "verse_2": "ノイズが光になる\n未来を再起動する",
             "bridge": "次のステップへ\n未来へ進む",
+            "intro": "(Ahh ahh ahh)\n夜が目を覚ます",
+            "drop": "[Heavy Bass Drop]\n境界を飛び越える",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "光が静かに消える",
         },
         ensure_ascii=False,
     )

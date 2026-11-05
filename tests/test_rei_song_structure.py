@@ -165,7 +165,8 @@ def test_repeated_verse_two_is_retried_with_feedback(persona, domain, monkeypatc
         "chorus": "遅延は消える\nHold the world",
         "verse_2": "信号が飛び散る\nA candle waits\nThe hallway hums",
         "bridge": "We find our way\nThe window opens",
-        "drop": "(bass drop)",
+        "drop": "(bass drop)\nJump the gap",
+        "solo": "[Glitch Synth Solo]",
         "outro": "The night fades",
     }
     developed = dict(repeated, verse_2="新しい朝が来る\nThe ashes cool\nShe hears a new voice")
@@ -183,13 +184,13 @@ def test_repeated_verse_two_is_retried_with_feedback(persona, domain, monkeypatc
     assert "新しい朝が来る" in lyrics.verse_2
 
 
-def test_single_attempt_language_keeps_draft_when_verse_repeats(persona, domain, caplog) -> None:
+def test_english_keeps_draft_when_verse_still_repeats_after_retry(persona, domain, caplog) -> None:
     ollama = MagicMock()
     ollama._chat.return_value = json.dumps(_english_response(VERSE_1))
 
     lyrics = compose_lyrics(_concept("english"), persona, domain, ollama=ollama)
 
-    assert ollama._chat.call_count == 1
+    assert ollama._chat.call_count == 2
     assert "prototype hums" in lyrics.verse_2
     assert "Verse 2 still repeats Verse 1" in caplog.text
 
@@ -244,12 +245,13 @@ def test_borrowed_lines_names_copies_but_allows_chorus_reprise() -> None:
 def test_bridge_copying_chorus_is_retried_with_named_lines(persona, domain, monkeypatch) -> None:
     monkeypatch.setenv("REI_JAPANESE_LYRIC_PROBABILITY", "0.4")
     borrowed = {
-        "intro": "(Ahh ahh ahh)",
+        "intro": "(Ahh ahh ahh)\nThe room is waiting",
         "verse_1": "信号が飛び散る\nA candle waits\nThe hallway hums",
         "chorus": "種が芽吹く\nBlossom from the seed\nWe thrive",
         "verse_2": "新しい朝が来る\nThe ashes cool\nShe hears a new voice",
         "bridge": "種が芽吹く\nBlossom from the seed\nWe thrive\nThe walls fall",
-        "drop": "(bass drop)",
+        "drop": "(bass drop)\nJump the gap",
+        "solo": "[Glitch Synth Solo]",
         "outro": "The night fades",
     }
     fresh = dict(borrowed, bridge="壁が崩れる\nThe walls fall open\nI see the sky\nEvery error was a door")
