@@ -103,6 +103,8 @@ def _add_bilingual_rescue_hooks(
     section_payload: Dict[str, Any],
     concept: SongConcept,
     target_japanese_ratio: float,
+    *,
+    field: str = "bridge",
 ) -> None:
     """Keep a bilingual draft when the small model omits Japanese script."""
     title = concept.title.strip() or "signal"
@@ -121,8 +123,8 @@ def _add_bilingual_rescue_hooks(
     for hook in hooks:
         if _bilingual_mix_ok(section_payload, target_japanese_ratio)[0]:
             break
-        section_payload["bridge"] = (
-            f"{section_payload.get('bridge', '').rstrip()}\n{hook}"
+        section_payload[field] = (
+            f"{section_payload.get(field, '').rstrip()}\n{hook}"
         )
 
 

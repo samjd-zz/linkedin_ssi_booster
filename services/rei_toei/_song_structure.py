@@ -6,6 +6,8 @@ import difflib
 import re
 from typing import Any, Dict, List, Tuple
 
+from services.rei_toei._stage_policy import StagePolicy, load_stage_policy
+
 VERSE_REPEAT_THRESHOLD = 0.5
 NEAR_DUPLICATE_RATIO = 0.85
 MIN_BRIDGE_SUNG_LINES = 4
@@ -88,55 +90,52 @@ def borrowed_lines_feedback(found: List[Tuple[str, str, str]]) -> str:
     )
 
 
-# Sections every lyric draft must fill before it can be accepted.
-REQUIRED_LYRIC_FIELDS = (
-    "intro", "verse_1", "chorus", "verse_2", "bridge", "drop", "solo", "outro",
-)
-# Sections that need sung lines, not just a label and cues.
-_SUNG_REQUIRED_FIELDS = frozenset({"intro", "verse_1", "chorus", "verse_2", "bridge", "drop", "outro"})
 # Framing sections a final draft may borrow from the fallback song; the
 # verses, chorus, and bridge must come from the model.
-BACKFILLABLE_SECTIONS = frozenset({"intro", "intro_verse", "drop", "solo", "outro"})
-_SECTION_LABEL_RE = re.compile(
-    r"^\[\s*(?:instrumental\s+build|intro(?:\s+verse)?|verse\s*\d*|pre-?\s*chorus|"
-    r"chorus|bridge|drop|solo|outro)\s*\]$",
-    re.IGNORECASE,
-)
+BACKFILLABLE_SECTIONS = frozenset({
+    "intro", "intro_verse", "pre_chorus", "drop", "solo", "breakdown", "outro",
+})
 
 
-def missing_required_sections(payload: Dict[str, Any]) -> List[str]:
-    """Name required sections that are absent, blank, or hold only labels/cues.
-
-    The intro must carry a sung Intro Verse after its vocalization primer;
-    Solo only needs one instrumental direction beyond its label.
-    """
+def missing_required_sections(
+    payload: Dict[str, Any], policy: StagePolicy | None = None,
+) -> List[str]:
+    """Name missing content according to the selected domain-knowledge profile."""
+    policy = policy or load_stage_policy()
     missing: List[str] = []
-    for field in REQUIRED_LYRIC_FIELDS:
+    headers = policy.header_pattern()
+    for rule in policy.sections:
+        if not rule.required:
+            continue
+        field = rule.field
         value = payload.get(field)
-        if field in _SUNG_REQUIRED_FIELDS:
+        if rule.content == "sung":
             present = bool(sung_line_signatures(value))
         else:
-            present = isinstance(value, str) and any(
-                line.strip() and not _SECTION_LABEL_RE.match(line.strip())
-                for line in value.splitlines()
-            )
+            present = isinstance(value, str) and bool(headers.sub("", value).strip())
         if not present:
-            missing.append("intro_verse" if field == "intro" and isinstance(value, str) and value.strip() else field)
+            missing.append(
+                "intro_verse"
+                if field == "intro" and policy.intro_verse_label and isinstance(value, str) and value.strip()
+                else field
+            )
     return missing
 
 
-_MISSING_SECTION_HINTS = {
-    "intro": "intro: [Instrumental Build], (Ahh ahh ahh), then [Intro Verse] with 2-4 sung lines",
-    "intro_verse": "intro: add [Intro Verse] with 2-4 sung lines after (Ahh ahh ahh)",
-    "drop": "drop: [Drop], [Heavy Bass Drop], then 4-5 sung lines",
-    "solo": "solo: [Solo] followed by 3-4 bracketed instrumental directions",
-    "outro": "outro: [Outro] followed by 4 closing lines",
-}
-
-
-def missing_sections_feedback(missing: List[str]) -> str:
+def missing_sections_feedback(missing: List[str], policy: StagePolicy | None = None) -> str:
     """Retry instruction naming each empty or absent required section."""
-    hints = [f"- {_MISSING_SECTION_HINTS.get(field, f'{field}: write this section in full')}" for field in missing]
+    policy = policy or load_stage_policy()
+    hints = []
+    for field in missing:
+        rule = policy.rule("intro" if field == "intro_verse" else field)
+        if rule is None:
+            raise ValueError(f"Unknown missing section for stage profile {policy.name}: {field}")
+        hint = rule.guidance()
+        if rule.field == "intro":
+            hint += f"; primer {policy.intro_primer or 'not required'}"
+            if policy.intro_verse_label:
+                hint += f"; [{policy.intro_verse_label}] with sung opening lines"
+        hints.append(f"- {rule.field}: {hint}")
     return (
         "\n\nREVISION REQUIRED: The previous draft omitted or left empty these required "
         "fields. Return the complete JSON with every field filled:\n" + "\n".join(hints)

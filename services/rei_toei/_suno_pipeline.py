@@ -56,6 +56,7 @@ from services.rei_toei._song_structure import (
 )
 from services.rei_toei._song_tempo import fit_tempo_to_lyrics
 from services.rei_toei._song_tidy import tidy_song_sections
+from services.rei_toei._stage_policy import load_stage_policy
 from services.rei_toei._suno_blocks import (
     _append_normalized_section as _append_normalized_section,
     _build_suno_lyric_blocks,
@@ -132,6 +133,7 @@ def compose_lyrics(
     )
     # Translate mode writes the song in English; Japanese hook lines are added after.
     generation_language = "english" if translate_mode else lyric_language
+    stage_policy = load_stage_policy(domain_knowledge.lyrical_structure)
     system_prompt, user_prompt = build_lyric_prompts(
         concept,
         persona,
@@ -167,11 +169,12 @@ def compose_lyrics(
                 # Explicit structural assignment on subsequent retries
                 attempt_user_prompt = user_prompt + (
                     f"\n\nEXPLICIT BILINGUAL STRUCTURAL ASSIGNMENT (Mandatory for attempt {attempt}):\n"
-                    "Do NOT estimate percentages or calculate line counts. Follow these exact structural rules per section:\n"
-                    "- Verses ([Verse 1], [Verse 2]): English-driven narrative. Include EXACTLY 1 Japanese line (in Kanji/Kana) per stanza.\n"
-                    "- Chorus ([Chorus]): Japanese-driven hook in Kanji/Kana, followed immediately by a concise English sung echo line.\n"
-                    "- Bridge ([Bridge]): 50/50 split alternating 1:1 between English and Japanese.\n"
-                    "- Pre-Chorus / Drop / Outro: Mixed English and Japanese for dynamic energy shifts."
+                    "Use only the enabled sung fields from the active profile: "
+                    + ", ".join(rule.field for rule in stage_policy.sections if rule.content == "sung")
+                    + ". Do not add disabled sections or lyrics to instrumental sections.\n"
+                    "- In enabled verses, use English narrative and one Japanese line (Kanji/Kana) per stanza.\n"
+                    "- If included, make the chorus a Japanese hook followed by a concise English sung echo.\n"
+                    "- If included, alternate Japanese and English in the bridge; mix both in other sung sections."
                 )
             else:
                 attempt_user_prompt = user_prompt
@@ -212,18 +215,22 @@ def compose_lyrics(
                         break
 
             # 1. Structural Validation
+            response_data = {
+                field: value for field, value in response_data.items()
+                if stage_policy.rule(field) is not None
+            }
             # Judge sections as they will ship: tidying can empty a cue-only section.
             gate_view = dict(response_data)
-            tidy_song_sections(gate_view)
-            missing_fields = missing_required_sections(gate_view)
+            tidy_song_sections(gate_view, stage_policy)
+            missing_fields = missing_required_sections(gate_view, stage_policy)
             if missing_fields:
                 if attempt < max_attempts:
                     logger.warning("Missing required fields %s on attempt %s. Retrying.", missing_fields, attempt)
-                    structure_feedback = missing_sections_feedback(missing_fields)
+                    structure_feedback = missing_sections_feedback(missing_fields, stage_policy)
                     continue
                 if not set(missing_fields) <= BACKFILLABLE_SECTIONS:
                     raise ValueError(f"Missing required fields after retry: {missing_fields}")
-                fallback = build_fallback_lyrics(concept, lyric_language)
+                fallback = build_fallback_lyrics(concept, lyric_language, stage_policy)
                 for field in missing_fields:
                     key = "intro" if field == "intro_verse" else field
                     response_data[key] = getattr(fallback, key)
@@ -246,7 +253,14 @@ def compose_lyrics(
                     continue
                 if generation_language == "bilingual":
                     logger.warning("Japanese script missing after final retry; applying rescue hooks.")
-                    _add_bilingual_rescue_hooks(response_data, concept, japanese_mix_ratio)
+                    bridge_rule = stage_policy.rule("bridge")
+                    rescue_field = (
+                        "bridge" if bridge_rule and bridge_rule.content == "sung"
+                        else next(rule.field for rule in stage_policy.sections if rule.content == "sung")
+                    )
+                    _add_bilingual_rescue_hooks(
+                        response_data, concept, japanese_mix_ratio, field=rescue_field,
+                    )
                 else:
                     raise ValueError("Japanese lyrics must contain kana or kanji; Romaji alone is invalid.")
 
@@ -288,7 +302,7 @@ def compose_lyrics(
                     structure_feedback = borrowed_lines_feedback(copied)
                     continue
                 logger.warning("Draft still reuses %d line(s) across sections; keeping it.", len(copied))
-            if bridge_is_underdeveloped(response_data):
+            if response_data.get("bridge") and bridge_is_underdeveloped(response_data):
                 logger.info(
                     "Bridge has fewer than %d sung lines; climax may be thin.",
                     MIN_BRIDGE_SUNG_LINES,
@@ -309,7 +323,7 @@ def compose_lyrics(
             logger.info(f"Lyric composition succeeded on attempt {attempt}")
             break
 
-        tidy_song_sections(response_data)
+        tidy_song_sections(response_data, stage_policy)
         if translate_mode:
             hook_summary = apply_bilingual_hooks(
                 response_data,
@@ -344,17 +358,17 @@ def compose_lyrics(
         
         # Enforce uppercase chorus processing programmatically as a safeguard
         processed_chorus = (
-            response_data["chorus"]
+            response_data.get("chorus") or ""
             if generation_language in {"japanese", "bilingual"}
-            else response_data["chorus"].upper()
+            else (response_data.get("chorus") or "").upper()
         )
         
         # Create Lyrics object
         lyrics = Lyrics(
-            verse_1=response_data["verse_1"],
+            verse_1=response_data.get("verse_1") or "",
             chorus=processed_chorus,
-            verse_2=response_data["verse_2"],
-            bridge=response_data["bridge"],
+            verse_2=response_data.get("verse_2") or "",
+            bridge=response_data.get("bridge") or "",
             evidence_ids=concept.evidence_ids,
             intro=response_data.get("intro"),
             pre_chorus=response_data.get("pre_chorus", ""),
@@ -370,7 +384,7 @@ def compose_lyrics(
     except (json.JSONDecodeError, ValueError, KeyError) as e:
         logger.error(f"Failed to parse Ollama lyrics response: {e}. Reverting to formatted fallback.")
         
-        return build_fallback_lyrics(concept, lyric_language)
+        return build_fallback_lyrics(concept, lyric_language, stage_policy)
 
 
 def assemble_suno_prompt(
@@ -396,10 +410,11 @@ def assemble_suno_prompt(
 
     template_key = _select_suno_template_key(concept)
 
-    lyric_blocks = _build_suno_lyric_blocks(concept, lyrics)
+    stage_policy = load_stage_policy(domain_knowledge.lyrical_structure)
+    lyric_blocks = _build_suno_lyric_blocks(concept, lyrics, stage_policy)
 
     # Join structural blocks cleanly with double line breaks
-    formatted_lyrics = ensure_suno_quality("\n\n".join(lyric_blocks))
+    formatted_lyrics = ensure_suno_quality("\n\n".join(lyric_blocks), stage_policy)
 
     # The concept BPM predates the lyrics; let the finished lines set the tempo.
     # concept.bpm is updated so callers display the BPM the tags carry.
@@ -436,11 +451,13 @@ def assemble_suno_prompt(
         "narrative_arc": concept.narrative_arc,
         "suno_description_prompt": _build_suno_description_prompt(concept),
         "template_used": template_key,
-        "has_intro": "[Intro Verse]" in formatted_lyrics,
-        "has_pre_chorus": lyrics.pre_chorus is not None,
-        "has_drop": "[Drop]\n[Heavy Bass Drop]" in formatted_lyrics,
-        "has_solo": "[Solo]" in formatted_lyrics,
-        "has_outro": lyrics.outro is not None,
+        "stage_cue_profile": stage_policy.name,
+        **{
+            f"has_{field}": bool(
+                (rule := stage_policy.rule(field)) and f"[{rule.label}]" in formatted_lyrics
+            )
+            for field in ("intro", "pre_chorus", "drop", "solo", "outro")
+        },
         "style_tag_count": len(_split_csv_descriptors(suno_tags)),
         "style_tags_length": len(suno_tags),
         "lyrics_char_count": len(formatted_lyrics)

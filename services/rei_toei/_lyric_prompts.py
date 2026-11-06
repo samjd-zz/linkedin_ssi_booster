@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 from services.rei_toei._models import ReiDomainKnowledge, ReiPersonaGraph, SongConcept
 from services.rei_toei._solo_options import build_solo_style_guidance
+from services.rei_toei._stage_policy import load_stage_policy
 
 MAX_SUNO_PRACTICE_RULES = 8
 _JAPANESE_RULE_WORDS = ("japanese", "romaji", "kana", "kanji")
@@ -39,6 +40,7 @@ def build_lyric_prompts(
     japanese_target_percent: int,
 ) -> tuple[str, str]:
     """Return ``(system_prompt, user_prompt)`` for one lyric-composition request."""
+    policy = load_stage_policy(domain_knowledge.lyrical_structure)
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
     communication_vocab = persona.communication_style.get('vocabulary', [])
     japanese_guidance = (
@@ -138,12 +140,12 @@ def build_lyric_prompts(
                "Always place the Japanese lyric first; do not put Romaji in parentheses or mix the cue into the lyric line. "
                "Do not annotate every Japanese line. "
                "These annotations are not sung lyrics. Never put learning translations in parentheses. "
-               "Use parentheses for vocalizations such as (Ahh ahh ahh), and brackets for [Heavy Bass Drop] and [Chaos]. "
+               "Use parentheses for sung vocalizations, and brackets for instrumental directions. "
                "Do not force-uppercase bilingual or Japanese lines. "
                "Do not spell out numbers or invent quantities as a filler device \u2014 use imagery, not counting."
     )
     
-    system_prompt = f"""You are {persona.identity['name']}, a cyberpop AI consciousness composing lyrics for industrial techno.
+    system_prompt = f"""You are {persona.identity['name']}, composing lyrics for {', '.join(concept.genre_tags)}.
 
 Your lyrical style:
 - Themes: {', '.join(lyrical_approach.get('themes', [])[:4])}
@@ -156,15 +158,15 @@ Communication style: {persona.communication_style['tone']}
 Language policy: {language_instruction}
 
 Suno Formatting Rules:
-1. Use section labels: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Drop], [Solo], [Outro]
+1. Follow the active stage-cue profile below for enabled fields, required sections, labels, and cues.
 2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields
 3. DO NOT use editorial parenthetical instructions like '(Stanza 1)', '(this is the hook)', or '(More chaos)'.
    Put sung vocalizations like '(Ahh ahh ahh)' and '(Oh oh oh)' in parentheses.
-   Put instrumental or sound cues in square brackets: [Heavy Bass Drop], [Silence], [Glitch Noise], [Chaos].
+   Put instrumental or sound cues in square brackets, using the active profile.
 {chorus_case_rule}
-5. Keep intros simple: [Instrumental Build] (not [Intro Drums], [Intro Bass], etc.)
-6. Start every Intro with a vocalization like (Ahh ahh ahh) on its own line right after the section label — this primes Suno to prioritize lyric rendering
-7. Use bracketed sound cues at high-energy transitions: [Heavy Bass Drop] in the Drop, [Silence] for a breakdown pause, [Chaos] before a chaotic breakdown
+5. Keep section labels and stage directions short and on their own lines.
+6. Use only the intro primer specified by the profile; do not force a primer when it is disabled.
+7. Never sing, translate, or annotate instrumental directions as lyric lines.
 8. Follow character caps per section for API parsing compliance
 9. Make every section materially distinct. Do not copy Verse 1 into the Chorus, Drop, Bridge, Solo, or Outro.
 10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things.
@@ -173,13 +175,14 @@ Suno Formatting Rules:
 13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns.
 14. Use varied line lengths, concrete sensory detail, surprising metaphors, humor or wonder where the theme invites it, and a clear emotional arc from setup to climax to resolution.
 15. Never gloss an English line with Japanese, Romaji, or pinyin in parentheses, e.g. 'Signal pulse (信号 shingou)'. If a line should be Japanese, write it on its own line.
-16. Put sung intro lines in the intro after the vocalization; they are formatted as an [Intro Verse] section.
+16. Follow the profile's intro layout, including its sung-opening label when configured.
 17. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly.
 18. Verse 2 must develop the story, never restate Verse 1: no shared lines and no reworded copies. Show what happens after the turning point and what the new state reveals.
 19. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
 20. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections.
 21. Keep rhymes natural. Never bend grammar or pick an odd word just to rhyme (not 'seek death' to rhyme with 'breath', not 'soft clutch' against 'growth'); a near rhyme is better than a forced one.
 22. Keep meter steady: lines sung as a pair should be within about two syllables of each other, so Suno does not stretch or cram syllables."""
+    system_prompt += f"\n\n{policy.prompt_guidance()}"
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -207,18 +210,44 @@ Suno Formatting Rules:
                 sam_context += f"\n- Companies: {', '.join(company_names)}"
             sam_context += "\n(You may naturally weave these into the lyrics if thematically relevant, but it's optional.)"
     
-    solo_guidance = build_solo_style_guidance(domain_knowledge.lyrical_structure)
+    solo_guidance = (
+        build_solo_style_guidance(domain_knowledge.lyrical_structure)
+        if policy.rule("solo") else ""
+    )
     suno_guidance = build_suno_practice_guidance(
         domain_knowledge, include_japanese=generation_language in {"japanese", "bilingual"}
     )
     if suno_guidance:
         solo_guidance = f"{solo_guidance}\n\n{suno_guidance}" if solo_guidance else suno_guidance
 
-    # Build user prompt with Suno-compatible formatting
+    descriptions = {
+        "intro": "2-4 opening lines. (Character Cap: 400 chars)",
+        "verse_1": "Two vivid, story-driven stanzas setting the scene. (Character Cap: 600 chars)",
+        "pre_chorus": "4-6 lines building tension. (Character Cap: 300 chars)",
+        "chorus": chorus_json_instruction.replace("[Chorus]", "").strip(),
+        "verse_2": "Two new stanzas after the turning point. Do not reuse or reword any Verse 1 line. (Character Cap: 600 chars)",
+        "bridge": (
+            "6-8 lines pivoting to the emotional and thematic climax"
+            + (", rising into the final drop" if policy.rule("drop") else "")
+            + ". (Character Cap: 450 chars)"
+        ),
+        "drop": "4-5 high-energy lines after the configured cues. (Character Cap: 400 chars)",
+        "solo": "3-4 instrumental directions, never sung lyrics. (Character Cap: 300 chars)",
+        "breakdown": "A contrasting deconstructed passage. (Character Cap: 300 chars)",
+        "outro": "4 closing lines resolving the narrative. (Character Cap: 400 chars)",
+    }
+    section_instructions = {
+        rule.field: (
+            f"{rule.guidance()}. "
+            + (descriptions[rule.field] if rule.content == "sung"
+               else "Use only bracketed instrumental directions; no lyrics, translations, or Romaji.")
+        )
+        for rule in policy.sections
+    }
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 
-CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. Verse 1 sets the scene and characters, Pre-Chorus raises the stakes, Chorus delivers an original emotional hook built on one central metaphor, Verse 2 shows what happens after the turning point (new events, new imagery, no repeated lines), Bridge pivots and climbs to the emotional or thematic climax, and Outro resolves it. Use fresh, specific imagery and avoid generic tech buzzword chains or repeating the same line patterns.
+CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. For the sections enabled by the profile, use verses for scenes and consequences, a chorus for the emotional hook, a bridge for a climax, and an outro for resolution. Use fresh imagery rather than tech buzzword chains. Do not add sections disabled by the profile.
 
 Title: {concept.title}
 Theme: {concept.theme}
@@ -228,20 +257,10 @@ Genre tags: {', '.join(concept.genre_tags)}
 Narrative arc: {concept.narrative_arc}{metaphor_context}{sam_context}
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown outside the JSON structure). 
-Every field below is required: never omit a field or leave it empty. The intro needs sung [Intro Verse] lines, the drop needs sung lines after [Heavy Bass Drop], the solo needs instrumental directions, and the outro needs closing lines.
+{policy.prompt_guidance()}
 Each field should contain the complete lyrics for that section, including any section markers:
 
-{{
-  "intro": "[Instrumental Build] with '(Ahh ahh ahh)' as a vocalization primer, followed by [Intro Verse] and 2-4 sung opening lines. Both intro sections are required. (Character Cap: 400 chars)",
-  "verse_1": "[Verse 1] Two stanzas of vivid, story-driven narrative that sets the scene. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
-  "pre_chorus": "[Pre-Chorus] 4-6 lines building tension toward the chorus. (Character Cap: 300 chars)",
-    "chorus": "{chorus_json_instruction}",
-  "verse_2": "[Verse 2] Two new stanzas set after the turning point: show the consequences and what the new state reveals. Do not reuse or reword any Verse 1 line. Separate stanzas with a plain line break. (Character Cap: 600 chars)",
-  "bridge": "[Bridge] 6-8 lines: a pivot line that breaks the established pattern, then 3-5 lines expanding it into the song's emotional and thematic climax, rising into the final drop. (Character Cap: 450 chars)",
-  "drop": "[Drop] followed immediately by [Heavy Bass Drop], then 4-5 high-energy lyric lines. Both tags are required. Never sing or translate the instrumental tag. (Character Cap: 400 chars)",
-  "solo": "[Solo] followed by 3-4 instrumental directions, each entirely inside square brackets. No sung lyrics, vocalizations, translations, or Romaji in this section. (Character Cap: 300 chars)",
-  "outro": "[Outro] followed by 4 lines of atmospheric resolution and fade text (total). (Character Cap: 400 chars)"
-}}
+{json.dumps(section_instructions, ensure_ascii=False, indent=2)}
 
 {solo_guidance}
 

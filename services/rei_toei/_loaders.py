@@ -100,6 +100,9 @@ def load_rei_domain_knowledge() -> ReiDomainKnowledge:
         suno_best_practices=data.get("suno_best_practices", {}),
     )
     
+    from services.rei_toei._stage_policy import load_stage_policy
+
+    load_stage_policy(knowledge.lyrical_structure)
     logger.debug(f"Loaded Rei domain knowledge (schema: {knowledge.schema_version})")
     return knowledge
 

@@ -3,6 +3,8 @@
 from collections.abc import Mapping
 from typing import Any
 
+from services.rei_toei._stage_policy import load_stage_policy
+
 
 def build_solo_style_guidance(lyrical_structure: Mapping[str, Any]) -> str:
     """Describe optional solo choices without requiring any particular style."""
@@ -30,13 +32,16 @@ def build_solo_style_guidance(lyrical_structure: Mapping[str, Any]) -> str:
         options.append(option.strip())
     if not options:
         return ""
+    rule = load_stage_policy(lyrical_structure).rule("solo")
+    if rule is None or rule.content != "instrumental":
+        return ""
 
     labels = ", ".join(f"[{option}]" for option in options)
     return (
         f"OPTIONAL SOLO PALETTE: {labels}. "
         "When including a solo, choose a style that fits the song's genre, mood, story, "
         "and dynamics, or invent another fitting style. Honor any requested instrument. "
-        "Put the chosen style as its own square-bracketed cue beneath [Solo], with any "
+        f"Put the chosen style as its own square-bracketed cue beneath [{rule.label}], with any "
         "instrumental directions in separate brackets. Do not copy the full list or "
         "force a guitar solo into every song."
     )

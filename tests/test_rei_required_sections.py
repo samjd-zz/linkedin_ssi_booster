@@ -8,10 +8,10 @@ import pytest
 
 from services.rei_toei._lyric_prompts import build_lyric_prompts
 from services.rei_toei._song_structure import (
-    REQUIRED_LYRIC_FIELDS,
     missing_required_sections,
     missing_sections_feedback,
 )
+from services.rei_toei._stage_policy import load_stage_policy
 from services.rei_toei._suno_pipeline import compose_lyrics
 from services.rei_toei._loaders import load_rei_domain_knowledge, load_rei_persona
 from services.rei_toei._models import SongConcept
@@ -32,7 +32,7 @@ def _complete() -> Dict[str, Any]:
 
 
 def test_required_fields_cover_every_song_section() -> None:
-    assert set(REQUIRED_LYRIC_FIELDS) == {
+    assert set(load_stage_policy().required_fields) == {
         "intro", "verse_1", "chorus", "verse_2", "bridge", "drop", "solo", "outro",
     }
 
@@ -41,7 +41,7 @@ def test_complete_draft_passes() -> None:
     assert missing_required_sections(_complete()) == []
 
 
-@pytest.mark.parametrize("field", REQUIRED_LYRIC_FIELDS)
+@pytest.mark.parametrize("field", load_stage_policy().required_fields)
 def test_absent_or_blank_section_is_missing(field: str) -> None:
     absent = _complete()
     del absent[field]
@@ -99,14 +99,15 @@ def _concept() -> SongConcept:
     )
 
 
-def test_prompt_states_every_field_is_required() -> None:
+def test_prompt_distinguishes_required_and_optional_fields() -> None:
     _, user_prompt = build_lyric_prompts(
         _concept(), load_rei_persona(), load_rei_domain_knowledge(), None,
         lyric_language="english", generation_language="english", translate_mode=False,
         japanese_target_percent=0,
     )
 
-    assert "Every field below is required" in user_prompt
+    assert "outro (required)" in user_prompt
+    assert "pre_chorus (optional)" in user_prompt
 
 
 @pytest.mark.parametrize(

@@ -419,6 +419,95 @@
     }
   },
   "lyrical_structure": {
+    "stage_cues": {
+      "active_profile": "cyberpop",
+      "profiles": {
+        "cyberpop": {
+          "intro_verse_label": "Intro Verse",
+          "intro_primer": "(Ahh ahh ahh)",
+          "optional_cues": ["Silence", "Glitch Noise", "Chaos"],
+          "sections": {
+            "intro": {"label": "Instrumental Build", "required": true, "content": "sung", "cues": []},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "drop": {"label": "Drop", "required": true, "content": "sung", "cues": ["Heavy Bass Drop"]},
+            "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": []},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "sung", "cues": []},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "cyberpunk": {
+          "intro_verse_label": "Intro Verse",
+          "intro_primer": "(Ahh ahh ahh)",
+          "optional_cues": ["Glitch Noise", "Static Burst", "Silence"],
+          "sections": {
+            "intro": {"label": "Instrumental Build", "required": true, "content": "sung", "cues": ["Dark Synth Pulse"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "drop": {"label": "Drop", "required": true, "content": "sung", "cues": ["Distorted Bass Drop"]},
+            "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Distorted Synth Solo"]},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Glitch Breakdown"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": ["Fade Out"]}
+          }
+        },
+        "acoustic": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Fingerpicked Guitar"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": false, "content": "sung", "cues": []},
+            "solo": {"label": "Solo", "required": false, "content": "instrumental", "cues": ["Acoustic Guitar Solo"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "rock": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Guitar Riff"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Guitar Solo"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "hip_hop": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Beat Intro"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "chorus": {"label": "Hook", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": false, "content": "sung", "cues": []},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "ambient": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "sections": {
+            "intro": {"label": "Intro", "required": true, "content": "instrumental", "cues": ["Atmospheric Pads"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "chorus": {"label": "Refrain", "required": false, "content": "sung", "cues": []},
+            "breakdown": {"label": "Interlude", "required": true, "content": "instrumental", "cues": ["Ambient Interlude"]},
+            "outro": {"label": "Outro", "required": true, "content": "instrumental", "cues": ["Fade Out"]}
+          }
+        }
+      }
+    },
     "verse": {
       "purpose": "Construct the virtual landscape and technical narrative.",
       "length": "8-16 bars",

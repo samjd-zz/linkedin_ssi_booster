@@ -1,9 +1,13 @@
 """Static fallback lyrics used when Ollama cannot produce a valid draft."""
 
 from services.rei_toei._models import Lyrics, SongConcept
+from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stage_policy
+from services.rei_toei._suno_quality import bracket_solo_directions
 
 
-def build_fallback_lyrics(concept: SongConcept, lyric_language: str) -> Lyrics:
+def build_fallback_lyrics(
+    concept: SongConcept, lyric_language: str, policy: StagePolicy | None = None,
+) -> Lyrics:
     """Return pre-formatted fallback lyrics that respect the configured language policy."""
     # Keep the configured language policy even when Ollama returns unusable JSON.
     non_english_fallback = lyric_language in {"japanese", "bilingual"}
@@ -93,8 +97,6 @@ def build_fallback_lyrics(concept: SongConcept, lyric_language: str) -> Lyrics:
         bridge=fallback_lyrics_language["bridge"],
         evidence_ids=concept.evidence_ids,
         intro=(
-            "[Instrumental Build]\n\n"
-            "(Ahh ahh ahh)\n"
             "Digital signal initializing...\n"
             "System boot sequence engaged.\n"
             "Frequency analyzers online.\n"
@@ -108,7 +110,6 @@ def build_fallback_lyrics(concept: SongConcept, lyric_language: str) -> Lyrics:
         ),
         drop=(
             "[Drop]\n\n"
-            "(bass drop)\n"
             "SYSTEM OVERLOAD. TEMP LOAD SHIFT ACTIVE.\n"
             "(silence)\n"
             "BUFFER BLEED DETECTED. MUTATE SYSTEM STATE.\n"
@@ -130,4 +131,26 @@ def build_fallback_lyrics(concept: SongConcept, lyric_language: str) -> Lyrics:
         ),
         breakdown=None,
     )
+    policy = policy or load_stage_policy()
+    for field, canonical_label in FIELD_LABELS.items():
+        rule = policy.rule(field)
+        if rule is None:
+            setattr(fallback_lyrics, field, "")
+            continue
+        body = getattr(fallback_lyrics, field) or ""
+        body = body.removeprefix(f"[{canonical_label}]").strip()
+        if not body and not rule.required:
+            continue
+        if rule.content == "instrumental":
+            body = "\n".join(f"[{cue}]" for cue in rule.cues) or body
+            setattr(fallback_lyrics, field, bracket_solo_directions(body, label=rule.label))
+        else:
+            body = body or fallback_lyrics_language["chorus"]
+            if field == "intro" and policy.intro_verse_label:
+                body = f"[{policy.intro_verse_label}]\n{body}"
+            prefix = [f"[{rule.label}]"]
+            if field == "intro" and policy.intro_primer:
+                prefix.append(policy.intro_primer)
+            prefix.extend(f"[{cue}]" for cue in rule.cues)
+            setattr(fallback_lyrics, field, "\n".join([*prefix, body]))
     return fallback_lyrics

@@ -18,6 +18,8 @@ from services.rei_toei._suno_cleanup import (
 )
 from services.rei_toei._suno_json import _normalize_serialized_lyric_text
 from services.rei_toei._suno_quality import bracket_solo_directions, ensure_suno_quality
+from services.rei_toei._suno_quality import remove_required_cues
+from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stage_policy
 from services.rei_toei._suno_sections import (
     _normalize_suno_section,
     _PROMPT_SCHEMA_LEAKAGE_RE,
@@ -25,10 +27,6 @@ from services.rei_toei._suno_sections import (
 
 logger = logging.getLogger(__name__)
 
-_FREEFORM_SECTION_HEADER_RE = re.compile(
-    r"(?im)^[ \t]*\[(?P<label>Instrumental Build|Intro Verse|Intro|Verse\s*\d*|Pre-Chorus|"
-    r"Chorus|Drop|Bridge|Solo|Breakdown|Outro)\][ \t]*"
-)
 _FREEFORM_METADATA_RE = re.compile(
     r"(?im)^[ \t]*(?:\*\*)?(?:Suno Prompt|Style Tags|Genre Tags|Tags)"
     r"\s*(?:\*\*)?\s*:(?:\*\*)?"
@@ -41,17 +39,26 @@ def _append_normalized_section(
     label: str,
     *,
     uppercase_body: bool = False,
+    instrumental: bool | None = None,
+    required_cues: tuple[str, ...] = (),
 ) -> str:
     """Normalize and append a Suno lyric section when it has content."""
     # Emoji go first so Romaji cues generated below never copy them.
     text = strip_emoji_lines(text or "")
-    if label.casefold() == "solo":
+    had_content = bool(text.strip())
+    if instrumental is None:
+        instrumental = label.casefold() == "solo"
+    if instrumental:
         text = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", _normalize_serialized_lyric_text(text))
-        block = bracket_solo_directions(text)
+        text = re.sub(rf"^\s*\[{re.escape(label)}\]\s*", "", text, count=1, flags=re.IGNORECASE)
+        block = bracket_solo_directions(text, label=label)
         if block:
             lyric_blocks.append(block)
         return block
     block = _normalize_suno_section(text, label, uppercase_body=uppercase_body)
+    block = remove_required_cues(block, required_cues)
+    if not block and required_cues and had_content:
+        block = f"[{label}]"
     if block:
         payload = {"section": block}
         bracket_bare_romaji_lines(payload)
@@ -74,15 +81,19 @@ def _append_normalized_section(
         if not is_instrumental_build:
             block = tidy_vocalization_cues(block)
         if is_instrumental_build:
-            instrumental, intro_verse = split_intro_block(block)
-            block = f"{instrumental}\n\n{intro_verse}" if intro_verse else instrumental
+            build, intro_verse = split_intro_block(block)
+            block = f"{build}\n\n{intro_verse}" if intro_verse else build
+        if required_cues:
+            header, _, body = block.partition("\n")
+            block = "\n".join([header, *(f"[{cue}]" for cue in required_cues), body]).rstrip()
         lyric_blocks.append(block)
     return block
 
 
-def _normalize_freeform_suno_reply(reply: str) -> str:
+def _normalize_freeform_suno_reply(reply: str, policy: StagePolicy | None = None) -> str:
     """Clean recognizable song sections without rewriting surrounding prose."""
-    headers = list(_FREEFORM_SECTION_HEADER_RE.finditer(reply))
+    policy = policy or load_stage_policy()
+    headers = list(policy.header_pattern().finditer(reply))
     if not headers:
         return reply
     metadata = _FREEFORM_METADATA_RE.search(reply, headers[0].end())
@@ -93,42 +104,40 @@ def _normalize_freeform_suno_reply(reply: str) -> str:
     for index, header in enumerate(headers):
         next_start = headers[index + 1].start() if index + 1 < len(headers) else end
         label = header.group("label")
-        if label.casefold() == "intro":
-            label = "Instrumental Build"
+        field = policy.aliases()[label.casefold()]
+        rule = policy.rule("intro" if field == "intro_verse" else field)
+        if rule is None:
+            continue
+        label = "Intro Verse" if field == "intro_verse" else FIELD_LABELS[field]
         body = reply[header.end():next_start].strip("\r\n")
-        if not _append_normalized_section(blocks, body, label):
+        if not _append_normalized_section(
+            blocks, body, label,
+            instrumental=rule.content == "instrumental",
+            required_cues=rule.cues,
+        ):
             blocks.append(f"[{label}]")
 
     formatted = "\n\n".join(blocks)
-    if any(header.group("label").casefold() == "chorus"
-           or header.group("label").casefold().startswith("verse") for header in headers):
-        formatted = ensure_suno_quality(formatted)
+    if any(policy.aliases()[header["label"].casefold()] in {"chorus", "verse_1", "verse_2"}
+           for header in headers):
+        formatted = ensure_suno_quality(formatted, policy)
     suffix = reply[end:]
     return reply[:headers[0].start()] + formatted + ("\n\n" if suffix else "") + suffix
 
 
-def _build_suno_lyric_blocks(concept: SongConcept, lyrics: Lyrics) -> List[str]:
+def _build_suno_lyric_blocks(
+    concept: SongConcept, lyrics: Lyrics, policy: StagePolicy | None = None,
+) -> List[str]:
     """Compile each generated lyric section once in Suno song order."""
+    policy = policy or load_stage_policy()
     lyric_blocks: List[str] = []
-
-    _append_normalized_section(lyric_blocks, lyrics.intro, "Instrumental Build")
-    _append_normalized_section(lyric_blocks, lyrics.verse_1, "Verse 1")
-    _append_normalized_section(lyric_blocks, lyrics.pre_chorus, "Pre-Chorus")
-
-    uppercase_chorus = concept.lyric_language.strip().lower() == "english"
-    _append_normalized_section(
-        lyric_blocks,
-        lyrics.chorus,
-        "Chorus",
-        uppercase_body=uppercase_chorus,
-    )
-
-    _append_normalized_section(lyric_blocks, lyrics.verse_2, "Verse 2")
-
-    # The bridge climax builds into the final drop.
-    _append_normalized_section(lyric_blocks, lyrics.bridge, "Bridge")
-    _append_normalized_section(lyric_blocks, lyrics.drop, "Drop")
-    _append_normalized_section(lyric_blocks, lyrics.solo, "Solo")
-    _append_normalized_section(lyric_blocks, lyrics.breakdown, "Breakdown")
-    _append_normalized_section(lyric_blocks, lyrics.outro, "Outro")
+    for rule in policy.sections:
+        text = getattr(lyrics, rule.field)
+        _append_normalized_section(
+            lyric_blocks, policy.canonicalize(text) if text else text,
+            FIELD_LABELS[rule.field],
+            uppercase_body=rule.field == "chorus" and concept.lyric_language.strip().lower() == "english",
+            instrumental=rule.content == "instrumental",
+            required_cues=rule.cues,
+        )
     return lyric_blocks

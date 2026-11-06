@@ -13,6 +13,7 @@ from services.rei_toei._suno_cleanup import (
     tidy_vocalization_cues,
 )
 from services.rei_toei._suno_quality import bracket_solo_directions
+from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stage_policy
 
 # "PULSE CODE (PULSE CODE)": an echo of the line in parentheses, which Suno sings.
 _ECHO_RE = re.compile(r"^(?P<lead>.*\S)\s*[(（](?P<echo>[^()（）]+)[)）]\s*$")
@@ -47,17 +48,22 @@ def _is_sung(line: str) -> bool:
     return bool(stripped) and stripped[0] not in "[(（"
 
 
-def tidy_song_sections(payload: Dict[str, Any]) -> None:
+def tidy_song_sections(payload: Dict[str, Any], policy: StagePolicy | None = None) -> None:
     """Tidy lyric cues, emoji, echoes, bridge repetition, and dangling punctuation."""
+    policy = policy or load_stage_policy()
     for field, value in payload.items():
         if not isinstance(value, str):
             continue
-        value = strip_emoji_lines(value)
+        rule = policy.rule(field)
+        value = strip_emoji_lines(policy.canonicalize(value))
         if field in SUNG_LYRIC_FIELDS or field == "solo":
             value = bracket_chaos_cues(value)
         lines = []
         for line in value.splitlines():
-            if field not in DROP_FIELDS and _DROP_CUE_RE.match(line.strip()):
+            if (
+                field not in DROP_FIELDS and _DROP_CUE_RE.match(line.strip())
+                and not (rule and line.strip("[]() ").casefold() in {cue.casefold() for cue in rule.cues})
+            ):
                 continue
             line = strip_echo_parenthetical(line)
             if _is_sung(line) and _JAPANESE_CHAR_RE.search(line):
@@ -68,7 +74,10 @@ def tidy_song_sections(payload: Dict[str, Any]) -> None:
             text = strip_sung_bass_drop_cues(text)
             text = tidy_vocalization_cues(text, intro=field == "intro")
         payload[field] = (
-            bracket_solo_directions(text) if field == "solo" else text
+            bracket_solo_directions(
+                re.sub(rf"^\s*\[{re.escape(FIELD_LABELS[field])}\]\s*", "", text, count=1, flags=re.IGNORECASE),
+                label=FIELD_LABELS[field],
+            ) if rule and rule.content == "instrumental" else text
         )
 
     chorus = payload.get("chorus")

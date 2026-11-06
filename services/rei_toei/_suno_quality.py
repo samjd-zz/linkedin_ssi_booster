@@ -7,24 +7,22 @@ import re
 
 from services.rei_toei._lyric_romaji import _is_stage_cue_phrase
 from services.rei_toei._suno_cleanup import (
+    _is_vocalization,
     bracket_chaos_cues,
+    split_intro_block,
     strip_sung_bass_drop_cues,
     tag_instrument_cues,
 )
+from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stage_policy
 
 logger = logging.getLogger(__name__)
 
-_SECTION_RE = re.compile(
-    r"(?im)^[ \t]*\[(?P<label>Instrumental Build|Intro Verse|Intro|Verse\s*\d*|"
-    r"Pre-Chorus|Chorus|Drop|Bridge|Solo|Breakdown|Outro)\][ \t]*"
-)
-_INLINE_BASS_DROP_RE = re.compile(r"\s*\[(?:heavy\s+)?bass\s+drop\]\s*", re.IGNORECASE)
 _SOLO_HEADER_RE = re.compile(r"^\s*\[Solo\][ \t]*\n?", re.IGNORECASE)
 _BRACKETED_DIRECTIONS_RE = re.compile(r"(?:\[[^\[\]]+\]\s*)+")
 
 
-def bracket_solo_directions(text: str | None) -> str:
-    """Make every Solo line an instrumental direction, without nested brackets."""
+def bracket_solo_directions(text: str | None, *, label: str = "Solo") -> str:
+    """Make every instrumental-section line a direction, without nested brackets."""
     body = _SOLO_HEADER_RE.sub("", tag_instrument_cues(text or ""), count=1)
     lines: list[str] = []
     for line in body.splitlines():
@@ -37,7 +35,7 @@ def bracket_solo_directions(text: str | None) -> str:
         if instruction:
             lines.append(f"[{instruction}]")
     body = "\n".join(lines).strip()
-    return f"[Solo]\n{body}" if body else ""
+    return f"[{label}]\n{body}" if body else ""
 
 
 def _is_sung(line: str) -> bool:
@@ -68,60 +66,97 @@ def _existing_hook(sections: list[tuple[str, str]]) -> str:
     raise ValueError("Cannot repair Intro Verse: the song has no sung chorus or verse hook")
 
 
-def ensure_suno_quality(text: str) -> str:
-    """Ensure a sung intro and a canonical bass-drop cue using existing content."""
-    headers = list(_SECTION_RE.finditer(text))
-    sections: list[tuple[str, str]] = []
+def remove_required_cues(text: str, cues: tuple[str, ...]) -> str:
+    """Remove configured cue duplicates, including inline or parenthesized variants."""
+    for cue in cues:
+        escaped = r"(?:heavy\s+)?bass\s+drop" if cue.casefold() == "heavy bass drop" else re.escape(cue)
+        text = re.sub(rf"[\[(]\s*{escaped}\s*[\])]", "", text, flags=re.IGNORECASE)
+        text = re.sub(rf"(?im)^[ \t]*{escaped}[ \t]*$", "", text)
+    return "\n".join(line.rstrip() for line in text.splitlines()).strip()
+
+
+def _without_opening_vocalizations(body: str, primer: str | None) -> str:
+    lines = []
+    opening = True
+    for line in body.splitlines():
+        value = line.strip()
+        if opening and (
+            (primer and value.casefold() == primer.casefold())
+            or (value.startswith("(") and _is_vocalization(value.strip("()")))
+        ):
+            continue
+        if _is_sung(value):
+            opening = False
+        lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def ensure_suno_quality(text: str, policy: StagePolicy | None = None) -> str:
+    """Repair configured section labels, intro primer, and mandatory stage cues."""
+    policy = policy or load_stage_policy()
+    headers = list(policy.header_pattern().finditer(text))
+    if not headers:
+        intro = policy.rule("intro")
+        if intro and intro.required and intro.content == "sung":
+            _existing_hook([])
+        return text
+    payload: dict[str, str] = {}
+    opening_verse = ""
+    aliases = policy.aliases()
     for index, header in enumerate(headers):
         end = headers[index + 1].start() if index + 1 < len(headers) else len(text)
-        label = header.group("label")
+        field = aliases[header["label"].casefold()]
+        rule = policy.rule("intro" if field == "intro_verse" else field)
+        if rule is None:
+            continue
         body = bracket_chaos_cues(text[header.end():end].strip())
-        if label.casefold() != "solo":
+        if rule.content != "instrumental":
             body = strip_sung_bass_drop_cues(body)
-        sections.append((label, body))
+        if field == "intro_verse":
+            opening_verse = "\n".join(filter(None, (
+                opening_verse, _without_opening_vocalizations(body, policy.intro_primer),
+            )))
+            continue
+        payload[field] = "\n".join(filter(None, (payload.get(field, ""), body)))
 
-    intro_index = next(
-        (i for i, (label, _) in enumerate(sections) if label.casefold() == "intro verse"),
-        None,
-    )
-    if intro_index is None:
-        hook = _existing_hook(sections)
-        position = 1 if sections and sections[0][0].casefold() == "instrumental build" else 0
-        sections.insert(position, ("Intro Verse", hook))
-        logger.warning("Suno quality repair: added Intro Verse from an existing lyric hook")
-    elif not any(_is_sung(line) for line in sections[intro_index][1].splitlines()):
-        body = sections[intro_index][1]
-        sections[intro_index] = ("Intro Verse", "\n".join(filter(None, (body, _existing_hook(sections)))))
-        logger.warning("Suno quality repair: filled an empty Intro Verse from an existing lyric hook")
-
-    if not any(label.casefold() == "drop" for label, _ in sections):
-        preceding = [
-            i for i, (label, _) in enumerate(sections)
-            if label.casefold() in {"bridge", "chorus"} or label.casefold().startswith("verse")
-        ]
-        position = preceding[-1] + 1 if preceding else len(sections)
-        sections.insert(position, ("Drop", ""))
-        logger.warning("Suno quality repair: added an instrumental Drop")
+    intro = policy.rule("intro")
+    if intro and intro.required and intro.content == "sung" and not any(
+        _is_sung(line) for line in (payload.get("intro", "") + "\n" + opening_verse).splitlines()
+    ):
+        hook = _existing_hook([(FIELD_LABELS[field], body) for field, body in payload.items()])
+        opening_verse = "\n".join(filter(None, (opening_verse, hook)))
+        logger.warning("Suno quality repair: filled %s from an existing lyric hook", policy.intro_verse_label or intro.label)
 
     blocks: list[str] = []
-    for label, body in sections:
-        if label.casefold() == "intro verse":
-            label = "Intro Verse"
-        if label.casefold() == "drop":
-            lines = tag_instrument_cues(body).splitlines()
-            if not lines or lines[0].strip() != "[Heavy Bass Drop]":
-                logger.warning("Suno quality repair: added the Heavy Bass Drop cue")
-            lines = [
-                _INLINE_BASS_DROP_RE.sub(" ", line).strip() if line.strip() else line
-                for line in lines
-                if not line.strip() or _INLINE_BASS_DROP_RE.sub("", line).strip()
-            ]
-            body = "\n".join(["[Heavy Bass Drop]", *lines]).strip()
-            label = "Drop"
-        if label.casefold() == "solo":
-            block = bracket_solo_directions(body)
-            if block:
-                blocks.append(block)
+    for rule in policy.sections:
+        body = payload.get(rule.field, "")
+        if rule.field == "intro" and not policy.intro_verse_label:
+            body = "\n".join(filter(None, (body, opening_verse)))
+            opening_verse = ""
+        if not body and not (rule.required and rule.cues) and not (rule.field == "intro" and opening_verse):
+            continue
+        body = tag_instrument_cues(body)
+        for cue in rule.cues:
+            if f"[{cue}]".casefold() not in body.casefold():
+                logger.warning("Suno quality repair: added [%s] in %s", cue, rule.label)
+        body = remove_required_cues(body, rule.cues)
+        if rule.field == "intro":
+            body = _without_opening_vocalizations(body, policy.intro_primer)
+        body = "\n".join([*(f"[{cue}]" for cue in rule.cues), body]).strip()
+        if rule.content == "instrumental":
+            block = bracket_solo_directions(body, label=rule.label)
         else:
-            blocks.append(f"[{label}]\n{body}".rstrip())
+            block = f"[{rule.label}]\n{body}".rstrip()
+        if rule.field == "intro":
+            if policy.intro_verse_label and rule.content == "sung":
+                if opening_verse:
+                    block += f"\n\n[{policy.intro_verse_label}]\n{opening_verse}"
+                else:
+                    build, verse = split_intro_block(block)
+                    block = build + (f"\n\n{verse.replace('[Intro Verse]', f'[{policy.intro_verse_label}]', 1)}" if verse else "")
+            if policy.intro_primer:
+                header, _, tail = block.partition("\n")
+                block = f"{header}\n{policy.intro_primer}\n{tail}".rstrip()
+        if block:
+            blocks.append(block)
     return "\n\n".join(blocks)

@@ -82,7 +82,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1632%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1632 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1675%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1675 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-74%25-yellow.svg" alt="Source coverage: 74%, measured November 4, 2026"></a>
 </p>
 
@@ -144,12 +144,10 @@ The SSI Booster is feature-complete for its core workflows and is now focused on
 > **Inspiration:** Cyberpop-aesthetic AI music avatar inspired by [Rei Toei](https://en.wikipedia.org/wiki/Rei_Toei) from William Gibson's novel _Idoru_. See [Rei Toei Customization Guide](docs/rei-toei-customization.md) for full details on architecture, customization, and persona tuning.
 
 **Rei Toei** transforms the SSI Booster into a **creative knowledge expression platform**, converting your curated technical knowledge into algorithmic music. See [Rei Toei Implementation Plan](docs/features/rei-toei/plan.md) for architecture, commands, and usage examples.
-
 Listen to Rei Toei's music on Suno: [suno.com/@samjd42](https://suno.com/@samjd42)
-
 **Current capabilities:**
 
-- 🎤 **Suno Vocal Songs** — Generate grounded cyberpop industrial techno songs with Suno v6-mini by default (`SUNO_MODEL` can override); Rei uses a required `[Intro Verse]`, `[Drop]`/`[Heavy Bass Drop]`, bracketed `[Chaos]` cues and instrumental solos. Standalone sung bass-drop cues are removed, and missing sections are repaired automatically (Suno integration ✅)
+- 🎤 **Suno Vocal Songs** — Generate grounded songs with Suno v6-mini by default (`SUNO_MODEL` can override). Required sections, bracketed cues, and the intro primer are configured in Rei's domain knowledge using explicit `cyberpop` (current defaults), `cyberpunk`, `acoustic`, `rock`, `hip_hop`, or `ambient` profiles. Draft gates, retries, fallback, and final formatting share the selected policy. See the [stage-cue settings and genre catalog](docs/rei-toei-stage-cues.md).
 - 🇯🇵 **Japanese-aware lyric production** — Rei supports English, Japanese, and bilingual lyrics with contextual Romaji checks, bracket/parenthetical cue cleanup, Japanese-first normalization, script hygiene, and Vocaloid-oriented delivery rules
 - 🎚️ **Controlled lyric language selection** — CLI and console songs share bilingual generation, defaulting to English-first with selected hooks translated toward `REI_JAPANESE_LYRIC_PROBABILITY` (per-batch progress logs and offline Argos en→ja fallback); the final mix can vary
 - 🧭 **Knowledge boundaries** — Rei uses her own music and Japanese lyric-production knowledge. Sam uses the general Japanese domain packs, including pykakasi-backed Hepburn readings, for grounded Kanji study and conversation; Rei does not directly retrieve those study facts. Rei may receive selected Sam project, skill, and company names as optional creative inspiration, along with technical themes extracted from curated articles.
@@ -416,7 +414,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 4, 2026: 1,634 collected; 1,632 passed, 0 failed, 2 live Buffer tests deselected; source coverage was **74%**. Includes 25 console/CLI lyric-parity cases, 61 stage-cue cleanup cases, 5 lyric JSON-repair cases, 8 Suno best-practice cases, 19 word-echo ad-lib cleanup cases, 24 required-section gate cases, 16 lyric-fitted tempo cases, 25 simplified-kanji repair cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 5, 2026: 1,677 collected; 1,675 passed, 0 failed, 2 live Buffer tests deselected; previous source coverage was **74%** (not rerun). Includes 43 configurable stage-profile cases, 25 console/CLI lyric-parity cases, 61 stage-cue cleanup cases, 5 lyric JSON-repair cases, 8 Suno best-practice cases, 19 word-echo ad-lib cleanup cases, 24 required-section gate cases, 16 lyric-fitted tempo cases, 25 simplified-kanji repair cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 24 relevance, and 90 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 
