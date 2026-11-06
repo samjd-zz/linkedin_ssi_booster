@@ -77,8 +77,8 @@ def build_lyric_prompts(
             "- Never append Japanese or Romaji in parentheses to an English line; put the Japanese phrase on its own line.\n"
             "- Use complete Japanese phrases or lines for chorus hooks and emotional beats; do not output isolated vocabulary words.\n"
             "- Use English for momentum, technical imagery, and contrasting lines.\n"
-            "- Use parentheses () for sung vocalizations such as (Ahh ahh ahh). "
-            "Put instrumental cues such as [Guitar Solo] and [Chaos] in square brackets.\n\n"
+            "- Use parentheses () for sung vocalizations such as (Ahh ahh ahh), keeping them in Latin characters even in Japanese lyrics. "
+            "Put instrumental cues such as [Guitar Solo] and [Chaos] in square brackets on their own lines.\n\n"
             "LEARNER CUES (OPTIONAL):\n"
             "- If adding a translation cue: Japanese Line, then [romaji] on the next line, then the English meaning as a sung line without brackets.\n"
             "- Never put Romaji or translations inside parentheses ().\n\n"
@@ -161,10 +161,10 @@ Suno Formatting Rules:
 1. Follow the active stage-cue profile below for enabled fields, required sections, labels, and cues.
 2. ABSOLUTELY NO code syntax, comments (do not use '//'), or markdown formatting inside the text fields
 3. DO NOT use editorial parenthetical instructions like '(Stanza 1)', '(this is the hook)', or '(More chaos)'.
-   Put sung vocalizations like '(Ahh ahh ahh)' and '(Oh oh oh)' in parentheses.
-   Put instrumental or sound cues in square brackets, using the active profile.
+   Put sung vocalizations like '(Ahh ahh ahh)' and '(Oh oh oh)' in parentheses, keeping their spelling in Latin characters.
+   Put instrumental or sound cues in square brackets, using the active profile, and never attach them to a sung line.
 {chorus_case_rule}
-5. Keep section labels and stage directions short and on their own lines.
+5. Keep section labels and stage directions short and on their own lines. Never put stage directions in parentheses.
 6. Use only the intro primer specified by the profile; do not force a primer when it is disabled.
 7. Never sing, translate, or annotate instrumental directions as lyric lines.
 8. Follow character caps per section for API parsing compliance

@@ -83,12 +83,17 @@ _INSTRUMENT_CUE_TAGS = {
     "synth drop": "[Synthesizer Drop]",
     "glitch noise": "[Glitch Noise]",
     "silence": "[Silence]",
+    "fade": "[Fade Out]",
+    "fade out": "[Fade Out]",
+    "fadeout": "[Fade Out]",
+    "chill": "[Chill]",
     "guitar solo": "[Guitar Solo]",
     "synth solo": "[Synth Solo]",
     "drum solo": "[Drum Solo]",
     "instrumental solo": "[Instrumental Solo]",
     "instrumental": "[Instrumental]",
 }
+_PARENTHETICAL_DIRECTION_CUES = frozenset({"fade", "fade out", "fadeout", "chill"})
 _PRODUCTION_DIRECTION_RE = re.compile(
     r"\b(?:ambient|bass|beat|beats|build|distort(?:ed|ion)?|drum|"
     r"fade|filter|frequency|glitch|guitar|mix|noise|pad|pads|"
@@ -128,6 +133,11 @@ _CHAOS_REPEAT_LINE_RE = re.compile(
     rf"^(?P<indent>[ \t]*){_CHAOS_CUE}[ \t]*(?:\[[ \t]*chaos[ \t]*\][ \t]*)+$",
     re.IGNORECASE | re.MULTILINE,
 )
+_CHAOS_PROMPT_LEAK_RE = re.compile(
+    rf"^(?P<indent>[ \t]*)(?:and\s+)?then\s+['\"]?{_CHAOS_PARENTHESES}['\"]?"
+    r"(?:\s+on its own line as a Suno energy-shift cue)?[ \t]*[,.;]?[ \t]*(?:then)?[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 _SUNG_BASS_DROP_RE = re.compile(
     r"(?:heavy[ \t]+)?bass[ \t]+drop[ \t]*[.!?,…！？。、，]*", re.IGNORECASE
 )
@@ -139,16 +149,6 @@ _CUE_WITH_SUFFIX_RE = re.compile(
     r"(?P<bare>[^\[\]()]+?))\s*"
     r"(?P<suffix>\[[^\[\]]+\]|\([^()]+\))?\s*$"
 )
-_INTRO_HEADER_RE = re.compile(r"\[\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*\]", re.IGNORECASE)
-_INTRO_LABEL_ECHO_RE = re.compile(
-    r"[\[(（]\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*[\])）]", re.IGNORECASE
-)
-_VOCAL_WRAPPER_RE = re.compile(r"\[(?P<bracket>[^\[\]]+)\]|[(（](?P<paren>[^()（）]+)[)）]")
-_TRAILING_ECHO_RE = re.compile(r"^(?P<lead>.*\S)\s*[(（](?P<echo>[^()（）]+)[)）]\s*$")
-# Repeated sung interjections that are kept like vocalizations.
-_SUNG_INTERJECTIONS = frozenset({
-    "yeah", "hey", "na", "da", "woo", "uh", "eh", "ha", "yo", "ay", "wo", "ooh",
-})
 # "[romaji cue] [English meaning]" on one line.
 _ROMAJI_GLOSS_RE = re.compile(r"\[(?P<romaji>[^\[\]]+)\]\s*\[(?P<gloss>[^\[\]]+)\]")
 _GLOSS_FUNCTION_WORDS = frozenset({
@@ -156,6 +156,21 @@ _GLOSS_FUNCTION_WORDS = frozenset({
     "into", "through", "we", "i", "you", "it", "my", "our", "your", "their",
 })
 _TRAILING_TAGS_RE = re.compile(r"^(?P<lead>.+?)(?P<tags>(?:[ \t]*\[[^\[\]]+\])+)[ \t]*$")
+
+
+# "; neon veins", "[; Epic Guitar Solo]", "；（アッハ）": a stray list separator at line start.
+_LEADING_SEMICOLON_RE = re.compile(r"^(?P<lead>[ \t]*[\[(（]?)[ \t]*[;；]+[ \t]*")
+
+
+def strip_leading_semicolons(text: str) -> str:
+    """Remove semicolons the model puts at the start of a line or cue."""
+    kept = []
+    for line in text.splitlines():
+        cleaned = _LEADING_SEMICOLON_RE.sub(lambda match: match.group("lead"), line)
+        if cleaned != line and cleaned.strip() in {"", "[", "(", "（", "[]", "()", "（）"}:
+            continue
+        kept.append(cleaned)
+    return "\n".join(kept)
 
 
 def has_emoji(text: str) -> bool:
@@ -195,6 +210,7 @@ def strip_emoji_lines(text: str) -> str:
 
 def bracket_chaos_cues(text: str) -> str:
     """Keep exact chaos directions in brackets, without changing lyric sentences."""
+    text = _CHAOS_PROMPT_LEAK_RE.sub(r"\g<indent>[Chaos]", text)
     text = _CHAOS_TAG_RE.sub("[Chaos]", text)
     text = _CHAOS_PAREN_RE.sub("[Chaos]", text)
     text = _CHAOS_REPEAT_LINE_RE.sub(r"\g<indent>[Chaos]", text)
@@ -331,31 +347,25 @@ def split_inline_glosses(text: str) -> str:
 
 def tag_instrument_cues(text: str, *, production_directions: bool = False) -> str:
     """Turn instrument cues and section-specific production directions into tags."""
-    lines: List[str] = []
-    for line in bracket_chaos_cues(text).splitlines():
-        stripped = line.strip()
-        if stripped.startswith(("(", "（")) and stripped.endswith((")", "）")):
-            cue_text = re.sub(r"\s+", " ", stripped[1:-1]).strip()
-            cue = cue_text.lower()
-            if cue in _LAYOUT_PLACEHOLDERS:
-                lines.append("")
-                continue
-            tag = _INSTRUMENT_CUE_TAGS.get(cue)
-            if tag:
-                lines.append(tag)
-                continue
-            if cue.endswith(" solo") and _is_stage_cue_phrase(cue_text):
-                lines.append(f"[{cue_text}]")
-                continue
-            if (
-                production_directions
-                and not _is_vocalization(cue_text)
-                and _PRODUCTION_DIRECTION_RE.search(cue_text)
-            ):
-                lines.append(f"[{cue_text}]")
-                continue
-        lines.append(line)
-    return "\n".join(lines)
+    from services.rei_toei._suno_lyric_cues import tag_instrument_cues as implementation
+
+    return implementation(text, production_directions=production_directions)
+
+
+def bracket_parenthetical_direction_cues(text: str) -> str:
+    """Convert exact, known parenthetical direction labels into square-bracket tags."""
+    from services.rei_toei._suno_lyric_cues import (
+        bracket_parenthetical_direction_cues as implementation,
+    )
+
+    return implementation(text)
+
+
+def split_inline_stage_cues(text: str) -> str:
+    """Move recognized bracketed sound cues onto their own lines."""
+    from services.rei_toei._suno_lyric_cues import split_inline_stage_cues as implementation
+
+    return implementation(text)
 
 
 def _is_vocalization(text: str) -> bool:
@@ -363,27 +373,11 @@ def _is_vocalization(text: str) -> bool:
     return bool(re.fullmatch(r"(?:ah+|oh+|ooh+|whoa+|la+|mm+)(?:[\s,.-]+(?:ah+|oh+|ooh+|whoa+|la+|mm+))*", text, re.IGNORECASE))
 
 
-def _is_word_echo(text: str) -> bool:
-    """True for ``Shine shine``-style ad-libs: one real word repeated, not a vocalization."""
-    words = re.findall(r"[^\W\d_]+(?:'[^\W\d_]+)?", text)
-    if len(words) < 2 or len({word.casefold() for word in words}) != 1:
-        return False
-    if re.sub(r"[\s,.!?~-]+", "", text) != "".join(words):
-        return False
-    word = words[0].casefold()
-    return word not in _SUNG_INTERJECTIONS and not _is_vocalization(word)
-
-
 def strip_word_echoes(line: str) -> str:
     """Drop ``(Shine shine)`` ad-libs on their own line or after a lyric."""
-    stripped = line.strip()
-    whole = _VOCAL_WRAPPER_RE.fullmatch(stripped)
-    if whole and whole.group("paren") and _is_word_echo(whole.group("paren")):
-        return ""
-    match = _TRAILING_ECHO_RE.match(line)
-    if match and _is_word_echo(match.group("echo")):
-        return match.group("lead").rstrip()
-    return line
+    from services.rei_toei._suno_lyric_cues import strip_word_echoes as implementation
+
+    return implementation(line)
 
 
 def tidy_vocalization_cues(text: str, *, intro: bool = False) -> str:
@@ -394,35 +388,9 @@ def tidy_vocalization_cues(text: str, *, intro: bool = False) -> str:
     bare vocalizations are parenthesized, and repeated vocalizations are dropped.
     Repeated-word ad-libs such as ``(Shine shine)`` are dropped everywhere.
     """
-    kept: List[str] = []
-    seen: set[str] = set()
-    for line in text.splitlines():
-        if line.strip():
-            line = strip_word_echoes(line)
-            if not line.strip():
-                continue
-        stripped = line.strip()
-        if intro and not _INTRO_HEADER_RE.fullmatch(stripped):
-            stripped = _INTRO_LABEL_ECHO_RE.sub(" ", stripped).strip()
-            if stripped.casefold() in {"instrumental build", "intro verse"}:
-                stripped = ""
-            if not stripped and line.strip():
-                continue
-        inner = _VOCAL_WRAPPER_RE.fullmatch(stripped)
-        bracketed = inner.group("bracket") if inner else None
-        candidate = (bracketed or (inner.group("paren") if inner else None)
-                     or (stripped if intro else ""))
-        if candidate and _is_vocalization(candidate.strip()):
-            vocal = candidate.strip()
-            if intro:
-                key = re.sub(r"[\s,.-]+", " ", vocal).casefold()
-                if key in seen:
-                    continue
-                seen.add(key)
-            kept.append(f"({vocal})")
-            continue
-        kept.append(stripped if intro else line)
-    return "\n".join(kept)
+    from services.rei_toei._suno_lyric_cues import tidy_vocalization_cues as implementation
+
+    return implementation(text, intro=intro)
 
 
 def unbracket_romaji_glosses(text: str) -> str:

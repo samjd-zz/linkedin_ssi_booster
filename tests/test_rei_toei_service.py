@@ -1002,7 +1002,7 @@ def test_compose_lyrics_with_ollama(mock_domain_knowledge_data):
     # Mock Ollama response
     mock_lyrics_response = json.dumps({
         "verse_1": "Async threads compile the night\\nZero-cost abstractions take flight",
-        "chorus": "Tokio runtime, execute the protocol",
+        "chorus": "Tokio runtime, execute the protocol\\nThe protocol wakes",
         "verse_2": "Futures await in digital streams\\nConcurrent patterns weave the seams",
         "bridge": "Ownership verified, no race conditions",
         "intro": "(Ahh ahh ahh)\nThe signal hums awake",
@@ -1060,7 +1060,7 @@ def test_compose_lyrics_parses_fenced_json_with_trailing_comma(mock_domain_knowl
     mock_lyrics_response = """```json
 {
   "verse_1": "Queue depth rising in neon lanes",
-  "chorus": "Drain the pipeline now",
+  "chorus": "Drain the pipeline now\\nThe queue moves at last",
   "verse_2": "Backpressure melts into signal rain",
   "bridge": "State machine pivots on the break",
   "intro": "(Ahh ahh ahh)\\nThe signal hums awake",

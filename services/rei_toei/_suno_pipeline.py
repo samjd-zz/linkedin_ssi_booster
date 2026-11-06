@@ -26,7 +26,10 @@ from services.rei_toei._lyric_checks import (
     _has_japanese_script,
     _learning_annotation_stats as _learning_annotation_stats,
     _learning_annotations_ok,
+    MIN_CHORUS_SUNG_LINES,
     _sections_are_distinct,
+    chorus_line_deficit,
+    chorus_revision_feedback,
 )
 from services.rei_toei._lyric_prompts import build_lyric_prompts
 from services.rei_toei._lyric_romaji import (
@@ -239,6 +242,8 @@ def compose_lyrics(
                     missing_fields, attempt,
                 )
 
+            gate_view = dict(response_data)
+            tidy_song_sections(gate_view, stage_policy)
             # 2. Schema Leakage Check
             if _has_prompt_schema_leakage(response_data):
                 if attempt < max_attempts:
@@ -306,6 +311,22 @@ def compose_lyrics(
                 logger.info(
                     "Bridge has fewer than %d sung lines; climax may be thin.",
                     MIN_BRIDGE_SUNG_LINES,
+                )
+
+            short_chorus = chorus_line_deficit(gate_view.get("chorus"), stage_policy)
+            if short_chorus is not None:
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Chorus has only %d sung line(s) on attempt %s; retrying with at least %d.",
+                        short_chorus, attempt, MIN_CHORUS_SUNG_LINES,
+                    )
+                    structure_feedback = chorus_revision_feedback(short_chorus)
+                    continue
+                fallback = build_fallback_lyrics(concept, lyric_language, stage_policy)
+                response_data["chorus"] = fallback.chorus
+                logger.warning(
+                    "Chorus remained under %d sung lines after %s attempt(s); using fallback chorus.",
+                    MIN_CHORUS_SUNG_LINES, attempt,
                 )
 
             # 6. Bilingual Ratio Threshold Validation

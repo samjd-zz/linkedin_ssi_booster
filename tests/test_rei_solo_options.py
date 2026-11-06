@@ -50,7 +50,7 @@ def _compose(
         "intro": "[Instrumental Build]\n(Ahh ahh ahh)\n[Intro Verse]\nAn open door",
         "verse_1": "The lights come on\nA traveler sees the sky",
         "pre_chorus": "The road begins to turn",
-        "chorus": "WE FIND A WAY HOME",
+        "chorus": "WE FIND A WAY HOME\nTHE NIGHT OPENS WIDE",
         "verse_2": "The rain has finally stopped\nA new horizon glows",
         "bridge": "The darkness lifts\nWe hold the sky\nThe journey changes\nWe start again",
         "drop": "[Heavy Bass Drop]\nRun into the light",

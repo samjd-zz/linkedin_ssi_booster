@@ -8,8 +8,11 @@ from typing import Any, Dict
 from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
 from services.rei_toei._suno_cleanup import (
     bracket_chaos_cues,
+    bracket_parenthetical_direction_cues,
     strip_emoji_lines,
+    strip_leading_semicolons,
     strip_sung_bass_drop_cues,
+    split_inline_stage_cues,
     tidy_vocalization_cues,
 )
 from services.rei_toei._suno_quality import bracket_solo_directions
@@ -55,9 +58,11 @@ def tidy_song_sections(payload: Dict[str, Any], policy: StagePolicy | None = Non
         if not isinstance(value, str):
             continue
         rule = policy.rule(field)
-        value = strip_emoji_lines(policy.canonicalize(value))
+        value = strip_leading_semicolons(strip_emoji_lines(policy.canonicalize(value)))
         if field in SUNG_LYRIC_FIELDS or field == "solo":
-            value = bracket_chaos_cues(value)
+            value = split_inline_stage_cues(
+                bracket_parenthetical_direction_cues(bracket_chaos_cues(value))
+            )
         lines = []
         for line in value.splitlines():
             if (

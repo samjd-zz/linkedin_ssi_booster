@@ -12,6 +12,9 @@ from services.rei_toei._suno_cleanup import (
     split_inline_glosses,
     split_intro_block,
     strip_emoji_lines,
+    strip_leading_semicolons,
+    bracket_parenthetical_direction_cues,
+    split_inline_stage_cues,
     tag_instrument_cues,
     tidy_vocalization_cues,
     unbracket_romaji_glosses,
@@ -44,7 +47,11 @@ def _append_normalized_section(
 ) -> str:
     """Normalize and append a Suno lyric section when it has content."""
     # Emoji go first so Romaji cues generated below never copy them.
-    text = strip_emoji_lines(text or "")
+    text = split_inline_stage_cues(
+        bracket_parenthetical_direction_cues(
+            strip_leading_semicolons(strip_emoji_lines(text or ""))
+        )
+    )
     had_content = bool(text.strip())
     if instrumental is None:
         instrumental = label.casefold() == "solo"

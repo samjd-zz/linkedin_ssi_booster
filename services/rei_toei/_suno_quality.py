@@ -27,15 +27,32 @@ def bracket_solo_directions(text: str | None, *, label: str = "Solo") -> str:
     lines: list[str] = []
     for line in body.splitlines():
         stripped = line.strip()
-        if not stripped or _BRACKETED_DIRECTIONS_RE.fullmatch(stripped):
+        if not stripped:
             lines.append(stripped)
+            continue
+        if _BRACKETED_DIRECTIONS_RE.fullmatch(stripped):
+            inner = stripped[1:-1].strip()
+            balanced = _close_unmatched_parentheses(inner)
+            lines.append(f"[{balanced}]" if balanced != inner else stripped)
             continue
         instruction = stripped.strip("()（）").replace("[", " ").replace("]", " ")
         instruction = " ".join(instruction.split())
         if instruction:
-            lines.append(f"[{instruction}]")
+            lines.append(f"[{_close_unmatched_parentheses(instruction)}]")
     body = "\n".join(lines).strip()
     return f"[{label}]\n{body}" if body else ""
+
+
+def _close_unmatched_parentheses(text: str) -> str:
+    """Close unmatched parenthetical openers in an instrumental direction."""
+    closing = {"(": ")", "（": "）"}
+    stack: list[str] = []
+    for character in text:
+        if character in closing:
+            stack.append(character)
+        elif stack and closing[stack[-1]] == character:
+            stack.pop()
+    return text + "".join(closing[opener] for opener in reversed(stack))
 
 
 def _is_sung(line: str) -> bool:

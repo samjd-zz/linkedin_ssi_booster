@@ -12,13 +12,47 @@ from services.rei_toei._lyric_romaji import (
     _japanese_lyric_phrase,
 )
 from services.rei_toei._models import SongConcept
+from services.rei_toei._stage_policy import StagePolicy
 from services.rei_toei._suno_cleanup import has_chinese_grammar, replace_chinese_phrasing
 
 _KANA_RE = re.compile(r"[\u3040-\u30ff\uff66-\uff9f]")
 _CJK_IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+MIN_CHORUS_SUNG_LINES = 2
 # Fullwidth Chinese comma/particle markers that essentially never appear in
 # genuine Japanese lyrics (Japanese uses 、 not ，, and の not 的).
 _CHINESE_ONLY_MARKER_RE = re.compile(r"[，的]")
+
+
+def sung_line_count(section: Any) -> int:
+    """Count lyric lines while ignoring stage cues and parenthetical vocalizations."""
+    if not isinstance(section, str):
+        return 0
+    return sum(
+        1
+        for raw_line in section.splitlines()
+        if (line := raw_line.strip())
+        and line[0] not in "[(（"
+        and (_ENGLISH_CHAR_RE.search(line) or _JAPANESE_CHAR_RE.search(line))
+    )
+
+
+def chorus_line_deficit(section: Any, policy: StagePolicy) -> int | None:
+    """Return the sung-line count when an enabled Chorus needs more lines."""
+    rule = policy.rule("chorus")
+    if not rule or rule.content != "sung" or not section:
+        return None
+    count = sung_line_count(section)
+    return count if count < MIN_CHORUS_SUNG_LINES else None
+
+
+def chorus_revision_feedback(line_count: int) -> str:
+    """Build a targeted retry instruction for an undersized Chorus."""
+    return (
+        "\n\nREVISION REQUIRED: The previous Chorus had only "
+        f"{line_count} sung line(s). Write at least {MIN_CHORUS_SUNG_LINES} "
+        "distinct, emotionally connected sung lines in the Chorus; keep sound "
+        "cues on their own bracketed lines."
+    )
 
 
 def _iter_lyric_content_lines(section_payload: Dict[str, Any]) -> List[str]:
