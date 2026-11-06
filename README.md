@@ -117,6 +117,7 @@ Sign up for Buffer with my partner link — http://join.buffer.com/samjd42 — t
 - 🔍 **Explainability** — `--avatar-explain`, `--avatar-learn-report`, and `--dot-report` give full visibility into grounding, learning, and truth scoring.
 - 🏠 **No cloud AI keys required** — all generation runs locally via Ollama.
 - 💻 **Laptop-optimized local AI** — Intel iGPU acceleration is supported on native Linux and Windows WSL2 via `/dev/dri` or `/dev/dxg`, with automatic CPU fallback. The laptop workflow is optimized for `qwen2.5:7b`; see [docs/rei-toei-customization.md](docs/rei-toei-customization.md#verified-intel-wsl2-laptop-workflow).
+- 🧩 **Focused, staged LLM work** — For suitable larger tasks, we break work into bounded steps, carry shared context, validate each result, and check the assembled output. Rei demonstrates this by composing lyrics first, translating hooks in batches of up to 10 lines, preserving successful translations, and applying song-structure checks and deterministic formatting.
 
 ✨🦄 **Result:** A self-improving, persona-driven content engine 🦄 that adapts to your taste, avoids repetition, and grows your SSI with full transparency and explainability.
 
