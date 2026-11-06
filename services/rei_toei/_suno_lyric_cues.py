@@ -13,6 +13,7 @@ from services.rei_toei._suno_cleanup import (
     _PRODUCTION_DIRECTION_RE,
     _is_vocalization,
     bracket_chaos_cues,
+    strip_leading_semicolons,
 )
 
 _INTRO_HEADER_RE = re.compile(r"\[\s*(?:instrumental\s+build|intro(?:\s+verse)?)\s*\]", re.IGNORECASE)
@@ -31,6 +32,7 @@ _JAPANESE_VOCALIZATION_REPLACEMENTS = (
     ("アー", "Ahh"),
     ("オオ", "Oh oh"),
     ("オー", "Oh"),
+    ("オ", "Oh"),
     ("ウー", "Ooh"),
     ("ララ", "La la"),
     ("ンー", "Mm"),
@@ -116,8 +118,8 @@ def _normalized_vocalization(text: str) -> Optional[str]:
     """Normalize common Japanese-script spellings of sung vocalizations."""
     candidate = text.strip()
     for japanese, latin in _JAPANESE_VOCALIZATION_REPLACEMENTS:
-        candidate = candidate.replace(japanese, latin)
-    candidate = re.sub(r"\s+", " ", candidate)
+        candidate = candidate.replace(japanese, f" {latin} ")
+    candidate = re.sub(r"\s+", " ", candidate).strip()
     if not _is_vocalization(candidate):
         return None
     if candidate == text.strip():
@@ -174,7 +176,7 @@ def tidy_vocalization_cues(text: str, *, intro: bool = False) -> str:
                     kept.append(f"({vocal})")
                     if intro:
                         seen.add(key)
-                tail = leading_vocalization.group("tail").strip()
+                tail = strip_leading_semicolons(leading_vocalization.group("tail").strip())
                 if tail:
                     kept.append(tail)
                 continue

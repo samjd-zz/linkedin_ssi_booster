@@ -62,6 +62,7 @@ def _append_normalized_section(
         if block:
             lyric_blocks.append(block)
         return block
+    text = tidy_vocalization_cues(text, intro=label.casefold() == "instrumental build")
     block = _normalize_suno_section(text, label, uppercase_body=uppercase_body)
     block = remove_required_cues(block, required_cues)
     if not block and required_cues and had_content:
