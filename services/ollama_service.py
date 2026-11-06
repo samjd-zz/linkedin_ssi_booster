@@ -696,18 +696,27 @@ Balance rules (non-negotiable):
 
         _extracted_block = f"\n\n{_extracted_context}" if _extracted_context else ""
 
+        # Shared, channel-independent context comes first so multi-channel runs
+        # for one article send an identical prompt prefix Ollama can reuse.
+        _post_kind = (
+            "Threads post" if channel == "threads"
+            else "Bluesky post" if channel == "bluesky"
+            else "X post" if channel == "x"
+            else "YouTube Short script" if channel == "youtube"
+            else "LinkedIn post"
+        )
         prompt = f"""Article:
 ---
 {article_text[:4500]}
 ---
 
-Write a {"Threads post" if channel == "threads" else "Bluesky post" if channel == "bluesky" else "X post" if channel == "x" else "YouTube Short script" if channel == "youtube" else "LinkedIn post"} reacting to this article.
-
 {ssi_instruction}
 
-{grounding_block}{_extracted_block}
+{grounding_block}{_extracted_block}{_continuity_block}
 
-{format_instructions}{_continuity_block}"""
+Write a {_post_kind} reacting to this article.
+
+{format_instructions}"""
 
         result = clean_llm_text(self._chat(
             PERSONA_SYSTEM_PROMPT + (f"\n\n{github_context}" if github_context else ""),

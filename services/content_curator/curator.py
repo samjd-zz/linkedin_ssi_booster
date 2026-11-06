@@ -6,7 +6,6 @@ scoring and truth-gate checks, and pushes to Buffer.
 
 import logging
 import os
-import time
 import uuid
 from typing import Any
 
@@ -254,7 +253,6 @@ class ContentCurator(CuratorArticleMixin, CuratorAllChannelsMixin, CuratorSingle
         self,
         dry_run: bool = False,
         max_ideas: int = 3,
-        request_delay: float = 5.0,
         channel: str | list[str] = "linkedin",
         message_type: str = "idea",
         interactive: bool = False,
@@ -312,9 +310,6 @@ class ContentCurator(CuratorArticleMixin, CuratorAllChannelsMixin, CuratorSingle
                 self._learn_from_article(article, prefetched_article_text, learn_only=True)
                 continue  # skip generation entirely
 
-            if created_ideas:
-                time.sleep(request_delay)
-
             _candidate_id = str(uuid.uuid4())
             ssi_component = pick_ssi_component(self._topic_signal)
             # Continual learning — persist new knowledge from the article
@@ -351,7 +346,6 @@ class ContentCurator(CuratorArticleMixin, CuratorAllChannelsMixin, CuratorSingle
                     extracted_facts=extracted_facts,
                     external_facts=external_facts,
                     dry_run=dry_run,
-                    request_delay=request_delay,
                     message_type=message_type,
                     interactive=interactive,
                     avatar_explain=avatar_explain,

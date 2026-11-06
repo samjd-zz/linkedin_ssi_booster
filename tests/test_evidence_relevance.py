@@ -220,7 +220,7 @@ def test_newly_learned_facts_available_before_shared_channel_selection(
     monkeypatch.setattr("services.avatar_intelligence.extract_and_append_knowledge", lambda **kw: [new_fact])
     monkeypatch.setattr("services.avatar_intelligence.load_avatar_state", lambda: None)
     monkeypatch.setattr("services.avatar_intelligence.normalize_extracted_facts", lambda state: [new_fact])
-    assert curator.curate_and_create_ideas(channel="linkedin,facebook,x", request_delay=0) == []
+    assert curator.curate_and_create_ideas(channel="linkedin,facebook,x") == []
     assert curator._process_single_channel.call_count == 3
     for call in curator._process_single_channel.call_args_list:
         assert call.kwargs["extracted_facts"] == [new_fact]
@@ -231,3 +231,21 @@ def test_evidence_path_preserves_full_source_id() -> None:
     assert extracted_fact_to_evidence_path(fact, fact.statement).source == (
         f"extracted_knowledge:{fact.source_fact_id}"
     )
+
+
+def test_curation_prompts_share_channel_independent_prefix(monkeypatch) -> None:
+    service = OllamaService.__new__(OllamaService)
+    service._chat = Mock(return_value="A grounded response.")
+    monkeypatch.setattr(
+        "services.ollama_service.truth_gate_result",
+        lambda text, *args, **kwargs: (text, None),
+    )
+    article = "Replit deploys autonomous agents. " * 5
+    for channel in ("linkedin", "x", "threads", "bluesky", "youtube"):
+        service.summarise_for_curation(article, "https://example.com", channel=channel, post_mode=True)
+
+    prompts = [call.args[1] for call in service._chat.call_args_list]
+    prefixes = {prompt.split("\n\nWrite a ", 1)[0] for prompt in prompts}
+    assert len(prompts) == 5
+    assert len(prefixes) == 1
+    assert all("\n\nWrite a " in prompt for prompt in prompts)

@@ -46,7 +46,7 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1718** | **1716** | **0** | **0** | **2** | **75%** | All executed tests passed |
+| **1719** | **1717** | **0** | **0** | **2** | **75%** | All executed tests passed |
 
 - **Latest Run Date:** November 5, 2026 (local time)
 - **Bounded lyric retries without canned songs:** Every language mode now permits five total lyric attempts. Malformed JSON, non-object payloads, leaked schema instructions, missing required sections, and short Choruses can recover on attempt five; otherwise composition raises `LyricCompositionError` with the final reason. No whole-song, Chorus, framing-section, or Japanese rescue-hook templates remain, and malformed retries cannot restore rejected drafts. Thirteen cases in `tests/test_rei_lyric_retries.py` cover recovery and exhaustion, including readable invalid-escape warnings with the current/next attempt and final failure without lyric text. Two additional CLI cases verify exit status 1, no traceback, failed-stage timing, and no formatting, saving, validation, or submission; console parity tests verify a reported failure with conversation history intact.
@@ -60,14 +60,14 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - **Previous Fix:** Intro vocalizations are always parenthesized (`[Ahh ahh ahh]` → `(Ahh ahh ahh)`), while parenthesized production directions such as `(Start with glitchy synth tones)` under `[Instrumental Build]` become bracketed. Echoed `(Instrumental Build)`/`Intro Verse` labels inside intro lines are removed, and duplicate intro vocalizations are dropped, so the `[Intro Verse]` holds only sung lyrics.
 - **Previous Fix:** Standalone sung `Heavy Bass Drop` and `Bass Drop` cues, recognized Japanese translations, and their Romaji are removed before hook selection and during final formatting, while the bracketed drop cue and real lyrics remain. Exact chaos cues become `[Chaos]`, including parenthetical or standalone forms. 43 stage-cue cases plus one console-parity case cover both paths, prompt instructions, and preservation of sung lyrics and instrumental tags.
 - **Previous Fix:** Rei lyrics no longer carry emoji such as `📐` into Suno output. Hook translations that contain emoji are rejected so Argos or the English line is used, hook text reaches the translators without emoji, the draft tidy pass strips emoji and drops emoji-only lines, and Suno assembly strips any remaining emoji before Romaji cues are generated; Japanese marks such as `ー`, `〜`, and `・` are kept. 24 cases cover the stripping rules, rejected translations with Argos fallback, the tidy pass, and emoji-free assembled sections and cues. The earlier fix routed bare `/rei` in `--console` through the same structured pipeline as `--rei-generate` with an auto-selected theme and replaced chat replies containing song sheets with structured songs (16 cases). 31 solo-palette regressions cover the loaded persona-aligned options, structured and console prompts, model-selected solos, custom and missing options, explicit invalid-configuration errors, stage-cue handling, preserved vocal parentheses, and structured/freeform cleanup. 4 prior Drop/Outro regressions cover parenthetical production directions and vocal ad-libs; 16 required-section/Solo regressions cover automatic repairs and instrumental formatting.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,716 passed, 0 failed, 2 deselected** in 61.34 seconds. The same run measured **75% statement coverage**. One existing non-terminal `term_image` warning and the expected notice that `content_calendar` was not imported remain.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,717 passed, 0 failed, 2 deselected** in 61.34 seconds. The same run measured **75% statement coverage**. One existing non-terminal `term_image` warning and the expected notice that `content_calendar` was not imported remain.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, `cli`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
 
 ### What These Results Measure
 
-The latest run executed **1,716 of 1,718 collected tests**, all passing with
+The latest run executed **1,717 of 1,719 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
@@ -155,7 +155,7 @@ private graph is not configured, those checks retain their existing skip behavio
 - _Large-batch embedding correctness/reuse, content/model invalidation, batched tokenization/fallback, one snapshot per reload, refreshed tag relationships and graph, lazy Rei knowledge, shared music client, sparse external fallback, bounded history, one verification bar, voice completion, and chat metrics/errors_
 - **30** Schedule performance and resource-cleanup regression tests (new)
 - _17 preparation/grounding/report/cap/preview/error/timing cases | 13 actual-use FLUX lifecycle and cleanup cases_
-- **24** Article-evidence relevance regressions (new)
+- **25** Article-evidence relevance and shared curation-prompt-prefix regressions (new)
 - _English/Japanese content matching, capitalized names, no duplicate lemma/raw credit, metadata/stopword/year rejection, per-type maximums, hybrid/fallback filtering, prompt safety, actual-evidence explanations, current-article learning, and full extracted IDs_
 - **10** Docker launcher/model-initializer tests (replace the prior forced-build test)
 - _Six Compose argument scenarios each exercise successful and failed cached-only GPU probes; four initializer cases cover fully cached models, missing fallback, no fallback, and fail-fast pulls._
@@ -184,7 +184,7 @@ See [running with cached images/models](features/docker-cache-first.md).
 
 ## Article-Evidence Relevance Regressions
 
-`tests/test_evidence_relevance.py` contains 24 deterministic cases. Language-model
+`tests/test_evidence_relevance.py` contains 25 deterministic cases. Language-model
 tokenization is mocked to cover both lemma behavior and missing-model fallback;
 no Ollama, Buffer, external retrieval, or knowledge-file writes are needed.
 `services/evidence_relevance.py` has **100% statement coverage (33 statements)**.

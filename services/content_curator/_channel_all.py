@@ -38,7 +38,6 @@ class CuratorAllChannelsMixin(CuratorReportingMixin):
         extracted_facts: list[Any],
         external_facts: list[Any],
         dry_run: bool,
-        request_delay: float,
         message_type: str,
         interactive: bool,
         avatar_explain: bool,
@@ -91,7 +90,6 @@ class CuratorAllChannelsMixin(CuratorReportingMixin):
         #     ssi_component=ssi_component
         # )
 
-        time.sleep(request_delay)
         x_post = self.ai.summarise_for_curation(
             f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "x",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
@@ -103,7 +101,6 @@ class CuratorAllChannelsMixin(CuratorReportingMixin):
             if article["link"] and article["link"] not in x_post:
                 x_post = x_post.rstrip() + f"\n\n{article['link']}"
 
-        time.sleep(request_delay)
         threads_post = self.ai.summarise_for_curation(
             f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "threads",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
@@ -116,7 +113,6 @@ class CuratorAllChannelsMixin(CuratorReportingMixin):
             if article["link"] and article["link"] not in threads_post:
                 threads_post = threads_post.rstrip() + f"\n\n{article['link']}"
 
-        time.sleep(request_delay)
         bsky_post = self.ai.summarise_for_curation(
             f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "bluesky",
             grounding_facts=grounding_facts, extracted_facts=extracted_facts,
@@ -129,7 +125,6 @@ class CuratorAllChannelsMixin(CuratorReportingMixin):
             if article["link"] and article["link"] not in bsky_post:
                 bsky_post = bsky_post.rstrip() + f"\n\n{article['link']}"
 
-        time.sleep(request_delay)
         yt_script = self.ai.summarise_for_curation(
             f"Title: {article['title']}\n{article['summary']}", article["link"], ssi_component, "youtube",
             post_mode=True, grounding_facts=grounding_facts, extracted_facts=extracted_facts,
