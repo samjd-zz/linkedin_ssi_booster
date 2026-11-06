@@ -31,7 +31,23 @@ within the CLI's `rei.lyrics` or console's `console.rei.lyrics` timing stage;
 no batch message is emitted when no hooks are selected or for batches skipped
 after a runner failure.
 
-The lyric composer currently allows up to five attempts for Japanese/bilingual output and one for English, with up to 4,096 generated tokens per attempt. Structural, language-mix, script, and repetitiveness failures can trigger a complete regeneration. These checks and retry limits are unchanged by the startup optimization; warning logs give retry reasons. Formatting includes deterministic Japanese/Romaji normalization and does not make another LLM call. Use timings to distinguish retries from post-generation CPU work.
+The lyric composer allows up to five total attempts in every language mode,
+including English-first bilingual drafting, with up to 4,096 generated tokens
+per attempt. Malformed JSON, copied schema instructions, missing required
+sections, a Chorus shorter than two sung lines, and language/script failures
+trigger retries; warning logs give the reason and revision prompts identify
+what needs fixing. JSON repair is still attempted before regenerating.
+Repetition checks can also request a rewrite.
+
+If no usable draft is produced, composition raises `LyricCompositionError`
+with the final reason. No canned song, Chorus, framing section, or Japanese
+rescue hook is substituted, and malformed retries do not restore a rejected
+draft. The CLI reports the error without a traceback and exits with status 1;
+the console reports it and remains available. Failed songs are not formatted,
+saved, or submitted to Suno, and the lyric timing stage records `status=error`.
+Runner/API failures propagate immediately rather than retrying an unavailable
+service. Formatting still performs deterministic Japanese/Romaji normalization
+without another LLM call. Use timings to distinguish retries from CPU work.
 
 The launcher performs its GPU passthrough probe before Python's stage logs. One-off runs reuse the existing app image unless `run --build` is supplied.
 
@@ -116,9 +132,10 @@ Docker service. Polite endings such as `します` or `消えます` become plai
 `する` or `消える`; lines that still fail stay English. An Ollama runtime
 error stops later batches without discarding earlier results.
 Set `REI_BILINGUAL_STRATEGY=generate` for direct bilingual drafting and mix
-validation. If the composer exhausts its retries on an unusable draft, either
-strategy can use built-in fallback lyrics; in `translate` mode those lyrics
-are not hook-translated and may not meet the target. Console song requests use
+validation. Both strategies fail explicitly if no usable draft is produced
+within five attempts; neither uses built-in fallback lyrics. Argos remains
+available for individual hook translations after a valid English draft.
+Console song requests use
 the same structured composer even when extracted knowledge is unavailable.
 Without an explicit topic or extracted theme, Rei chooses from her metaphor
 library, or uses a general digital creativity theme if it is empty. A

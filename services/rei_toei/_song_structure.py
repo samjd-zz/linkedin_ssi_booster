@@ -90,13 +90,6 @@ def borrowed_lines_feedback(found: List[Tuple[str, str, str]]) -> str:
     )
 
 
-# Framing sections a final draft may borrow from the fallback song; the
-# verses, chorus, and bridge must come from the model.
-BACKFILLABLE_SECTIONS = frozenset({
-    "intro", "intro_verse", "pre_chorus", "drop", "solo", "breakdown", "outro",
-})
-
-
 def missing_required_sections(
     payload: Dict[str, Any], policy: StagePolicy | None = None,
 ) -> List[str]:

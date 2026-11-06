@@ -14,6 +14,7 @@ import main
 import services.avatar_intelligence as avatar
 import services.rei_toei_service as rei
 from services.rei_toei import Theme
+from services.rei_toei._models import LyricCompositionError
 
 
 @pytest.fixture
@@ -110,6 +111,35 @@ def test_automatic_preview_loads_knowledge_and_history_once(
     preview.history.assert_called_once()
     preview.submit.assert_not_called()
     assert preview.generate.call_args.args[5] == ["Earlier song"]
+
+
+@pytest.mark.parametrize("preview_mode", [True, False])
+def test_failed_lyrics_stop_before_formatting_saving_or_submission(
+    preview: SimpleNamespace, monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str],
+    preview_mode: bool,
+) -> None:
+    preview.compose.side_effect = LyricCompositionError(
+        "Lyric composition failed after 5 attempts. No song was generated; please try again."
+    )
+    arguments = ["main.py", "--rei-generate", "--rei-theme", "async"]
+    if preview_mode:
+        arguments.append("--rei-preview")
+    monkeypatch.setattr(sys, "argv", arguments)
+
+    with caplog.at_level(logging.INFO), pytest.raises(SystemExit) as exc:
+        main.main()
+
+    assert exc.value.code == 1
+    output = capsys.readouterr().out
+    assert "No song was generated" in output
+    assert "SUNO SONG" not in output
+    rei.assemble_suno_prompt.assert_not_called()
+    preview.submit.assert_not_called()
+    preview.validate.assert_not_called()
+    assert not list(preview.output_dir.iterdir())
+    assert "status=error" in caplog.text
+    assert all(record.exc_info is None for record in caplog.records)
 
 
 def test_explicit_explain_keeps_evidence_validation(

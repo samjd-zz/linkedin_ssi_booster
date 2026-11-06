@@ -289,14 +289,15 @@ def test_console_generate_mode_stops_after_five_invalid_drafts(
 
     assert model._chat.call_count == 6
     assert "Bilingual lyric mix failed after 5 attempts" in caplog.text
-    assert "Reverting to formatted fallback" in caplog.text
+    assert "No song was generated" in caplog.text
     assert not _translation_calls(model)
-    assert "[Chorus]" in reply
+    assert "Song generation failed" in reply
+    assert "[Chorus]" not in reply
     model.client.chat.assert_not_called()
 
 
-@pytest.mark.parametrize(("strategy", "attempts"), [("translate", 2), ("generate", 5)])
-def test_console_uses_shared_fallback_for_unusable_lyric_drafts(
+@pytest.mark.parametrize(("strategy", "attempts"), [("translate", 5), ("generate", 5)])
+def test_console_reports_failure_for_unusable_lyric_drafts(
     strategy: str, attempts: int, console_setup: ReiDomainKnowledge,
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -310,11 +311,14 @@ def test_console_uses_shared_fallback_for_unusable_lyric_drafts(
         return respond(system, user, **kwargs)
 
     model._chat.side_effect = malformed_draft
-    reply, _ = asyncio.run(rei.handle_rei_console("give me a song", model, []))
+    history = [{"role": "user", "content": "Earlier conversation"}]
+    reply, returned_history = asyncio.run(rei.handle_rei_console("give me a song", model, history))
 
     assert model._chat.call_count == attempts + 1
-    assert "Reverting to formatted fallback" in caplog.text
-    assert "信号を追いかけて" in reply
+    assert "No song was generated" in caplog.text
+    assert "Song generation failed" in reply and "after 5 attempts" in reply
+    assert "[Chorus]" not in reply
+    assert returned_history == [{"role": "user", "content": "Earlier conversation"}]
     assert not _translation_calls(model)
     model.client.chat.assert_not_called()
 

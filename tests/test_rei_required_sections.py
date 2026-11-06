@@ -138,32 +138,30 @@ def test_compose_retries_missing_or_emptied_section_with_feedback(field: str, va
     assert "The signal sleeps" in (lyrics.outro or "")
 
 
-def test_final_draft_keeps_its_verses_and_backfills_framing_sections() -> None:
+def test_final_draft_missing_framing_sections_fails_without_backfill() -> None:
     incomplete = _complete()
     del incomplete["outro"]
     incomplete["solo"] = "[Solo]"
     ollama = MagicMock()
     ollama._chat.return_value = json.dumps(incomplete)
 
-    lyrics = compose_lyrics(
-        _concept(), load_rei_persona(), load_rei_domain_knowledge(), ollama=ollama
-    )
+    with pytest.raises(RuntimeError, match="Missing required fields.*solo.*outro"):
+        compose_lyrics(
+            _concept(), load_rei_persona(), load_rei_domain_knowledge(), ollama=ollama
+        )
 
-    assert ollama._chat.call_count == 2
-    assert "A candle waits" in lyrics.verse_1
-    assert "Jump the gap" in (lyrics.drop or "")
-    assert "End transmission." in (lyrics.outro or "")
-    assert "Synthesizer cascade" in (lyrics.solo or "")
+    assert ollama._chat.call_count == 5
 
 
-def test_final_draft_missing_a_core_section_uses_full_fallback() -> None:
+def test_final_draft_missing_a_core_section_fails_without_replacement() -> None:
     incomplete = _complete()
     del incomplete["bridge"]
     ollama = MagicMock()
     ollama._chat.return_value = json.dumps(incomplete)
 
-    lyrics = compose_lyrics(
-        _concept(), load_rei_persona(), load_rei_domain_knowledge(), ollama=ollama
-    )
+    with pytest.raises(RuntimeError, match="Missing required fields.*bridge"):
+        compose_lyrics(
+            _concept(), load_rei_persona(), load_rei_domain_knowledge(), ollama=ollama
+        )
 
-    assert "A candle waits" not in lyrics.verse_1
+    assert ollama._chat.call_count == 5

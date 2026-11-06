@@ -5,6 +5,8 @@ import logging
 
 from colorama import Fore, Style
 
+from services.rei_toei._models import LyricCompositionError
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +33,10 @@ def run_rei_cli(args, ai) -> None:
             asyncio.run(handle_rei_generate_strudel(args, ai, rei_config))
     except KeyboardInterrupt:
         print("\nRei Toei generation cancelled.")
+    except LyricCompositionError as exc:
+        logger.error("Rei Toei song generation failed: %s", exc)
+        print(str(Fore.RED) + f"\n\u274c  Rei Toei error: {exc}" + str(Style.RESET_ALL))
+        raise SystemExit(1) from None
     except Exception as _rei_err:
         logger.error("Rei Toei CLI error: %s", _rei_err, exc_info=True)
         cause = _rei_err.__cause__

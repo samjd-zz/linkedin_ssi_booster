@@ -88,7 +88,7 @@ rename it, then edit its sections. This example defines a compact acoustic song:
 ```
 
 - **`sections`**: Enabled JSON fields, in performance order. Removing a field
-  disables it, including in fallback and final assembly. An optional field can
+  disables it in drafting and final assembly. An optional field can
   appear when supplied, but is not synthesized just because it has cue settings.
 - **Supported field names**: `intro`, `verse_1`, `pre_chorus`, `chorus`, `verse_2`,
   `bridge`, `drop`, `solo`, `breakdown`, `outro`. These are the fixed Lyrics data
@@ -116,11 +116,13 @@ rename it, then edit its sections. This example defines a compact acoustic song:
 At least one section must be both required and sung: this is a vocal-lyric
 pipeline, not a configuration for fully instrumental Suno generation.
 
-The final draft can backfill missing framing sections from the profile-aware
-fallback (Intro, Pre-Chorus, Drop, Solo, Breakdown, Outro). Missing required
-verses, Chorus, or Bridge after retries triggers the existing full-song fallback.
-Disabling a section does not weaken Japanese-language or repetition checks on
-the remaining content.
+The composer allows five total lyric attempts in every language mode. Missing
+required sections or a Chorus with fewer than two sung lines trigger revision
+feedback. If no usable draft is produced, generation fails explicitly instead
+of supplying a canned song, Chorus, or framing section. Deterministic cue and
+pronunciation formatting remains unchanged for accepted drafts. Disabling a
+section does not weaken Japanese-language or repetition checks on the remaining
+content.
 
 ## Structural Cue Vocabulary
 

@@ -10,6 +10,10 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
+class LyricCompositionError(RuntimeError):
+    """No usable lyric draft was produced within the retry budget."""
+
+
 @dataclass
 class ReiPersonaGraph:
     """Rei Toei's identity and musical expertise"""

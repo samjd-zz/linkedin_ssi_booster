@@ -1080,8 +1080,8 @@ def test_compose_lyrics_parses_fenced_json_with_trailing_comma(mock_domain_knowl
     assert "Backpressure melts" in lyrics.verse_2
 
 
-def test_compose_lyrics_fallback_on_error(mock_domain_knowledge_data):
-    """Test compose_lyrics uses fallback when Ollama fails"""
+def test_compose_lyrics_fails_after_invalid_responses(mock_domain_knowledge_data):
+    """Unusable model replies exhaust the bounded budget without canned lyrics."""
     from services.ollama_service import OllamaService
     
     concept = SongConcept(
@@ -1114,19 +1114,18 @@ def test_compose_lyrics_fallback_on_error(mock_domain_knowledge_data):
             domain_knowledge = load_rei_domain_knowledge()
     
     # Mock invalid response
-    with patch.object(OllamaService, "_chat", return_value="invalid"):
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
-    
-    # Should still return valid lyrics (fallback)
-    assert isinstance(lyrics, Lyrics)
-    assert "Test Theme" in lyrics.verse_1
+    with patch.object(OllamaService, "_chat", return_value="invalid") as mock_chat:
+        with pytest.raises(RuntimeError, match="after 5 attempts"):
+            compose_lyrics(concept, persona, domain_knowledge)
+
+    assert mock_chat.call_count == 5
 
 
-def test_compose_lyrics_bilingual_fallback_preserves_language_policy(
+def test_compose_lyrics_bilingual_failure_does_not_replace_the_song(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """Malformed Ollama lyrics must not force bilingual requests into English."""
+    """Incomplete bilingual drafts fail rather than becoming a canned song."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1160,12 +1159,11 @@ def test_compose_lyrics_bilingual_fallback_preserves_language_policy(
         with patch("builtins.open", mock_open(read_data=json.dumps(mock_domain_knowledge_data))):
             domain_knowledge = load_rei_domain_knowledge()
 
-    with patch.object(OllamaService, "_chat", return_value='{"verse_1": "broken"}'):
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+    with patch.object(OllamaService, "_chat", return_value='{"verse_1": "broken"}') as mock_chat:
+        with pytest.raises(RuntimeError, match="Missing required fields"):
+            compose_lyrics(concept, persona, domain_knowledge)
 
-    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert "データ" in merged
-    assert "Signal" in merged or "BREAK" in merged
+    assert mock_chat.call_count == 5
 
 
 def test_has_chinese_leakage_flags_simplified_chinese_disguised_as_japanese():
@@ -1199,7 +1197,7 @@ def test_compose_lyrics_rejects_chinese_leakage_disguised_as_bilingual_japanese(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """A Qwen-style Chinese-script response must fall back to real Japanese lyrics."""
+    """Repeated Chinese-script drafts fail instead of substituting Japanese lyrics."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1239,23 +1237,25 @@ def test_compose_lyrics_rejects_chinese_leakage_disguised_as_bilingual_japanese(
             "chorus": "启动！核心启动",
             "verse_2": "优化的指令，加速运行",
             "bridge": "无限的循环，穿越数字空间",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         },
         ensure_ascii=False,
     )
-    with patch.object(OllamaService, "_chat", return_value=chinese_leakage_response):
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+    with patch.object(OllamaService, "_chat", return_value=chinese_leakage_response) as mock_chat:
+        with pytest.raises(RuntimeError, match="Chinese-script leakage"):
+            compose_lyrics(concept, persona, domain_knowledge)
 
-    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert "データ" in merged
-    assert "，" not in merged
-    assert "的" not in merged
+    assert mock_chat.call_count == 5
 
 
 def test_compose_lyrics_rejects_romaji_only_bilingual_response(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """Romaji-only output keeps its draft and receives dynamic Japanese hooks."""
+    """Romaji-only direct bilingual drafts fail without invented rescue hooks."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1300,19 +1300,18 @@ def test_compose_lyrics_rejects_romaji_only_bilingual_response(
             "outro": "The night fades",
         }
     )
-    with patch.object(OllamaService, "_chat", return_value=romaji_response):
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+    with patch.object(OllamaService, "_chat", return_value=romaji_response) as mock_chat:
+        with pytest.raises(RuntimeError, match="Romaji alone is invalid"):
+            compose_lyrics(concept, persona, domain_knowledge)
 
-    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert "Data no koe ga tsuki ni hisomu" in merged
-    assert "Romaji Onlyの夜" in merged
+    assert mock_chat.call_count == 5
 
 
-def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
+def test_compose_lyrics_fails_after_repeated_english_bilingual_responses(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """Repeated English-only output must finish with the preserved draft plus rescue hooks."""
+    """Repeated English-only direct bilingual output fails without rescue hooks."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1358,12 +1357,10 @@ def test_compose_lyrics_falls_back_after_repeated_english_bilingual_responses(
         }
     )
     with patch.object(OllamaService, "_chat", return_value=english_response) as mock_chat:
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+        with pytest.raises(RuntimeError, match="Japanese lyrics must contain"):
+            compose_lyrics(concept, persona, domain_knowledge)
 
-    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
     assert mock_chat.call_count == 5
-    assert "Signal wakes inside the core" in merged
-    assert "English Driftの夜" in merged
 
 
 def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
@@ -1412,6 +1409,10 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
             "chorus": "信号を追いかける",
             "verse_2": "境界線を越えていく\nノイズが光になる",
             "bridge": "この夜を再起動する",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         },
         ensure_ascii=False,
     )
@@ -1422,6 +1423,10 @@ def test_compose_lyrics_bilingual_retries_when_first_attempt_is_single_language(
             "chorus": "SIGNALを超えて\nBreak the circuit now",
             "verse_2": "境界線を越えていく\n[Kyoukaisen wo koete iku] [Crossing the boundary]\nWe rewrite the night in code",
             "bridge": "次のステップへ\n未来へ進む",
+            "intro": "(Ahh ahh ahh)\nThe signal hums awake",
+            "drop": "[Heavy Bass Drop]\nJump the gap",
+            "solo": "[Glitch Synth Solo]",
+            "outro": "The night fades",
         },
         ensure_ascii=False,
     )
@@ -1603,7 +1608,7 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
     mock_domain_knowledge_data,
     monkeypatch,
 ):
-    """A single-language draft that never meets the mix rules falls back after all retries."""
+    """A single-language draft that never meets the mix rules fails after all retries."""
     from services.ollama_service import OllamaService
 
     monkeypatch.setenv("REI_LYRIC_LANGUAGE", "bilingual")
@@ -1640,7 +1645,7 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
     out_of_target_response = json.dumps(
         {
             "verse_1": "データの波が走る\n[Deeta no nami ga hashiru] [Data waves are running]\n回路の熱が踊る\n境界線を越えていく",
-            "chorus": "信号を追いかける\n[Shingou wo oikakeru] [Chasing the signal]",
+            "chorus": "信号を追いかける\n[Shingou wo oikakeru]\n光をつなぐ",
             "verse_2": "ノイズが光になる\n未来を再起動する",
             "bridge": "次のステップへ\n未来へ進む",
             "intro": "(Ahh ahh ahh)\n夜が目を覚ます",
@@ -1652,11 +1657,10 @@ def test_compose_lyrics_rejects_bilingual_output_outside_target_ratio(
     )
 
     with patch.object(OllamaService, "_chat", return_value=out_of_target_response) as mock_chat:
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+        with pytest.raises(RuntimeError, match="Bilingual lyric ratio constraint"):
+            compose_lyrics(concept, persona, domain_knowledge)
 
     assert mock_chat.call_count == 5
-    assert "システムを再起動する" in lyrics.bridge
-    assert "未来へ進む" not in lyrics.bridge
 
 
 def test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_repairs(
@@ -1713,12 +1717,10 @@ def test_compose_lyrics_rejects_serialized_all_japanese_draft_after_malformed_re
         "_chat",
         side_effect=[serialized_japanese] + [malformed_repair] * 4,
     ) as mock_chat:
-        lyrics = compose_lyrics(concept, persona, domain_knowledge)
+        with pytest.raises(RuntimeError, match="after 5 attempts"):
+            compose_lyrics(concept, persona, domain_knowledge)
 
     assert mock_chat.call_count == 5
-    merged = "\n".join([lyrics.verse_1, lyrics.chorus, lyrics.verse_2, lyrics.bridge])
-    assert "GPUが光る" not in merged
-    assert "システムを再起動する" in lyrics.bridge
 
 
 def test_backfill_romaji_cues_meets_learning_target():

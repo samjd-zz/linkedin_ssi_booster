@@ -11,7 +11,6 @@ from services.rei_toei._lyric_romaji import (
     _JAPANESE_CHAR_RE,
     _japanese_lyric_phrase,
 )
-from services.rei_toei._models import SongConcept
 from services.rei_toei._stage_policy import StagePolicy
 from services.rei_toei._suno_cleanup import has_chinese_grammar, replace_chinese_phrasing
 
@@ -131,35 +130,6 @@ def _has_japanese_script(section_payload: Dict[str, Any]) -> bool:
         isinstance(value, str) and _JAPANESE_CHAR_RE.search(value)
         for value in section_payload.values()
     )
-
-
-def _add_bilingual_rescue_hooks(
-    section_payload: Dict[str, Any],
-    concept: SongConcept,
-    target_japanese_ratio: float,
-    *,
-    field: str = "bridge",
-) -> None:
-    """Keep a bilingual draft when the small model omits Japanese script."""
-    title = concept.title.strip() or "signal"
-    theme = concept.theme.strip() or "signal"
-    hooks = [
-        f"{title}の夜、信号が走る。",
-        f"{theme}を越えて、光になる。",
-        f"{title}の鼓動、闇を照らす。",
-        f"{theme}の声を、明日へつなぐ。",
-        "この回路で、夢を描く。",
-        "新しい波が、空を揺らす。",
-        "静かな熱が、世界を変える。",
-        "まだ見ぬ朝へ、走り出す。",
-    ]
-
-    for hook in hooks:
-        if _bilingual_mix_ok(section_payload, target_japanese_ratio)[0]:
-            break
-        section_payload[field] = (
-            f"{section_payload.get(field, '').rstrip()}\n{hook}"
-        )
 
 
 def _line_looks_like_chinese_not_japanese(line: str) -> bool:

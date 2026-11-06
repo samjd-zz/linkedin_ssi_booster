@@ -826,11 +826,12 @@ How bilingual songs are written.
   Missing or rejected translations use offline Argos when available; lines
   that still fail stay English. An Ollama runtime error stops later Ollama
   batches while preserving earlier valid results. If the English draft is
-  unusable after two attempts, built-in fallback lyrics are used without
-  hook translation and may not meet the target.
+  unusable after five total attempts, generation reports a failure without
+  substituting canned lyrics or saving/submitting a song.
 - `generate` — The model writes a bilingual draft directly. Language mix and
   other checks can trigger retries, for up to five total attempts; if validation
-  ultimately fails, the existing fallback lyrics are used.
+  ultimately fails, generation reports a failure without canned song, section,
+  or Japanese rescue-hook replacements.
 
 ```bash
 REI_BILINGUAL_STRATEGY=translate

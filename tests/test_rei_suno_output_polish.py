@@ -3,6 +3,8 @@
 import json
 from unittest.mock import MagicMock
 
+import pytest
+
 from services.rei_toei._lyric_checks import MIN_CHORUS_SUNG_LINES, sung_line_count
 from services.rei_toei._models import ReiDomainKnowledge, ReiPersonaGraph, SongConcept
 from services.rei_toei._song_tidy import tidy_song_sections
@@ -118,11 +120,11 @@ def test_single_line_chorus_is_retried_until_it_meets_minimum() -> None:
     assert sung_line_count(lyrics.chorus) >= MIN_CHORUS_SUNG_LINES
 
 
-def test_short_chorus_after_retry_uses_a_complete_fallback() -> None:
+def test_short_chorus_after_retries_fails_without_a_canned_replacement() -> None:
     ollama = MagicMock()
     ollama._chat.return_value = json.dumps(_lyrics("WE COME ALIVE"))
 
-    lyrics = compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
+    with pytest.raises(RuntimeError, match="Chorus remained under"):
+        compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
 
-    assert ollama._chat.call_count == 2
-    assert sung_line_count(lyrics.chorus) >= MIN_CHORUS_SUNG_LINES
+    assert ollama._chat.call_count == 5

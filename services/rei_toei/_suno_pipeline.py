@@ -7,7 +7,6 @@ Suno-ready song prompts with lyrics, validation, and submission orchestration.
 Author: Shawn Jackson Dyck
 """
 
-import json
 import logging
 from datetime import datetime
 from typing import Any, cast, Dict, Optional, TYPE_CHECKING
@@ -19,7 +18,6 @@ if TYPE_CHECKING:
 from services.rei_toei._config import ReiToeiConfig
 from services.rei_toei._hook_translation import apply_bilingual_hooks
 from services.rei_toei._lyric_checks import (
-    _add_bilingual_rescue_hooks,
     _backfill_missing_romaji_cues as _backfill_missing_romaji_cues,
     _bilingual_mix_ok,
     _has_chinese_leakage,
@@ -40,6 +38,7 @@ from services.rei_toei._lyric_romaji import (
     _verify_and_correct_romaji_lines as _verify_and_correct_romaji_lines,
 )
 from services.rei_toei._models import (
+    LyricCompositionError,
     Lyrics,
     ReiDomainKnowledge,
     ReiPersonaGraph,
@@ -54,7 +53,6 @@ from services.rei_toei._song_structure import (
     MIN_BRIDGE_SUNG_LINES,
     missing_required_sections,
     missing_sections_feedback,
-    BACKFILLABLE_SECTIONS,
     verse_two_repeats_verse_one,
 )
 from services.rei_toei._song_tempo import fit_tempo_to_lyrics
@@ -66,7 +64,6 @@ from services.rei_toei._suno_blocks import (
     _normalize_freeform_suno_reply as _normalize_freeform_suno_reply,
 )
 from services.rei_toei._suno_concept import generate_song_concept as generate_song_concept
-from services.rei_toei._suno_fallback import build_fallback_lyrics
 from services.rei_toei._suno_json import (
     _has_prompt_schema_leakage,
     _normalize_lyric_payload,
@@ -92,6 +89,7 @@ from services.rei_toei._suno_themes import (
 )
 
 logger = logging.getLogger(__name__)
+MAX_LYRIC_ATTEMPTS = 5
 
 
 def compose_lyrics(
@@ -118,6 +116,9 @@ def compose_lyrics(
         
     Returns:
         Lyrics: Structured song sections with evidence tracking
+
+    Raises:
+        LyricCompositionError: All five drafts failed parsing or quality checks.
     """
     logger.info(f"Composing formatted long-form lyrics for: '{concept.title}'")
     
@@ -149,14 +150,10 @@ def compose_lyrics(
     )
     
     try:
-        if generation_language in {"japanese", "bilingual"}:
-            max_attempts = 5
-        else:
-            # English songs get one structural retry so a missing section is rewritten.
-            max_attempts = 2
+        max_attempts = MAX_LYRIC_ATTEMPTS
         response_data: Dict[str, Any] = {}
-        last_valid_response_data: Dict[str, Any] = {}
         structure_feedback = ""
+        format_feedback = ""
 
         for attempt in range(1, max_attempts + 1):
             if generation_language == "bilingual" and attempt == 2:
@@ -183,6 +180,7 @@ def compose_lyrics(
                 attempt_user_prompt = user_prompt
             if structure_feedback:
                 attempt_user_prompt += structure_feedback
+            attempt_user_prompt += format_feedback
 
             response_text = ollama._chat(
                 system_prompt,
@@ -196,19 +194,15 @@ def compose_lyrics(
                 response_data = _normalize_lyric_payload(
                     _parse_llm_json_payload(response_text)
                 )
-            except json.JSONDecodeError as exc:
-                if last_valid_response_data:
-                    logger.warning(
-                        "Ollama lyrics response malformed on attempt %s (%s). Reusing last valid draft.",
-                        attempt,
-                        exc,
-                    )
-                    response_data = dict(last_valid_response_data)
-                elif attempt < max_attempts:
+            except (ValueError, KeyError) as exc:
+                if attempt < max_attempts:
                     logger.warning("Ollama lyrics response malformed on attempt %s (%s). Retrying.", attempt, exc)
+                    format_feedback = (
+                        "\n\nREVISION REQUIRED: Return one complete JSON object containing "
+                        "finished song lyrics, not schema instructions or a JSON array."
+                    )
                     continue
-                else:
-                    raise
+                raise
 
             # Rescue missing chorus key if payload renamed it
             if "chorus" not in response_data:
@@ -231,16 +225,7 @@ def compose_lyrics(
                     logger.warning("Missing required fields %s on attempt %s. Retrying.", missing_fields, attempt)
                     structure_feedback = missing_sections_feedback(missing_fields, stage_policy)
                     continue
-                if not set(missing_fields) <= BACKFILLABLE_SECTIONS:
-                    raise ValueError(f"Missing required fields after retry: {missing_fields}")
-                fallback = build_fallback_lyrics(concept, lyric_language, stage_policy)
-                for field in missing_fields:
-                    key = "intro" if field == "intro_verse" else field
-                    response_data[key] = getattr(fallback, key)
-                logger.warning(
-                    "Sections %s still missing after %s attempt(s); filled from fallback.",
-                    missing_fields, attempt,
-                )
+                raise ValueError(f"Missing required fields after final retry: {missing_fields}")
 
             gate_view = dict(response_data)
             tidy_song_sections(gate_view, stage_policy)
@@ -248,6 +233,10 @@ def compose_lyrics(
             if _has_prompt_schema_leakage(response_data):
                 if attempt < max_attempts:
                     logger.warning("Schema instructions leaked as content on attempt %s. Retrying.", attempt)
+                    structure_feedback = (
+                        "\n\nREVISION REQUIRED: Write actual lyrics in every enabled field. "
+                        "Do not copy the JSON schema's descriptions or formatting instructions."
+                    )
                     continue
                 raise ValueError("Ollama returned lyric schema instructions as content")
 
@@ -256,18 +245,7 @@ def compose_lyrics(
                 if attempt < max_attempts:
                     logger.warning("Japanese script missing on attempt %s. Retrying.", attempt)
                     continue
-                if generation_language == "bilingual":
-                    logger.warning("Japanese script missing after final retry; applying rescue hooks.")
-                    bridge_rule = stage_policy.rule("bridge")
-                    rescue_field = (
-                        "bridge" if bridge_rule and bridge_rule.content == "sung"
-                        else next(rule.field for rule in stage_policy.sections if rule.content == "sung")
-                    )
-                    _add_bilingual_rescue_hooks(
-                        response_data, concept, japanese_mix_ratio, field=rescue_field,
-                    )
-                else:
-                    raise ValueError("Japanese lyrics must contain kana or kanji; Romaji alone is invalid.")
+                raise ValueError("Japanese lyrics must contain kana or kanji; Romaji alone is invalid.")
 
             # 4. Chinese Character Leakage Check
             if generation_language in {"japanese", "bilingual"} and _has_chinese_leakage(response_data):
@@ -282,9 +260,6 @@ def compose_lyrics(
                     logger.warning("Lyric sections were too repetitive on attempt %s. Retrying.", attempt)
                     continue
                 raise ValueError("Lyric sections were too repetitive after retry")
-
-            # Hard checks passed: keep this draft in case a later retry is malformed.
-            last_valid_response_data = dict(response_data)
 
             # 5b. Song development: Verse 2 must move the story on; bridge should climb
             if verse_two_repeats_verse_one(response_data):
@@ -322,18 +297,14 @@ def compose_lyrics(
                     )
                     structure_feedback = chorus_revision_feedback(short_chorus)
                     continue
-                fallback = build_fallback_lyrics(concept, lyric_language, stage_policy)
-                response_data["chorus"] = fallback.chorus
-                logger.warning(
-                    "Chorus remained under %d sung lines after %s attempt(s); using fallback chorus.",
-                    MIN_CHORUS_SUNG_LINES, attempt,
+                raise ValueError(
+                    f"Chorus remained under {MIN_CHORUS_SUNG_LINES} sung lines after final retry."
                 )
 
             # 6. Bilingual Ratio Threshold Validation
             if generation_language == "bilingual":
                 mix_ok, mix_summary = _bilingual_mix_ok(response_data, japanese_mix_ratio)
                 if not mix_ok:
-                    last_valid_response_data = dict(response_data)
                     if attempt < max_attempts:
                         logger.warning("Bilingual mix rejected on attempt %s (%s). Retrying.", attempt, mix_summary)
                         continue
@@ -402,10 +373,13 @@ def compose_lyrics(
         logger.info(f"Composed and formatted lyrics for '{concept.title}' successfully.")
         return lyrics
         
-    except (json.JSONDecodeError, ValueError, KeyError) as e:
-        logger.error(f"Failed to parse Ollama lyrics response: {e}. Reverting to formatted fallback.")
-        
-        return build_fallback_lyrics(concept, lyric_language, stage_policy)
+    except (ValueError, KeyError) as exc:
+        message = (
+            f"Lyric composition failed after {attempt} attempts: {str(exc).rstrip('.')}. "
+            "No song was generated; please try again."
+        )
+        logger.error("%s", message)
+        raise LyricCompositionError(message) from exc
 
 
 def assemble_suno_prompt(

@@ -16,7 +16,6 @@ from services.rei_toei._song_structure import missing_required_sections, missing
 from services.rei_toei._solo_options import build_solo_style_guidance
 from services.rei_toei._stage_policy import StagePolicy, load_stage_policy
 from services.rei_toei._suno_blocks import _normalize_freeform_suno_reply
-from services.rei_toei._suno_fallback import build_fallback_lyrics
 from services.rei_toei._suno_pipeline import assemble_suno_prompt, compose_lyrics
 from services.rei_toei._suno_quality import ensure_suno_quality
 
@@ -49,6 +48,17 @@ def _draft() -> dict[str, str]:
     }
 
 
+def _compose_profile_draft(domain: ReiDomainKnowledge, concept: SongConcept) -> Lyrics:
+    draft = dict(
+        _draft(), intro="[Atmospheric Pads]\nThe room waits",
+        bridge="The window opens to the sky", drop="The air begins to dance",
+        solo="[Distorted Synth Solo]", breakdown="[Ambient Interlude]",
+    )
+    ollama = MagicMock()
+    ollama._chat.return_value = json.dumps(draft)
+    return compose_lyrics(concept, _loaders.load_rei_persona(), domain, ollama=ollama)
+
+
 @pytest.mark.parametrize("name", ["cyberpop", "cyberpunk", "acoustic", "rock", "hip_hop", "ambient"])
 def test_shipped_profiles_validate(domain: ReiDomainKnowledge, name: str) -> None:
     policy = _select(domain, name)
@@ -62,11 +72,11 @@ def test_explicit_acoustic_profile_does_not_require_electronic_sections(domain: 
     assert policy.intro_primer is None and policy.intro_verse_label is None
 
 
-def test_cyberpunk_fallback_and_assembly_use_dark_production_cues(
+def test_cyberpunk_assembly_uses_dark_production_cues(
     domain: ReiDomainKnowledge, concept: SongConcept,
 ) -> None:
-    policy = _select(domain, "cyberpunk")
-    lyrics = build_fallback_lyrics(concept, "english", policy)
+    _select(domain, "cyberpunk")
+    lyrics = _compose_profile_draft(domain, concept)
     result = assemble_suno_prompt(concept, lyrics, domain)
     for cue in ("Dark Synth Pulse", "Distorted Bass Drop", "Distorted Synth Solo", "Fade Out"):
         assert result.lyrics.count(f"[{cue}]") == 1
@@ -99,7 +109,7 @@ def test_assembly_never_adds_disabled_drop_or_primer(
     domain: ReiDomainKnowledge, concept: SongConcept, name: str,
 ) -> None:
     policy = _select(domain, name)
-    lyrics = build_fallback_lyrics(concept, "english", policy)
+    lyrics = _compose_profile_draft(domain, concept)
     result = assemble_suno_prompt(concept, lyrics, domain)
     assert "[Heavy Bass Drop]" not in result.lyrics
     assert "[Instrumental Build]" not in result.lyrics
@@ -217,31 +227,28 @@ def test_composition_accepts_missing_disabled_and_optional_sections(
     assert "Rain taps" in lyrics.verse_1
 
 
-def test_retry_and_framing_fallback_use_selected_cues(
+def test_retry_feedback_uses_selected_cues_without_framing_fallback(
     domain: ReiDomainKnowledge, concept: SongConcept,
 ) -> None:
     _select(domain, "ambient")
     ollama = MagicMock()
     ollama._chat.return_value = json.dumps({"verse_1": _draft()["verse_1"]})
-    lyrics = compose_lyrics(concept, _loaders.load_rei_persona(), domain, ollama=ollama)
-    assert ollama._chat.call_count == 2
+    with pytest.raises(RuntimeError, match="Missing required fields"):
+        compose_lyrics(concept, _loaders.load_rei_persona(), domain, ollama=ollama)
+    assert ollama._chat.call_count == 5
     assert "[Ambient Interlude]" in ollama._chat.call_args_list[1].args[1]
-    assert "[Ambient Interlude]" in (lyrics.breakdown or "")
-    assert "Rain taps" in lyrics.verse_1
-    assert "[Fade Out]" in (lyrics.outro or "")
-    assert "[Heavy Bass Drop]" not in assemble_suno_prompt(concept, lyrics, domain).lyrics
 
 
 @pytest.mark.parametrize("name", ["acoustic", "rock", "hip_hop", "ambient"])
-def test_malformed_model_output_uses_profile_aware_fallback(
+def test_malformed_model_output_fails_in_every_profile(
     domain: ReiDomainKnowledge, concept: SongConcept, name: str,
 ) -> None:
-    policy = _select(domain, name)
+    _select(domain, name)
     ollama = MagicMock()
     ollama._chat.return_value = "not valid json"
-    lyrics = compose_lyrics(concept, _loaders.load_rei_persona(), domain, ollama=ollama)
-    assert missing_required_sections(vars(lyrics), policy) == []
-    assert not lyrics.drop
+    with pytest.raises(RuntimeError, match="after 5 attempts"):
+        compose_lyrics(concept, _loaders.load_rei_persona(), domain, ollama=ollama)
+    assert ollama._chat.call_count == 5
 
 
 @pytest.mark.parametrize(

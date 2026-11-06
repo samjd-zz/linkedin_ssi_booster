@@ -190,7 +190,7 @@ def test_english_keeps_draft_when_verse_still_repeats_after_retry(persona, domai
 
     lyrics = compose_lyrics(_concept("english"), persona, domain, ollama=ollama)
 
-    assert ollama._chat.call_count == 2
+    assert ollama._chat.call_count == 5
     assert "prototype hums" in lyrics.verse_2
     assert "Verse 2 still repeats Verse 1" in caplog.text
 

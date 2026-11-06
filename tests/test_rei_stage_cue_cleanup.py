@@ -379,7 +379,6 @@ def test_non_vocal_brackets_are_untouched() -> None:
 # --- Bracketed English meanings after Romaji cues ---------------------------
 
 from services.rei_toei._suno_cleanup import unbracket_romaji_glosses  # noqa: E402
-from services.rei_toei._suno_fallback import build_fallback_lyrics  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -420,13 +419,14 @@ def test_stage_cues_after_romaji_stay_bracketed(source: str) -> None:
     assert unbracket_romaji_glosses(source) == source
 
 
-def test_fallback_song_sings_every_english_meaning() -> None:
-    concept = SongConcept(
-        song_id="s", title="Java Loop", theme="Java", mood="playful", bpm=142,
-        genre_tags=["cyberpop"], narrative_arc="arc", evidence_ids=[],
-        generated_at="2026-11-04", lyric_language="bilingual",
+def test_song_sings_every_english_meaning() -> None:
+    lyrics = Lyrics(
+        verse_1="赤いスレッドが闇をほどく。\n[akai sureddo ga yami o hodoku] [Red threads unravel the dark]",
+        chorus="未来へ走る\nRun into tomorrow",
+        verse_2="境界線を越えて、状態を書き換える。\n[kyoukaisen o koete, joutai o kakikaeru] [Cross the boundary, rewrite the state]",
+        bridge="システムを再起動する。\n[shisutemu o saikidou suru] [Restart the system]",
+        evidence_ids=[],
     )
-    lyrics = build_fallback_lyrics(concept, "bilingual")
     blocks = [
         _append_section([], getattr(lyrics, field), label)
         for field, label in [("verse_1", "Verse 1"), ("verse_2", "Verse 2"), ("bridge", "Bridge")]
