@@ -39,6 +39,12 @@ trigger retries; warning logs give the reason and revision prompts identify
 what needs fixing. JSON repair is still attempted before regenerating.
 Repetition checks can also request a rewrite.
 
+For an unreadable model response, the warning identifies the reason, the
+failed attempt, and the next attempt without including lyric text. For example:
+`Ollama lyric draft 3/5 was rejected: invalid backslash escape in JSON (line 3, column 118). Discarding it and requesting a fresh draft (attempt 4/5).`
+The reported position is in the parser's last JSON candidate, which can differ
+from the original model response after repair attempts.
+
 If no usable draft is produced, composition raises `LyricCompositionError`
 with the final reason. No canned song, Chorus, framing section, or Japanese
 rescue hook is substituted, and malformed retries do not restore a rejected

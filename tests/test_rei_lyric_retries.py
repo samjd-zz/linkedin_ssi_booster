@@ -2,6 +2,7 @@
 
 import copy
 import json
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -91,4 +92,70 @@ def test_malformed_retry_does_not_restore_an_undersized_chorus(
     with pytest.raises(RuntimeError, match="after 5 attempts"):
         compose_lyrics(_concept(), load_rei_persona(), domain, ollama=ollama)
 
+    assert ollama._chat.call_count == 5
+
+
+def _invalid_escape_response() -> str:
+    return (
+        '{\n  "verse_1": "LYRIC_TEXT_MUST_NOT_BE_LOGGED",\n'
+        '  "chorus": "' + "x" * 104 + '\\q"\n}'
+    )
+
+
+def test_invalid_escape_warning_explains_retry_and_position(
+    domain: ReiDomainKnowledge, caplog: pytest.LogCaptureFixture,
+) -> None:
+    ollama = MagicMock()
+    ollama._chat.side_effect = [_invalid_escape_response()] * 3 + [json.dumps(_draft())]
+
+    with caplog.at_level(logging.WARNING):
+        lyrics = compose_lyrics(_concept(), load_rei_persona(), domain, ollama=ollama)
+
+    warnings = [record.getMessage() for record in caplog.records if record.levelno == logging.WARNING]
+    assert warnings[2] == (
+        "Ollama lyric draft 3/5 was rejected: invalid backslash escape in JSON "
+        "(line 3, column 118). Discarding it and requesting a fresh draft (attempt 4/5)."
+    )
+    assert "LYRIC_TEXT_MUST_NOT_BE_LOGGED" not in caplog.text
+    assert lyrics.verse_1 == _draft()["verse_1"]
+    assert ollama._chat.call_count == 4
+
+
+@pytest.mark.parametrize(
+    ("response", "reason"),
+    [
+        ("not valid JSON", "Expecting value in JSON (line 1, column 1)"),
+        ("[]", "Expected JSON object payload from LLM response"),
+    ],
+)
+def test_other_malformed_response_warnings_explain_the_retry(
+    domain: ReiDomainKnowledge, caplog: pytest.LogCaptureFixture,
+    response: str, reason: str,
+) -> None:
+    ollama = MagicMock()
+    ollama._chat.side_effect = [response, json.dumps(_draft())]
+
+    with caplog.at_level(logging.WARNING):
+        compose_lyrics(_concept(), load_rei_persona(), domain, ollama=ollama)
+
+    assert (
+        f"Ollama lyric draft 1/5 was rejected: {reason}. "
+        "Discarding it and requesting a fresh draft (attempt 2/5)."
+    ) in caplog.text
+
+
+def test_final_invalid_escape_reports_failure_without_promising_another_attempt(
+    domain: ReiDomainKnowledge, caplog: pytest.LogCaptureFixture,
+) -> None:
+    ollama = MagicMock()
+    ollama._chat.return_value = _invalid_escape_response()
+
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(RuntimeError, match=r"invalid backslash escape in JSON \(line 3, column 118\)"):
+            compose_lyrics(_concept(), load_rei_persona(), domain, ollama=ollama)
+
+    assert "No song was generated" in caplog.text
+    assert "attempt 5/5" in caplog.text
+    assert "attempt 6" not in caplog.text
+    assert "LYRIC_TEXT_MUST_NOT_BE_LOGGED" not in caplog.text
     assert ollama._chat.call_count == 5

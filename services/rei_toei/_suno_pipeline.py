@@ -7,6 +7,7 @@ Suno-ready song prompts with lyrics, validation, and submission orchestration.
 Author: Shawn Jackson Dyck
 """
 
+import json
 import logging
 from datetime import datetime
 from typing import Any, cast, Dict, Optional, TYPE_CHECKING
@@ -90,6 +91,13 @@ from services.rei_toei._suno_themes import (
 
 logger = logging.getLogger(__name__)
 MAX_LYRIC_ATTEMPTS = 5
+
+
+def _describe_lyric_error(exc: ValueError | KeyError) -> str:
+    if isinstance(exc, json.JSONDecodeError):
+        reason = "invalid backslash escape" if exc.msg == r"Invalid \escape" else exc.msg
+        return f"{reason} in JSON (line {exc.lineno}, column {exc.colno})"
+    return str(exc).rstrip(".")
 
 
 def compose_lyrics(
@@ -196,7 +204,11 @@ def compose_lyrics(
                 )
             except (ValueError, KeyError) as exc:
                 if attempt < max_attempts:
-                    logger.warning("Ollama lyrics response malformed on attempt %s (%s). Retrying.", attempt, exc)
+                    logger.warning(
+                        "Ollama lyric draft %s/%s was rejected: %s. "
+                        "Discarding it and requesting a fresh draft (attempt %s/%s).",
+                        attempt, max_attempts, _describe_lyric_error(exc), attempt + 1, max_attempts,
+                    )
                     format_feedback = (
                         "\n\nREVISION REQUIRED: Return one complete JSON object containing "
                         "finished song lyrics, not schema instructions or a JSON array."
@@ -375,7 +387,7 @@ def compose_lyrics(
         
     except (ValueError, KeyError) as exc:
         message = (
-            f"Lyric composition failed after {attempt} attempts: {str(exc).rstrip('.')}. "
+            f"Lyric composition failed after {attempt} attempts: {_describe_lyric_error(exc)}. "
             "No song was generated; please try again."
         )
         logger.error("%s", message)
