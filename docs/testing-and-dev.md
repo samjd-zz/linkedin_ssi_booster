@@ -46,7 +46,7 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |
-| **1718** | **1716** | **0** | **0** | **2** | Previous run: **74%** | All executed tests passed |
+| **1718** | **1716** | **0** | **0** | **2** | **75%** | All executed tests passed |
 
 - **Latest Run Date:** November 5, 2026 (local time)
 - **Bounded lyric retries without canned songs:** Every language mode now permits five total lyric attempts. Malformed JSON, non-object payloads, leaked schema instructions, missing required sections, and short Choruses can recover on attempt five; otherwise composition raises `LyricCompositionError` with the final reason. No whole-song, Chorus, framing-section, or Japanese rescue-hook templates remain, and malformed retries cannot restore rejected drafts. Thirteen cases in `tests/test_rei_lyric_retries.py` cover recovery and exhaustion, including readable invalid-escape warnings with the current/next attempt and final failure without lyric text. Two additional CLI cases verify exit status 1, no traceback, failed-stage timing, and no formatting, saving, validation, or submission; console parity tests verify a reported failure with conversation history intact.
@@ -60,7 +60,7 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 - **Previous Fix:** Intro vocalizations are always parenthesized (`[Ahh ahh ahh]` → `(Ahh ahh ahh)`), while parenthesized production directions such as `(Start with glitchy synth tones)` under `[Instrumental Build]` become bracketed. Echoed `(Instrumental Build)`/`Intro Verse` labels inside intro lines are removed, and duplicate intro vocalizations are dropped, so the `[Intro Verse]` holds only sung lyrics.
 - **Previous Fix:** Standalone sung `Heavy Bass Drop` and `Bass Drop` cues, recognized Japanese translations, and their Romaji are removed before hook selection and during final formatting, while the bracketed drop cue and real lyrics remain. Exact chaos cues become `[Chaos]`, including parenthetical or standalone forms. 43 stage-cue cases plus one console-parity case cover both paths, prompt instructions, and preservation of sung lyrics and instrumental tags.
 - **Previous Fix:** Rei lyrics no longer carry emoji such as `📐` into Suno output. Hook translations that contain emoji are rejected so Argos or the English line is used, hook text reaches the translators without emoji, the draft tidy pass strips emoji and drops emoji-only lines, and Suno assembly strips any remaining emoji before Romaji cues are generated; Japanese marks such as `ー`, `〜`, and `・` are kept. 24 cases cover the stripping rules, rejected translations with Argos fallback, the tidy pass, and emoji-free assembled sections and cues. The earlier fix routed bare `/rei` in `--console` through the same structured pipeline as `--rei-generate` with an auto-selected theme and replaced chat replies containing song sheets with structured songs (16 cases). 31 solo-palette regressions cover the loaded persona-aligned options, structured and console prompts, model-selected solos, custom and missing options, explicit invalid-configuration errors, stage-cue handling, preserved vocal parentheses, and structured/freeform cleanup. 4 prior Drop/Outro regressions cover parenthetical production directions and vocal ad-libs; 16 required-section/Solo regressions cover automatic repairs and instrumental formatting.
-- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,716 passed, 0 failed, 2 deselected** in 54.73 seconds. One existing non-terminal `term_image` warning remains. Coverage was not rerun.
+- **Latest Run Scope:** Entire suite except the two live Buffer API tests, explicitly deselected to avoid account/network access: **1,716 passed, 0 failed, 2 deselected** in 61.34 seconds. The same run measured **75% statement coverage**. One existing non-terminal `term_image` warning and the expected notice that `content_calendar` was not imported remain.
 - **Environment Specs:** Python 3.12.3, pytest 9.0.3, pytest-cov 7.1.0, coverage 7.17.0
 - **Coverage Scope:** `services`, `agents`, `main`, `cli`, and `scheduler` measured with pytest-cov. `content_calendar` was also requested but never imported, producing a coverage warning; it is not included in the reported denominator.
 - **Persona retrieval regression fix:** `test_persona_graph_retrieval.py` no longer hard-codes a private persona's project count. It compares loaded project IDs/order with the configured source JSON and verifies one evidence fact per project, including IDs, names, details, years, and skills. Fixture path overrides are restored even if loading fails. All 12 tests in that module pass; no persona data or production normalization behavior was changed.
@@ -71,14 +71,13 @@ The latest run executed **1,716 of 1,718 collected tests**, all passing with
 zero failures. The two live Buffer tests were explicitly deselected, not skipped
 or counted as passing; live API behavior was not verified by this run.
 
-The **74% source-coverage figure was measured November 4, 2026 (local time)**:
-14,367 executable statements, 3,767 missed, and 10,600 executed (rounded to
-74% by the report). A prior recorded measurement had 14,297 statements and
-3,761 missed; the historical October 28 figure was 70%.
-It measures statement coverage, not branch coverage or live API correctness.
-`content_calendar` was not imported by the suite and is absent from the total.
-Entry-point coverage was 55% for `main.py`, 66% for the `cli/` handlers split out of it
-(61% combined), and 68% for `scheduler.py`.
+The **75% source-coverage figure was measured November 5, 2026 (local time)**:
+14,862 executable statements, 3,779 missed, and 11,083 executed (rounded to
+75% by the report). It measures statement coverage, not branch coverage or
+live API correctness. `content_calendar` was requested but not imported by the
+suite, so coverage reported it as a warning and excluded it from the total.
+Entry-point coverage was 55% for `main.py`, 66% for the `cli/` handlers split
+out of it (61% combined), and 68% for `scheduler.py`.
 
 The recent performance work added **90 regression tests**:
 
