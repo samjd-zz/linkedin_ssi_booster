@@ -66,8 +66,8 @@ def _compose_profile_draft(domain: ReiDomainKnowledge, concept: SongConcept) -> 
 
 @pytest.mark.parametrize(
     "name", [
-        "cyberpop", "cyberpunk", "acoustic", "rock", "psytrance", "jungle_dnb",
-        "hip_hop", "ambient",
+        "cyberpop", "cyberpunk", "acoustic", "rock", "psytrance", "progressive_psytrance", "jungle_dnb",
+        "psychedelic_rock", "progressive_rock", "hip_hop", "ambient",
     ],
 )
 def test_shipped_profiles_validate(domain: ReiDomainKnowledge, name: str) -> None:
@@ -111,6 +111,64 @@ def test_psytrance_profile_formats_instrumental_cues(
     for cue in ("Psychedelic Synth Rise", "Psytrance Bass Drop", "Psychedelic Guitar Solo"):
         assert result.lyrics.count(f"[{cue}]") == 1
     assert result.metadata["stage_cue_profile"] == "psytrance"
+
+
+def test_progressive_psytrance_profile_uses_gradual_build_without_guitar_solo(
+    domain: ReiDomainKnowledge,
+) -> None:
+    policy = _select(domain, "progressive_psytrance")
+
+    assert policy.required_fields == (
+        "verse_1", "chorus", "verse_2", "bridge", "drop", "outro",
+    )
+    assert policy.rule("intro").required is False
+    assert policy.rule("intro").cues == ("Progressive Psytrance Intro",)
+    assert policy.rule("drop").content == "instrumental"
+    assert policy.rule("drop").cues == ("Progressive Psytrance Drop",)
+    assert policy.rule("breakdown").required is False
+    assert policy.rule("breakdown").cues == ("Progressive Breakdown",)
+    assert all(rule.field != "solo" for rule in policy.sections)
+    assert "Long-Form Build" in policy.prompt_guidance()
+
+
+def test_progressive_psytrance_profile_formats_progressive_cues(
+    domain: ReiDomainKnowledge, concept: SongConcept,
+) -> None:
+    _select(domain, "progressive_psytrance")
+    lyrics = Lyrics(
+        verse_1="The horizon opens", chorus="WE FOLLOW THE SLOWING LIGHT",
+        verse_2="The pulse unfolds", bridge="The layers rise",
+        evidence_ids=[], intro="[Progressive Psytrance Intro]",
+        drop="[Progressive Psytrance Drop]", breakdown="[Progressive Breakdown]",
+        outro="The dawn arrives",
+    )
+
+    result = assemble_suno_prompt(concept, lyrics, domain)
+
+    for cue in ("Progressive Psytrance Intro", "Progressive Psytrance Drop", "Progressive Breakdown"):
+        assert result.lyrics.count(f"[{cue}]") == 1
+    assert result.metadata["stage_cue_profile"] == "progressive_psytrance"
+
+
+@pytest.mark.parametrize(
+    "genre_tag",
+    ["progressive psytrance", "progressive-psytrance", "progressive psy-trance"],
+)
+def test_progressive_psytrance_tags_select_progressive_template_and_production(
+    domain: ReiDomainKnowledge,
+    concept: SongConcept,
+    genre_tag: str,
+) -> None:
+    concept.genre_tags = [genre_tag]
+
+    template = _select_suno_template_key(concept)
+    tags = _build_rich_suno_tags(concept, domain, template)
+    techniques = _select_genre_techniques(concept, domain)
+
+    assert template == "progressive_psytrance_template"
+    assert "progressive psytrance" in tags.lower()
+    assert any("rolling offbeat bassline" in phrase.lower() for phrase in techniques)
+    assert not any("guitar" in phrase.lower() for phrase in techniques)
 
 
 def test_jungle_dnb_profile_has_breakbeat_drop_and_optional_breakdown(
@@ -164,6 +222,74 @@ def test_jungle_dnb_tags_use_the_matching_style_template_and_production(
     assert "chopped Amen-style breakbeats" in tags
     assert "Amen-style" in tags
     assert any("Reese bass" in phrase for phrase in techniques)
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "intro_cue", "solo_cue", "breakdown_cue", "optional_cue"),
+    [
+        (
+            "psychedelic_rock", "Psychedelic Guitar Intro", "Psychedelic Guitar Solo",
+            "Psychedelic Breakdown", "Feedback Swell",
+        ),
+        (
+            "progressive_rock", "Progressive Instrumental Intro", "Progressive Instrumental Solo",
+            "Metric Shift Breakdown", "Polyrhythmic Passage",
+        ),
+    ],
+)
+def test_rock_style_stage_profiles_add_their_cues_without_changing_default(
+    domain: ReiDomainKnowledge,
+    concept: SongConcept,
+    profile_name: str,
+    intro_cue: str,
+    solo_cue: str,
+    breakdown_cue: str,
+    optional_cue: str,
+) -> None:
+    assert domain.lyrical_structure["stage_cues"]["active_profile"] == "cyberpop"
+    _select(domain, profile_name)
+    lyrics = Lyrics(
+        verse_1="The horizon bends", chorus="WE FOLLOW THE SPIRAL",
+        verse_2="The pulse returns", bridge="The walls dissolve",
+        evidence_ids=[], intro=f"[{intro_cue}]", solo=f"[{solo_cue}]",
+        breakdown=f"[{breakdown_cue}]", outro="The dawn comes alive",
+    )
+
+    result = assemble_suno_prompt(concept, lyrics, domain)
+
+    for cue in (intro_cue, solo_cue, breakdown_cue):
+        assert result.lyrics.count(f"[{cue}]") == 1
+    assert optional_cue in load_stage_policy(domain.lyrical_structure).prompt_guidance()
+    assert result.metadata["stage_cue_profile"] == profile_name
+
+
+@pytest.mark.parametrize(
+    ("genre_tag", "template", "descriptor"),
+    [
+        ("psychedelic rock", "psychedelic_rock_template", "fuzz guitar"),
+        ("psychedelic-rock", "psychedelic_rock_template", "fuzz guitar"),
+        ("psych-rock", "psychedelic_rock_template", "fuzz guitar"),
+        ("progressive rock", "progressive_rock_template", "asymmetric meters"),
+        ("progressive-rock", "progressive_rock_template", "asymmetric meters"),
+        ("prog-rock", "progressive_rock_template", "asymmetric meters"),
+    ],
+)
+def test_rock_genre_tags_select_the_matching_style_template_and_production(
+    domain: ReiDomainKnowledge,
+    concept: SongConcept,
+    genre_tag: str,
+    template: str,
+    descriptor: str,
+) -> None:
+    concept.genre_tags = [genre_tag, "cyberpop"]
+
+    selected_template = _select_suno_template_key(concept)
+    tags = _build_rich_suno_tags(concept, domain, selected_template)
+    techniques = _select_genre_techniques(concept, domain)
+
+    assert selected_template == template
+    assert descriptor in " ".join(techniques).lower()
+    assert template.removesuffix("_template").replace("_", " ") in tags.lower()
 
 
 def test_explicit_acoustic_profile_does_not_require_electronic_sections(domain: ReiDomainKnowledge) -> None:

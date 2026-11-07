@@ -42,7 +42,10 @@ The default remains `cyberpop`.
 | `acoustic` | Verse 1, Chorus, Verse 2, Outro | Optional `[Intro]` with `[Fingerpicked Guitar]`; optional `[Acoustic Guitar Solo]`; no Drop or forced primer |
 | `rock` | Verse 1, Chorus, Verse 2, Bridge, Solo, Outro | Optional `[Intro]` with `[Guitar Riff]`; mandatory `[Guitar Solo]`; no Drop or forced primer |
 | `psytrance` | Verse 1, Chorus, Verse 2, Bridge, Drop, Solo, Outro | Optional `[Intro]` with `[Psychedelic Synth Rise]`; instrumental `[Psytrance Bass Drop]` and `[Psychedelic Guitar Solo]`; optional `[Psychedelic Breakdown]` |
+| `progressive_psytrance` | Verse 1, Chorus, Verse 2, Bridge, Drop, Outro | Optional `[Progressive Psytrance Intro]`; instrumental `[Progressive Psytrance Drop]`; optional `[Progressive Breakdown]`; gradual builds and transitions, no forced guitar solo |
 | `jungle_dnb` | Verse 1, Chorus, Verse 2, Bridge, Drop, Outro | Optional `[Jungle Breakbeat Intro]`; instrumental `[Jungle Breakbeat Drop]`; optional `[Half-Time Breakdown]`; optional Amen break and Reese bass cues |
+| `psychedelic_rock` | Verse 1, Chorus, Verse 2, Bridge, Solo, Outro | Optional `[Psychedelic Guitar Intro]`; mandatory `[Psychedelic Guitar Solo]`; optional `[Psychedelic Breakdown]` |
+| `progressive_rock` | Verse 1, Chorus, Verse 2, Bridge, Solo, Outro | Optional `[Progressive Instrumental Intro]`; mandatory `[Progressive Instrumental Solo]`; optional `[Metric Shift Breakdown]` and meter-change cues |
 | `hip_hop` | Verse 1, Hook, Verse 2, Outro | The `chorus` JSON field renders as `[Hook]`; optional `[Beat Intro]`; no mandatory bridge, drop, or solo |
 | `ambient` | Instrumental Intro, sung Verse 1, instrumental Interlude, instrumental Outro | `[Atmospheric Pads]`, `[Ambient Interlude]`, `[Fade Out]`; optional `[Refrain]`; no drop or primer |
 

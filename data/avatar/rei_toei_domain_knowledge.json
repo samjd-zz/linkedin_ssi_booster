@@ -319,7 +319,34 @@
         "processing": "Layered harmonies, subtle modulation and tempo-synced delay"
       },
       "arrangement": "Atmospheric guitar and synth intro, gradual rhythmic build, melodic rock chorus, psychedelic breakdown, bass-driven drop and guitar-led climax",
-      "mix": "Keep the kick and bass distinct, center the low end and leave space for guitars and vocals"
+      "mix": "Keep the kick and bass distinct, center the low end and leave space for guitars and vocals",
+      "exclude_genre_aliases": [
+        "progressive psytrance",
+        "progressive-psytrance",
+        "progressive psy-trance",
+        "progressive-psy-trance",
+        "progressive_psytrance"
+      ]
+    },
+    "progressive_psytrance": {
+      "tempo": "Progressive psytrance, typically 128-138 BPM",
+      "kick": "Steady four-on-the-floor kick with a rounded transient and controlled low end",
+      "bass": "Smooth rolling offbeat bassline with breathing room between kick and bass",
+      "synths": {
+        "leads": "Evolving arpeggios and restrained melodic motifs that develop gradually",
+        "atmosphere": "Wide atmospheric pads and subtle organic textures for long transitions",
+        "processing": "Use measured filter movement, delay and layered automation rather than constant distortion"
+      },
+      "percussion": "Consistent dance pulse with restrained fills and gradual rhythmic additions",
+      "arrangement": "Use long transitions, gradual layering and an atmospheric breakdown before a controlled melodic peak",
+      "mix": "Keep the kick and bass clear and even; build width and intensity through layers instead of abrupt drops",
+      "genre_aliases": [
+        "progressive psytrance",
+        "progressive-psytrance",
+        "progressive psy-trance",
+        "progressive-psy-trance",
+        "progressive_psytrance"
+      ]
     },
     "jungle_dnb": {
       "tempo": "Jungle 160-170 BPM; drum and bass 170-176 BPM",
@@ -342,6 +369,34 @@
       "arrangement": "Build from a sparse breakbeat intro through vocal verses into a full rolling bass drop, a half-time breakdown and a final break-led release",
       "mix": "Preserve punch in the kick and snare, separate sub from bass harmonics and leave headroom for chopped breaks",
       "genre_aliases": ["jungle", "dnb", "drum and bass", "drum & bass"]
+    },
+    "psychedelic_rock": {
+      "tempo": "Flexible, roughly 80-140 BPM",
+      "guitars": {
+        "tone": "Expressive fuzz guitar, sustained bends, melodic feedback and layered rhythm guitars",
+        "processing": "Use phasing, flanging, tape echo and spring reverb as evolving textures"
+      },
+      "keys": "Warm organ and vintage-style electric keys that support the guitar rather than crowd it",
+      "rhythm": "Live, human drums with a grounded groove, dynamic fills and occasional looseness",
+      "bass": "Rounded melodic bass that follows the song's harmonic movement",
+      "vocals": "Expressive, dreamlike lead vocals with restrained harmony layers",
+      "arrangement": "Move from a spacious guitar-led intro through a grounded verse and rising chorus into an exploratory instrumental bridge, guitar solo and resolved outro",
+      "mix": "Keep the lead vocal and central groove clear while guitars, echo and modulation create width",
+      "genre_aliases": ["psychedelic rock", "psychedelic-rock", "psych rock", "psych-rock"]
+    },
+    "progressive_rock": {
+      "tempo": "Dynamic, roughly 90-160 BPM with deliberate tempo and meter changes",
+      "rhythm": {
+        "meters": "Use purposeful changes between 4/4 and asymmetric meters such as 5/4, 7/8 or 9/8",
+        "drums": "Articulate live drumming with clear transitions, layered accents and dynamic builds"
+      },
+      "guitars": "Clean and driven guitar tones with interlocking motifs, precise riffs and expressive extended solos",
+      "keys": "Piano, organ and evolving analog-style synth textures that extend the harmony",
+      "bass": "Melodic, mobile bass lines that connect changing sections and meters",
+      "vocals": "Clear, expressive vocals with memorable themes that can recur across a long-form arrangement",
+      "arrangement": "Develop a recurring motif across contrasting sections, instrumental transitions, a climactic solo passage and a deliberate resolution",
+      "mix": "Keep complex parts distinct; use dynamics and transitions rather than constant density",
+      "genre_aliases": ["progressive rock", "progressive-rock", "prog rock", "prog-rock"]
     }
   },
   "bpm_and_mood": {
@@ -544,6 +599,22 @@
             "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
           }
         },
+        "progressive_psytrance": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "optional_cues": ["Long-Form Build", "Gradual Filter Rise", "Layered Arpeggio", "Extended Transition"],
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Progressive Psytrance Intro"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "drop": {"label": "Drop", "required": true, "content": "instrumental", "cues": ["Progressive Psytrance Drop"]},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Progressive Breakdown"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
         "jungle_dnb": {
           "intro_verse_label": null,
           "intro_primer": null,
@@ -557,6 +628,38 @@
             "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
             "drop": {"label": "Drop", "required": true, "content": "instrumental", "cues": ["Jungle Breakbeat Drop"]},
             "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Half-Time Breakdown"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "psychedelic_rock": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "optional_cues": ["Phase Shift", "Tape Echo", "Feedback Swell", "Organ Swell"],
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Psychedelic Guitar Intro"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Psychedelic Guitar Solo"]},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Psychedelic Breakdown"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "progressive_rock": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "optional_cues": ["Meter Change", "Instrumental Motif Return", "Dynamic Build", "Polyrhythmic Passage"],
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Progressive Instrumental Intro"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Progressive Instrumental Solo"]},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Metric Shift Breakdown"]},
             "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
           }
         },
@@ -765,6 +868,9 @@
     "dark_synthwave_template": "126 bpm, dark synthpop, {mood} dreamy vocaloid, analog synths, ethereal atmosphere",
     "glitch_industrial_template": "150 bpm, glitch pop industrial, {mood} playful vocaloid, hyper energy, kawaii bass",
     "jungle_dnb_template": "Jungle drum and bass, {bpm} bpm, chopped Amen-style breakbeats, rolling Reese bass, syncopated drums, atmospheric rave energy",
+    "progressive_psytrance_template": "Progressive psytrance, {bpm} bpm, rolling offbeat bass, steady four-on-the-floor kick, gradual layered builds, evolving arpeggios, atmospheric breakdowns",
+    "psychedelic_rock_template": "Psychedelic rock, {bpm} bpm, expressive fuzz guitar, tape echo, phasing, organic live drums, dreamlike atmosphere",
+    "progressive_rock_template": "Progressive rock, {bpm} bpm, evolving guitar motifs, dynamic live drums, changing meters, extended instrumental passages",
     "romaji_cyberpop_template": "142 bpm, cyberpop vocaloid, Romaji and Japanese hooks, {mood} AI vocals, synthwave vibes, catchy J-pop electropop"
   },
   "production_notes": {

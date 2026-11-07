@@ -76,14 +76,24 @@ def _select_genre_techniques(concept: SongConcept, domain_knowledge: ReiDomainKn
         profile_tokens = profile_name.replace("_", " ").lower().split()
         if not profile_tokens:
             continue
-        # Match when most profile tokens appear in the concept tag set.
-        token_hits = sum(1 for tok in profile_tokens if tok in joined_tags)
+        excluded_aliases = (
+            profile_data.get("exclude_genre_aliases", [])
+            if isinstance(profile_data, dict) else []
+        )
+        if any(
+            isinstance(alias, str) and alias.lower() in joined_tags
+            for alias in excluded_aliases
+        ):
+            continue
         aliases = profile_data.get("genre_aliases", []) if isinstance(profile_data, dict) else []
         alias_match = any(
             isinstance(alias, str) and alias.lower() in joined_tags
             for alias in aliases
         )
-        if token_hits == 0 and not alias_match:
+        if aliases:
+            if not alias_match:
+                continue
+        elif not any(token in joined_tags for token in profile_tokens):
             continue
         matched_phrases.extend(_extract_string_phrases(profile_data, max_items=4))
 
@@ -201,16 +211,34 @@ def _build_suno_description_prompt(concept: SongConcept) -> str:
 def _select_suno_template_key(concept: SongConcept) -> str:
     """Select the Suno style template key from generated genre tags."""
     template_key = "industrial_techno_template"
-    if any("cyberpop" in tag.lower() for tag in concept.genre_tags):
-        template_key = "cyberpunk_electro_template"
+    joined_tags = " ".join(tag.lower() for tag in concept.genre_tags)
+    if any(
+        alias in joined_tags
+        for alias in (
+            "progressive psytrance", "progressive-psytrance",
+            "progressive psy-trance", "progressive-psy-trance", "progressive_psytrance",
+        )
+    ):
+        template_key = "progressive_psytrance_template"
     elif any(
-        alias in tag.lower()
-        for tag in concept.genre_tags
+        alias in joined_tags
+        for alias in ("psychedelic rock", "psychedelic-rock", "psych rock", "psych-rock")
+    ):
+        template_key = "psychedelic_rock_template"
+    elif any(
+        alias in joined_tags
+        for alias in ("progressive rock", "progressive-rock", "prog rock", "prog-rock")
+    ):
+        template_key = "progressive_rock_template"
+    elif any(
+        alias in joined_tags
         for alias in ("jungle", "dnb", "drum and bass", "drum & bass")
     ):
         template_key = "jungle_dnb_template"
-    elif any("synthwave" in tag.lower() for tag in concept.genre_tags):
+    elif "cyberpop" in joined_tags:
+        template_key = "cyberpunk_electro_template"
+    elif "synthwave" in joined_tags:
         template_key = "dark_synthwave_template"
-    elif any("glitch" in tag.lower() for tag in concept.genre_tags):
+    elif "glitch" in joined_tags:
         template_key = "glitch_industrial_template"
     return template_key
