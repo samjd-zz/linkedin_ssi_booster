@@ -9,6 +9,8 @@ import unicodedata
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from services.rei_toei._lyric_repetition import is_repeated_sung_line
+
 if TYPE_CHECKING:
     from sudachipy.dictionary import Dictionary as SudachiDictionary
 
@@ -470,6 +472,9 @@ def _verify_and_correct_romaji_lines(section_payload: Dict[str, Any]) -> int:
                 continue
 
             candidate = lines[index + 1]
+            following = next((item for item in lines[index + 2:] if item.strip()), "")
+            if is_repeated_sung_line(candidate, following):
+                continue
             if not candidate.strip() or _JAPANESE_CHAR_RE.search(candidate):
                 continue
             patterns = (

@@ -6,6 +6,7 @@ import re
 import unicodedata
 from typing import Any, Dict, List
 
+from services.rei_toei._lyric_repetition import is_repeated_sung_line
 from services.rei_toei._lyric_romaji import (
     _ENGLISH_CHAR_RE,
     _JAPANESE_CHAR_RE,
@@ -123,7 +124,9 @@ def _bracket_lines(lines: List[str]) -> tuple[List[str], int]:
 
         following = lines[index]
         translation_follows = index + 1 < len(lines) and _is_bare_text(lines[index + 1])
-        if _is_bare_text(following) and (
+        next_line = next((item for item in lines[index + 1:] if item.strip()), "")
+        repeated_lyric = is_repeated_sung_line(following, next_line)
+        if _is_bare_text(following) and not repeated_lyric and (
             _is_probable_romaji(line, following)
             or (translation_follows and _looks_like_romaji_line(following))
         ):
@@ -137,8 +140,11 @@ def _bracket_lines(lines: List[str]) -> tuple[List[str], int]:
                 continue
             stray = lines[index]
             has_sung_line_after = index + 1 < len(lines) and _is_bare_text(lines[index + 1])
-            if _is_probable_romaji(line, stray) or (
-                has_sung_line_after and _looks_like_extra_romaji_guess(stray)
+            next_line = next((item for item in lines[index + 1:] if item.strip()), "")
+            repeated_lyric = is_repeated_sung_line(stray, next_line)
+            if not repeated_lyric and (
+                _is_probable_romaji(line, stray)
+                or (has_sung_line_after and _looks_like_extra_romaji_guess(stray))
             ):
                 # Keep the model's extra line, but bracket it so Suno skips it.
                 result.append(f"[{stray.strip()}]")

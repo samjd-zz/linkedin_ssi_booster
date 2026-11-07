@@ -3,6 +3,7 @@
 import re
 from typing import Any, Dict, List
 
+from services.rei_toei._lyric_repetition import is_repeated_sung_line
 from services.rei_toei._lyric_romaji import (
     _ENGLISH_CHAR_RE,
     _generate_hepburn_romaji,
@@ -181,7 +182,11 @@ def _learning_annotation_stats(section_payload: Dict[str, Any]) -> Dict[str, int
                     continue
                 if index + 1 >= len(lines):
                     continue
-                if _is_adjacent_romaji_cue(line, lines[index + 1]):
+                repeated = (
+                    index + 2 < len(lines)
+                    and is_repeated_sung_line(lines[index + 1], lines[index + 2])
+                )
+                if not repeated and _is_adjacent_romaji_cue(line, lines[index + 1]):
                     annotation_pairs += 1
 
     return {
@@ -244,11 +249,10 @@ def _backfill_missing_romaji_cues(section_payload: Dict[str, Any]) -> int:
             # Skip lines that already carry an inline cue
             if _has_inline_romaji_cue(line):
                 continue
-            next_line = next(
-                (following.strip() for following in lines[index + 1:] if following.strip()),
-                "",
-            )
-            if next_line and _is_adjacent_romaji_cue(line, next_line):
+            following = (item.strip() for item in lines[index + 1:] if item.strip())
+            next_line = next(following, "")
+            repeated = is_repeated_sung_line(next_line, next(following, ""))
+            if next_line and not repeated and _is_adjacent_romaji_cue(line, next_line):
                 continue
             romaji = _generate_hepburn_romaji(_japanese_lyric_phrase(line))
             if romaji and _ENGLISH_CHAR_RE.search(romaji):

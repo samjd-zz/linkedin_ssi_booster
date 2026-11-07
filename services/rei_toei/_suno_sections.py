@@ -3,6 +3,10 @@
 import re
 from typing import List, Optional
 
+from services.rei_toei._lyric_repetition import (
+    expand_word_count_markers,
+    is_repeated_sung_line,
+)
 from services.rei_toei._lyric_romaji import (
     _BRACKET_LEARNING_CUE_RE,
     _BRACKET_PAREN_LEARNING_CUE_RE,
@@ -292,6 +296,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
         _join_split_japanese_acronyms(_normalize_serialized_lyric_text(text or ""))
     )
     body = _SECTION_HEADER_RE.sub("", body, count=1)
+    body = expand_word_count_markers(body)
     # Replace Chinese forms before any Romaji check reads the Japanese lines.
     body = _clean_script_contamination(body)
     body = _EMBEDDED_SECTION_LABEL_RE.sub("\n", body)
@@ -299,7 +304,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
     lines = [line.rstrip() for line in body.splitlines()]
     normalized_lines: List[str] = []
     previous_blank = True
-    for line in lines:
+    for line_index, line in enumerate(lines):
         stripped = line.strip()
         if not stripped:
             if not previous_blank:
@@ -373,11 +378,18 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
             ):
                 prev_text = normalized_lines[-1].strip().strip("[]")
                 if prev_text and not _JAPANESE_CHAR_RE.search(prev_text):
-                    cand_tokens = set(_normalize_romaji_for_match(normalized_segment).split())
-                    prev_tokens = set(_normalize_romaji_for_match(prev_text).split())
+                    candidate = _normalize_romaji_for_match(normalized_segment)
+                    previous = _normalize_romaji_for_match(prev_text)
+                    cand_tokens = set(candidate.split())
+                    prev_tokens = set(previous.split())
+                    following = next((item for item in lines[line_index + 1:] if item.strip()), "")
+                    repeated_lyric = (
+                        not normalized_lines[-1].lstrip().startswith("[")
+                        and is_repeated_sung_line(prev_text, normalized_segment)
+                    ) or is_repeated_sung_line(normalized_segment, following)
                     if cand_tokens and (
                         len(cand_tokens & prev_tokens) / len(cand_tokens) >= 0.6
-                    ):
+                    ) and not repeated_lyric:
                         continue
             normalized_lines.append(_normalize_bilingual_translation_order(normalized_segment))
             previous_blank = False

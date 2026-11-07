@@ -31,6 +31,7 @@ from services.rei_toei._lyric_checks import (
     chorus_revision_feedback,
 )
 from services.rei_toei._lyric_prompts import build_lyric_prompts
+from services.rei_toei._lyric_repetition import expand_payload_word_count_markers
 from services.rei_toei._lyric_romaji import (
     _generate_hepburn_romaji as _generate_hepburn_romaji,
     _join_split_japanese_acronyms,
@@ -203,6 +204,16 @@ def compose_lyrics(
                 response_data = _normalize_lyric_payload(
                     _parse_llm_json_payload(response_text)
                 )
+                if "chorus" not in response_data:
+                    for k in list(response_data.keys()):
+                        if "chorus" in k or "refrain" in k:
+                            response_data["chorus"] = response_data.pop(k)
+                            break
+                response_data = {
+                    field: value for field, value in response_data.items()
+                    if stage_policy.rule(field) is not None
+                }
+                expand_payload_word_count_markers(response_data, stage_policy)
             except (ValueError, KeyError) as exc:
                 if attempt < max_attempts:
                     logger.warning(
@@ -212,23 +223,13 @@ def compose_lyrics(
                     )
                     format_feedback = (
                         "\n\nREVISION REQUIRED: Return one complete JSON object containing "
-                        "finished song lyrics, not schema instructions or a JSON array."
+                        "finished song lyrics, not schema instructions or a JSON array. "
+                        "Write the hook words again as sung lyrics, not a word-count placeholder."
                     )
                     continue
                 raise
 
-            # Rescue missing chorus key if payload renamed it
-            if "chorus" not in response_data:
-                for k in list(response_data.keys()):
-                    if "chorus" in k or "refrain" in k:
-                        response_data["chorus"] = response_data.pop(k)
-                        break
-
             # 1. Structural Validation
-            response_data = {
-                field: value for field, value in response_data.items()
-                if stage_policy.rule(field) is not None
-            }
             # Judge sections as they will ship: tidying can empty a cue-only section.
             gate_view = dict(response_data)
             tidy_song_sections(gate_view, stage_policy)

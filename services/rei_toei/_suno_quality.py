@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 
+from services.rei_toei._lyric_repetition import expand_word_count_markers
 from services.rei_toei._lyric_romaji import _is_stage_cue_phrase
 from services.rei_toei._suno_cleanup import (
     _is_vocalization,
@@ -127,6 +128,7 @@ def ensure_suno_quality(text: str, policy: StagePolicy | None = None) -> str:
         if rule is None:
             continue
         body = bracket_chaos_cues(text[header.end():end].strip())
+        body = expand_word_count_markers(body, sung=rule.content == "sung")
         if rule.content != "instrumental":
             body = strip_sung_bass_drop_cues(body)
         if field == "intro_verse":

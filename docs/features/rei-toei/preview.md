@@ -200,6 +200,14 @@ stay), removes echo parentheticals that repeat their line
 (unless nothing would remain), and strips a dangling `、` or `,` from Japanese
 lines. Leaked prompt notes such as `(34 chars)`, `(38 chars, UPPERCASE)`, or
 `(ALL-CAPS)` are removed whole, so no empty `()` is left for Suno to sing.
+The lyric prompt requests the actual chorus hook words twice. If a draft still
+contains `JAVA FLOW (3-7 WORDS)`, Rei expands it into two `JAVA FLOW` sung lines
+before translation and preserves both through pronunciation cleanup. A
+standalone marker repeats the preceding sung phrase in the same section,
+including when a matching Romaji cue follows it. A marker without a preceding
+sung phrase, or one in an instrumental-only section, triggers a draft retry
+instead of inventing lyrics; formatting an invalid supplied song fails
+explicitly. Writing the repetitions out does not guarantee Suno's performance.
 Sung lines in the intro are moved under an `[Intro Verse]` tag after
 `[Instrumental Build]`. Suno assembly strips any remaining emoji from every
 section, including Solo and console freeform songs, before Romaji cues are

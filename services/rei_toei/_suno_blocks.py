@@ -5,6 +5,7 @@ import re
 from typing import List, Optional
 
 from services.rei_toei._lyric_checks import _backfill_missing_romaji_cues
+from services.rei_toei._lyric_repetition import expand_word_count_markers
 from services.rei_toei._lyric_romaji import _verify_and_correct_romaji_lines
 from services.rei_toei._models import Lyrics, SongConcept
 from services.rei_toei._romaji_brackets import bracket_bare_romaji_lines
@@ -58,6 +59,7 @@ def _append_normalized_section(
     if instrumental is None:
         instrumental = label.casefold() == "solo"
     if instrumental:
+        expand_word_count_markers(text, sung=False)
         text = _PROMPT_SCHEMA_LEAKAGE_RE.sub("", _normalize_serialized_lyric_text(text))
         text = re.sub(rf"^\s*\[{re.escape(label)}\]\s*", "", text, count=1, flags=re.IGNORECASE)
         block = bracket_solo_directions(text, label=label)

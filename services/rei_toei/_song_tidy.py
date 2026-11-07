@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict
 
+from services.rei_toei._lyric_repetition import expand_payload_word_count_markers
 from services.rei_toei._lyric_romaji import _JAPANESE_CHAR_RE
 from services.rei_toei._suno_cleanup import (
     bracket_chaos_cues,
@@ -54,6 +55,7 @@ def _is_sung(line: str) -> bool:
 def tidy_song_sections(payload: Dict[str, Any], policy: StagePolicy | None = None) -> None:
     """Tidy lyric cues, emoji, echoes, bridge repetition, and dangling punctuation."""
     policy = policy or load_stage_policy()
+    expand_payload_word_count_markers(payload, policy)
     for field, value in payload.items():
         if not isinstance(value, str):
             continue

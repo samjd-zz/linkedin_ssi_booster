@@ -89,7 +89,7 @@ def build_lyric_prompts(
     if translate_mode:
         language_instruction = (
             f"{english_only_instruction} Selected lines will be translated into Japanese afterwards, so keep "
-            "the chorus hook short (3-7 words), concrete, and emotionally clear, and keep "
+            "the chorus hook short, roughly three to seven words, concrete, and emotionally clear, and keep "
             "lines self-contained rather than splitting one sentence across lines."
         )
 
@@ -101,12 +101,14 @@ def build_lyric_prompts(
 
     chorus_json_instruction = (
         "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. "
-        "4-8 lines built on the song's central metaphor: one short, memorable hook line (3-7 words) that states "
-        "the emotional thesis, repeated or answered, plus lines that give it feeling. Do not list tech nouns. "
+        "4-8 lines built on the song's central metaphor: one short, memorable hook of three to seven words "
+        "that states the emotional thesis. Write the hook words again as a complete sung line; "
+        "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
         "(Character Cap: 400 chars)"
         if generation_language == "english"
         else "[Chorus] 4-8 lines built on the song's central metaphor: one short, memorable hook line that states "
-             "the emotional thesis, repeated or answered, plus lines that give it feeling. Do not list tech nouns. "
+             "the emotional thesis. Write the hook words again as a complete sung line; "
+             "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
              "Preserve natural script/casing for Japanese and mixed-language lines. (Character Cap: 400 chars)"
     )
 
@@ -172,7 +174,7 @@ Suno Formatting Rules:
 10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things.
 11. CREATIVE CRAFT: Write like a songwriter, not a keyword generator. Tell a concrete story with characters, a setting, and a turning point drawn from the theme. Every line must add a new image, action, or emotion; never restate the previous line with swapped synonyms.
 12. Avoid stock cyberpop filler used as padding: 'signal flows', 'data streams', 'code descends', 'circuits sing', 'bits dance', 'neon', 'latency', 'packets', 'glitch', 'cyber realms', 'silicon dreams'. Use at most one such phrase in the whole song; invent fresh, specific imagery instead.
-13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns.
+13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns. Write the hook words again as a complete sung line, not a word-count or repetition placeholder.
 14. Use varied line lengths, concrete sensory detail, surprising metaphors, humor or wonder where the theme invites it, and a clear emotional arc from setup to climax to resolution.
 15. Never gloss an English line with Japanese, Romaji, or pinyin in parentheses, e.g. 'Signal pulse (信号 shingou)'. If a line should be Japanese, write it on its own line.
 16. Follow the profile's intro layout, including its sung-opening label when configured.
