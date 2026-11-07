@@ -86,6 +86,7 @@ from services.rei_toei._suno_themes import (
     ensure_unique_rei_title as ensure_unique_rei_title,
     extract_themes as extract_themes,
     load_recent_rei_titles as load_recent_rei_titles,
+    record_rei_title as record_rei_title,
     resolve_lyric_language as resolve_lyric_language,
 )
 

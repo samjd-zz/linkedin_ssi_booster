@@ -48,12 +48,68 @@ def _normalize_title(value: str) -> str:
     return re.sub(r"\W+", " ", value.lower()).strip()
 
 
+REI_TITLE_HISTORY_FILE = "title_history.jsonl"
+REI_TITLE_HISTORY_MAX = 200
+
+
+def record_rei_title(output_dir: Path, title: str, theme: str = "", preview: bool = False) -> None:
+    """Append a generated concept title so preview and console runs also count as recent."""
+    cleaned = " ".join(title.split()).strip()
+    if not cleaned:
+        return
+    history_path = output_dir / REI_TITLE_HISTORY_FILE
+    entry = {
+        "title": cleaned,
+        "theme": theme,
+        "preview": preview,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        lines = history_path.read_text(encoding="utf-8").splitlines() if history_path.exists() else []
+        lines.append(json.dumps(entry, ensure_ascii=False))
+        history_path.write_text("\n".join(lines[-REI_TITLE_HISTORY_MAX:]) + "\n", encoding="utf-8")
+    except OSError as exc:
+        logger.warning("Could not record Rei title history at %s: %s", history_path, exc)
+
+
+def _load_title_history(output_dir: Path) -> List[str]:
+    """Return history titles newest first."""
+    history_path = output_dir / REI_TITLE_HISTORY_FILE
+    try:
+        lines = history_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    titles: List[str] = []
+    for line in reversed(lines):
+        try:
+            title = str(json.loads(line).get("title", "")).strip()
+        except (json.JSONDecodeError, AttributeError):
+            continue
+        if title:
+            titles.append(title)
+    return titles
+
+
 def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
-    """Load recent Suno titles from saved Rei artifacts."""
+    """Load recent titles from the title history log and saved Suno artifacts."""
     if not output_dir.exists():
         return []
 
     titles: List[str] = []
+    seen: set[str] = set()
+
+    def _add(title: str) -> None:
+        key = _normalize_title(title)
+        if key and key not in seen:
+            seen.add(key)
+            titles.append(title)
+
+    for title in _load_title_history(output_dir):
+        if len(titles) >= limit:
+            return titles
+        _add(title)
+
     for path in sorted(output_dir.glob("*_suno.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         if len(titles) >= limit:
             break
@@ -62,8 +118,8 @@ def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
                 payload = json.load(f)
             title = str(payload.get("title", "")).strip()
             if title:
-                titles.append(title)
-        except (OSError, json.JSONDecodeError, TypeError):
+                _add(title)
+        except (OSError, json.JSONDecodeError, TypeError, AttributeError):
             continue
     return titles
 

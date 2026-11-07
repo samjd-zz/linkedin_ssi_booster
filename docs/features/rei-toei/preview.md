@@ -18,7 +18,7 @@ Preview generates the song concept, full lyrics, and formatted Suno prompt using
 
 ## Preparation
 
-Rei-only CLI runs skip GitHub profile enrichment because it is not used by the music prompts. Concept and lyric generation share the existing CLI Ollama client (including the configured model and host); the Rei default remains `gemma4:e4b` if `OLLAMA_MODEL` is unset. Recent titles are read once and reused for automatic theme selection and title uniqueness. Explicit themes skip unused avatar-state loading, except that `--rei-explain` still loads extracted evidence for DoT validation. Strudel's explicit-theme path likewise avoids avatar loading and reuses the CLI client.
+Rei-only CLI runs skip GitHub profile enrichment because it is not used by the music prompts. Concept and lyric generation share the existing CLI Ollama client (including the configured model and host); the Rei default remains `gemma4:e4b` if `OLLAMA_MODEL` is unset. Recent titles are read once and reused for automatic theme selection and title uniqueness. Every generated concept title, including `--rei-preview` and console songs that are never saved, is appended to `<GENERATED_CONTENT_DIR>/<REI_TOEI_SUBDIR>/title_history.jsonl` (newest 200 kept); recent titles combine this log with saved `*_suno.json` songs. Explicit themes skip unused avatar-state loading, except that `--rei-explain` still loads extracted evidence for DoT validation. Strudel's explicit-theme path likewise avoids avatar loading and reuses the CLI client.
 
 ## Timings and Retries
 

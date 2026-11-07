@@ -32,6 +32,7 @@ async def handle_rei_generate(args, ai, rei_config: ReiToeiConfig) -> None:
         extract_themes,
         choose_diverse_theme,
         load_recent_rei_titles,
+        record_rei_title,
         generate_song_concept,
         compose_lyrics,
         assemble_suno_prompt,
@@ -98,6 +99,7 @@ async def handle_rei_generate(args, ai, rei_config: ReiToeiConfig) -> None:
             ai,
             recent_titles,
         )
+    record_rei_title(get_rei_toei_dir(), concept.title, theme.name, preview=bool(args.rei_preview))
 
     print(str(Fore.CYAN) + "\u270d\ufe0f  Composing lyrics..." + str(Style.RESET_ALL))
     with timed_stage(logger, "rei.lyrics"):

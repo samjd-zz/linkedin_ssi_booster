@@ -94,7 +94,8 @@ def test_explicit_preview_skips_unused_preparation(
     preview.history.assert_called_once()
     preview.submit.assert_not_called()
     preview.validate.assert_not_called()
-    assert not list(preview.output_dir.iterdir())
+    assert not list(preview.output_dir.glob("*_suno.json"))
+    assert (preview.output_dir / "title_history.jsonl").exists()
     for stage in ("rei.concept", "rei.lyrics", "rei.suno_formatting"):
         assert f"Stage end stage={stage}" in caplog.text
 
@@ -137,7 +138,8 @@ def test_failed_lyrics_stop_before_formatting_saving_or_submission(
     rei.assemble_suno_prompt.assert_not_called()
     preview.submit.assert_not_called()
     preview.validate.assert_not_called()
-    assert not list(preview.output_dir.iterdir())
+    assert not list(preview.output_dir.glob("*_suno.json"))
+    assert (preview.output_dir / "title_history.jsonl").exists()
     assert "status=error" in caplog.text
     assert all(record.exc_info is None for record in caplog.records)
 

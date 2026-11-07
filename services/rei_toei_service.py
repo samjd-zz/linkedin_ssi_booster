@@ -54,6 +54,7 @@ from services.rei_toei import (
     extract_themes,
     choose_diverse_theme,
     load_recent_rei_titles,
+    record_rei_title,
     ensure_unique_rei_title,
     generate_song_concept,
     compose_lyrics,

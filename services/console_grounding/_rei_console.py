@@ -19,6 +19,7 @@ from services.rei_toei_service import (
     extract_themes,
     choose_diverse_theme,
     load_recent_rei_titles,
+    record_rei_title,
     generate_song_concept,
     compose_lyrics,
     assemble_suno_prompt,
@@ -564,6 +565,7 @@ async def _handle_suno_request(
                 recent_titles=recent_titles,
                 ollama=ai,
             )
+        record_rei_title(get_rei_toei_dir(), concept.title, theme.name, preview=True)
         
         # Compose lyrics
         with timed_stage(logger, "console.rei.lyrics"):
