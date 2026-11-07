@@ -78,7 +78,12 @@ def _select_genre_techniques(concept: SongConcept, domain_knowledge: ReiDomainKn
             continue
         # Match when most profile tokens appear in the concept tag set.
         token_hits = sum(1 for tok in profile_tokens if tok in joined_tags)
-        if token_hits == 0:
+        aliases = profile_data.get("genre_aliases", []) if isinstance(profile_data, dict) else []
+        alias_match = any(
+            isinstance(alias, str) and alias.lower() in joined_tags
+            for alias in aliases
+        )
+        if token_hits == 0 and not alias_match:
             continue
         matched_phrases.extend(_extract_string_phrases(profile_data, max_items=4))
 
@@ -198,6 +203,12 @@ def _select_suno_template_key(concept: SongConcept) -> str:
     template_key = "industrial_techno_template"
     if any("cyberpop" in tag.lower() for tag in concept.genre_tags):
         template_key = "cyberpunk_electro_template"
+    elif any(
+        alias in tag.lower()
+        for tag in concept.genre_tags
+        for alias in ("jungle", "dnb", "drum and bass", "drum & bass")
+    ):
+        template_key = "jungle_dnb_template"
     elif any("synthwave" in tag.lower() for tag in concept.genre_tags):
         template_key = "dark_synthwave_template"
     elif any("glitch" in tag.lower() for tag in concept.genre_tags):

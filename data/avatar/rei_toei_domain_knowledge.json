@@ -320,6 +320,28 @@
       },
       "arrangement": "Atmospheric guitar and synth intro, gradual rhythmic build, melodic rock chorus, psychedelic breakdown, bass-driven drop and guitar-led climax",
       "mix": "Keep the kick and bass distinct, center the low end and leave space for guitars and vocals"
+    },
+    "jungle_dnb": {
+      "tempo": "Jungle 160-170 BPM; drum and bass 170-176 BPM",
+      "breakbeats": {
+        "rhythm": "Fast syncopated breakbeats with chopped Amen-style edits, shuffled hats and crisp snare backbeats",
+        "processing": "Layer ghost snares, rapid fills and break slices while keeping the main pulse clear"
+      },
+      "bass": {
+        "type": "Deep sub-bass foundations, rolling Reese bass and syncopated bass stabs",
+        "processing": "Keep sub frequencies centered and controlled; shape Reese movement around the kick"
+      },
+      "synths": {
+        "leads": "Dark atmospheric pads, clipped rave stabs and brief melodic motifs",
+        "processing": "Use filtered sweeps, dub echoes and restrained distortion to create motion"
+      },
+      "vocals": {
+        "type": "Rhythmic, concise sung hooks that leave room for the breakbeat",
+        "processing": "Keep vocals clear above dense drums; use short delay throws at phrase endings"
+      },
+      "arrangement": "Build from a sparse breakbeat intro through vocal verses into a full rolling bass drop, a half-time breakdown and a final break-led release",
+      "mix": "Preserve punch in the kick and snare, separate sub from bass harmonics and leave headroom for chopped breaks",
+      "genre_aliases": ["jungle", "dnb", "drum and bass", "drum & bass"]
     }
   },
   "bpm_and_mood": {
@@ -519,6 +541,22 @@
             "drop": {"label": "Drop", "required": true, "content": "instrumental", "cues": ["Psytrance Bass Drop"]},
             "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Psychedelic Guitar Solo"]},
             "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Psychedelic Breakdown"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "jungle_dnb": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "optional_cues": ["Amen Break Fill", "Reese Bass Stab", "Half-Time Switch", "Riser"],
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Jungle Breakbeat Intro"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "drop": {"label": "Drop", "required": true, "content": "instrumental", "cues": ["Jungle Breakbeat Drop"]},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Half-Time Breakdown"]},
             "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
           }
         },
@@ -726,6 +764,7 @@
     "cyberpunk_electro_template": "144 bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks, bright pop energy",
     "dark_synthwave_template": "126 bpm, dark synthpop, {mood} dreamy vocaloid, analog synths, ethereal atmosphere",
     "glitch_industrial_template": "150 bpm, glitch pop industrial, {mood} playful vocaloid, hyper energy, kawaii bass",
+    "jungle_dnb_template": "Jungle drum and bass, {bpm} bpm, chopped Amen-style breakbeats, rolling Reese bass, syncopated drums, atmospheric rave energy",
     "romaji_cyberpop_template": "142 bpm, cyberpop vocaloid, Romaji and Japanese hooks, {mood} AI vocals, synthwave vibes, catchy J-pop electropop"
   },
   "production_notes": {

@@ -18,6 +18,11 @@ from services.rei_toei._stage_policy import StagePolicy, load_stage_policy
 from services.rei_toei._suno_blocks import _normalize_freeform_suno_reply
 from services.rei_toei._suno_pipeline import assemble_suno_prompt, compose_lyrics
 from services.rei_toei._suno_quality import ensure_suno_quality
+from services.rei_toei._suno_tags import (
+    _build_rich_suno_tags,
+    _select_genre_techniques,
+    _select_suno_template_key,
+)
 
 
 @pytest.fixture
@@ -60,7 +65,10 @@ def _compose_profile_draft(domain: ReiDomainKnowledge, concept: SongConcept) -> 
 
 
 @pytest.mark.parametrize(
-    "name", ["cyberpop", "cyberpunk", "acoustic", "rock", "psytrance", "hip_hop", "ambient"],
+    "name", [
+        "cyberpop", "cyberpunk", "acoustic", "rock", "psytrance", "jungle_dnb",
+        "hip_hop", "ambient",
+    ],
 )
 def test_shipped_profiles_validate(domain: ReiDomainKnowledge, name: str) -> None:
     policy = _select(domain, name)
@@ -103,6 +111,59 @@ def test_psytrance_profile_formats_instrumental_cues(
     for cue in ("Psychedelic Synth Rise", "Psytrance Bass Drop", "Psychedelic Guitar Solo"):
         assert result.lyrics.count(f"[{cue}]") == 1
     assert result.metadata["stage_cue_profile"] == "psytrance"
+
+
+def test_jungle_dnb_profile_has_breakbeat_drop_and_optional_breakdown(
+    domain: ReiDomainKnowledge,
+) -> None:
+    assert domain.lyrical_structure["stage_cues"]["active_profile"] == "cyberpop"
+    policy = _select(domain, "jungle_dnb")
+
+    assert policy.required_fields == (
+        "verse_1", "chorus", "verse_2", "bridge", "drop", "outro",
+    )
+    assert policy.rule("intro").required is False
+    assert policy.rule("intro").cues == ("Jungle Breakbeat Intro",)
+    assert policy.rule("drop").content == "instrumental"
+    assert policy.rule("drop").cues == ("Jungle Breakbeat Drop",)
+    assert policy.rule("breakdown").content == "instrumental"
+    assert policy.rule("breakdown").required is False
+    assert "Amen Break Fill" in policy.prompt_guidance()
+
+
+def test_jungle_dnb_profile_formats_breakbeat_stage_cues(
+    domain: ReiDomainKnowledge, concept: SongConcept,
+) -> None:
+    _select(domain, "jungle_dnb")
+    lyrics = Lyrics(
+        verse_1="The night begins to move", chorus="WE RIDE THE BREAK",
+        verse_2="The bassline bends", bridge="The rhythm splits in two",
+        evidence_ids=[], intro="[Jungle Breakbeat Intro]",
+        drop="[Jungle Breakbeat Drop]", breakdown="[Half-Time Breakdown]",
+        outro="The drums fade into dawn",
+    )
+
+    result = assemble_suno_prompt(concept, lyrics, domain)
+
+    for cue in ("Jungle Breakbeat Intro", "Jungle Breakbeat Drop", "Half-Time Breakdown"):
+        assert result.lyrics.count(f"[{cue}]") == 1
+    assert result.metadata["stage_cue_profile"] == "jungle_dnb"
+
+
+@pytest.mark.parametrize("genre_tag", ["jungle", "dnb", "drum and bass", "drum & bass"])
+def test_jungle_dnb_tags_use_the_matching_style_template_and_production(
+    domain: ReiDomainKnowledge, concept: SongConcept, genre_tag: str,
+) -> None:
+    concept.genre_tags = [genre_tag]
+
+    template = _select_suno_template_key(concept)
+    tags = _build_rich_suno_tags(concept, domain, template)
+    techniques = _select_genre_techniques(concept, domain)
+
+    assert template == "jungle_dnb_template"
+    assert "chopped Amen-style breakbeats" in tags
+    assert "Amen-style" in tags
+    assert any("Reese bass" in phrase for phrase in techniques)
 
 
 def test_explicit_acoustic_profile_does_not_require_electronic_sections(domain: ReiDomainKnowledge) -> None:
