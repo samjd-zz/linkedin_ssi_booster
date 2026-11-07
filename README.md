@@ -82,8 +82,8 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1736%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1736 passed, 0 failed, 2 live API tests deselected"></a>
-  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-75%25-yellow.svg" alt="Source statement coverage: 75% (11150 of 14915 statements), measured November 6, 2026"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1742%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1742 passed, 0 failed, 2 live API tests deselected"></a>
+  <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-75%25-yellow.svg" alt="Source statement coverage: 75% (11151 of 14915 statements), measured November 6, 2026"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
@@ -415,7 +415,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 - [SSI strategy](docs/ssi-and-strategy.md) — SSI model, content mapping, scheduler behavior, and reporting
 - [AI backend](docs/ai-backend-and-models.md) — Ollama setup and model recommendations
 - [NLP writing principles](docs/nlp-basics.md) — pattern interrupts, presupposition, anchoring, and ethical content guidelines
-- [Testing and development](docs/testing-and-dev.md) — November 6, 2026: 1,738 collected; 1,736 passed, 0 failed, 2 live Buffer tests deselected; **75% source statement coverage** (14,915 statements; 3,765 missed). Includes 15 bounded lyric-retry cases and 14 new intro-instruction-leakage regressions, 43 configurable stage-profile cases, 25 console/CLI lyric-parity cases, 61 stage-cue cleanup cases, 5 lyric JSON-repair cases, 8 Suno best-practice cases, 19 word-echo ad-lib cleanup cases, 24 required-section gate cases, 16 lyric-fitted tempo cases, 25 simplified-kanji repair cases, 19 leading-semicolon cleanup cases, 7 lyric-output-polish cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 25 relevance, and 92 performance regressions; see the testing guide for measurement scope and exclusions.
+- [Testing and development](docs/testing-and-dev.md) — November 6, 2026: 1,744 collected; 1,742 passed, 0 failed, 2 live Buffer tests deselected; **75% source statement coverage** (14,915 statements; 3,764 missed). Includes 15 bounded lyric-retry cases and 14 new intro-instruction-leakage regressions, 43 configurable stage-profile cases, 25 console/CLI lyric-parity cases, 67 stage-cue cleanup cases including 6 stage-policy guidance-leak regressions, 5 lyric JSON-repair cases, 8 Suno best-practice cases, 19 word-echo ad-lib cleanup cases, 24 required-section gate cases, 16 lyric-fitted tempo cases, 25 simplified-kanji repair cases, 19 leading-semicolon cleanup cases, 7 lyric-output-polish cases, 24 lyric emoji-cleanup cases, 31 solo-palette cases, 203 Japanese lyric-cue and Romaji-coverage regressions, 4 Drop/Outro production-cue regressions, 16 required-section/Solo quality checks, 14 JSON-grammar compatibility regressions, 10 launcher, 25 relevance, and 92 performance regressions; see the testing guide for measurement scope and exclusions.
 
 ## 🐳 Docker via `run.sh` (Recommended)
 

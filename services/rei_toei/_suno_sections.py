@@ -58,6 +58,10 @@ _PROMPT_SCHEMA_LEAKAGE_RE = re.compile(
     r"followed by \d+(?:-\d+)? lines (?:describing|of)[^\n]*|"
     r"(?:then )?on its own line as a vocalization primer(?:, then)?|"
     r"then a blank line, then[^\n]*|"
+    # Stage-policy guidance fragments copied verbatim, e.g. "sung lines (Ahh ahh ahh)".
+    r"^(?:separate\s+)?sung(?:\s+opening)?\s+lines(?:\s+only)?"
+    r"(?:\s+under\s+\[[^\]\n]*\])?\s*[.:,;]?\s*|"
+    r"^(?:use\s+only\s+)?bracketed\s+instrumental\s+directions(?:\s+only)?\s*[.:,;]?\s*|"
     r"^\s*then\s*$"
     r")",
     re.IGNORECASE,

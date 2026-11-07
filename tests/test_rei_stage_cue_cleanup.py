@@ -179,6 +179,39 @@ def test_prompt_leakage_around_chaos_is_removed_after_tidy(source: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("leaked", "expected_line"),
+    [
+        ("sung lines (Ahh ahh ahh)", "(Ahh ahh ahh)"),
+        ("Sung lines: (Oh oh oh)", "(Oh oh oh)"),
+        ("Separate sung opening lines under [Intro Verse] (Ahh ahh ahh)", "(Ahh ahh ahh)"),
+    ],
+)
+def test_stage_policy_guidance_leakage_is_stripped_from_sung_sections(
+    leaked: str, expected_line: str,
+) -> None:
+    """Regression: guidance like "sung lines" copied before a vocalization."""
+    source = f"オー・オー・オー\n[oo ・ oo ・ oo]\n{leaked}"
+
+    section = _append_normalized_section([], source, "Intro Verse")
+
+    assert "sung" not in section.lower()
+    assert expected_line in section
+    assert section.startswith("[Intro Verse]\nオー・オー・オー")
+
+
+@pytest.mark.parametrize(
+    "leaked",
+    ["sung lines", "sung opening lines", "bracketed instrumental directions only"],
+)
+def test_bare_stage_policy_guidance_lines_are_dropped(leaked: str) -> None:
+    section = _append_normalized_section(
+        [], f"A signal rises\n{leaked}\nBassline descends", "Verse 1"
+    )
+
+    assert section == "[Verse 1]\nA signal rises\nBassline descends"
+
+
+@pytest.mark.parametrize(
     "source",
     ["(Heavy Bass Drop)", "重低音ドロップ\n[juu teion doroppu] (Heavy Bass Drop)"],
 )
