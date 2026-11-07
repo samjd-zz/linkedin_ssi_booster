@@ -233,11 +233,17 @@ The app defaults to `V6_MINI`. An explicit `SUNO_MODEL` environment variable ove
 
 Required sections, bracketed labels, instrumental directions, and the intro primer now live in `lyrical_structure.stage_cues` in `data/avatar/rei_toei_domain_knowledge.json`, rather than a hardcoded mandatory-section list.
 
-Select `active_profile` explicitly: `cyberpop` preserves the previous defaults; `cyberpunk`, `acoustic`, `rock`, `hip_hop`, and `ambient` offer different arrangements. Song genre tags do not automatically select a profile. CLI runs reload the file; use `/reload` in the console.
+Select `active_profile` explicitly: `cyberpop` preserves the previous defaults; `cyberpunk`, `acoustic`, `rock`, `psytrance`, `hip_hop`, and `ambient` offer different arrangements. Song genre tags do not automatically select a profile. CLI runs reload the file; use `/reload` in the console.
 
 See [Stage Cue Configuration and Genre Catalog](rei-toei-stage-cues.md) for the complete schema, required-versus-optional behavior, intro controls, and the exhaustive catalog of potential stage cues by genre. The catalog covers 93 genres across nine families (cyber/synth/industrial electronic, club and bass music, pop/R&B/soul, rock and metal, hip-hop, acoustic/folk/roots, jazz and classical, global/regional, and ambient/experimental), plus a cross-genre palette of section headings, dynamics, rhythm, voice, texture, and ending cues. Profile settings reach the lyric prompt, draft gate, retry feedback, final formatting, and saved metadata. Every language mode allows five lyric attempts; unusable drafts then fail without canned song or section replacements. Existing Suno best-practice rules remain additional guidance; they do not override the structural policy.
 
 ### Example: Adding a New Genre
+
+The optional `psytrance` entry describes psychedelic trance rock, including
+rolling bass, four-on-the-floor drums, and electric guitar. It does not change
+the default genre or stage profile. A concept tag containing `psytrance` can
+include its production descriptors in Suno tags; `psy-trance` alone does not
+match this existing selector.
 
 ```json
 "genre_production_techniques": {

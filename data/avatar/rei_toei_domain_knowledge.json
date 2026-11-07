@@ -298,6 +298,28 @@
       ],
       "rhythm": "Chaotic, fragmented, defying the grid",
       "texture": "Beautiful accidents, digital artifacts, beautiful code noise"
+    },
+    "psytrance": {
+      "tempo": "140-150 BPM",
+      "kick": "Punchy four-on-the-floor kick with a tight transient and controlled sub",
+      "bass": "Rolling sixteenth-note psytrance bass interlocked with the kick",
+      "guitars": "Fuzzed psychedelic rock riffs and expressive electric guitar leads",
+      "style": "Psychedelic trance rock and psy-trance fusion, balancing hypnotic electronic drive with organic rock energy",
+      "synths": {
+        "leads": "Resonant acid arpeggios, spiraling sequences and modulated analog-style leads",
+        "atmosphere": "Evolving psychedelic pads, granular swirls and spacious delay trails",
+        "processing": "Automated filter sweeps, phasing, distortion and stereo movement"
+      },
+      "percussion": {
+        "rhythm": "Driving 4/4 pulse, layered hi-hats and syncopated live drum accents",
+        "processing": "Crisp transients, rhythmic delays and gradual fills"
+      },
+      "vocals": {
+        "type": "Dreamlike melodic vocals with clear, memorable hooks",
+        "processing": "Layered harmonies, subtle modulation and tempo-synced delay"
+      },
+      "arrangement": "Atmospheric guitar and synth intro, gradual rhythmic build, melodic rock chorus, psychedelic breakdown, bass-driven drop and guitar-led climax",
+      "mix": "Keep the kick and bass distinct, center the low end and leave space for guitars and vocals"
     }
   },
   "bpm_and_mood": {
@@ -480,6 +502,23 @@
             "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
             "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
             "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Guitar Solo"]},
+            "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
+          }
+        },
+        "psytrance": {
+          "intro_verse_label": null,
+          "intro_primer": null,
+          "optional_cues": ["Filter Sweep", "Riser", "Delay Throw", "Live Drum Fill"],
+          "sections": {
+            "intro": {"label": "Intro", "required": false, "content": "instrumental", "cues": ["Psychedelic Synth Rise"]},
+            "verse_1": {"label": "Verse 1", "required": true, "content": "sung", "cues": []},
+            "pre_chorus": {"label": "Pre-Chorus", "required": false, "content": "sung", "cues": []},
+            "chorus": {"label": "Chorus", "required": true, "content": "sung", "cues": []},
+            "verse_2": {"label": "Verse 2", "required": true, "content": "sung", "cues": []},
+            "bridge": {"label": "Bridge", "required": true, "content": "sung", "cues": []},
+            "drop": {"label": "Drop", "required": true, "content": "instrumental", "cues": ["Psytrance Bass Drop"]},
+            "solo": {"label": "Solo", "required": true, "content": "instrumental", "cues": ["Psychedelic Guitar Solo"]},
+            "breakdown": {"label": "Breakdown", "required": false, "content": "instrumental", "cues": ["Psychedelic Breakdown"]},
             "outro": {"label": "Outro", "required": true, "content": "sung", "cues": []}
           }
         },

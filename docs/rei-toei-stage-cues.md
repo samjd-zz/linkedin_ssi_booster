@@ -41,6 +41,7 @@ The default remains `cyberpop`.
 | `cyberpunk` | Same required sections as cyberpop | `[Dark Synth Pulse]`, `[Distorted Bass Drop]`, `[Distorted Synth Solo]`, `[Fade Out]`; optional instrumental `[Glitch Breakdown]` |
 | `acoustic` | Verse 1, Chorus, Verse 2, Outro | Optional `[Intro]` with `[Fingerpicked Guitar]`; optional `[Acoustic Guitar Solo]`; no Drop or forced primer |
 | `rock` | Verse 1, Chorus, Verse 2, Bridge, Solo, Outro | Optional `[Intro]` with `[Guitar Riff]`; mandatory `[Guitar Solo]`; no Drop or forced primer |
+| `psytrance` | Verse 1, Chorus, Verse 2, Bridge, Drop, Solo, Outro | Optional `[Intro]` with `[Psychedelic Synth Rise]`; instrumental `[Psytrance Bass Drop]` and `[Psychedelic Guitar Solo]`; optional `[Psychedelic Breakdown]` |
 | `hip_hop` | Verse 1, Hook, Verse 2, Outro | The `chorus` JSON field renders as `[Hook]`; optional `[Beat Intro]`; no mandatory bridge, drop, or solo |
 | `ambient` | Instrumental Intro, sung Verse 1, instrumental Interlude, instrumental Outro | `[Atmospheric Pads]`, `[Ambient Interlude]`, `[Fade Out]`; optional `[Refrain]`; no drop or primer |
 

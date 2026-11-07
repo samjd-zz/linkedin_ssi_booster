@@ -59,11 +59,50 @@ def _compose_profile_draft(domain: ReiDomainKnowledge, concept: SongConcept) -> 
     return compose_lyrics(concept, _loaders.load_rei_persona(), domain, ollama=ollama)
 
 
-@pytest.mark.parametrize("name", ["cyberpop", "cyberpunk", "acoustic", "rock", "hip_hop", "ambient"])
+@pytest.mark.parametrize(
+    "name", ["cyberpop", "cyberpunk", "acoustic", "rock", "psytrance", "hip_hop", "ambient"],
+)
 def test_shipped_profiles_validate(domain: ReiDomainKnowledge, name: str) -> None:
     policy = _select(domain, name)
     assert policy.name == name
     assert any(rule.required and rule.content == "sung" for rule in policy.sections)
+
+
+def test_psytrance_profile_is_optional_and_uses_psychedelic_rock_cues(
+    domain: ReiDomainKnowledge,
+) -> None:
+    assert domain.lyrical_structure["stage_cues"]["active_profile"] == "cyberpop"
+    policy = _select(domain, "psytrance")
+
+    assert policy.intro_primer is None and policy.intro_verse_label is None
+    assert policy.required_fields == (
+        "verse_1", "chorus", "verse_2", "bridge", "drop", "solo", "outro",
+    )
+    assert policy.rule("intro").cues == ("Psychedelic Synth Rise",)
+    assert policy.rule("drop").content == "instrumental"
+    assert policy.rule("drop").cues == ("Psytrance Bass Drop",)
+    assert policy.rule("solo").cues == ("Psychedelic Guitar Solo",)
+    assert policy.rule("breakdown").content == "instrumental"
+    assert policy.rule("breakdown").required is False
+    assert "Filter Sweep" in policy.prompt_guidance()
+
+
+def test_psytrance_profile_formats_instrumental_cues(
+    domain: ReiDomainKnowledge, concept: SongConcept,
+) -> None:
+    _select(domain, "psytrance")
+    lyrics = Lyrics(
+        verse_1="The horizon bends", chorus="WE FOLLOW THE SPIRAL",
+        verse_2="The pulse returns", bridge="The walls dissolve",
+        evidence_ids=[], intro="[Psychedelic Synth Rise]", drop="[Psytrance Bass Drop]",
+        solo="[Psychedelic Guitar Solo]", outro="The dawn comes alive",
+    )
+
+    result = assemble_suno_prompt(concept, lyrics, domain)
+
+    for cue in ("Psychedelic Synth Rise", "Psytrance Bass Drop", "Psychedelic Guitar Solo"):
+        assert result.lyrics.count(f"[{cue}]") == 1
+    assert result.metadata["stage_cue_profile"] == "psytrance"
 
 
 def test_explicit_acoustic_profile_does_not_require_electronic_sections(domain: ReiDomainKnowledge) -> None:
