@@ -101,8 +101,10 @@ def load_rei_domain_knowledge() -> ReiDomainKnowledge:
     )
     
     from services.rei_toei._stage_policy import load_stage_policy
+    from services.rei_toei._style_policy import style_template_key
 
-    load_stage_policy(knowledge.lyrical_structure)
+    policy = load_stage_policy(knowledge.lyrical_structure)
+    style_template_key(policy.style, knowledge, "industrial_techno_template")
     logger.debug(f"Loaded Rei domain knowledge (schema: {knowledge.schema_version})")
     return knowledge
 

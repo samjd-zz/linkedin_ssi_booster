@@ -88,9 +88,29 @@ def remove_required_cues(text: str, cues: tuple[str, ...]) -> str:
     """Remove configured cue duplicates, including inline or parenthesized variants."""
     for cue in cues:
         escaped = r"(?:heavy\s+)?bass\s+drop" if cue.casefold() == "heavy bass drop" else re.escape(cue)
-        text = re.sub(rf"[\[(]\s*{escaped}\s*[\])]", "", text, flags=re.IGNORECASE)
+        text = re.sub(rf"[\[(（]\s*{escaped}[\s;；]*[\])）]", "", text, flags=re.IGNORECASE)
         text = re.sub(rf"(?im)^[ \t]*{escaped}[ \t]*$", "", text)
     return "\n".join(line.rstrip() for line in text.splitlines()).strip()
+
+
+def normalize_profile_cues(text: str, field: str, policy: StagePolicy) -> str:
+    """Canonicalize only known cues, leaving pronunciation brackets untouched."""
+    rule = policy.rule(field)
+    if rule is None:
+        return text
+    known = {cue.casefold(): cue for cue in (*rule.cues, *policy.optional_cues)}
+    aliases = {
+        alias.casefold(): known[target.casefold()]
+        for alias, target in policy.style.cue_aliases.items()
+        if target.casefold() in known
+    }
+
+    def replace(match: re.Match[str]) -> str:
+        key = match["cue"].strip().rstrip(";；").strip().casefold()
+        canonical = known.get(key, aliases.get(key))
+        return f"[{canonical}]" if canonical else match[0]
+
+    return re.sub(r"\[(?P<cue>[^\[\]]+)\]", replace, text)
 
 
 def _without_opening_vocalizations(body: str, primer: str | None) -> str:
@@ -127,7 +147,9 @@ def ensure_suno_quality(text: str, policy: StagePolicy | None = None) -> str:
         rule = policy.rule("intro" if field == "intro_verse" else field)
         if rule is None:
             continue
-        body = bracket_chaos_cues(text[header.end():end].strip())
+        body = normalize_profile_cues(
+            bracket_chaos_cues(text[header.end():end].strip()), rule.field, policy,
+        )
         body = expand_word_count_markers(body, sung=rule.content == "sung")
         if rule.content != "instrumental":
             body = strip_sung_bass_drop_cues(body)
@@ -155,6 +177,7 @@ def ensure_suno_quality(text: str, policy: StagePolicy | None = None) -> str:
         if not body and not (rule.required and rule.cues) and not (rule.field == "intro" and opening_verse):
             continue
         body = tag_instrument_cues(body)
+        body = normalize_profile_cues(body, rule.field, policy)
         for cue in rule.cues:
             if f"[{cue}]".casefold() not in body.casefold():
                 logger.warning("Suno quality repair: added [%s] in %s", cue, rule.label)

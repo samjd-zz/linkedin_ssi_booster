@@ -21,7 +21,7 @@ class ReiToeiConfig:
     def __init__(self):
         self.enabled = os.getenv("REI_TOEI_ENABLED", "true").lower() == "true"
         self.default_bpm = int(os.getenv("REI_TOEI_DEFAULT_BPM", "142"))
-        # Comma-separated genre tags used for concept prompting and fallbacks.
+        # Genre hints for legacy profiles without explicit musical-style settings.
         self.default_genre = os.getenv(
             "REI_TOEI_DEFAULT_GENRE", "industrial techno, cyberpop, ai vocaloid"
         )

@@ -52,9 +52,11 @@ def verse_two_repeats_verse_one(
     return repeated / len(verse_two) >= threshold
 
 
-def bridge_is_underdeveloped(section_payload: Dict[str, Any]) -> bool:
+def bridge_is_underdeveloped(
+    section_payload: Dict[str, Any], minimum: int = MIN_BRIDGE_SUNG_LINES,
+) -> bool:
     """True when the bridge is too short to build a real climax."""
-    return len(sung_line_signatures(section_payload.get("bridge"))) < MIN_BRIDGE_SUNG_LINES
+    return len(sung_line_signatures(section_payload.get("bridge"))) < minimum
 
 
 # Sections that must not lift lines from the sections listed for them. The

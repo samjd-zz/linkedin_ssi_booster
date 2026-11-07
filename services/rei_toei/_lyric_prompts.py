@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 from services.rei_toei._models import ReiDomainKnowledge, ReiPersonaGraph, SongConcept
 from services.rei_toei._solo_options import build_solo_style_guidance
 from services.rei_toei._stage_policy import load_stage_policy
+from services.rei_toei._style_policy import apply_song_style
 
 MAX_SUNO_PRACTICE_RULES = 8
 _JAPANESE_RULE_WORDS = ("japanese", "romaji", "kana", "kanji")
@@ -41,6 +42,7 @@ def build_lyric_prompts(
 ) -> tuple[str, str]:
     """Return ``(system_prompt, user_prompt)`` for one lyric-composition request."""
     policy = load_stage_policy(domain_knowledge.lyrical_structure)
+    apply_song_style(concept, policy.style)
     lyrical_approach = persona.production_knowledge.get('lyrical_approach', {})
     communication_vocab = persona.communication_style.get('vocabulary', [])
     japanese_guidance = (
@@ -95,7 +97,7 @@ def build_lyric_prompts(
 
     chorus_case_rule = (
         "4. THE CHORUS MUST BE ENTIRELY UPPERCASE (ALL-CAPS) for dynamic velocity"
-        if generation_language == "english"
+        if generation_language == "english" and policy.style.uppercase_chorus
         else "4. Preserve natural script/casing; do not force all-caps in chorus lines"
     )
 
@@ -105,16 +107,21 @@ def build_lyric_prompts(
         "that states the emotional thesis. Write the hook words again as a complete sung line; "
         "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
         "(Character Cap: 400 chars)"
-        if generation_language == "english"
+        if generation_language == "english" and policy.style.uppercase_chorus
         else "[Chorus] 4-8 lines built on the song's central metaphor: one short, memorable hook line that states "
              "the emotional thesis. Write the hook words again as a complete sung line; "
              "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
-             "Preserve natural script/casing for Japanese and mixed-language lines. (Character Cap: 400 chars)"
+             "Preserve natural expressive script/casing. (Character Cap: 400 chars)"
+    )
+    chorus_json_instruction = chorus_json_instruction.replace(
+        "4-8 lines", f"At least {policy.style.min_chorus_lines} sung lines",
     )
 
     final_rule = (
-        "Remember: No '//' comments, no parenthetical labels. For English lyrics, the chorus must be entirely uppercase. "
-        "Do not include Japanese, Romaji, or other languages. "
+        "Remember: No '//' comments, no parenthetical labels. "
+        + ("For English lyrics, the chorus must be entirely uppercase. "
+           if policy.style.uppercase_chorus else "Preserve natural expressive casing. ")
+        + "Do not include Japanese, Romaji, or other languages. "
         "Do not spell out numbers or invent quantities (\"fifteen\", \"nineteen\", \"seventeen\") as a filler device \u2014 use imagery, not counting."
         if generation_language == "english"
            else "Remember: No '//' comments, no parenthetical labels. Preserve Japanese script and natural casing. "
@@ -181,10 +188,11 @@ Suno Formatting Rules:
 17. Prefer verbs and scenes over abstract noun lists. Show what happens (the ramp, the ignition, the landing) rather than describing 'data' and 'signals' abstractly.
 18. Verse 2 must develop the story, never restate Verse 1: no shared lines and no reworded copies. Show what happens after the turning point and what the new state reveals.
 19. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
-20. The Bridge is the song's climax: open with a pivot line that breaks the pattern, then add 3-5 lines that expand it and escalate to the strongest emotional or thematic moment before the final sections.
+20. If the profile includes a sung Bridge, give it a contrasting pivot and at least {policy.style.min_bridge_lines} sung lines, following the selected arrangement rather than forcing an electronic climax.
 21. Keep rhymes natural. Never bend grammar or pick an odd word just to rhyme (not 'seek death' to rhyme with 'breath', not 'soft clutch' against 'growth'); a near rhyme is better than a forced one.
 22. Keep meter steady: lines sung as a pair should be within about two syllables of each other, so Suno does not stretch or cram syllables."""
     system_prompt += f"\n\n{policy.prompt_guidance()}"
+    system_prompt += "\n\n" + policy.style.guidance()
     
     # Get technical metaphors for the theme
     metaphor_library = domain_knowledge.technical_metaphor_library
@@ -229,7 +237,7 @@ Suno Formatting Rules:
         "chorus": chorus_json_instruction.replace("[Chorus]", "").strip(),
         "verse_2": "Two new stanzas after the turning point. Do not reuse or reword any Verse 1 line. (Character Cap: 600 chars)",
         "bridge": (
-            "6-8 lines pivoting to the emotional and thematic climax"
+            f"At least {policy.style.min_bridge_lines} sung lines developing a contrasting pivot toward the emotional and thematic climax"
             + (", rising into the final drop" if policy.rule("drop") else "")
             + ". (Character Cap: 450 chars)"
         ),
@@ -246,6 +254,8 @@ Suno Formatting Rules:
         )
         for rule in policy.sections
     }
+    if policy.rule("chorus"):
+        section_instructions["chorus"] += f" Minimum {policy.style.min_chorus_lines} sung lines."
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 

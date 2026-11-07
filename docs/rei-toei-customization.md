@@ -231,9 +231,9 @@ The app defaults to `V6_MINI`. An explicit `SUNO_MODEL` environment variable ove
 
 ### Stage Cue Profiles and Genre Catalog
 
-Required sections, bracketed labels, instrumental directions, and the intro primer now live in `lyrical_structure.stage_cues` in `data/avatar/rei_toei_domain_knowledge.json`, rather than a hardcoded mandatory-section list.
+Required sections, bracketed cues, the intro primer, musical direction, and quality settings live in `lyrical_structure.stage_cues` in `data/avatar/rei_toei_domain_knowledge.json`. Each shipped profile includes a `style` object controlling genre tags, Suno template, initial BPM range, arrangement, delivery, density settings, quality thresholds and cue aliases.
 
-Select `active_profile` explicitly: `cyberpop` preserves the previous defaults; `cyberpunk`, `acoustic`, `rock`, `psytrance`, `progressive_psytrance`, `jungle_dnb`, `psychedelic_rock`, `progressive_rock`, `hip_hop`, and `ambient` offer different arrangements. Song genre tags do not automatically select a profile. CLI runs reload the file; use `/reload` in the console.
+Select `active_profile` explicitly: `cyberpop` preserves the electronic direction; `cyberpunk`, `acoustic`, `rock`, `psytrance`, `progressive_psytrance`, `jungle_dnb`, `psychedelic_rock`, `progressive_rock`, `hip_hop`, and `ambient` offer other directions. A profile with `style` overrides conflicting Ollama genre tags, persona genre preferences and `REI_TOEI_DEFAULT_GENRE`; profiles without it retain independent genre hints. Genre tags do not select a profile. CLI runs reload the file; use `/reload` in the console, and restart for environment changes.
 
 See [Stage Cue Configuration and Genre Catalog](rei-toei-stage-cues.md) for the complete schema, required-versus-optional behavior, intro controls, and the exhaustive catalog of potential stage cues by genre. The catalog covers 93 genres across nine families (cyber/synth/industrial electronic, club and bass music, pop/R&B/soul, rock and metal, hip-hop, acoustic/folk/roots, jazz and classical, global/regional, and ambient/experimental), plus a cross-genre palette of section headings, dynamics, rhythm, voice, texture, and ending cues. Profile settings reach the lyric prompt, draft gate, retry feedback, final formatting, and saved metadata. Every language mode allows five lyric attempts; unusable drafts then fail without canned song or section replacements. Existing Suno best-practice rules remain additional guidance; they do not override the structural policy.
 
@@ -320,7 +320,7 @@ The concept BPM is chosen before any lyric exists, so Suno assembly treats it as
 
 Line density also adds a vocal-delivery style tag right after the BPM tag: `rapid-fire syllabic vocaloid delivery` at `dense_syllables` (12) or more, `spacious punchy hook phrasing` at `sparse_syllables` (8) or fewer. Tempos of 165 BPM and up use `breakneck hyperspeed vocaloid energy`. The CLI, console, and saved metadata show the fitted BPM; metadata also keeps `concept_bpm`, `median_line_syllables`, and `vocal_delivery`.
 
-Runtime constraints are primarily configured via environment variables (for example, `REI_TOEI_DEFAULT_BPM`, `REI_TOEI_DEFAULT_GENRE`, `REI_TOEI_STRUDEL_DEFAULT_BARS`) rather than a `technical_constraints` object in `rei_toei_domain_knowledge.json`.
+Service and language settings remain environment-driven (for example, `REI_LYRIC_LANGUAGE` and `REI_TOEI_STRUDEL_DEFAULT_BARS`). Musical direction and initial tempo use the active profile's `style` settings; `REI_TOEI_DEFAULT_GENRE` is a hint only for legacy profiles without `style`. There is no runtime `technical_constraints` object in `rei_toei_domain_knowledge.json`.
 
 ---
 

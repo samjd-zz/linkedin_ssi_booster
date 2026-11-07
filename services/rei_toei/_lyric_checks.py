@@ -42,14 +42,14 @@ def chorus_line_deficit(section: Any, policy: StagePolicy) -> int | None:
     if not rule or rule.content != "sung" or not section:
         return None
     count = sung_line_count(section)
-    return count if count < MIN_CHORUS_SUNG_LINES else None
+    return count if count < policy.style.min_chorus_lines else None
 
 
-def chorus_revision_feedback(line_count: int) -> str:
+def chorus_revision_feedback(line_count: int, minimum: int = MIN_CHORUS_SUNG_LINES) -> str:
     """Build a targeted retry instruction for an undersized Chorus."""
     return (
         "\n\nREVISION REQUIRED: The previous Chorus had only "
-        f"{line_count} sung line(s). Write at least {MIN_CHORUS_SUNG_LINES} "
+        f"{line_count} sung line(s). Write at least {minimum} "
         "distinct, emotionally connected sung lines in the Chorus; keep sound "
         "cues on their own bracketed lines."
     )

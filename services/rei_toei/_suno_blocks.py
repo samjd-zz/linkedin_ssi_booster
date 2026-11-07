@@ -22,7 +22,7 @@ from services.rei_toei._suno_cleanup import (
 )
 from services.rei_toei._suno_json import _normalize_serialized_lyric_text
 from services.rei_toei._suno_quality import bracket_solo_directions, ensure_suno_quality
-from services.rei_toei._suno_quality import remove_required_cues
+from services.rei_toei._suno_quality import remove_required_cues, normalize_profile_cues
 from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stage_policy
 from services.rei_toei._suno_sections import (
     _normalize_suno_section,
@@ -121,7 +121,7 @@ def _normalize_freeform_suno_reply(reply: str, policy: StagePolicy | None = None
         if rule is None:
             continue
         label = "Intro Verse" if field == "intro_verse" else FIELD_LABELS[field]
-        body = reply[header.end():next_start].strip("\r\n")
+        body = normalize_profile_cues(reply[header.end():next_start].strip("\r\n"), rule.field, policy)
         if not _append_normalized_section(
             blocks, body, label,
             instrumental=rule.content == "instrumental",
@@ -146,9 +146,10 @@ def _build_suno_lyric_blocks(
     for rule in policy.sections:
         text = getattr(lyrics, rule.field)
         _append_normalized_section(
-            lyric_blocks, policy.canonicalize(text) if text else text,
+            lyric_blocks, normalize_profile_cues(policy.canonicalize(text), rule.field, policy) if text else text,
             FIELD_LABELS[rule.field],
-            uppercase_body=rule.field == "chorus" and concept.lyric_language.strip().lower() == "english",
+            uppercase_body=rule.field == "chorus" and policy.style.uppercase_chorus
+            and concept.lyric_language.strip().lower() == "english",
             instrumental=rule.content == "instrumental",
             required_cues=rule.cues,
         )

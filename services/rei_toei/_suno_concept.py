@@ -18,6 +18,8 @@ from services.rei_toei._models import (
 )
 from services.rei_toei._suno_json import _parse_llm_json_payload
 from services.rei_toei._suno_themes import ensure_unique_rei_title, resolve_lyric_language
+from services.rei_toei._stage_policy import load_stage_policy
+from services.rei_toei._style_policy import apply_song_style, style_template_key
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,12 @@ def generate_song_concept(
     logger.info(f"Generating song concept for theme: {theme.name} (freq={theme.frequency}, recency={theme.recency_score})")
 
     lyric_config = ReiToeiConfig()
+    style = load_stage_policy(domain_knowledge.lyrical_structure).style
+    style_template_key(style, domain_knowledge, "industrial_techno_template")
+    genre_direction = ", ".join(style.genre_tags) if style.genre_tags else lyric_config.default_genre
+    expertise_genres = list(style.genre_tags) or persona.musical_expertise.get("genres", [])[:5]
+    musical_brief = style.arrangement or "high-energy electronic music"
+    production_brief = style.arrangement or ", ".join(persona.production_knowledge.get("production_techniques", [])[:5])
     lyric_language = resolve_lyric_language(
         lyric_config.lyric_language,
         lyric_config.japanese_lyric_probability,
@@ -67,21 +75,26 @@ Aesthetic: {persona.identity['aesthetic']}
 Purpose: {persona.identity['purpose']}
 
 Your musical expertise:
-- Genres: {', '.join(persona.musical_expertise.get('genres', [])[:5])}
-- Genre direction for this project: {lyric_config.default_genre}
+- Genres: {', '.join(expertise_genres)}
+- Genre direction for this project: {genre_direction}
 - Vocal style: {persona.musical_expertise.get('vocal_style', {}).get('type', 'AI vocaloid')} ({', '.join(persona.musical_expertise.get('vocal_style', {}).get('characteristics', [])[:3])})
-- Production techniques: {', '.join(persona.production_knowledge.get('production_techniques', [])[:5])}
+- Production techniques: {production_brief}
 
 Your personality:
 {', '.join(persona.personality_traits[:5])}
 
 Communication style: {persona.communication_style.get('tone', 'digital')}
 
-You transform technical knowledge into high-energy electronic music. You speak in precise, digital language with cryptic technical metaphors.
+You transform themes into {musical_brief}. You speak in precise, digital language with cryptic technical metaphors.
 Avoid leaning on spelled-out numbers or invented quantities (e.g. "fifteen protocols", "nineteen layers", "seventeen signals") as a stylistic crutch in the narrative arc — ground the concept in texture, motion, and sensation instead of enumerations."""
+    system_prompt += "\n\n" + style.guidance()
     
     # Extract BPM and mood suggestions
     suggested_bpm = theme.suggested_bpm or domain_knowledge.bpm_and_mood['bpm_ranges'].get("140-148", 142)
+    bpm_low, bpm_high = 130, 155
+    if style.bpm_range:
+        bpm_low, bpm_high, default_bpm = style.bpm_range
+        suggested_bpm = max(bpm_low, min(bpm_high, theme.suggested_bpm or default_bpm))
     suggested_mood = theme.suggested_mood or "aggressive_technical"
     
     # Get mood-to-BPM mapping for context
@@ -138,18 +151,18 @@ Evidence IDs: {len(theme.evidence_ids)} technical facts grounding this theme{met
 
 Mood-to-BPM reference: {mood_context}
 
-Your task: Create a song concept that transforms these technical ideas into cyberpop industrial techno.
+Your task: Create a song concept in {genre_direction if style.genre_tags else 'cyberpop industrial techno'}.
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown):
 {{
   "title": "Song title (cryptic, technical, 3-6 words)",
   "mood": "Technical mood (e.g., playful_technical, fun_brooding, bratty_bounce)",
-  "bpm": <integer between 130-155>,
+  "bpm": <integer between {bpm_low}-{bpm_high}>,
   "genre_tags": ["tag1", "tag2", "tag3"] (3-5 genre/style tags),
   "narrative_arc": "3-4 sentences that name (1) one central metaphor the chorus will be built on, (2) the opening situation, (3) the turning point or crash, and (4) what happens after it: what the new state, code, or connection reveals and how the song resolves. Make each stage different so the verses cannot repeat each other."
 }}
 
-Be specific to the theme. Use technical language. Think cyberpop: catchy hooks, glitchy-cute energy, futuristic charm.
+Be specific to the theme. Use concrete imagery. {musical_brief if style.genre_tags else 'Think cyberpop: catchy hooks, glitchy-cute energy, futuristic charm.'}
 The arc must move forward: the second half of the song should show consequences or discoveries that the first half could not."""
     
     # Call Ollama LLM with JSON format to ensure structured output
@@ -182,6 +195,7 @@ The arc must move forward: the second half of the song should show consequences 
             lyric_language=lyric_language,
         )
         
+        apply_song_style(concept, style, initial_tempo=True)
         logger.info(f"Generated song concept: '{concept.title}' ({concept.bpm} BPM, {concept.mood})")
         return concept
         
@@ -207,4 +221,5 @@ The arc must move forward: the second half of the song should show consequences 
             generated_at=datetime.now().isoformat(),
             lyric_language=lyric_language,
         )
+        apply_song_style(fallback_concept, style, initial_tempo=True)
         return fallback_concept

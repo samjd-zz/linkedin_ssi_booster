@@ -16,7 +16,7 @@ from services.rei_toei._suno_cleanup import (
     split_inline_stage_cues,
     tidy_vocalization_cues,
 )
-from services.rei_toei._suno_quality import bracket_solo_directions
+from services.rei_toei._suno_quality import bracket_solo_directions, normalize_profile_cues
 from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stage_policy
 
 # "PULSE CODE (PULSE CODE)": an echo of the line in parentheses, which Suno sings.
@@ -86,10 +86,16 @@ def tidy_song_sections(payload: Dict[str, Any], policy: StagePolicy | None = Non
                 label=FIELD_LABELS[field],
             ) if rule and rule.content == "instrumental" else text
         )
+        payload[field] = normalize_profile_cues(payload[field], field, policy)
 
     chorus = payload.get("chorus")
     bridge = payload.get("bridge")
-    if not isinstance(chorus, str) or not isinstance(bridge, str):
+    bridge_rule = policy.rule("bridge")
+    if (
+        not policy.style.remove_bridge_echoes or not bridge_rule
+        or bridge_rule.content != "sung"
+        or not isinstance(chorus, str) or not isinstance(bridge, str)
+    ):
         return
     chorus_lines = {_signature(line) for line in chorus.splitlines() if _is_sung(line)}
     kept = [

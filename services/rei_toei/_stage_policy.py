@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from services.rei_toei._style_policy import StylePolicy, parse_style_policy
 # These are Lyrics field names and parser aliases, not required musical sections.
 FIELD_LABELS = {
     "intro": "Instrumental Build", "verse_1": "Verse 1",
@@ -40,6 +41,7 @@ class StagePolicy:
     intro_verse_label: str | None
     intro_primer: str | None
     optional_cues: tuple[str, ...]
+    style: StylePolicy = StylePolicy()
 
     @property
     def required_fields(self) -> tuple[str, ...]:
@@ -149,14 +151,20 @@ def _parse_profile(name: str, raw: Any) -> StagePolicy:
     if not isinstance(optional, list):
         raise ValueError(f"{path}.optional_cues must be a list")
     optional_cues = tuple(_label(cue, f"{path}.optional_cues") for cue in optional)
-    return StagePolicy(name, tuple(sections), intro_verse, primer, optional_cues)
+    style = parse_style_policy(raw.get("style"), f"{path}.style")
+    allowed_cues = {cue.casefold() for rule in sections for cue in rule.cues}
+    allowed_cues.update(cue.casefold() for cue in optional_cues)
+    if any(target.casefold() not in allowed_cues for target in style.cue_aliases.values()):
+        raise ValueError(f"{path}.style.cue_aliases targets must be configured cues")
+    return StagePolicy(name, tuple(sections), intro_verse, primer, optional_cues, style)
 
 
 def load_stage_policy(lyrical_structure: Mapping[str, Any] | None = None) -> StagePolicy:
     """Resolve and validate profiles; legacy knowledge uses the shipped JSON policy."""
     if lyrical_structure is not None and not isinstance(lyrical_structure, Mapping):
         raise ValueError("Rei lyrical_structure must be an object")
-    if lyrical_structure is None or "stage_cues" not in lyrical_structure:
+    legacy = lyrical_structure is not None and "stage_cues" not in lyrical_structure
+    if lyrical_structure is None or legacy:
         with _DEFAULT_KNOWLEDGE.open(encoding="utf-8") as handle:
             settings = json.load(handle).get("lyrical_structure", {}).get("stage_cues")
     else:
@@ -171,4 +179,4 @@ def load_stage_policy(lyrical_structure: Mapping[str, Any] | None = None) -> Sta
     active = settings.get("active_profile")
     if not isinstance(active, str) or active not in profiles:
         raise ValueError("lyrical_structure.stage_cues.active_profile must name a configured profile")
-    return profiles[active]
+    return replace(profiles[active], style=StylePolicy()) if legacy else profiles[active]

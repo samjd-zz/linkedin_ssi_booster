@@ -522,6 +522,12 @@
       "active_profile": "cyberpop",
       "profiles": {
         "cyberpop": {
+          "style": {
+            "genre_tags": ["industrial techno", "cyberpop", "ai vocaloid"], "template": "cyberpunk_electro_template",
+            "bpm": {"min": 130, "max": 155, "default": 142},
+            "arrangement": "Catchy electronic hooks, glitch textures and a high-energy bass climax",
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 4, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": true, "remove_bridge_echoes": true}
+          },
           "intro_verse_label": "Intro Verse",
           "intro_primer": "(Ahh ahh ahh)",
           "optional_cues": ["Silence", "Glitch Noise", "Chaos"],
@@ -539,6 +545,15 @@
           }
         },
         "cyberpunk": {
+          "style": {
+            "genre_tags": ["cyberpunk", "dark synthwave", "industrial electronic"], "template": "cyberpunk_template",
+            "bpm": {"min": 125, "max": 150, "default": 140},
+            "arrangement": "Dark synth tension, distorted bass and cinematic release", "energy": "dark cinematic propulsion",
+            "dense_delivery": "rhythmic expressive electronic phrasing", "sparse_delivery": "spacious dark melodic phrasing",
+            "density": {"base_bpm": 140},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 4, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": true, "remove_bridge_echoes": true},
+            "cue_aliases": {"Epic Guitar Solo": "Distorted Synth Solo"}
+          },
           "intro_verse_label": "Intro Verse",
           "intro_primer": "(Ahh ahh ahh)",
           "optional_cues": ["Glitch Noise", "Static Burst", "Silence"],
@@ -556,6 +571,15 @@
           }
         },
         "acoustic": {
+          "style": {
+            "genre_tags": ["acoustic", "singer-songwriter"], "template": "acoustic_template",
+            "bpm": {"min": 60, "max": 120, "default": 90},
+            "arrangement": "Intimate vocal storytelling, fingerpicked guitar and natural dynamics", "energy": "intimate organic acoustic dynamics",
+            "dense_delivery": "flowing articulate acoustic vocals", "sparse_delivery": "gentle spacious melodic phrasing",
+            "density": {"base_bpm": 90},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": true},
+            "cue_aliases": {"Epic Guitar Solo": "Acoustic Guitar Solo"}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "sections": {
@@ -569,6 +593,15 @@
           }
         },
         "rock": {
+          "style": {
+            "genre_tags": ["rock", "guitar-led live band"], "template": "rock_template",
+            "bpm": {"min": 90, "max": 160, "default": 125},
+            "arrangement": "Live guitar riffs, expressive vocals and a dynamic band climax", "energy": "dynamic live rock energy",
+            "dense_delivery": "articulate expressive rock phrasing", "sparse_delivery": "spacious melodic rock phrasing",
+            "density": {"base_bpm": 125},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": true},
+            "cue_aliases": {"Epic Guitar Solo": "Guitar Solo"}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "sections": {
@@ -583,6 +616,15 @@
           }
         },
         "psytrance": {
+          "style": {
+            "genre_tags": ["psytrance", "psychedelic trance rock"], "template": "psytrance_template",
+            "bpm": {"min": 140, "max": 150, "default": 145},
+            "arrangement": "Rolling sixteenth bass, acid sequences and psychedelic guitar-led peaks", "energy": "hypnotic psychedelic trance rock drive",
+            "dense_delivery": "rhythmic trance-rock vocal phrasing", "sparse_delivery": "spacious dreamlike melodic hooks",
+            "density": {"base_bpm": 145},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": true, "remove_bridge_echoes": true},
+            "cue_aliases": {"Epic Guitar Solo": "Psychedelic Guitar Solo"}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "optional_cues": ["Filter Sweep", "Riser", "Delay Throw", "Live Drum Fill"],
@@ -600,6 +642,14 @@
           }
         },
         "progressive_psytrance": {
+          "style": {
+            "genre_tags": ["progressive psytrance"], "template": "progressive_psytrance_template",
+            "bpm": {"min": 128, "max": 138, "default": 134},
+            "arrangement": "Long transitions, rolling offbeat bass and gradual layered melodic builds", "energy": "smooth progressive psychedelic groove",
+            "dense_delivery": "flowing rhythmic trance vocal phrasing", "sparse_delivery": "spacious atmospheric melodic hooks",
+            "density": {"base_bpm": 134},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": true}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "optional_cues": ["Long-Form Build", "Gradual Filter Rise", "Layered Arpeggio", "Extended Transition"],
@@ -616,6 +666,14 @@
           }
         },
         "jungle_dnb": {
+          "style": {
+            "genre_tags": ["jungle", "drum and bass"], "template": "jungle_dnb_template",
+            "bpm": {"min": 160, "max": 176, "default": 170},
+            "arrangement": "Chopped breaks, rolling Reese bass and contrasting half-time passages", "energy": "rolling breakbeat propulsion",
+            "dense_delivery": "tight syncopated rhythmic vocals", "sparse_delivery": "spacious breakbeat hooks",
+            "density": {"base_bpm": 170, "max_bpm": 190},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": true, "remove_bridge_echoes": true}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "optional_cues": ["Amen Break Fill", "Reese Bass Stab", "Half-Time Switch", "Riser"],
@@ -632,6 +690,15 @@
           }
         },
         "psychedelic_rock": {
+          "style": {
+            "genre_tags": ["psychedelic rock"], "template": "psychedelic_rock_template",
+            "bpm": {"min": 80, "max": 140, "default": 110},
+            "arrangement": "Exploratory fuzz guitar, tape echo, organic live drums and spacious instrumental passages", "energy": "dreamlike guitar-led rock atmosphere",
+            "dense_delivery": "flowing expressive rock phrasing", "sparse_delivery": "spacious dreamlike melodic phrasing",
+            "density": {"base_bpm": 110},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": true},
+            "cue_aliases": {"Epic Guitar Solo": "Psychedelic Guitar Solo"}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "optional_cues": ["Phase Shift", "Tape Echo", "Feedback Swell", "Organ Swell"],
@@ -648,6 +715,15 @@
           }
         },
         "progressive_rock": {
+          "style": {
+            "genre_tags": ["progressive rock"], "template": "progressive_rock_template",
+            "bpm": {"min": 90, "max": 160, "default": 125},
+            "arrangement": "Develop recurring motifs through changing meters and extended instrumental transitions", "energy": "dynamic progressive live-band energy",
+            "dense_delivery": "articulate expressive progressive rock phrasing", "sparse_delivery": "spacious melodic progressive phrasing",
+            "density": {"base_bpm": 125},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 4, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": true},
+            "cue_aliases": {"Epic Guitar Solo": "Progressive Instrumental Solo"}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "optional_cues": ["Meter Change", "Instrumental Motif Return", "Dynamic Build", "Polyrhythmic Passage"],
@@ -664,6 +740,14 @@
           }
         },
         "hip_hop": {
+          "style": {
+            "genre_tags": ["hip hop"], "template": "hip_hop_template",
+            "bpm": {"min": 75, "max": 110, "default": 90},
+            "arrangement": "Rhythmic verses, memorable hooks and a clear beat-led groove", "energy": "confident beat-led groove",
+            "dense_delivery": "articulate rhythmic rap delivery", "sparse_delivery": "spacious rhythmic hook phrasing",
+            "density": {"base_bpm": 90},
+            "quality": {"min_chorus_lines": 2, "min_bridge_lines": 2, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": true}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "sections": {
@@ -676,6 +760,14 @@
           }
         },
         "ambient": {
+          "style": {
+            "genre_tags": ["ambient", "experimental"], "template": "ambient_template",
+            "bpm": {"min": 40, "max": 90, "default": 65},
+            "arrangement": "Slow evolving textures, sparse vocal phrases and gentle transitions without a forced climax", "energy": "slow atmospheric evolution",
+            "dense_delivery": "gentle flowing atmospheric vocals", "sparse_delivery": "sparse unhurried vocal phrasing",
+            "density": {"base_bpm": 65},
+            "quality": {"min_chorus_lines": 1, "min_bridge_lines": 0, "max_borrowed_lines": 2, "verse_repeat_threshold": 0.5, "uppercase_chorus": false, "remove_bridge_echoes": false}
+          },
           "intro_verse_label": null,
           "intro_primer": null,
           "sections": {
@@ -863,6 +955,12 @@
     ]
   },
   "suno_prompt_templates": {
+    "cyberpunk_template": "Cyberpunk dark synthwave, {bpm} bpm, cinematic synth layers, distorted bass, tense industrial atmosphere",
+    "acoustic_template": "Acoustic singer-songwriter, {bpm} bpm, fingerpicked guitar, intimate expressive vocals, natural dynamics",
+    "rock_template": "Rock, {bpm} bpm, electric guitar riffs, organic live drums, expressive band dynamics",
+    "psytrance_template": "Psytrance psychedelic trance rock, {bpm} bpm, rolling sixteenth bass, acid arpeggios, psychedelic guitar leads",
+    "hip_hop_template": "Hip hop, {bpm} bpm, rhythmic rap vocals, beat-led groove, clear memorable hooks",
+    "ambient_template": "Ambient experimental, {bpm} bpm, evolving atmospheric textures, sparse vocal phrases, gentle transitions",
     "industrial_techno_template": "138 bpm, dark techno hyperpop, {mood} cute female vocaloid, heavy bass, glitch pop energy",
     "cyberpunk_electro_template": "144 bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks, bright pop energy",
     "dark_synthwave_template": "126 bpm, dark synthpop, {mood} dreamy vocaloid, analog synths, ethereal atmosphere",

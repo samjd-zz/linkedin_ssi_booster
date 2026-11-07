@@ -4,6 +4,7 @@ import re
 from typing import Any, List
 
 from services.rei_toei._models import ReiDomainKnowledge, SongConcept
+from services.rei_toei._style_policy import StylePolicy, apply_song_style, style_template_key
 
 _SUNO_STYLE_TAG_CHAR_LIMIT = 400  # V4.5+ supports up to 1000 chars; 400 balances richness vs safety
 _SUNO_STYLE_TAG_MAX_ITEMS = 16
@@ -105,12 +106,16 @@ def _build_rich_suno_tags(
     domain_knowledge: ReiDomainKnowledge,
     template_key: str,
     delivery: str = "",
+    style: StylePolicy | None = None,
 ) -> str:
     """Build richer, bounded Suno style tags from templates + concept + production hints.
 
     ``delivery`` is a vocal-phrasing descriptor fitted to the finished lyrics; it
     sits right after the BPM tag so the item cap never drops it.
     """
+    if style is not None:
+        apply_song_style(concept, style)
+        template_key = style_template_key(style, domain_knowledge, template_key)
     templates = domain_knowledge.suno_prompt_templates or {}
     template_value = templates.get(template_key, templates.get("industrial_techno_template", ""))
     try:
@@ -126,7 +131,9 @@ def _build_rich_suno_tags(
     descriptors.append(concept.mood.replace("_", " "))
     descriptors.extend(concept.genre_tags[:4])
 
-    if concept.bpm >= 165:
+    if style and style.energy:
+        descriptors.append(style.energy)
+    elif concept.bpm >= 165:
         descriptors.append("breakneck hyperspeed vocaloid energy")
     elif concept.bpm >= 150:
         descriptors.append("relentless peak-energy drive")
@@ -188,7 +195,7 @@ def _build_rich_suno_tags(
     return ", ".join(selected)
 
 
-def _build_suno_description_prompt(concept: SongConcept) -> str:
+def _build_suno_description_prompt(concept: SongConcept, style: StylePolicy | None = None) -> str:
     """Build a richer conversational style prompt for Suno V4.5+ style field.
 
     Suno V4.5+ accepts conversational narrative descriptions rather than bare tag lists.
@@ -196,6 +203,12 @@ def _build_suno_description_prompt(concept: SongConcept) -> str:
     """
     genre_blend = ", ".join(concept.genre_tags[:3]) if concept.genre_tags else "industrial electronic"
     mood_readable = concept.mood.replace("_", " ")
+    if style and style.genre_tags:
+        return (
+            f"Create a {concept.bpm} bpm {genre_blend} track about {concept.theme}. "
+            f"Mood: {mood_readable}. Arrangement: {style.arrangement}. "
+            f"Narrative arc: {concept.narrative_arc}"
+        )[:800].strip()
     base = (
         f"Create a {concept.bpm} bpm {genre_blend} track about {concept.theme}. "
         f"The mood should be {mood_readable}, building from tension to full release. "

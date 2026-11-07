@@ -25,7 +25,6 @@ from services.rei_toei._lyric_checks import (
     _has_japanese_script,
     _learning_annotation_stats as _learning_annotation_stats,
     _learning_annotations_ok,
-    MIN_CHORUS_SUNG_LINES,
     _sections_are_distinct,
     chorus_line_deficit,
     chorus_revision_feedback,
@@ -51,13 +50,11 @@ from services.rei_toei._song_structure import (
     borrowed_lines,
     borrowed_lines_feedback,
     bridge_is_underdeveloped,
-    MAX_BORROWED_LINES,
-    MIN_BRIDGE_SUNG_LINES,
     missing_required_sections,
     missing_sections_feedback,
     verse_two_repeats_verse_one,
 )
-from services.rei_toei._song_tempo import fit_tempo_to_lyrics
+from services.rei_toei._style_policy import apply_song_style, fit_style_tempo, style_template_key
 from services.rei_toei._song_tidy import tidy_song_sections
 from services.rei_toei._stage_policy import load_stage_policy
 from services.rei_toei._suno_blocks import (
@@ -110,7 +107,7 @@ def compose_lyrics(
     ollama: Optional["OllamaService"] = None
 ) -> Lyrics:
     """
-    Compose structured song lyrics using Rei's voice and cyberpop aesthetic.
+    Compose structured lyrics using Rei's voice and the selected musical profile.
     Optimized for Suno compatibility with strict formatting rules:
     - ALL-CAPS chorus for dynamic velocity
     - Section labels like [Verse 1], [Chorus], [Pre-Chorus], [Bridge], [Outro]
@@ -148,6 +145,7 @@ def compose_lyrics(
     # Translate mode writes the song in English; Japanese hook lines are added after.
     generation_language = "english" if translate_mode else lyric_language
     stage_policy = load_stage_policy(domain_knowledge.lyrical_structure)
+    apply_song_style(concept, stage_policy.style)
     system_prompt, user_prompt = build_lyric_prompts(
         concept,
         persona,
@@ -241,8 +239,6 @@ def compose_lyrics(
                     continue
                 raise ValueError(f"Missing required fields after final retry: {missing_fields}")
 
-            gate_view = dict(response_data)
-            tidy_song_sections(gate_view, stage_policy)
             # 2. Schema Leakage Check
             if _has_prompt_schema_leakage(response_data):
                 if attempt < max_attempts:
@@ -276,7 +272,7 @@ def compose_lyrics(
                 raise ValueError("Lyric sections were too repetitive after retry")
 
             # 5b. Song development: Verse 2 must move the story on; bridge should climb
-            if verse_two_repeats_verse_one(response_data):
+            if verse_two_repeats_verse_one(response_data, stage_policy.style.verse_repeat_threshold):
                 if attempt < max_attempts:
                     logger.warning("Verse 2 repeated Verse 1 on attempt %s. Retrying.", attempt)
                     structure_feedback = (
@@ -287,7 +283,7 @@ def compose_lyrics(
                     continue
                 logger.warning("Verse 2 still repeats Verse 1 after %s attempt(s); keeping draft.", attempt)
             copied = borrowed_lines(response_data)
-            if len(copied) > MAX_BORROWED_LINES:
+            if len(copied) > stage_policy.style.max_borrowed_lines:
                 if attempt < max_attempts:
                     logger.warning(
                         "Draft reused %d line(s) across sections on attempt %s. Retrying.",
@@ -296,10 +292,11 @@ def compose_lyrics(
                     structure_feedback = borrowed_lines_feedback(copied)
                     continue
                 logger.warning("Draft still reuses %d line(s) across sections; keeping it.", len(copied))
-            if response_data.get("bridge") and bridge_is_underdeveloped(response_data):
+            bridge_rule = stage_policy.rule("bridge")
+            if bridge_rule and bridge_rule.content == "sung" and gate_view.get("bridge") and bridge_is_underdeveloped(gate_view, stage_policy.style.min_bridge_lines):
                 logger.info(
                     "Bridge has fewer than %d sung lines; climax may be thin.",
-                    MIN_BRIDGE_SUNG_LINES,
+                    stage_policy.style.min_bridge_lines,
                 )
 
             short_chorus = chorus_line_deficit(gate_view.get("chorus"), stage_policy)
@@ -307,12 +304,12 @@ def compose_lyrics(
                 if attempt < max_attempts:
                     logger.warning(
                         "Chorus has only %d sung line(s) on attempt %s; retrying with at least %d.",
-                        short_chorus, attempt, MIN_CHORUS_SUNG_LINES,
+                        short_chorus, attempt, stage_policy.style.min_chorus_lines,
                     )
-                    structure_feedback = chorus_revision_feedback(short_chorus)
+                    structure_feedback = chorus_revision_feedback(short_chorus, stage_policy.style.min_chorus_lines)
                     continue
                 raise ValueError(
-                    f"Chorus remained under {MIN_CHORUS_SUNG_LINES} sung lines after final retry."
+                    f"Chorus remained under {stage_policy.style.min_chorus_lines} sung lines after final retry."
                 )
 
             # 6. Bilingual Ratio Threshold Validation
@@ -365,7 +362,7 @@ def compose_lyrics(
         # Enforce uppercase chorus processing programmatically as a safeguard
         processed_chorus = (
             response_data.get("chorus") or ""
-            if generation_language in {"japanese", "bilingual"}
+            if generation_language in {"japanese", "bilingual"} or not stage_policy.style.uppercase_chorus
             else (response_data.get("chorus") or "").upper()
         )
         
@@ -417,9 +414,9 @@ def assemble_suno_prompt(
     """
     logger.info(f"Assembling Suno prompt for: '{concept.title}'")
 
-    template_key = _select_suno_template_key(concept)
-
     stage_policy = load_stage_policy(domain_knowledge.lyrical_structure)
+    apply_song_style(concept, stage_policy.style)
+    template_key = style_template_key(stage_policy.style, domain_knowledge, _select_suno_template_key(concept))
     lyric_blocks = _build_suno_lyric_blocks(concept, lyrics, stage_policy)
 
     # Join structural blocks cleanly with double line breaks
@@ -427,21 +424,11 @@ def assemble_suno_prompt(
 
     # The concept BPM predates the lyrics; let the finished lines set the tempo.
     # concept.bpm is updated so callers display the BPM the tags carry.
-    tempo = fit_tempo_to_lyrics(
-        concept.bpm,
-        formatted_lyrics,
-        (domain_knowledge.bpm_and_mood or {}).get("lyric_density_to_bpm"),
-    )
-    if tempo.raised:
-        logger.info(
-            "Raised tempo %d -> %d BPM for %.1f median syllables per sung line.",
-            tempo.concept_bpm, tempo.bpm, tempo.median_syllables,
-        )
-        concept.bpm = tempo.bpm
+    tempo = fit_style_tempo(concept, formatted_lyrics, domain_knowledge, stage_policy.style)
 
     # Build richer Suno tags string (genre, BPM, delivery, texture, production hints)
     suno_tags = _build_rich_suno_tags(
-        concept, domain_knowledge, template_key, delivery=tempo.delivery
+        concept, domain_knowledge, template_key, delivery=tempo.delivery, style=stage_policy.style
     )
 
     # Check style tag character boundaries (Suno style tags can truncate if overlong)
@@ -458,7 +445,7 @@ def assemble_suno_prompt(
         "vocal_delivery": tempo.delivery,
         "genre_tags": concept.genre_tags,
         "narrative_arc": concept.narrative_arc,
-        "suno_description_prompt": _build_suno_description_prompt(concept),
+        "suno_description_prompt": _build_suno_description_prompt(concept, stage_policy.style),
         "template_used": template_key,
         "stage_cue_profile": stage_policy.name,
         **{

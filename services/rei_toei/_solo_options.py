@@ -10,6 +10,15 @@ def build_solo_style_guidance(lyrical_structure: Mapping[str, Any]) -> str:
     """Describe optional solo choices without requiring any particular style."""
     if not isinstance(lyrical_structure, Mapping):
         raise ValueError("Rei lyrical_structure must be an object containing solo options")
+    policy = load_stage_policy(lyrical_structure)
+    rule = policy.rule("solo")
+    if rule and rule.content == "instrumental" and rule.cues and policy.style.genre_tags:
+        return (
+            "PROFILE SOLO DIRECTION: " + ", ".join(f"[{cue}]" for cue in rule.cues)
+            + f". Put them beneath [{rule.label}]. "
+            "Use these configured cues instead of adding a conflicting generic solo. "
+            "Keep expressive instrumental directions in separate brackets."
+        )
     if "solo" not in lyrical_structure:
         return ""
     solo = lyrical_structure["solo"]
@@ -32,7 +41,6 @@ def build_solo_style_guidance(lyrical_structure: Mapping[str, Any]) -> str:
         options.append(option.strip())
     if not options:
         return ""
-    rule = load_stage_policy(lyrical_structure).rule("solo")
     if rule is None or rule.content != "instrumental":
         return ""
 

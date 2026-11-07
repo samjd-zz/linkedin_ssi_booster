@@ -50,8 +50,9 @@ The default remains `cyberpop`.
 | `ambient` | Instrumental Intro, sung Verse 1, instrumental Interlude, instrumental Outro | `[Atmospheric Pads]`, `[Ambient Interlude]`, `[Fade Out]`; optional `[Refrain]`; no drop or primer |
 
 These are editable starter arrangements, not rules defining an entire genre.
-Stage profiles do not change the persona, style tags, language policy, or tempo
-fitting settings; adjust those separately when changing musical direction.
+Shipped profiles include musical `style` settings as well as stage cues. The
+selected style overrides conflicting genre hints and model-returned genre tags.
+Persona identity and lyric-language settings remain independent.
 
 ## Profile Schema
 
@@ -121,8 +122,54 @@ rename it, then edit its sections. This example defines a compact acoustic song:
 At least one section must be both required and sung: this is a vocal-lyric
 pipeline, not a configuration for fully instrumental Suno generation.
 
+### Musical style, quality and cleanup
+
+Add `style` inside a profile to make that profile the musical authority:
+
+```json
+"style": {
+  "genre_tags": ["psychedelic rock"],
+  "template": "psychedelic_rock_template",
+  "bpm": {"min": 80, "max": 140, "default": 110},
+  "arrangement": "Exploratory fuzz guitar and spacious live-rock passages",
+  "energy": "dreamlike guitar-led rock atmosphere",
+  "dense_delivery": "flowing expressive rock phrasing",
+  "sparse_delivery": "spacious dreamlike melodic phrasing",
+  "density": {"base_bpm": 110},
+  "quality": {
+    "min_chorus_lines": 2,
+    "min_bridge_lines": 2,
+    "max_borrowed_lines": 1,
+    "verse_repeat_threshold": 0.5,
+    "uppercase_chorus": false,
+    "remove_bridge_echoes": true
+  },
+  "cue_aliases": {"Epic Guitar Solo": "Psychedelic Guitar Solo"}
+}
+```
+
+- `genre_tags` and `template` override conflicting model output and
+  `REI_TOEI_DEFAULT_GENRE`. The template must exist in `suno_prompt_templates`.
+- `bpm` bounds the initial concept tempo, not the finished performance. Lyric
+  density may raise BPM above the style range; lyrics are not truncated to fit.
+  `density` overrides the global `bpm_and_mood.lyric_density_to_bpm` calibration.
+- `arrangement`, `energy` and delivery descriptors guide the prompts and final
+  style tags instead of injecting generic electronic-club or vocaloid wording.
+- `min_chorus_lines` drives prompts, the draft gate and retry feedback.
+  `min_bridge_lines` is a development warning target, not a rejection gate.
+  Borrowing and Verse 2 repetition thresholds retain bounded retry behavior.
+- `uppercase_chorus` applies to English-first composition and English output;
+  Japanese/bilingual output keeps its language-specific casing rules.
+  `remove_bridge_echoes` controls removal of Chorus copies from a sung Bridge.
+- Cue aliases map to configured required or optional cues. Known bracketed cues
+  with trailing semicolons are canonicalized; required cues appear exactly once.
+  Unrelated directions, sung lyrics and pronunciation brackets are preserved.
+- Schema-leakage, JSON, emoji and Japanese/Romaji safety cleanup remain enabled.
+  Invalid musical settings fail before generation. Omitting `style` preserves
+  legacy independent genre selection and existing quality defaults.
+
 The composer allows five total lyric attempts in every language mode. Missing
-required sections or a Chorus with fewer than two sung lines trigger revision
+required sections or a Chorus below the selected sung-line minimum trigger revision
 feedback. If no usable draft is produced, generation fails explicitly instead
 of supplying a canned song, Chorus, or framing section. Deterministic cue and
 pronunciation formatting remains unchanged for accepted drafts. Disabling a

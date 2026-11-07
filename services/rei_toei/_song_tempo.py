@@ -111,6 +111,9 @@ def fit_tempo_to_lyrics(
     concept_bpm: int,
     lyrics: str,
     overrides: Optional[Mapping[str, Any]] = None,
+    *,
+    dense_delivery: str | None = None,
+    sparse_delivery: str | None = None,
 ) -> TempoFit:
     """Raise the tempo for syllable-dense lyrics and pick a matching vocal delivery.
 
@@ -127,9 +130,9 @@ def fit_tempo_to_lyrics(
     floor_bpm = int(round(min(floor, settings["max_bpm"])))
     bpm = max(concept_bpm, floor_bpm)
     if median >= settings["dense_syllables"]:
-        delivery = DENSE_DELIVERY
+        delivery = DENSE_DELIVERY if dense_delivery is None else dense_delivery
     elif median <= settings["sparse_syllables"]:
-        delivery = SPARSE_DELIVERY
+        delivery = SPARSE_DELIVERY if sparse_delivery is None else sparse_delivery
     else:
         delivery = ""
     return TempoFit(bpm, concept_bpm, round(median, 1), delivery)

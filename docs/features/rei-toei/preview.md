@@ -16,6 +16,12 @@ bash run.sh --profile core run --build --rm app python main.py --rei-generate --
 
 Preview generates the song concept, full lyrics, and formatted Suno prompt using local Ollama. It does not save artifacts, submit to Suno, download media, or render FLUX images. It is not a fast placeholder or a generation-free dry run.
 
+The selected domain-knowledge `active_profile` controls both stage cues and its
+configured musical `style`: genre tags, template, initial BPM, arrangement,
+delivery and quality thresholds. It overrides conflicting model genres and
+`REI_TOEI_DEFAULT_GENRE`. Lyric density may still raise the finished BPM above
+the style's initial range. See [style configuration](../../rei-toei-stage-cues.md).
+
 ## Preparation
 
 Rei-only CLI runs skip GitHub profile enrichment because it is not used by the music prompts. Concept and lyric generation share the existing CLI Ollama client (including the configured model and host); the Rei default remains `gemma4:e4b` if `OLLAMA_MODEL` is unset. Recent titles are read once and reused for automatic theme selection and title uniqueness. Every generated concept title, including `--rei-preview` and console songs that are never saved, is appended to `<GENERATED_CONTENT_DIR>/<REI_TOEI_SUBDIR>/title_history.jsonl` (newest 200 kept); recent titles combine this log with saved `*_suno.json` songs. Explicit themes skip unused avatar-state loading, except that `--rei-explain` still loads extracted evidence for DoT validation. Strudel's explicit-theme path likewise avoids avatar loading and reuses the CLI client.
@@ -34,7 +40,7 @@ after a runner failure.
 The lyric composer allows up to five total attempts in every language mode,
 including English-first bilingual drafting, with up to 4,096 generated tokens
 per attempt. Malformed JSON, copied schema instructions, missing required
-sections, a Chorus shorter than two sung lines, and language/script failures
+sections, a Chorus below the profile's sung-line minimum, and language/script failures
 trigger retries; warning logs give the reason and revision prompts identify
 what needs fixing. JSON repair is still attempted before regenerating.
 Repetition checks can also request a rewrite.
@@ -81,13 +87,13 @@ and start a new preview run to pick up both the code and Compose environment.
 
 ## Required Sections and Instrumental Solo
 
-Suno assembly for CLI and console songs always includes a sung
-`[Intro Verse]` and `[Drop]` immediately followed by `[Heavy Bass Drop]`.
-Existing sections are kept. A missing or empty intro reuses the first sung
-chorus hook (or a verse line), retaining its adjacent pronunciation cues; an
-omitted drop becomes an instrumental drop after the bridge or last verse/chorus.
-Duplicate bass-drop markers are collapsed, and repairs are logged without
-another model call. Exact standalone `Heavy Bass Drop` or `Bass Drop` lyric
+Suno assembly for CLI and console songs follows the selected section policy.
+`cyberpop` uses a sung `[Intro Verse]` and `[Heavy Bass Drop]`; psychedelic rock
+uses guitar cues and has no forced Drop. Required directions are repaired
+without another model call; a required sung intro can reuse an existing lyric
+hook while retaining its adjacent pronunciation cues. Optional sections are
+not invented. Known cue aliases and semicolon variants are normalized so each
+required cue appears exactly once. Exact standalone `Heavy Bass Drop` or `Bass Drop` lyric
 lines are removed before hook translation and during final formatting; so are
 recognized Japanese cue-only translations such as `重低音ドロップ` and their
 adjacent Romaji. Descriptive lyrics about a bass drop remain sung. Exact
@@ -96,13 +102,15 @@ inside a lyric line, while ordinary lyric sentences containing the word stay
 unchanged. A song with no usable hook fails explicitly instead of inventing an
 intro. Metadata reflects the repaired output.
 
-`[Solo]` is instrumental-only: every direction is wrapped in square brackets,
+Shipped `[Solo]` sections are instrumental-only: directions use square brackets,
 for example `[Synthesizer whispers in the mix]`. Existing bracketed cues stay
 bracketed, and no Romaji is generated for instrumental instructions. Solo lines
 are bracketed before bilingual hook selection so they are not counted as sung
 lyrics. Ordinary console conversation is not formatted as a song.
 
-The optional solo palette includes `[Epic Guitar Solo]`, `[Melodic Synth Solo]`,
+Profiles with fixed solo cues use those directions rather than a conflicting
+generic solo palette. Other arrangements can use the optional palette:
+`[Epic Guitar Solo]`, `[Melodic Synth Solo]`,
 `[Arpeggiated Synth Solo]`, `[Glitch Synth Solo]`, `[Industrial Percussion Solo]`,
 and `[Modulated Bass Solo]`. The structured lyric prompt asks the model to pick
 what suits the song, honor a requested instrument, or invent another fitting
