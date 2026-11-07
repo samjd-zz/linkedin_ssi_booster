@@ -39,6 +39,12 @@ trigger retries; warning logs give the reason and revision prompts identify
 what needs fixing. JSON repair is still attempted before regenerating.
 Repetition checks can also request a rewrite.
 
+Intro placement instructions such as `immediately after the intro header`
+are rejected before bilingual hook translation, within the same five-attempt
+budget. Final formatting also strips this text, recognized Japanese versions
+such as `インロヘッダの直後`, and their standalone Romaji cues. Actual sung
+intro lines, vocalization primers, and instrumental tags remain intact.
+
 For an unreadable model response, the warning identifies the reason, the
 failed attempt, and the next attempt without including lyric text. For example:
 `Ollama lyric draft 3/5 was rejected: invalid backslash escape in JSON (line 3, column 118). Discarding it and requesting a fresh draft (attempt 4/5).`

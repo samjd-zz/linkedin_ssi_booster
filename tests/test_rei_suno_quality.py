@@ -89,6 +89,27 @@ def test_existing_intro_and_drop_are_preserved_without_duplicate_cues(
     )
 
 
+def test_assembly_removes_translated_intro_header_instructions(
+    domain: ReiDomainKnowledge, concept: SongConcept,
+) -> None:
+    lyrics = Lyrics(
+        verse_1="The night opens", chorus="Stay on this frequency",
+        verse_2="The morning arrives", bridge="We rise together", evidence_ids=[],
+        intro=(
+            "[Instrumental Build]\n(Ahh ahh ahh)\n[Intro Verse]\n"
+            "インロヘッダの直後\n[inrohedda no chokugo]\n"
+            "immediately after the intro header\nThe city wakes"
+        ),
+        solo="Synth lead rises", outro="The lights fade",
+    )
+    result = assemble_suno_prompt(concept, lyrics, domain)
+    assert "[Intro Verse]\nThe city wakes" in result.lyrics
+    assert "[Instrumental Build]\n(Ahh ahh ahh)" in result.lyrics
+    assert "インロヘッダの直後" not in result.lyrics
+    assert "inrohedda" not in result.lyrics
+    assert "immediately after the intro header" not in result.lyrics
+
+
 def test_solo_is_not_counted_as_sung_content_before_hook_translation() -> None:
     payload = {"solo": "Synthesizer whispers in the mix\nPulsing beats sync with digital pix"}
     tidy_song_sections(payload)

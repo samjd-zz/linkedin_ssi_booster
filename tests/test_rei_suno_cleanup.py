@@ -13,6 +13,60 @@ from services.rei_toei._suno_cleanup import (
     tag_instrument_cues,
 )
 from services.rei_toei._suno_pipeline import _append_normalized_section
+from services.rei_toei._suno_json import _has_prompt_schema_leakage
+from services.rei_toei._suno_sections import _normalize_suno_section
+
+
+@pytest.mark.parametrize(
+    "instruction",
+    [
+        "immediately after the intro header",
+        "Immediately after the intro header.",
+        "directly after the intro header",
+        "right after the [Intro Verse] header",
+        "インロヘッダの直後",
+        "イントロヘッダーの直後",
+    ],
+)
+def test_intro_header_instructions_are_detected_and_removed(instruction: str) -> None:
+    source = f"[Intro Verse]\n{instruction}\nThe city wakes"
+    assert _has_prompt_schema_leakage({"intro": source})
+    assert _normalize_suno_section(source, "Intro Verse") == "[Intro Verse]\nThe city wakes"
+
+
+def test_translated_intro_instruction_and_its_romaji_are_removed() -> None:
+    source = (
+        "[Intro Verse]\nインロヘッダの直後\n[inrohedda no chokugo]\n"
+        "immediately after the intro header\nThe city wakes"
+    )
+    expected = "[Intro Verse]\nThe city wakes"
+    assert _normalize_suno_section(source, "Intro Verse") == expected
+    assert _append_normalized_section([], source, "Intro Verse") == expected
+    assert _append_normalized_section([], expected, "Intro Verse") == expected
+
+
+def test_intro_instruction_removal_preserves_primer_and_stage_cues() -> None:
+    source = (
+        "[Instrumental Build]\n(Ahh ahh ahh) immediately after the intro header.\n"
+        "[Atmospheric Pads]"
+    )
+    assert _append_normalized_section([], source, "Instrumental Build") == (
+        "[Instrumental Build]\n(Ahh ahh ahh)\n[Atmospheric Pads]"
+    )
+
+
+def test_intro_instruction_matching_preserves_real_lyrics() -> None:
+    source = "Immediately after the rain, I breathe\nイントロが響く\n[Whisper]"
+    assert not _has_prompt_schema_leakage({"intro": source})
+    assert _normalize_suno_section(source, "Intro Verse") == f"[Intro Verse]\n{source}"
+
+
+@pytest.mark.parametrize("following", ["[Whisper]", "[inrohedda no chokugo] The city wakes"])
+def test_removing_translated_instruction_keeps_unrelated_following_content(
+    following: str,
+) -> None:
+    source = f"インロヘッダの直後\n{following}"
+    assert following in _normalize_suno_section(source, "Intro Verse")
 
 
 @pytest.mark.parametrize(

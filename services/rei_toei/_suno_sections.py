@@ -25,7 +25,10 @@ from services.rei_toei._suno_cleanup import (
     replace_chinese_phrasing,
     strip_sung_bass_drop_cues,
 )
-from services.rei_toei._suno_json import _normalize_serialized_lyric_text
+from services.rei_toei._suno_json import (
+    _INTRO_HEADER_INSTRUCTION_RE,
+    _normalize_serialized_lyric_text,
+)
 
 _SECTION_HEADER_RE = re.compile(
     r"^\s*\[(?:Instrumental Build|Intro Verse|Intro|Verse\s*\d*|Pre-Chorus|"
@@ -87,6 +90,30 @@ _SCRIPT_CONTAMINATION_REPLACEMENTS = {
     "ಜ": "ジ",
 }
 _LEADING_CUE_RE = re.compile(r"^(?P<lead>\s*\[)(?P<romaji>[^\[\]]+)(?P<rest>\][^\n]*)$")
+
+
+def _strip_intro_header_instructions(text: str) -> str:
+    """Remove copied intro placement instructions and their Japanese reading cues."""
+    lines: List[str] = []
+    removed_japanese = False
+    for line in text.splitlines():
+        if removed_japanese:
+            removed_japanese = False
+            cue = _LEADING_CUE_RE.fullmatch(line)
+            if (
+                cue
+                and cue.group("rest").strip() == "]"
+                and not _JAPANESE_CHAR_RE.search(line)
+                and _looks_like_romaji_cue(cue.group("romaji"))
+                and not _is_stage_cue_phrase(cue.group("romaji"))
+            ):
+                continue
+        cleaned = _INTRO_HEADER_INSTRUCTION_RE.sub("", line).rstrip()
+        if cleaned != line.rstrip() and not cleaned.strip():
+            removed_japanese = bool(_JAPANESE_CHAR_RE.search(line))
+            continue
+        lines.append(cleaned)
+    return "\n".join(lines)
 
 
 def _clean_learning_tail(text: str) -> str:
@@ -257,7 +284,9 @@ def _normalize_learning_annotation_order(line: str) -> str:
 
 def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: bool = False) -> str:
     """Normalize a lyric section into deterministic Suno-friendly section format."""
-    body = _join_split_japanese_acronyms(_normalize_serialized_lyric_text(text or ""))
+    body = _strip_intro_header_instructions(
+        _join_split_japanese_acronyms(_normalize_serialized_lyric_text(text or ""))
+    )
     body = _SECTION_HEADER_RE.sub("", body, count=1)
     # Replace Chinese forms before any Romaji check reads the Japanese lines.
     body = _clean_script_contamination(body)

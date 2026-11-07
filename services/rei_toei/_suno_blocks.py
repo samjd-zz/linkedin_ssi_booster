@@ -26,6 +26,7 @@ from services.rei_toei._stage_policy import FIELD_LABELS, StagePolicy, load_stag
 from services.rei_toei._suno_sections import (
     _normalize_suno_section,
     _PROMPT_SCHEMA_LEAKAGE_RE,
+    _strip_intro_header_instructions,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ def _append_normalized_section(
     required_cues: tuple[str, ...] = (),
 ) -> str:
     """Normalize and append a Suno lyric section when it has content."""
+    text = _strip_intro_header_instructions(_normalize_serialized_lyric_text(text or ""))
     # Emoji go first so Romaji cues generated below never copy them.
     text = split_inline_stage_cues(
         bracket_parenthetical_direction_cues(

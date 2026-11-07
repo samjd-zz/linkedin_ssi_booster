@@ -37,7 +37,7 @@ def domain() -> ReiDomainKnowledge:
     return knowledge
 
 
-@pytest.mark.parametrize("failure", ["json", "non_object", "schema", "missing", "chorus"])
+@pytest.mark.parametrize("failure", ["json", "non_object", "schema", "intro_instruction", "missing", "chorus"])
 def test_fifth_attempt_can_recover_from_invalid_drafts(
     domain: ReiDomainKnowledge, failure: str,
 ) -> None:
@@ -49,6 +49,8 @@ def test_fifth_attempt_can_recover_from_invalid_drafts(
     else:
         if failure == "schema":
             invalid["verse_1"] = "Two stanzas of original lines (Character Cap: 500)"
+        elif failure == "intro_instruction":
+            invalid["intro"] = "(Ahh ahh ahh)\nimmediately after the intro header"
         elif failure == "missing":
             del invalid["outro"]
         else:
@@ -63,6 +65,21 @@ def test_fifth_attempt_can_recover_from_invalid_drafts(
     assert lyrics.verse_1 == _draft()["verse_1"]
     assert lyrics.chorus == _draft()["chorus"]
     assert lyrics.evidence_ids == ["fact-1"]
+
+
+def test_intro_instruction_exhaustion_stops_before_bilingual_translation(
+    domain: ReiDomainKnowledge,
+) -> None:
+    invalid = dict(_draft(), intro="(Ahh ahh ahh)\nimmediately after the intro header")
+    ollama = MagicMock()
+    ollama._chat.return_value = json.dumps(invalid)
+
+    with patch("services.rei_toei._suno_pipeline.apply_bilingual_hooks") as translate:
+        with pytest.raises(RuntimeError, match="schema instructions"):
+            compose_lyrics(_concept("bilingual"), load_rei_persona(), domain, ollama=ollama)
+
+    assert ollama._chat.call_count == 5
+    translate.assert_not_called()
 
 
 @pytest.mark.parametrize("language", ["english", "japanese", "bilingual"])

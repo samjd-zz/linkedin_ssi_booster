@@ -4,6 +4,13 @@ import json
 import re
 from typing import Any, cast, Dict, List, Optional
 
+_INTRO_HEADER_INSTRUCTION_RE = re.compile(
+    r"\b(?:immediately|directly|right)\s+after\s+(?:the\s+)?"
+    r"(?:intro(?:\s+verse)?|\[intro(?:\s+verse)?\])\s+header\b[.!]?|"
+    r"(?:インロ|イントロ)(?:の)?ヘッダー?の直後[。]?",
+    re.IGNORECASE,
+)
+
 def _strip_markdown_fences(value: str) -> str:
     """Strip markdown fences and return inner content when present."""
     text = value.strip()
@@ -237,6 +244,7 @@ def _has_prompt_schema_leakage(section_payload: Dict[str, Any]) -> bool:
     )
     combined = re.compile("|".join(leakage_markers), re.IGNORECASE)
     return any(
-        isinstance(value, str) and combined.search(value)
+        isinstance(value, str)
+        and (combined.search(value) or _INTRO_HEADER_INSTRUCTION_RE.search(value))
         for value in section_payload.values()
     )
