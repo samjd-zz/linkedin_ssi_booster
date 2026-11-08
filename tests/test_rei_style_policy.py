@@ -273,3 +273,27 @@ def test_legacy_profile_keeps_independent_genre_and_default_quality(
     assert concept.genre_tags == original_tags
     assert policy.style.min_bridge_lines == 4
     assert parse_style_policy(None, "style").genre_tags == ()
+
+
+@pytest.mark.parametrize("profile", ["cyberpop", "psychedelic_rock"])
+def test_lyric_prompt_requests_newline_separated_lines_and_full_chorus(
+    domain: ReiDomainKnowledge, concept: SongConcept, profile: str,
+) -> None:
+    domain.lyrical_structure["stage_cues"]["active_profile"] = profile
+    _, user_prompt = build_lyric_prompts(
+        concept, load_rei_persona(), domain, None,
+        lyric_language="english", generation_language="english",
+        translate_mode=False, japanese_target_percent=0,
+    )
+    assert "] ; sung lines" not in user_prompt
+    assert "[Chorus] header, then sung lines, one per line" in user_prompt
+    assert "Never join lines with ';'" in user_prompt
+    assert "4-8 sung lines (never fewer than 2)" in user_prompt
+    assert "Character Cap" not in user_prompt
+
+
+def test_copied_character_limit_is_schema_leakage() -> None:
+    from services.rei_toei._suno_json import _has_prompt_schema_leakage
+
+    assert _has_prompt_schema_leakage({"chorus": "[Chorus]\nRISE UP\nMax 400 characters."})
+    assert not _has_prompt_schema_leakage({"chorus": "[Chorus]\nRISE UP\nWE MAX OUT THE NIGHT"})

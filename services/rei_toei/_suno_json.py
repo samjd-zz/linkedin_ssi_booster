@@ -236,6 +236,7 @@ def _has_prompt_schema_leakage(section_payload: Dict[str, Any]) -> bool:
     """Detect prompt instructions returned as lyric content by a small model."""
     leakage_markers = (
         r"\bCharacter Cap\s*:",
+        r"\bMax \d+ characters\b",
         r"\bon its own line\b",
         r"\bfollowed by\s+\d+",
         r"\btotal\)\s*\(Character Cap",

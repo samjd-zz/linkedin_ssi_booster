@@ -102,20 +102,22 @@ def build_lyric_prompts(
     )
 
     chorus_json_instruction = (
-        "[Chorus] CRITICAL: Must be written completely in ALL-CAPS (UPPERCASE) for dynamic velocity. "
+        "[Chorus] Write every Chorus lyric in uppercase letters for dynamic velocity. "
         "4-8 lines built on the song's central metaphor: one short, memorable hook of three to seven words "
         "that states the emotional thesis. Write the hook words again as a complete sung line; "
         "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
-        "(Character Cap: 400 chars)"
+        "Max 400 characters."
         if generation_language == "english" and policy.style.uppercase_chorus
         else "[Chorus] 4-8 lines built on the song's central metaphor: one short, memorable hook line that states "
              "the emotional thesis. Write the hook words again as a complete sung line; "
              "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
-             "Preserve natural expressive script/casing. (Character Cap: 400 chars)"
+             "Preserve natural expressive script/casing. Max 400 characters."
     )
+    chorus_min = policy.style.min_chorus_lines
     chorus_json_instruction = chorus_json_instruction.replace(
-        "4-8 lines", f"At least {policy.style.min_chorus_lines} sung lines",
-    )
+        "4-8 lines",
+        f"{max(4, chorus_min)}-{max(8, chorus_min)} sung lines (never fewer than {chorus_min})",
+    ).replace("Max 400 characters.", "Max 400 characters.")
 
     final_rule = (
         "Remember: No '//' comments, no parenthetical labels. "
@@ -231,20 +233,20 @@ Suno Formatting Rules:
         solo_guidance = f"{solo_guidance}\n\n{suno_guidance}" if solo_guidance else suno_guidance
 
     descriptions = {
-        "intro": "2-4 opening lines. (Character Cap: 400 chars)",
-        "verse_1": "Two vivid, story-driven stanzas setting the scene. (Character Cap: 600 chars)",
-        "pre_chorus": "4-6 lines building tension. (Character Cap: 300 chars)",
+        "intro": "2-4 opening lines. Max 400 characters.",
+        "verse_1": "Two vivid, story-driven stanzas setting the scene. Max 600 characters.",
+        "pre_chorus": "4-6 lines building tension. Max 300 characters.",
         "chorus": chorus_json_instruction.replace("[Chorus]", "").strip(),
-        "verse_2": "Two new stanzas after the turning point. Do not reuse or reword any Verse 1 line. (Character Cap: 600 chars)",
+        "verse_2": "Two new stanzas after the turning point. Do not reuse or reword any Verse 1 line. Max 600 characters.",
         "bridge": (
             f"At least {policy.style.min_bridge_lines} sung lines developing a contrasting pivot toward the emotional and thematic climax"
             + (", rising into the final drop" if policy.rule("drop") else "")
-            + ". (Character Cap: 450 chars)"
+            + ". Max 450 characters."
         ),
-        "drop": "4-5 high-energy lines after the configured cues. (Character Cap: 400 chars)",
-        "solo": "3-4 instrumental directions, never sung lyrics. (Character Cap: 300 chars)",
-        "breakdown": "A contrasting deconstructed passage. (Character Cap: 300 chars)",
-        "outro": "4 closing lines resolving the narrative. (Character Cap: 400 chars)",
+        "drop": "4-5 high-energy lines after the configured cues. Max 400 characters.",
+        "solo": "3-4 instrumental directions, never sung lyrics. Max 300 characters.",
+        "breakdown": "A contrasting deconstructed passage. Max 300 characters.",
+        "outro": "4 closing lines resolving the narrative. Max 400 characters.",
     }
     section_instructions = {
         rule.field: (
@@ -254,8 +256,6 @@ Suno Formatting Rules:
         )
         for rule in policy.sections
     }
-    if policy.rule("chorus"):
-        section_instructions["chorus"] += f" Minimum {policy.style.min_chorus_lines} sung lines."
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 
@@ -270,7 +270,10 @@ Narrative arc: {concept.narrative_arc}{metaphor_context}{sam_context}
 
 Output a JSON object with these fields (output ONLY valid JSON, no markdown outside the JSON structure). 
 {policy.prompt_guidance()}
-Each field should contain the complete lyrics for that section, including any section markers:
+Each field should contain the complete lyrics for that section, including any section markers.
+LINE FORMAT: inside each JSON string, separate every lyric line and bracketed cue with a newline (\\n).
+Never join lines with ';' or '/'. The values below describe what to write; never copy these
+descriptions, character limits, or casing notes into the lyrics.
 
 {json.dumps(section_instructions, ensure_ascii=False, indent=2)}
 
