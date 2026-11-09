@@ -31,7 +31,8 @@ class SectionRule:
     def guidance(self) -> str:
         cues = " ".join(f"[{cue}]" for cue in self.cues)
         body = "sung lines" if self.content == "sung" else "bracketed instrumental directions only"
-        return f"[{self.label}] {cues} header, then {body}, one per line".replace("  ", " ")
+        markers = f"[{self.label}] {cues}".strip()
+        return f"Start with {markers}. Write {body}, one per line."
 
 
 @dataclass(frozen=True)

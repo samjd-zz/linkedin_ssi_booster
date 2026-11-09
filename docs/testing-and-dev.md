@@ -2,6 +2,10 @@
 
 The project ships with a comprehensive `pytest` suite covering the Avatar Intelligence engine, grounding and evidence retrieval, confidence scoring, continual learning (NLP-extracted knowledge), curation, spaCy NLP, integration flags, persona graph retrieval, and selection learning.
 
+Rei style-policy regressions also reject standalone `header` and `[header]`
+placeholders before translation, while preserving genuine lyrics that mention
+headers. Section prompt guidance no longer supplies that placeholder word.
+
 ---
 
 ## Running Tests

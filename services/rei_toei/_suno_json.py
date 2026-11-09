@@ -238,6 +238,7 @@ def _has_prompt_schema_leakage(section_payload: Dict[str, Any]) -> bool:
         r"\bCharacter Cap\s*:",
         r"\bMax \d+ characters\b",
         r"\bheader,\s*then\b",
+        r"(?m:^[ \t]*(?:\[[^\]\n]+\][ \t]*)?(?:header|\[header\])[ \t]*[.;:]?[ \t]*$)",
         r"\bone per line\b",
         r"\bWrite every Chorus lyric\b",
         r"\blines must be distinct\b",

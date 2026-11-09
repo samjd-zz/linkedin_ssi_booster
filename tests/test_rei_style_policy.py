@@ -287,7 +287,8 @@ def test_lyric_prompt_requests_newline_separated_lines_and_full_chorus(
         translate_mode=False, japanese_target_percent=0,
     )
     assert "] ; sung lines" not in user_prompt
-    assert "[Chorus] header, then sung lines, one per line" in user_prompt
+    assert "Start with [Chorus]. Write sung lines, one per line." in user_prompt
+    assert "header, then" not in user_prompt
     assert "Never join lines with ';'" in user_prompt
     assert "4-8 sung lines built on" in user_prompt
     assert "At least 2 lines must be distinct" in user_prompt
@@ -303,6 +304,10 @@ def test_copied_character_limit_is_schema_leakage() -> None:
         "chorus": "[Chorus] header, then sung lines, one per line. Write every Chorus lyric in uppercase.\nRISE UP"
     })
     assert not _has_prompt_schema_leakage({"chorus": "[Chorus]\nRISE UP\nWE MAX OUT THE NIGHT"})
+    assert _has_prompt_schema_leakage({"intro": "[Instrumental Build]\nheader\n(Ahh ahh ahh)"})
+    assert _has_prompt_schema_leakage({"solo": "[Solo]\n[header]\n[Modulated Bass Solo]"})
+    assert _has_prompt_schema_leakage({"intro": "[Instrumental Build] header"})
+    assert not _has_prompt_schema_leakage({"verse_1": "Read the header of my heart"})
 
 
 @pytest.mark.parametrize(
