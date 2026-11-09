@@ -237,6 +237,10 @@ def _has_prompt_schema_leakage(section_payload: Dict[str, Any]) -> bool:
     leakage_markers = (
         r"\bCharacter Cap\s*:",
         r"\bMax \d+ characters\b",
+        r"\bheader,\s*then\b",
+        r"\bone per line\b",
+        r"\bWrite every Chorus lyric\b",
+        r"\blines must be distinct\b",
         r"\bon its own line\b",
         r"\bfollowed by\s+\d+",
         r"\btotal\)\s*\(Character Cap",

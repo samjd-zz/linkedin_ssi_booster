@@ -303,7 +303,7 @@ def compose_lyrics(
             if short_chorus is not None:
                 if attempt < max_attempts:
                     logger.warning(
-                        "Chorus has only %d sung line(s) on attempt %s; retrying with at least %d.",
+                        "Chorus has only %d distinct sung line(s) on attempt %s; retrying with at least %d.",
                         short_chorus, attempt, stage_policy.style.min_chorus_lines,
                     )
                     structure_feedback = chorus_revision_feedback(short_chorus, stage_policy.style.min_chorus_lines)

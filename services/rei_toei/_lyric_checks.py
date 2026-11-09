@@ -36,12 +36,26 @@ def sung_line_count(section: Any) -> int:
     )
 
 
+def distinct_sung_line_count(section: Any) -> int:
+    """Count sung lines once each, ignoring case, punctuation, and repeated hooks."""
+    if not isinstance(section, str):
+        return 0
+    signatures = {
+        re.sub(r"[\W_]+", " ", line).strip().casefold()
+        for raw_line in section.splitlines()
+        if (line := raw_line.strip())
+        and line[0] not in "[(（"
+        and (_ENGLISH_CHAR_RE.search(line) or _JAPANESE_CHAR_RE.search(line))
+    }
+    return len(signatures - {""})
+
+
 def chorus_line_deficit(section: Any, policy: StagePolicy) -> int | None:
-    """Return the sung-line count when an enabled Chorus needs more lines."""
+    """Return the distinct sung-line count when an enabled Chorus needs more lines."""
     rule = policy.rule("chorus")
     if not rule or rule.content != "sung" or not section:
         return None
-    count = sung_line_count(section)
+    count = distinct_sung_line_count(section)
     return count if count < policy.style.min_chorus_lines else None
 
 
@@ -49,9 +63,9 @@ def chorus_revision_feedback(line_count: int, minimum: int = MIN_CHORUS_SUNG_LIN
     """Build a targeted retry instruction for an undersized Chorus."""
     return (
         "\n\nREVISION REQUIRED: The previous Chorus had only "
-        f"{line_count} sung line(s). Write at least {minimum} "
-        "distinct, emotionally connected sung lines in the Chorus; keep sound "
-        "cues on their own bracketed lines."
+        f"{line_count} distinct sung line(s). Write at least {minimum} distinct, "
+        "emotionally connected sung lines in the Chorus; repeating the "
+        "hook does not count as a new line. Keep sound cues on their own bracketed lines."
     )
 
 

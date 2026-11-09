@@ -97,6 +97,7 @@ def test_concept_overrides_conflicting_environment_and_model_tags(
     generated = generate_song_concept(theme, load_rei_persona(), domain, ollama=ollama)
 
     assert generated.genre_tags == list(style.genre_tags)
+    assert style.bpm_range is not None
     assert generated.bpm == style.bpm_range[1]
     system, user = ollama._chat.call_args.args[:2]
     assert style.arrangement in system
@@ -288,7 +289,9 @@ def test_lyric_prompt_requests_newline_separated_lines_and_full_chorus(
     assert "] ; sung lines" not in user_prompt
     assert "[Chorus] header, then sung lines, one per line" in user_prompt
     assert "Never join lines with ';'" in user_prompt
-    assert "4-8 sung lines (never fewer than 2)" in user_prompt
+    assert "4-8 sung lines built on" in user_prompt
+    assert "At least 2 lines must be distinct" in user_prompt
+    assert "never repeat it back-to-back" in user_prompt
     assert "Character Cap" not in user_prompt
 
 
@@ -296,4 +299,20 @@ def test_copied_character_limit_is_schema_leakage() -> None:
     from services.rei_toei._suno_json import _has_prompt_schema_leakage
 
     assert _has_prompt_schema_leakage({"chorus": "[Chorus]\nRISE UP\nMax 400 characters."})
+    assert _has_prompt_schema_leakage({
+        "chorus": "[Chorus] header, then sung lines, one per line. Write every Chorus lyric in uppercase.\nRISE UP"
+    })
     assert not _has_prompt_schema_leakage({"chorus": "[Chorus]\nRISE UP\nWE MAX OUT THE NIGHT"})
+
+
+@pytest.mark.parametrize(
+    ("chorus", "deficit"),
+    [
+        ("[Chorus]\nDATA CONVERGENCE\nDATA CONVERGENCE", 1),
+        ("[Chorus]\nDATA CONVERGENCE\ndata convergence!", 1),
+        ("[Chorus]\nDATA CONVERGENCE\nWE BECOME THE LIGHT\nDATA CONVERGENCE", None),
+    ],
+)
+def test_chorus_gate_counts_distinct_lines(domain: ReiDomainKnowledge, chorus: str, deficit: int | None) -> None:
+    domain.lyrical_structure["stage_cues"]["active_profile"] = "cyberpop"
+    assert chorus_line_deficit(chorus, load_stage_policy(domain.lyrical_structure)) == deficit

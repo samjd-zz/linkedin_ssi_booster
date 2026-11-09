@@ -101,23 +101,23 @@ def build_lyric_prompts(
         else "4. Preserve natural script/casing; do not force all-caps in chorus lines"
     )
 
+    chorus_min = policy.style.min_chorus_lines
+    chorus_body = (
+        f"{max(4, chorus_min)}-{max(8, chorus_min)} sung lines built on the song's central metaphor. "
+        "Line 1 is a short, memorable hook that states the emotional thesis. "
+        f"Follow it with at least {max(3, chorus_min)} different lines that answer the hook with feeling, "
+        "imagery, and a promise or consequence; each line must say something new. "
+        "You may sing the hook once more as the final line, but never repeat it back-to-back "
+        f"or let repeats make up the Chorus. At least {chorus_min} lines must be distinct. "
+        "When the hook repeats, write the hook words again as a complete sung line. "
+        "Do not output word counts or repetition instructions. Do not list tech nouns. "
+    )
     chorus_json_instruction = (
         "[Chorus] Write every Chorus lyric in uppercase letters for dynamic velocity. "
-        "4-8 lines built on the song's central metaphor: one short, memorable hook of three to seven words "
-        "that states the emotional thesis. Write the hook words again as a complete sung line; "
-        "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
-        "Max 400 characters."
+        + chorus_body + "Max 400 characters."
         if generation_language == "english" and policy.style.uppercase_chorus
-        else "[Chorus] 4-8 lines built on the song's central metaphor: one short, memorable hook line that states "
-             "the emotional thesis. Write the hook words again as a complete sung line; "
-             "do not output word counts or repetition instructions. Add lines that give it feeling. Do not list tech nouns. "
-             "Preserve natural expressive script/casing. Max 400 characters."
+        else "[Chorus] " + chorus_body + "Preserve natural expressive script/casing. Max 400 characters."
     )
-    chorus_min = policy.style.min_chorus_lines
-    chorus_json_instruction = chorus_json_instruction.replace(
-        "4-8 lines",
-        f"{max(4, chorus_min)}-{max(8, chorus_min)} sung lines (never fewer than {chorus_min})",
-    ).replace("Max 400 characters.", "Max 400 characters.")
 
     final_rule = (
         "Remember: No '//' comments, no parenthetical labels. "
@@ -183,7 +183,7 @@ Suno Formatting Rules:
 10. Do not use spelled-out numbers or invented quantities (e.g. "fifteen", "nineteen", "seventeen", "a hundred signals") as a recurring lyrical device — this is a stale tic. Ground imagery in texture, motion, and sensation instead of counting things.
 11. CREATIVE CRAFT: Write like a songwriter, not a keyword generator. Tell a concrete story with characters, a setting, and a turning point drawn from the theme. Every line must add a new image, action, or emotion; never restate the previous line with swapped synonyms.
 12. Avoid stock cyberpop filler used as padding: 'signal flows', 'data streams', 'code descends', 'circuits sing', 'bits dance', 'neon', 'latency', 'packets', 'glitch', 'cyber realms', 'silicon dreams'. Use at most one such phrase in the whole song; invent fresh, specific imagery instead.
-13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns. Write the hook words again as a complete sung line, not a word-count or repetition placeholder.
+13. Do not recycle lines across sections. The Chorus hook is the only text allowed to repeat, and it must be a memorable, emotionally clear phrase tied to the theme, not a list of tech nouns. Write the hook words again as a complete sung line, not a word-count or repetition placeholder. Repeating the hook never replaces the Chorus's other distinct lines.
 14. Use varied line lengths, concrete sensory detail, surprising metaphors, humor or wonder where the theme invites it, and a clear emotional arc from setup to climax to resolution.
 15. Never gloss an English line with Japanese, Romaji, or pinyin in parentheses, e.g. 'Signal pulse (信号 shingou)'. If a line should be Japanese, write it on its own line.
 16. Follow the profile's intro layout, including its sung-opening label when configured.
