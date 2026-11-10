@@ -62,6 +62,8 @@ def test_prompt_rules_do_not_invite_parenthetical_word_echoes() -> None:
 
     assert "ad-lib" not in rules
     assert "never add repeated-word echoes" in rules
+    assert "hooks concise and memorable" in rules
+    assert "verses and bridges carry complete thoughts with varied line lengths" in rules
 
 
 def test_guidance_lists_rules_and_is_empty_without_them() -> None:

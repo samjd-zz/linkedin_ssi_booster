@@ -1126,7 +1126,7 @@
       "Target Suno v6-mini custom mode. Treat bracketed section labels as formatting conventions, not guaranteed non-sung controls.",
       "Put each section label on its own line and keep stage cues short; avoid putting directions in lyric text.",
       "Keep parentheses for the intro vocalization and rare non-word vocalizations such as (Oh oh oh); never add repeated-word echoes in parentheses after lyric lines.",
-      "Keep lyric lines concise and natural to sing; no exact v6-mini meter or syllable rule is documented.",
+      "Keep hooks concise and memorable, but let verses and bridges carry complete thoughts with varied line lengths. Use natural phrasing and breathing room; no exact v6-mini meter or syllable rule is documented.",
       "Write Japanese in kana and kanji; keep Romaji in a separate bracketed pronunciation cue and English on its own line."
     ]
   }

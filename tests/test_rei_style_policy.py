@@ -281,7 +281,7 @@ def test_lyric_prompt_requests_newline_separated_lines_and_full_chorus(
     domain: ReiDomainKnowledge, concept: SongConcept, profile: str,
 ) -> None:
     domain.lyrical_structure["stage_cues"]["active_profile"] = profile
-    _, user_prompt = build_lyric_prompts(
+    system_prompt, user_prompt = build_lyric_prompts(
         concept, load_rei_persona(), domain, None,
         lyric_language="english", generation_language="english",
         translate_mode=False, japanese_target_percent=0,
@@ -294,6 +294,10 @@ def test_lyric_prompt_requests_newline_separated_lines_and_full_chorus(
     assert "At least 2 lines must be distinct" in user_prompt
     assert "never repeat it back-to-back" in user_prompt
     assert "Character Cap" not in user_prompt
+    assert "Vary line lengths naturally" in system_prompt
+    assert "Let verses and the bridge carry complete thoughts in fuller lines" in system_prompt
+    assert "within about two syllables" not in system_prompt
+    assert "verses and the bridge may carry fuller thoughts" in user_prompt.lower()
 
 
 def test_copied_character_limit_is_schema_leakage() -> None:
