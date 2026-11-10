@@ -277,4 +277,6 @@ def test_lyric_prompt_asks_for_natural_rhyme_meter_and_japanese_grammar(persona,
     prompt = ollama._chat.call_args.args[0] + ollama._chat.call_args.args[1]
 
     assert "Keep rhymes natural" in prompt
-    assert "Keep meter steady" in prompt
+    assert "Use a flexible, singable meter" in prompt
+    assert "Vary line lengths naturally" in prompt
+    assert "within about two syllables" not in prompt

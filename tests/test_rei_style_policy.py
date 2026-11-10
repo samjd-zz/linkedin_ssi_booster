@@ -13,7 +13,7 @@ from services.rei_toei._lyric_prompts import build_lyric_prompts
 from services.rei_toei._models import Lyrics, ReiDomainKnowledge, SongConcept, Theme
 from services.rei_toei._song_tidy import tidy_song_sections
 from services.rei_toei._stage_policy import load_stage_policy
-from services.rei_toei._style_policy import parse_style_policy
+from services.rei_toei._style_policy import apply_song_style, parse_style_policy
 from services.rei_toei._suno_blocks import _normalize_freeform_suno_reply
 from services.rei_toei._suno_concept import generate_song_concept
 from services.rei_toei._suno_pipeline import assemble_suno_prompt, compose_lyrics
@@ -107,19 +107,14 @@ def test_concept_uses_profile_tags_and_merges_distinct_model_tags(
 
     generated = generate_song_concept(theme, load_rei_persona(), domain, ollama=ollama)
 
-    expected_tags = list(style.genre_tags)
-    seen = {
-        " ".join(tag.replace("_", " ").replace("/", " ").split()).casefold()
-        for tag in expected_tags
-    }
-    for tag in model_tags:
-        normalized = " ".join(tag.replace("_", " ").replace("/", " ").split())
-        if normalized.casefold() not in seen:
-            seen.add(normalized.casefold())
-            expected_tags.append(normalized)
-    assert generated.genre_tags == expected_tags
+    assert generated.genre_tags[:len(style.genre_tags)] == list(style.genre_tags)
+    assert len(generated.genre_tags) == len(set(generated.genre_tags))
     assert "glitch technology" in generated.genre_tags
     assert "environment-only-genre" not in generated.genre_tags
+    if name == "cyberpop":
+        assert generated.genre_tags == [
+            "industrial techno", "cyberpop", "ai vocaloid", "glitch technology",
+        ]
     assert style.bpm_range is not None
     assert generated.bpm == style.bpm_range[1]
     system, user = ollama._chat.call_args.args[:2]
@@ -128,6 +123,24 @@ def test_concept_uses_profile_tags_and_merges_distinct_model_tags(
     if name != "cyberpop":
         assert "environment-only-genre" not in user
         assert "Think cyberpop" not in user
+
+
+def test_profile_tag_merge_drops_fragments_and_is_idempotent(
+    domain: ReiDomainKnowledge, concept: SongConcept,
+) -> None:
+    domain.lyrical_structure["stage_cues"]["active_profile"] = "cyberpop"
+    style = load_stage_policy(domain.lyrical_structure).style
+    concept.genre_tags = [
+        "industrial_techno", "cyberpop", "ai_vocaloid", "industrial", "techno",
+        "glitch_technology", "glitch", "glitch technology",
+    ]
+
+    apply_song_style(concept, style)
+    expected = ["industrial techno", "cyberpop", "ai vocaloid", "glitch technology"]
+    assert concept.genre_tags == expected
+
+    apply_song_style(concept, style)
+    assert concept.genre_tags == expected
 
 
 def test_dense_rock_lyrics_can_exceed_initial_range_without_electronic_delivery(

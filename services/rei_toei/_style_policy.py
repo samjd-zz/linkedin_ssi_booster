@@ -16,6 +16,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _genre_tag_key(tag: str) -> tuple[str, ...]:
+    """Normalize a genre tag to comparable words, treating separators alike."""
+    return tuple(re.findall(r"[^\W_]+", tag.casefold(), flags=re.UNICODE))
+
+
 @dataclass(frozen=True)
 class StylePolicy:
     genre_tags: tuple[str, ...] = ()
@@ -156,24 +161,41 @@ def parse_style_policy(raw: Any, path: str) -> StylePolicy:
 def apply_song_style(concept: SongConcept, style: StylePolicy, *, initial_tempo: bool = False) -> None:
     if style.genre_tags:
         profile_tags = list(style.genre_tags)
-        seen = {
-            re.sub(r"\s+", " ", tag.replace("_", " ").replace("/", " ")).strip().casefold()
-            for tag in profile_tags
-        }
+        profile_keys = [_genre_tag_key(tag) for tag in profile_tags]
+        model_tags = [
+            (tag, _genre_tag_key(tag))
+            for tag in concept.genre_tags
+            if _genre_tag_key(tag)
+        ]
         added_tags: list[str] = []
-        for tag in concept.genre_tags:
-            normalized = re.sub(r"\s+", " ", tag.replace("_", " ").replace("/", " ")).strip()
-            key = normalized.casefold()
-            if normalized and key not in seen:
-                seen.add(key)
+        for index, (tag, key) in enumerate(model_tags):
+            is_profile_fragment = any(
+                set(key) == set(profile_key)
+                or (len(profile_key) > 1 and set(key).issubset(profile_key))
+                for profile_key in profile_keys
+            )
+            is_model_duplicate = any(
+                index != other_index
+                and set(key).issubset(other_key)
+                and (
+                    len(key) < len(other_key)
+                    or (len(key) == len(other_key) and index > other_index)
+                )
+                for other_index, (_, other_key) in enumerate(model_tags)
+            )
+            if is_profile_fragment or is_model_duplicate:
+                continue
+            normalized = " ".join(key)
+            if normalized not in added_tags:
                 added_tags.append(normalized)
-        if added_tags:
+        merged_tags = profile_tags + added_tags
+        if concept.genre_tags != merged_tags and added_tags:
             logger.info(
                 "Selected profile genre tags %s; retaining distinct concept tags %s",
                 style.genre_tags,
                 added_tags,
             )
-        concept.genre_tags = profile_tags + added_tags
+        concept.genre_tags = merged_tags
     if initial_tempo and style.bpm_range:
         low, high, _ = style.bpm_range
         fitted = max(low, min(high, concept.bpm))
