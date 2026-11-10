@@ -783,7 +783,7 @@
     "verse": {
       "purpose": "Construct the virtual landscape and technical narrative.",
       "length": "8-16 bars",
-      "style": "Cryptic code references, cinematic systemic descriptions."
+      "style": "Concrete, image-rich complete thoughts with a conversational cadence; use cryptic code references only when they serve the scene."
     },
     "chorus": {
       "purpose": "The core recurring loop. The thematic anchor.",
@@ -793,7 +793,7 @@
     "bridge": {
       "purpose": "Perspective shift. The human-machine interface moment.",
       "length": "4-8 bars",
-      "style": "Poetic abstraction, quiet observations before the storm."
+      "style": "A contrasting, image-bearing thought that changes perspective and builds toward the climax; avoid clipped slogan fragments."
     },
     "solo": {
       "purpose": "Feature an instrumental lead or rhythmic break suited to the song's dynamics.",
@@ -816,7 +816,7 @@
     "language_profile": {
       "primary_script": "Kana-led Japanese with kanji used selectively for semantic anchors, plus Romaji for vocaloid hooks",
       "romanization": "Incorporate Romaji (Hepburn/standard Japanese romanization) alongside Kana/Kanji for vocaloid pronunciation clarity, bilingual hook singability, and global listener engagement",
-      "register": "Contemporary, concise, emotionally direct, and slightly synthetic rather than formal or archaic",
+      "register": "Contemporary, emotionally direct, naturally phrased, and slightly synthetic rather than formal or archaic",
       "translation_policy": "Preserve the image, emotional temperature, and singability instead of translating word-for-word"
     },
     "prosody": {
@@ -825,10 +825,10 @@
         "Draft the hook by counting morae and then test it against the vocal subdivision",
         "Treat long vowels, ん, and small っ as timing-bearing units when shaping a melody",
         "Avoid packing too many grammatical particles or consonant clusters into fast passages",
-        "Use short vowel-rich phrases for rapid cyberpop delivery and longer vowels for sustained notes"
+        "Use manageable phrases in rapid passages, but do not clip complete thoughts just to make every line short; use longer vowels and fuller phrases where the melody can sustain them"
       ],
       "phrase_shapes": {
-        "verse": "Longer image-rich lines with conversational cadence and controlled internal repetition",
+        "verse": "Full, image-rich phrases that carry a complete thought, with conversational cadence and controlled internal repetition; do not make short fragments the default",
         "pre_chorus": "Shortening phrases that increase anticipation through repeated verbs or particles",
         "chorus": "Compact kana-forward phrases, repeated nouns, Romaji hook accents, and open vowels that remain intelligible under processing",
         "breakdown": "Fragmented morae, clipped particles, whispered repeats, Romaji stutters, and deliberate digital noise"
@@ -1126,7 +1126,7 @@
       "Target Suno v6-mini custom mode. Treat bracketed section labels as formatting conventions, not guaranteed non-sung controls.",
       "Put each section label on its own line and keep stage cues short; avoid putting directions in lyric text.",
       "Keep parentheses for the intro vocalization and rare non-word vocalizations such as (Oh oh oh); never add repeated-word echoes in parentheses after lyric lines.",
-      "Keep hooks concise and memorable, but let verses and bridges carry complete thoughts with varied line lengths. Use natural phrasing and breathing room; no exact v6-mini meter or syllable rule is documented.",
+      "Keep hooks concise and memorable, but make verse and bridge lines full, naturally phrased thoughts with varied lengths. Do not default to clipped two-to-four-word fragments; reserve them for hooks, chants, pickups, breakdowns, or deliberate rhythmic stops. Use natural phrasing and breathing room; no exact v6-mini meter or syllable rule is documented.",
       "Write Japanese in kana and kanji; keep Romaji in a separate bracketed pronunciation cue and English on its own line."
     ]
   }

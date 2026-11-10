@@ -192,7 +192,7 @@ Suno Formatting Rules:
 19. Build the Chorus around one central metaphor from the narrative arc so the hook is memorable and emotionally clear.
 20. If the profile includes a sung Bridge, give it a contrasting pivot and at least {policy.style.min_bridge_lines} sung lines, following the selected arrangement rather than forcing an electronic climax.
 21. Keep rhymes natural. Never bend grammar or pick an odd word just to rhyme (not 'seek death' to rhyme with 'breath', not 'soft clutch' against 'growth'); a near rhyme is better than a forced one.
-22. Use a flexible, singable meter. Vary line lengths naturally; do not force paired lines to stay within a narrow syllable count or make every line equally short. Let verses and the bridge carry complete thoughts in fuller lines, while hooks and deliberate chants may be brief. Leave breathing room and avoid cramming too many syllables into a line."""
+22. Use a flexible, singable meter. Vary line lengths naturally; do not force paired lines to stay within a narrow syllable count or make every line equally short. Verse and Bridge lines should usually be complete, image-rich thoughts, not clipped two-to-four-word fragments. In English narrative sections, usually use about 5-10 words per line; in Japanese, use natural complete phrases without forcing a word count. Reserve very short fragments for hooks, chants, pickups, breakdowns, or deliberate rhythmic stops. Leave breathing room and avoid cramming too many syllables into a line."""
     system_prompt += f"\n\n{policy.prompt_guidance()}"
     system_prompt += "\n\n" + policy.style.guidance()
     
@@ -259,7 +259,7 @@ Suno Formatting Rules:
     user_prompt = f"""Generate an exceptionally long-form, progressive lyric architecture optimized for a 5-minute track runtime. 
 Adhere to strict character caps per section to ensure compliance with Suno API parsing boundaries.
 
-CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. For the sections enabled by the profile, use verses for scenes and consequences, a chorus for the emotional hook, a bridge for a climax, and an outro for resolution. Use complete, naturally phrased lines with varied lengths; verses and the bridge may carry fuller thoughts. Reserve very short fragments for hooks, chants, or deliberate rhythmic breaks. Use fresh imagery rather than tech buzzword chains. Do not add sections disabled by the profile.
+CREATIVE BRIEF: Treat the Theme as a story to dramatize, not a keyword list. For the sections enabled by the profile, use verses for scenes and consequences, a chorus for the emotional hook, a bridge for a climax, and an outro for resolution. Most Verse and Bridge lines should be full, image-rich thoughts, not clipped two-to-four-word fragments. In English narrative sections, usually write about 5-10 words per line; in Japanese, write natural complete phrases without forcing a word count. Vary line lengths and reserve very short fragments for hooks, chants, pickups, breakdowns, or deliberate rhythmic stops. Use fresh imagery rather than tech buzzword chains. Do not add sections disabled by the profile.
 
 Title: {concept.title}
 Theme: {concept.theme}
