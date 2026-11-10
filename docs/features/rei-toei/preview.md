@@ -17,10 +17,12 @@ bash run.sh --profile core run --build --rm app python main.py --rei-generate --
 Preview generates the song concept, full lyrics, and formatted Suno prompt using local Ollama. It does not save artifacts, submit to Suno, download media, or render FLUX images. It is not a fast placeholder or a generation-free dry run.
 
 The selected domain-knowledge `active_profile` controls both stage cues and its
-configured musical `style`: genre tags, template, initial BPM, arrangement,
-delivery and quality thresholds. It overrides conflicting model genres and
-`REI_TOEI_DEFAULT_GENRE`. Lyric density may still raise the finished BPM above
-the style's initial range. See [style configuration](../../rei-toei-stage-cues.md).
+configured musical `style`: template, initial BPM, arrangement, delivery and
+quality thresholds. Its genre tags appear first, with distinct model-generated
+genre tags retained after them.
+`REI_TOEI_DEFAULT_GENRE` is only a fallback for profiles without `style`.
+Lyric density may still raise the finished BPM above the style's initial range.
+See [style configuration](../../rei-toei-stage-cues.md).
 
 ## Preparation
 

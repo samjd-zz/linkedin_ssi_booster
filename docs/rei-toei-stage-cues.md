@@ -51,7 +51,9 @@ The default remains `cyberpop`.
 
 These are editable starter arrangements, not rules defining an entire genre.
 Shipped profiles include musical `style` settings as well as stage cues. The
-selected style overrides conflicting genre hints and model-returned genre tags.
+selected profile's genre tags are listed first; distinct model-generated genre
+tags are retained after them, with underscore and slash variants deduplicated.
+`REI_TOEI_DEFAULT_GENRE` is a fallback only for profiles without `style`.
 Persona identity and lyric-language settings remain independent.
 
 ## Profile Schema

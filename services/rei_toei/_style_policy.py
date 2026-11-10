@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
@@ -153,9 +154,26 @@ def parse_style_policy(raw: Any, path: str) -> StylePolicy:
 
 
 def apply_song_style(concept: SongConcept, style: StylePolicy, *, initial_tempo: bool = False) -> None:
-    if style.genre_tags and tuple(concept.genre_tags) != style.genre_tags:
-        logger.info("Selected profile replaces genre tags %s with %s", concept.genre_tags, style.genre_tags)
-        concept.genre_tags = list(style.genre_tags)
+    if style.genre_tags:
+        profile_tags = list(style.genre_tags)
+        seen = {
+            re.sub(r"\s+", " ", tag.replace("_", " ").replace("/", " ")).strip().casefold()
+            for tag in profile_tags
+        }
+        added_tags: list[str] = []
+        for tag in concept.genre_tags:
+            normalized = re.sub(r"\s+", " ", tag.replace("_", " ").replace("/", " ")).strip()
+            key = normalized.casefold()
+            if normalized and key not in seen:
+                seen.add(key)
+                added_tags.append(normalized)
+        if added_tags:
+            logger.info(
+                "Selected profile genre tags %s; retaining distinct concept tags %s",
+                style.genre_tags,
+                added_tags,
+            )
+        concept.genre_tags = profile_tags + added_tags
     if initial_tempo and style.bpm_range:
         low, high, _ = style.bpm_range
         fitted = max(low, min(high, concept.bpm))

@@ -65,14 +65,24 @@ def test_every_shipped_style_controls_output(
 ) -> None:
     domain.lyrical_structure["stage_cues"]["active_profile"] = name
     policy = load_stage_policy(domain.lyrical_structure)
+    concept.genre_tags = [*policy.style.genre_tags, "glitch synthesis"]
     prompt = assemble_suno_prompt(concept, _lyrics(_draft()), domain)
 
     assert prompt.metadata["template_used"] == policy.style.template
     assert prompt.metadata["stage_cue_profile"] == name
-    assert prompt.metadata["genre_tags"] == list(policy.style.genre_tags)
-    assert concept.genre_tags == list(policy.style.genre_tags)
+    expected_tags = list(policy.style.genre_tags)
+    seen = {
+        " ".join(tag.replace("_", " ").replace("/", " ").split()).casefold()
+        for tag in expected_tags
+    }
+    for tag in concept.genre_tags:
+        normalized = " ".join(tag.replace("_", " ").replace("/", " ").split())
+        if normalized.casefold() not in seen:
+            seen.add(normalized.casefold())
+            expected_tags.append(normalized)
+    assert prompt.metadata["genre_tags"] == expected_tags
+    assert concept.genre_tags == expected_tags
     if name != "cyberpop":
-        assert "cyberpop" not in prompt.suno_prompt.lower()
         if name != "cyberpunk":
             assert "warehouse kick" not in prompt.suno_prompt.lower()
         assert "vocaloid" not in prompt.metadata["vocal_delivery"]
@@ -80,30 +90,43 @@ def test_every_shipped_style_controls_output(
 
 
 @pytest.mark.parametrize("name", PROFILES)
-def test_concept_overrides_conflicting_environment_and_model_tags(
+def test_concept_uses_profile_tags_and_merges_distinct_model_tags(
     domain: ReiDomainKnowledge, monkeypatch: pytest.MonkeyPatch, name: str,
 ) -> None:
     domain.lyrical_structure["stage_cues"]["active_profile"] = name
     style = load_stage_policy(domain.lyrical_structure).style
-    monkeypatch.setenv("REI_TOEI_DEFAULT_GENRE", "industrial techno, cyberpop")
+    monkeypatch.setenv("REI_TOEI_DEFAULT_GENRE", "environment-only-genre")
+    model_tags = ["industrial_techno", "cyberpop", "ai_vocaloid", "glitch_technology"]
     ollama = MagicMock()
     ollama._chat.return_value = json.dumps({
         "title": "Red Wax Traces", "mood": "dreamlike", "bpm": 300,
-        "genre_tags": ["cyberpop"], "narrative_arc": "A secret unfolds.",
+        "genre_tags": model_tags, "narrative_arc": "A secret unfolds.",
     })
     theme = Theme(id="room", name="a mysterious room", technical_concepts=["mystery"],
                   evidence_ids=[], frequency=1, recency_score=1)
 
     generated = generate_song_concept(theme, load_rei_persona(), domain, ollama=ollama)
 
-    assert generated.genre_tags == list(style.genre_tags)
+    expected_tags = list(style.genre_tags)
+    seen = {
+        " ".join(tag.replace("_", " ").replace("/", " ").split()).casefold()
+        for tag in expected_tags
+    }
+    for tag in model_tags:
+        normalized = " ".join(tag.replace("_", " ").replace("/", " ").split())
+        if normalized.casefold() not in seen:
+            seen.add(normalized.casefold())
+            expected_tags.append(normalized)
+    assert generated.genre_tags == expected_tags
+    assert "glitch technology" in generated.genre_tags
+    assert "environment-only-genre" not in generated.genre_tags
     assert style.bpm_range is not None
     assert generated.bpm == style.bpm_range[1]
     system, user = ollama._chat.call_args.args[:2]
     assert style.arrangement in system
     assert ", ".join(style.genre_tags) in user
     if name != "cyberpop":
-        assert "cyberpop industrial techno" not in user
+        assert "environment-only-genre" not in user
         assert "Think cyberpop" not in user
 
 
