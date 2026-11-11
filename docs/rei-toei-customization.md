@@ -318,6 +318,8 @@ Optional `psytrance`, `progressive_psytrance`, and `jungle_dnb` entries provide 
 
 The concept BPM is chosen before any lyric exists, so Suno assembly treats it as a starting point. After the lyrics are finished, Rei measures the median syllables per sung line (Japanese mora count at `japanese_mora_weight`, default 0.6; labels, Romaji cues, and parenthesized vocalizations are skipped). The tempo floor is `base_bpm` at `base_syllables`, plus `bpm_per_syllable` for each extra syllable, capped at `max_bpm`. The BPM is only ever raised. With the defaults, 13-syllable lines lift a 145 BPM concept to 170, while short hook lines keep it.
 
+The cyberpop profile keeps its 142 BPM default while allowing concept suggestions up to 170 BPM. Its Suno templates use the selected BPM rather than a hard-coded tempo. The lyric-density fitter still uses the measured median line density and can raise the selected tempo; other profiles retain their own initial tempo ranges.
+
 Line density also adds a vocal-delivery style tag right after the BPM tag: `rapid-fire syllabic vocaloid delivery` at `dense_syllables` (12) or more, `spacious punchy hook phrasing` at `sparse_syllables` (8) or fewer. Tempos of 165 BPM and up use `breakneck hyperspeed vocaloid energy`. The CLI, console, and saved metadata show the fitted BPM; metadata also keeps `concept_bpm`, `median_line_syllables`, and `vocal_delivery`.
 
 Service and language settings remain environment-driven (for example, `REI_LYRIC_LANGUAGE` and `REI_TOEI_STRUDEL_DEFAULT_BARS`). Musical direction and initial tempo use the active profile's `style` settings; `REI_TOEI_DEFAULT_GENRE` is a hint only for legacy profiles without `style`. There is no runtime `technical_constraints` object in `rei_toei_domain_knowledge.json`.

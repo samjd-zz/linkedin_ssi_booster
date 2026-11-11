@@ -524,7 +524,7 @@
         "cyberpop": {
           "style": {
             "genre_tags": ["industrial techno", "cyberpop", "ai vocaloid"], "template": "cyberpunk_electro_template",
-            "bpm": {"min": 130, "max": 155, "default": 142},
+            "bpm": {"min": 130, "max": 170, "default": 142},
             "arrangement": "Catchy electronic hooks, glitch textures and a high-energy bass climax",
             "quality": {"min_chorus_lines": 2, "min_bridge_lines": 4, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": true, "remove_bridge_echoes": true}
           },
@@ -962,14 +962,14 @@
     "hip_hop_template": "Hip hop, {bpm} bpm, rhythmic rap vocals, beat-led groove, clear memorable hooks",
     "ambient_template": "Ambient experimental, {bpm} bpm, evolving atmospheric textures, sparse vocal phrases, gentle transitions",
     "industrial_techno_template": "138 bpm, dark techno hyperpop, {mood} cute female vocaloid, heavy bass, glitch pop energy",
-    "cyberpunk_electro_template": "144 bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks, bright pop energy",
+    "cyberpunk_electro_template": "{bpm} bpm, cyberpop electro, {mood} sweet AI vocaloid, synthwave vibes, catchy hooks, bright pop energy",
     "dark_synthwave_template": "126 bpm, dark synthpop, {mood} dreamy vocaloid, analog synths, ethereal atmosphere",
     "glitch_industrial_template": "150 bpm, glitch pop industrial, {mood} playful vocaloid, hyper energy, kawaii bass",
     "jungle_dnb_template": "Jungle drum and bass, {bpm} bpm, chopped Amen-style breakbeats, rolling Reese bass, syncopated drums, atmospheric rave energy",
     "progressive_psytrance_template": "Progressive psytrance, {bpm} bpm, rolling offbeat bass, steady four-on-the-floor kick, gradual layered builds, evolving arpeggios, atmospheric breakdowns",
     "psychedelic_rock_template": "Psychedelic rock, {bpm} bpm, expressive fuzz guitar, tape echo, phasing, organic live drums, dreamlike atmosphere",
     "progressive_rock_template": "Progressive rock, {bpm} bpm, evolving guitar motifs, dynamic live drums, changing meters, extended instrumental passages",
-    "romaji_cyberpop_template": "142 bpm, cyberpop vocaloid, Romaji and Japanese hooks, {mood} AI vocals, synthwave vibes, catchy J-pop electropop"
+    "romaji_cyberpop_template": "{bpm} bpm, cyberpop vocaloid, Romaji and Japanese hooks, {mood} AI vocals, synthwave vibes, catchy J-pop electropop"
   },
   "production_notes": {
     "mixing": {

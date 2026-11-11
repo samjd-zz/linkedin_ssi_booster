@@ -143,6 +143,30 @@ def test_profile_tag_merge_drops_fragments_and_is_idempotent(
     assert concept.genre_tags == expected
 
 
+def test_cyberpop_keeps_142_default_allows_170_and_uses_selected_template_tempo(
+    domain: ReiDomainKnowledge, concept: SongConcept,
+) -> None:
+    domain.lyrical_structure["stage_cues"]["active_profile"] = "cyberpop"
+    style = load_stage_policy(domain.lyrical_structure).style
+
+    assert style.bpm_range == (130, 170, 142)
+    concept.bpm = 142
+    apply_song_style(concept, style, initial_tempo=True)
+    assert concept.bpm == 142
+
+    concept.bpm = 175
+    apply_song_style(concept, style, initial_tempo=True)
+    assert concept.bpm == 170
+
+    concept.bpm = 142
+    result = assemble_suno_prompt(concept, _lyrics(_draft()), domain)
+
+    assert result.metadata["concept_bpm"] == 142
+    assert result.metadata["bpm"] == 142
+    assert "142 bpm" in result.suno_prompt
+    assert "144 bpm" not in result.suno_prompt
+
+
 def test_dense_rock_lyrics_can_exceed_initial_range_without_electronic_delivery(
     domain: ReiDomainKnowledge, concept: SongConcept,
 ) -> None:
