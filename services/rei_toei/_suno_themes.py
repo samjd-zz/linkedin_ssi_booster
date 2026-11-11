@@ -14,71 +14,18 @@ if TYPE_CHECKING:
 
 from services.content_curator._text_utils import looks_like_nav_chrome
 from services.rei_toei._models import Theme
+from services.rei_toei._theme_quality import (
+    display_theme_name,
+    has_named_evidence,
+    normalize_theme_candidate,
+)
 
 logger = logging.getLogger(__name__)
-
-# Tags/entities skipped during theme extraction. Articles and pronouns, plus
-# generic discourse nouns that spaCy noun-chunking emits from learned facts
-# (e.g. "For example, ..." → tag "example") — none of them make a song theme.
-_THEME_STOP_WORDS = {
-    "the", "a", "an", "which", "that", "this", "these", "those", "it", "its",
-    "they", "their",
-    "example", "examples", "instance", "instances", "case", "cases",
-    "result", "results", "observation", "observations", "figure", "figures",
-    "table", "tables", "pair", "pairs", "number", "numbers", "percent",
-    "part", "parts", "thing", "things", "way", "ways", "item", "items",
-    "step", "steps", "section", "sections", "list", "lists", "note", "notes",
-    "term", "terms", "word", "words", "sentence", "sentences",
-    "overview", "summary", "introduction", "conclusion", "people",
-    "today", "today's", "today s", "yesterday", "tomorrow", "recently",
-    "currently", "new", "album", "new album", "latest album", "debut album",
-    "full album", "release", "released", "new release", "release information",
-    "press release", "single", "new single", "album release",
-    "本日", "今日", "昨日", "明日", "今週", "来週", "今月", "来月", "今年", "昨年",
-    "新譜", "アルバム", "ニューアルバム", "リリース", "発売", "配信リリース",
-    "improved configuration", "an improved configuration", "custom implementation",
-    "custom implementations", "deep dive", "quality drop",
-    # Japanese discourse connectives (never a song theme)
-    "その後", "今回", "一方", "さらに", "また", "そして",
-}
-# Bare temporal tags ("2024年", "10月", "October") — demoted in NER but they
-# still slip through as noun-chunk tags; a date is not a music theme.
-_TEMPORAL_TAG_RE = re.compile(
-    r"^(?:\d{4}\s*年?|\d{1,2}\s*月|\d{1,2}月\d{1,2}日"
-    r"|(?:january|february|march|april|may|june|july|august|september|october|november|december)"
-    r"|(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))$",
-    re.IGNORECASE,
-)
-_LOW_SIGNAL_THEME_RE = re.compile(
-    r"\b(?:today(?:'s)?|yesterday|tomorrow|this week|last week|next week|"
-    r"this month|next month|last month|this year|last year|this morning|tonight)\b"
-    r"|\balbum\b"
-    r"|(?:本日|今日|昨日|明日|今週|来週|今月|来月|今年|昨年)"
-    r"|(?:ニューアルバム|アルバム|リリース|発売|新譜)",
-    re.IGNORECASE,
-)
 
 
 def _normalize_title(value: str) -> str:
     """Normalize a title string for uniqueness comparisons."""
     return re.sub(r"\W+", " ", value.lower()).strip()
-
-
-def _is_theme_candidate(value: Any) -> bool:
-    """Reject metadata, timing, promotional and generic phrase fragments."""
-    if not isinstance(value, str):
-        return False
-    normalized = " ".join(value.casefold().split()).strip()
-    key = _normalize_title(normalized)
-    return bool(
-        len(normalized) > 2
-        and key
-        and normalized not in _THEME_STOP_WORDS
-        and key not in _THEME_STOP_WORDS
-        and not _TEMPORAL_TAG_RE.match(normalized)
-        and not _LOW_SIGNAL_THEME_RE.search(normalized)
-        and not looks_like_nav_chrome(normalized)
-    )
 
 
 REI_TITLE_HISTORY_FILE = "title_history.jsonl"
@@ -294,6 +241,7 @@ def extract_themes(
     logger.info(f"Extracting themes from {len(extracted_facts)} facts")
 
     concept_groups: Dict[str, List[Any]] = defaultdict(list)
+    entity_terms: set[str] = set()
 
     for fact in extracted_facts:
         statement = getattr(fact, "statement", "")
@@ -305,19 +253,32 @@ def extract_themes(
         concepts = set()
         
         for tag in (getattr(fact, "tags", []) or []):
-            normalized = tag.lower().strip() if isinstance(tag, str) else ""
-            if normalized and _is_theme_candidate(normalized):
+            normalized = normalize_theme_candidate(tag)
+            if normalized:
                 concepts.add(normalized)
 
         for entity in (getattr(fact, "entities", []) or []):
-            normalized = entity.lower().strip() if isinstance(entity, str) else ""
-            if normalized and _is_theme_candidate(normalized):
+            normalized = normalize_theme_candidate(entity)
+            if normalized:
                 concepts.add(normalized)
+                entity_terms.add(normalized)
 
         for concept in concepts:
             concept_groups[concept].append(fact)
 
     logger.info(f"Identified {len(concept_groups)} unique concepts")
+    # Common words ("scale", "training") are not song themes; keep concepts
+    # their own statements use as names (Java, LSTM, フジロック) or as phrases.
+    generic = [
+        concept for concept, facts in concept_groups.items()
+        if not has_named_evidence(
+            concept, [getattr(fact, "statement", "") for fact in facts], entity_terms
+        )
+    ]
+    for concept in generic:
+        del concept_groups[concept]
+    if generic:
+        logger.info("Dropped %d generic or unsupported concepts", len(generic))
     import math
 
     now = datetime.now()
@@ -372,7 +333,9 @@ def extract_themes(
         
         theme = Theme(
             id=theme_id,
-            name=concept.title(),
+            name=display_theme_name(
+                concept, [getattr(fact, "statement", "") for fact in concept_groups[concept]]
+            ),
             technical_concepts=[concept],
             evidence_ids=evidence_ids[:50],
             frequency=frequency,

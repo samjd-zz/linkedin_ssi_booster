@@ -16,7 +16,7 @@ bash run.sh --profile core run --build --rm app python main.py --rei-generate --
 
 Preview generates the song concept, full lyrics, and formatted Suno prompt using local Ollama. It does not save artifacts, submit to Suno, download media, or render FLUX images. It is not a fast placeholder or a generation-free dry run.
 
-Automatic theme selection uses entities and tags attached to nonempty extracted-fact statements. Theme candidates filter temporal and promotional metadata (for example, `today`, `new album`, `本日`, and `ニューアルバム`) while retaining the supporting fact statements in the knowledge store.
+Automatic theme selection uses entities and tags attached to nonempty extracted-fact statements. Every candidate must occur in at least one attached statement; unsupported tags and entities are rejected even if they recur frequently. Theme candidates filter temporal and promotional metadata (for example, `today`, `new album`, `本日`, and `ニューアルバム`), release/event labels, decades, abbreviation fragments, and scraped site menus while retaining the supporting fact statements in the knowledge store. Single English words must be written as names in their own source statements (`Java`, `LSTM`, `NeRF`); mostly lowercase common nouns such as `scale`, `training`, or `agents` are not themes. Japanese terms need NER entity support (`フジロック`) unless they mix in Latin (`生成AI`). Phrases of up to four words can qualify without name casing. Theme names keep the casing used by the sources (`OpenAI`, `MCP`). This is a deterministic theme-quality heuristic, not a factual verification of the source articles.
 
 Punctuation-only lyric placeholders such as `.` and incomplete English lines
 ending in spaced punctuation (such as `Start with .`) are removed before

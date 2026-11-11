@@ -653,11 +653,11 @@ def mock_extracted_knowledge():
         ),
         ExtractedEvidenceFact(
             evidence_id="ev_fact_002",
-            statement="Async/await in Rust provides zero-cost abstractions",
+            statement="Async/await in Rust supports async programming with zero-cost abstractions",
             source_url="https://example.com/rust-async",
             source_title="Rust Async Programming",
             entities=["Rust", "async", "await"],
-            tags=["rust", "async", "performance"],
+            tags=["rust", "async", "performance", "async programming"],
             confidence="high",
             source_fact_id="fact_002",
         ),
@@ -749,7 +749,7 @@ def test_extract_themes_filters_generic_discourse_words():
     facts = [
         ExtractedEvidenceFact(
             evidence_id=f"ev_generic_{i:03d}",
-            statement=f"For example, generic fact number {i}.",
+            statement=f"For example, Rust prevents data races in system {i}.",
             source_url="https://example.com/generic",
             source_title="Generic Source",
             entities=[],
