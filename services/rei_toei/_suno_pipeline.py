@@ -55,7 +55,7 @@ from services.rei_toei._song_structure import (
     verse_two_repeats_verse_one,
 )
 from services.rei_toei._style_policy import apply_song_style, fit_style_tempo, style_template_key
-from services.rei_toei._song_tidy import tidy_song_sections
+from services.rei_toei._song_tidy import join_short_comma_lines, tidy_song_sections
 from services.rei_toei._stage_policy import load_stage_policy
 from services.rei_toei._suno_blocks import (
     _append_normalized_section as _append_normalized_section,
@@ -213,6 +213,10 @@ def compose_lyrics(
                     if stage_policy.rule(field) is not None
                 }
                 expand_payload_word_count_markers(response_data, stage_policy)
+                if generation_language == "english":
+                    joined = join_short_comma_lines(response_data, stage_policy)
+                    if joined:
+                        logger.info("Joined %d short comma-separated lyric line pair(s).", joined)
             except (ValueError, KeyError) as exc:
                 if attempt < max_attempts:
                     logger.warning(

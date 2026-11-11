@@ -26,6 +26,8 @@ _ECHO_RE = re.compile(r"^(?P<lead>.*\S)\s*[(（](?P<echo>[^()（）]+)[)）]\s*$
 _DROP_CUE_RE = re.compile(r"^[\[(（][^\[\]()（）]*\bdrop\b[^\[\]()（）]*[\])）]$", re.IGNORECASE)
 _SIGNATURE_RE = re.compile(r"[^\w\u3040-\u30ff\u3400-\u9fff]+")
 _TRAILING_COMMA_CHARS = "、，, "
+_SHORT_ENGLISH_LYRIC_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\s'’.,!?;:\-]*$")
+_MAX_FRAGMENT_WORDS = 4
 DROP_FIELDS = frozenset({"drop"})
 SUNG_LYRIC_FIELDS = frozenset({
     "intro", "verse_1", "pre_chorus", "chorus", "verse_2", "bridge", "drop",
@@ -51,6 +53,40 @@ def strip_echo_parenthetical(line: str) -> str:
 def _is_sung(line: str) -> bool:
     stripped = line.strip()
     return bool(stripped) and stripped[0] not in "[(（"
+
+
+def join_short_comma_lines(payload: Dict[str, Any], policy: StagePolicy) -> int:
+    """Join adjacent short English fragments before validation and translation."""
+    joined_count = 0
+    for field in SUNG_LYRIC_FIELDS:
+        value = payload.get(field)
+        rule = policy.rule(field)
+        if not isinstance(value, str) or not rule or rule.content != "sung":
+            continue
+        lines = value.splitlines()
+        result: list[str] = []
+        index = 0
+        while index < len(lines):
+            first = lines[index]
+            second = lines[index + 1] if index + 1 < len(lines) else ""
+            left, right = first.strip(), second.strip()
+            if (
+                left.endswith(",") and right and not right.endswith(",")
+                and (index == 0 or not lines[index - 1].rstrip().endswith(","))
+                and _SHORT_ENGLISH_LYRIC_RE.fullmatch(left)
+                and _SHORT_ENGLISH_LYRIC_RE.fullmatch(right)
+                and len(left.split()) <= _MAX_FRAGMENT_WORDS
+                and len(right.split()) <= _MAX_FRAGMENT_WORDS
+                and _signature(left) != _signature(right)
+            ):
+                result.append(first.rstrip() + " " + right)
+                joined_count += 1
+                index += 2
+            else:
+                result.append(first)
+                index += 1
+        payload[field] = "\n".join(result)
+    return joined_count
 
 
 def tidy_song_sections(payload: Dict[str, Any], policy: StagePolicy | None = None) -> None:

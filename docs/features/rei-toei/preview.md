@@ -23,6 +23,13 @@ ending in spaced punctuation (such as `Start with .`) are removed before
 required-section validation and Suno formatting. If cleanup leaves a required
 section empty, lyric generation retries instead of returning the placeholder.
 
+For English drafts, including the English-first bilingual strategy, adjacent
+short lyric lines (at most four words each) are joined when the first ends in a
+comma. The join runs before draft validation and hook translation. It preserves
+blank lines, cues, repeated phrases, longer lines, and ambiguous chains of
+comma-ending lines. Japanese and directly generated bilingual drafts are not
+joined; deliberate short comma-separated lines may still be combined.
+
 The selected domain-knowledge `active_profile` controls both stage cues and its
 configured musical `style`: template, initial BPM, arrangement, delivery and
 quality thresholds. Its genre tags appear first, with distinct model-generated
