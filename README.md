@@ -81,13 +81,13 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 </p>
 
 <p align="center">
-  <a href="https://lounge.ai/@samjd-zz"><img src="https://lounge.ai/api/badge/samjd-zz" alt="Shawn Jackson Dyck on AI Lounge" height="28"></a>
-</p>
-
-<p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB.svg" alt="License MIT"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/tests-1871%20passed%20%7C%202%20deselected-16A34A.svg" alt="Tests: 1871 passed, 0 failed, 2 live API tests deselected"></a>
   <a href="docs/testing-and-dev.md"><img src="https://img.shields.io/badge/coverage-75%25-yellow.svg" alt="Source statement coverage: 75% (11446 of 15208 statements), measured November 10, 2026"></a>
+</p>
+
+<p align="center">
+  <a href="https://lounge.ai/@samjd-zz"><img src="https://lounge.ai/api/badge/samjd-zz" alt="Shawn Jackson Dyck on AI Lounge" height="28"></a>
 </p>
 
 <img src="media/favicons/2-score-ring_256x256.png" alt="SSI Score Ring" width="80" align="right">
