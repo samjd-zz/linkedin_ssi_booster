@@ -45,6 +45,13 @@ Splitting by source is language-agnostic. The previous rule split on `str.split(
 
 Within each group, themes are ranked **longest-first** so that truncation keeps the most specific ones, and `DATE`/`TIME` entities are ranked last. Both matter: the old code sorted alphabetically before truncating, which let digit-leading strings win the cap, and plain longest-first is not enough either because Japanese dates (`2027年1月16日`) are longer than most concept themes.
 
+Before applying those limits, continual learning removes recognizable site
+navigation, share strips, and menu fragments from newly extracted entities and
+tags. The fact statement and ordinary terms such as `scale` remain available
+for retrieval; existing saved facts are not rewritten. Filtering is heuristic
+and does not guarantee every possible website format is detected. A count is
+logged when metadata items are removed.
+
 **Fallback:** when spaCy is unavailable the extractor drops to regex — capitalized words become `entities`, 4+ character lowercase words become `tags`, and `extraction_method` is stamped `regex_fallback` instead of `spacy_nlp` so the two are distinguishable on disk.
 
 ### 3. Semantic near-duplicate suppression
@@ -77,8 +84,8 @@ Each surviving sentence is written to `data/avatar/extracted_knowledge.json` as 
 | `statement`                   | The extracted sentence, verbatim after cleaning                  |
 | `source_url` / `source_title` | Originating article                                              |
 | `extracted_at`                | ISO-8601 UTC timestamp                                           |
-| `entities`                    | Multi-word spaCy themes (max 5)                                  |
-| `tags`                        | Single-token spaCy themes (max 8)                                |
+| `entities`                    | spaCy named-entity spans (max 5 after filtering)                 |
+| `tags`                        | spaCy noun-chunk concepts (max 8 after filtering)               |
 | `confidence`                  | `high` \| `medium` \| `low` — caller-supplied, defaults `medium` |
 | `extraction_method`           | `spacy_nlp` or `regex_fallback`                                  |
 | `primary_category`            | Model2Vec category of the article (empty when disabled)          |

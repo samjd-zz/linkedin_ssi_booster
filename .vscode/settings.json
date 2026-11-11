@@ -20,7 +20,7 @@
     "editor.insertSpaces": true
   },
   "python.analysis.include": [
-    "${workspaceFolder}"
+    "."
   ],
   "python.analysis.exclude": [
     "**/__pycache__",

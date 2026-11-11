@@ -452,7 +452,7 @@ Before sentences are stored as extracted knowledge, a multi-layer quality filter
 | Navigation / contributor blobs | Sentences ≥12 words where >45% of tokens start with uppercase (HuggingFace menus, author lists)                        |
 | Zero-signal sentences          | Sentences with no digit, no 2+-char acronym, and no consecutive title-case words — pure filler                         |
 
-These filters run **before** spaCy NLP and deduplication, so only genuinely informative domain sentences reach the knowledge graph. Every filter is an English-language regex — Japanese source text passes through all of them untouched.
+Sentence filters run before spaCy theme extraction and deduplication, including Japanese and English navigation/share markers. After extraction, recognizable navigation metadata is removed from new tags and entities before size limits apply. These heuristics do not guarantee every retained statement is informative and do not rewrite existing facts or remove generic domain terms used by retrieval.
 
 ---
 

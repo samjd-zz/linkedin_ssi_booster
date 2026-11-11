@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from services.avatar_intelligence._loaders import _load_extracted_knowledge
+from services.avatar_intelligence._extraction_metadata import is_navigation_metadata
 from services.avatar_intelligence._models import (
     ExtractedFact,
     ExtractedKnowledgeGraph,
@@ -192,6 +193,7 @@ def extract_and_append_knowledge(
     # branch below (which requires whitespace) never fires on JP text.
     sentences = re.split(r"(?<=[\u3002\uff01\uff1f])\s*|(?<=[.!?])\s+", clean_text)
     new_facts: list[ExtractedFact] = []
+    navigation_metadata_removed = 0
     extracted_at = datetime.now(timezone.utc).isoformat()
 
     for sentence in sentences:
@@ -755,8 +757,8 @@ def extract_and_append_knowledge(
         if spacy_available and nlp_engine is not None:
             try:
                 groups = nlp_engine.extract_theme_groups(sentence)
-                entities = groups["entities"][:5]
-                tags = groups["concepts"][:8]
+                entities = groups["entities"]
+                tags = groups["concepts"]
             except Exception as exc:
                 logger.debug(
                     "extract_and_append_knowledge: spaCy extraction error — %s", exc
@@ -765,21 +767,24 @@ def extract_and_append_knowledge(
             entities = list(dict.fromkeys(
                 w for w in re.findall(r"\b[A-Z][a-zA-Z]{2,}\b", sentence)
                 if w.lower() not in _EXTRACTION_STOPWORDS
-            ))[:5]
+            ))
             tags = list(dict.fromkeys(
                 w.lower()
                 for w in re.findall(r"\b[a-zA-Z]{4,}\b", sentence.lower())
                 if w.lower() not in _EXTRACTION_STOPWORDS
-            ))[:8]
+            ))
 
+        clean_entities = [value for value in entities if not is_navigation_metadata(value)]
+        clean_tags = [value for value in tags if not is_navigation_metadata(value)]
+        navigation_metadata_removed += len(entities) - len(clean_entities) + len(tags) - len(clean_tags)
         fact = ExtractedFact(
             id=fact_id,
             statement=sentence,
             source_url=source_url,
             source_title=source_title,
             extracted_at=extracted_at,
-            entities=entities,
-            tags=tags,
+            entities=clean_entities[:5],
+            tags=clean_tags[:8],
             confidence=confidence,
             extraction_method="spacy_nlp" if spacy_available else "regex_fallback",
             primary_category=_article_category,
@@ -789,6 +794,11 @@ def extract_and_append_knowledge(
         existing_ids.add(fact_id)
         existing_stmt_hashes.add(_this_stmt_hash)
 
+    if navigation_metadata_removed:
+        logger.info(
+            "Filtered %d navigation metadata item(s) from extracted facts.",
+            navigation_metadata_removed,
+        )
     if new_facts and not dry_run:
         updated_facts = existing_graph.facts + new_facts
         updated_graph = ExtractedKnowledgeGraph(
