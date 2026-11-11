@@ -76,6 +76,12 @@ _CHINESE_GRAMMAR_RE = re.compile(
     r"|[们这那吗呢么吧]"
 )
 _KANA_RE = re.compile(r"[\u3040-\u30ff\uff66-\uff9f]")
+_PUNCTUATION_ONLY_LINE_RE = re.compile(r"^[^\w\s]+$", re.UNICODE)
+_SPACED_TERMINAL_PUNCTUATION_RE = re.compile(r"\s+[.!?…。！？]+$")
+_DANGLING_ENGLISH_LINE_END_RE = re.compile(
+    r"\b(?:a|an|the|and|or|but|to|of|for|with|in|on|at|by|from|as|into|onto)$",
+    re.IGNORECASE,
+)
 # Own-line instrument cues Suno should play, not sing.
 _INSTRUMENT_CUE_TAGS = {
     "bass drop": "[Heavy Bass Drop]",
@@ -205,6 +211,22 @@ def strip_emoji_lines(text: str) -> str:
         cleaned = strip_emoji(line)
         if cleaned or not line.strip():
             kept.append(cleaned)
+    return "\n".join(kept)
+
+
+def strip_punctuation_placeholders(text: str) -> str:
+    """Drop punctuation-only lines and incomplete English lines followed by punctuation."""
+    kept: List[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if _PUNCTUATION_ONLY_LINE_RE.fullmatch(stripped):
+            continue
+        terminal = _SPACED_TERMINAL_PUNCTUATION_RE.search(stripped)
+        if terminal and _DANGLING_ENGLISH_LINE_END_RE.search(
+            stripped[:terminal.start()].rstrip()
+        ):
+            continue
+        kept.append(line)
     return "\n".join(kept)
 
 

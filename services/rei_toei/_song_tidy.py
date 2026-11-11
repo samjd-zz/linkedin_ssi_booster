@@ -12,6 +12,7 @@ from services.rei_toei._suno_cleanup import (
     bracket_parenthetical_direction_cues,
     strip_emoji_lines,
     strip_leading_semicolons,
+    strip_punctuation_placeholders,
     strip_sung_bass_drop_cues,
     split_inline_stage_cues,
     tidy_vocalization_cues,
@@ -60,7 +61,9 @@ def tidy_song_sections(payload: Dict[str, Any], policy: StagePolicy | None = Non
         if not isinstance(value, str):
             continue
         rule = policy.rule(field)
-        value = strip_leading_semicolons(strip_emoji_lines(policy.canonicalize(value)))
+        value = strip_punctuation_placeholders(
+            strip_leading_semicolons(strip_emoji_lines(policy.canonicalize(value)))
+        )
         if field in SUNG_LYRIC_FIELDS or field == "solo":
             value = split_inline_stage_cues(
                 bracket_parenthetical_direction_cues(bracket_chaos_cues(value))

@@ -776,6 +776,60 @@ def test_extract_themes_filters_generic_discourse_words():
     assert "rust" in theme_names
 
 
+def test_extract_themes_filters_temporal_promotional_and_generic_phrases():
+    fact = ExtractedEvidenceFact(
+        evidence_id="ev_low_signal_001",
+        statement="Amazon Bedrock AgentCore improves the agent quality loop.",
+        source_url="https://example.com/agentcore",
+        source_title="AgentCore Optimization",
+        entities=[
+            "today",
+            "today's AI coding assistants",
+            "amazon bedrock agentcore",
+            "an improved configuration",
+        ],
+        tags=[
+            "new album",
+            "2nd album",
+            "ニューアルバム",
+            "本日9月11日（金）",
+            "release",
+            "quality drop",
+            "agent quality loop",
+        ],
+        confidence="high",
+        source_fact_id="fact_low_signal_001",
+    )
+    empty_statement_fact = ExtractedEvidenceFact(
+        evidence_id="ev_empty_statement_001",
+        statement="",
+        source_url="https://example.com/empty",
+        source_title="Empty Fact",
+        entities=["unverified phrase"],
+        tags=["unverified phrase"],
+        confidence="high",
+        source_fact_id="fact_empty_statement_001",
+    )
+
+    themes = extract_themes([fact, empty_statement_fact], limit=20)
+    theme_names = {theme.name.casefold() for theme in themes}
+
+    assert "amazon bedrock agentcore" in theme_names
+    assert "agent quality loop" in theme_names
+    assert not {
+        "today",
+        "today's ai coding assistants",
+        "new album",
+        "2nd album",
+        "ニューアルバム",
+        "本日9月11日（金）",
+        "release",
+        "quality drop",
+        "an improved configuration",
+        "unverified phrase",
+    } & theme_names
+
+
 def test_extract_themes_skips_nav_chrome_facts_and_tags():
     """Nav/share-chrome from JP media sites must never become themes.
 

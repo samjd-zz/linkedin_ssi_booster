@@ -27,6 +27,7 @@ from services.rei_toei._lyric_romaji import (
 from services.rei_toei._suno_cleanup import (
     bracket_chaos_cues,
     replace_chinese_phrasing,
+    strip_punctuation_placeholders,
     strip_sung_bass_drop_cues,
 )
 from services.rei_toei._suno_json import (
@@ -295,6 +296,7 @@ def _normalize_suno_section(text: Optional[str], label: str, *, uppercase_body: 
     body = _strip_intro_header_instructions(
         _join_split_japanese_acronyms(_normalize_serialized_lyric_text(text or ""))
     )
+    body = strip_punctuation_placeholders(body)
     body = _SECTION_HEADER_RE.sub("", body, count=1)
     body = expand_word_count_markers(body)
     # Replace Chinese forms before any Romaji check reads the Japanese lines.

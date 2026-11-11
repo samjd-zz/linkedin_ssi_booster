@@ -21,6 +21,19 @@ def test_parenthetical_fade_and_chill_directions_become_tags() -> None:
     assert payload["outro"] == "[Outro]\n[Fade Out]\n[Chill]\nThe city sleeps"
 
 
+def test_punctuation_placeholders_are_removed_before_lyric_validation() -> None:
+    payload = {
+        "verse_1": "[Verse 1]\n.\nThe windows lose their blue\nA quiet street waits",
+        "outro": "[Outro]\n...\nThe lamps grow soft and gold",
+    }
+
+    tidy_song_sections(payload)
+
+    assert "." not in payload["verse_1"]
+    assert "..." not in payload["outro"]
+    assert "The windows lose their blue" in payload["verse_1"]
+
+
 def test_inline_stage_cues_move_to_their_own_lines() -> None:
     source = "Signals converge [Silence] [Chaos]"
 
@@ -128,3 +141,23 @@ def test_short_chorus_after_retries_fails_without_a_canned_replacement() -> None
         compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
 
     assert ollama._chat.call_count == 5
+
+
+def test_punctuation_only_required_section_is_retried() -> None:
+    invalid = _lyrics(
+        "WE COME ALIVE\nTHE WINDOWS ANSWER BACK\nWE CARRY MORNING HOME\nTHE NIGHT RELEASES US"
+    )
+    invalid["verse_1"] = "."
+    ollama = MagicMock()
+    ollama._chat.side_effect = [
+        json.dumps(invalid),
+        json.dumps(_lyrics(
+            "WE COME ALIVE\nTHE WINDOWS ANSWER BACK\nWE CARRY MORNING HOME\nTHE NIGHT RELEASES US"
+        )),
+    ]
+
+    lyrics = compose_lyrics(_concept(), _persona(), _domain(), ollama=ollama)
+
+    assert ollama._chat.call_count == 2
+    assert "verse_1" in ollama._chat.call_args.args[1]
+    assert all(line.strip() != "." for line in lyrics.verse_1.splitlines())

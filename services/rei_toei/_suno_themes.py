@@ -30,6 +30,14 @@ _THEME_STOP_WORDS = {
     "step", "steps", "section", "sections", "list", "lists", "note", "notes",
     "term", "terms", "word", "words", "sentence", "sentences",
     "overview", "summary", "introduction", "conclusion", "people",
+    "today", "today's", "today s", "yesterday", "tomorrow", "recently",
+    "currently", "new", "album", "new album", "latest album", "debut album",
+    "full album", "release", "released", "new release", "release information",
+    "press release", "single", "new single", "album release",
+    "本日", "今日", "昨日", "明日", "今週", "来週", "今月", "来月", "今年", "昨年",
+    "新譜", "アルバム", "ニューアルバム", "リリース", "発売", "配信リリース",
+    "improved configuration", "an improved configuration", "custom implementation",
+    "custom implementations", "deep dive", "quality drop",
     # Japanese discourse connectives (never a song theme)
     "その後", "今回", "一方", "さらに", "また", "そして",
 }
@@ -41,11 +49,36 @@ _TEMPORAL_TAG_RE = re.compile(
     r"|(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))$",
     re.IGNORECASE,
 )
+_LOW_SIGNAL_THEME_RE = re.compile(
+    r"\b(?:today(?:'s)?|yesterday|tomorrow|this week|last week|next week|"
+    r"this month|next month|last month|this year|last year|this morning|tonight)\b"
+    r"|\balbum\b"
+    r"|(?:本日|今日|昨日|明日|今週|来週|今月|来月|今年|昨年)"
+    r"|(?:ニューアルバム|アルバム|リリース|発売|新譜)",
+    re.IGNORECASE,
+)
 
 
 def _normalize_title(value: str) -> str:
     """Normalize a title string for uniqueness comparisons."""
     return re.sub(r"\W+", " ", value.lower()).strip()
+
+
+def _is_theme_candidate(value: Any) -> bool:
+    """Reject metadata, timing, promotional and generic phrase fragments."""
+    if not isinstance(value, str):
+        return False
+    normalized = " ".join(value.casefold().split()).strip()
+    key = _normalize_title(normalized)
+    return bool(
+        len(normalized) > 2
+        and key
+        and normalized not in _THEME_STOP_WORDS
+        and key not in _THEME_STOP_WORDS
+        and not _TEMPORAL_TAG_RE.match(normalized)
+        and not _LOW_SIGNAL_THEME_RE.search(normalized)
+        and not looks_like_nav_chrome(normalized)
+    )
 
 
 REI_TITLE_HISTORY_FILE = "title_history.jsonl"
@@ -260,36 +293,25 @@ def extract_themes(
     """
     logger.info(f"Extracting themes from {len(extracted_facts)} facts")
 
-    # Hoisted out of the loop to optimize memory allocation overhead
-    stop_words = _THEME_STOP_WORDS
     concept_groups: Dict[str, List[Any]] = defaultdict(list)
 
     for fact in extracted_facts:
+        statement = getattr(fact, "statement", "")
         # Skip facts whose statement is scraped nav/share chrome — every tag on
         # such a fact is headline-rail noise, not a real concept.
-        if looks_like_nav_chrome(getattr(fact, "statement", "") or ""):
+        if not isinstance(statement, str) or not statement.strip() or looks_like_nav_chrome(statement):
             continue
 
         concepts = set()
         
         for tag in (getattr(fact, "tags", []) or []):
-            normalized = tag.lower().strip()
-            if (
-                len(normalized) > 2
-                and normalized not in stop_words
-                and not _TEMPORAL_TAG_RE.match(normalized)
-                and not looks_like_nav_chrome(normalized)
-            ):
+            normalized = tag.lower().strip() if isinstance(tag, str) else ""
+            if normalized and _is_theme_candidate(normalized):
                 concepts.add(normalized)
 
         for entity in (getattr(fact, "entities", []) or []):
-            normalized = entity.lower().strip()
-            if (
-                len(normalized) > 2
-                and normalized not in stop_words
-                and not _TEMPORAL_TAG_RE.match(normalized)
-                and not looks_like_nav_chrome(normalized)
-            ):
+            normalized = entity.lower().strip() if isinstance(entity, str) else ""
+            if normalized and _is_theme_candidate(normalized):
                 concepts.add(normalized)
 
         for concept in concepts:

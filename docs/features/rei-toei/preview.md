@@ -16,6 +16,13 @@ bash run.sh --profile core run --build --rm app python main.py --rei-generate --
 
 Preview generates the song concept, full lyrics, and formatted Suno prompt using local Ollama. It does not save artifacts, submit to Suno, download media, or render FLUX images. It is not a fast placeholder or a generation-free dry run.
 
+Automatic theme selection uses entities and tags attached to nonempty extracted-fact statements. Theme candidates filter temporal and promotional metadata (for example, `today`, `new album`, `本日`, and `ニューアルバム`) while retaining the supporting fact statements in the knowledge store.
+
+Punctuation-only lyric placeholders such as `.` and incomplete English lines
+ending in spaced punctuation (such as `Start with .`) are removed before
+required-section validation and Suno formatting. If cleanup leaves a required
+section empty, lyric generation retries instead of returning the placeholder.
+
 The selected domain-knowledge `active_profile` controls both stage cues and its
 configured musical `style`: template, initial BPM, arrangement, delivery and
 quality thresholds. Its genre tags appear first, with distinct model-generated

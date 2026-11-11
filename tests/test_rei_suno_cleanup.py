@@ -45,6 +45,14 @@ def test_translated_intro_instruction_and_its_romaji_are_removed() -> None:
     assert _append_normalized_section([], expected, "Intro Verse") == expected
 
 
+def test_suno_section_drops_punctuation_placeholders_and_dangling_intro_line() -> None:
+    source = "[Intro Verse]\n.\nStart with  .\nNeon flickers, binary dreams."
+
+    assert _normalize_suno_section(source, "Intro Verse") == (
+        "[Intro Verse]\nNeon flickers, binary dreams."
+    )
+
+
 def test_intro_instruction_removal_preserves_primer_and_stage_cues() -> None:
     source = (
         "[Instrumental Build]\n(Ahh ahh ahh) immediately after the intro header.\n"
