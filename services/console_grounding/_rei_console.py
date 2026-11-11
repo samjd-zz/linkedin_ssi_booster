@@ -19,6 +19,7 @@ from services.rei_toei_service import (
     extract_themes,
     choose_diverse_theme,
     load_recent_rei_titles,
+    load_recent_rei_themes,
     record_rei_title,
     generate_song_concept,
     compose_lyrics,
@@ -425,9 +426,13 @@ async def _handle_strudel_request(
             get_rei_toei_dir(create=False),
             limit=REI_CONFIG.recent_title_window,
         )
+        recent_themes = load_recent_rei_themes(
+            get_rei_toei_dir(create=False),
+            limit=REI_CONFIG.recent_title_window,
+        )
         theme = choose_diverse_theme(
             themes,
-            recent_theme_names=recent_titles,
+            recent_theme_names=recent_themes,
             repeat_penalty=REI_CONFIG.theme_repeat_penalty,
             jitter_ratio=REI_CONFIG.theme_jitter_ratio,
         )
@@ -505,6 +510,10 @@ async def _handle_suno_request(
             get_rei_toei_dir(create=False),
             limit=REI_CONFIG.recent_title_window,
         )
+        recent_themes = load_recent_rei_themes(
+            get_rei_toei_dir(create=False),
+            limit=REI_CONFIG.recent_title_window,
+        )
 
         if user_topic:
             logger.info("Using user-directed song topic: %s", user_topic[:120])
@@ -551,7 +560,7 @@ async def _handle_suno_request(
                 )]
             theme = choose_diverse_theme(
                 themes,
-                recent_theme_names=recent_titles,
+                recent_theme_names=recent_themes,
                 repeat_penalty=REI_CONFIG.theme_repeat_penalty,
                 jitter_ratio=REI_CONFIG.theme_jitter_ratio,
             )

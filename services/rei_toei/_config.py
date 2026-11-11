@@ -67,14 +67,14 @@ class ReiToeiConfig:
         )
 
         # Theme diversity and title uniqueness tuning
-        self.theme_pool_size = max(1, int(os.getenv("REI_TOEI_THEME_POOL_SIZE", "20")))
-        self.recent_title_window = max(1, int(os.getenv("REI_TOEI_RECENT_TITLE_WINDOW", "20")))
+        self.theme_pool_size = max(1, int(os.getenv("REI_TOEI_THEME_POOL_SIZE", "50")))
+        self.recent_title_window = max(1, int(os.getenv("REI_TOEI_RECENT_TITLE_WINDOW", "100")))
 
-        repeat_penalty = float(os.getenv("REI_TOEI_THEME_REPEAT_PENALTY", "0.10"))
+        repeat_penalty = float(os.getenv("REI_TOEI_THEME_REPEAT_PENALTY", "0.05"))
         # Clamp to [0.01, 1.0] where lower values penalize repeats more strongly.
         self.theme_repeat_penalty = max(0.01, min(1.0, repeat_penalty))
 
-        jitter_ratio = float(os.getenv("REI_TOEI_THEME_JITTER_RATIO", "0.10"))
+        jitter_ratio = float(os.getenv("REI_TOEI_THEME_JITTER_RATIO", "0.30"))
         # Clamp to [0.0, 0.5] to avoid unstable weight swings.
         self.theme_jitter_ratio = max(0.0, min(0.5, jitter_ratio))
         

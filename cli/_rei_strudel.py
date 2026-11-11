@@ -27,6 +27,7 @@ async def handle_rei_generate_strudel(args, ai, rei_config: ReiToeiConfig) -> No
         extract_themes,
         choose_diverse_theme,
         load_recent_rei_titles,
+        load_recent_rei_themes,
         map_concept_to_pattern,
         generate_strudel_code,
         validate_strudel_syntax,
@@ -68,9 +69,13 @@ async def handle_rei_generate_strudel(args, ai, rei_config: ReiToeiConfig) -> No
             get_rei_toei_dir(create=False),
             limit=rei_config.recent_title_window,
         )
+        recent_themes = load_recent_rei_themes(
+            get_rei_toei_dir(create=False),
+            limit=rei_config.recent_title_window,
+        )
         theme = choose_diverse_theme(
             themes,
-            recent_theme_names=recent_titles,
+            recent_theme_names=recent_themes,
             repeat_penalty=rei_config.theme_repeat_penalty,
             jitter_ratio=rei_config.theme_jitter_ratio,
         )

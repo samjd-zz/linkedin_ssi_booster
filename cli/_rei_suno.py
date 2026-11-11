@@ -32,6 +32,7 @@ async def handle_rei_generate(args, ai, rei_config: ReiToeiConfig) -> None:
         extract_themes,
         choose_diverse_theme,
         load_recent_rei_titles,
+        load_recent_rei_themes,
         record_rei_title,
         generate_song_concept,
         compose_lyrics,
@@ -59,6 +60,10 @@ async def handle_rei_generate(args, ai, rei_config: ReiToeiConfig) -> None:
             get_rei_toei_dir(create=False),
             limit=rei_config.recent_title_window,
         )
+        recent_themes = load_recent_rei_themes(
+            get_rei_toei_dir(create=False),
+            limit=rei_config.recent_title_window,
+        )
 
     if args.rei_theme:
         theme = Theme(
@@ -82,7 +87,7 @@ async def handle_rei_generate(args, ai, rei_config: ReiToeiConfig) -> None:
             return
         theme = choose_diverse_theme(
             themes,
-            recent_theme_names=recent_titles,
+            recent_theme_names=recent_themes,
             repeat_penalty=rei_config.theme_repeat_penalty,
             jitter_ratio=rei_config.theme_jitter_ratio,
         )
@@ -175,6 +180,7 @@ async def handle_rei_generate(args, ai, rei_config: ReiToeiConfig) -> None:
             {
                 "song_id": suno_prompt.song_id,
                 "title": suno_prompt.title,
+                "theme": concept.theme,
                 "suno_prompt": suno_prompt.suno_prompt,
                 "lyrics": suno_prompt.lyrics,
                 "evidence_ids": suno_prompt.evidence_ids,

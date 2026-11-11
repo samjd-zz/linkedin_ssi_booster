@@ -209,15 +209,19 @@ def test_config_defaults(monkeypatch):
     monkeypatch.delenv("REI_TOEI_DEFAULT_GENRE", raising=False)
     monkeypatch.delenv("REI_TOEI_ENABLED", raising=False)
     monkeypatch.delenv("REI_TOEI_DEFAULT_BPM", raising=False)
+    monkeypatch.delenv("REI_TOEI_THEME_POOL_SIZE", raising=False)
+    monkeypatch.delenv("REI_TOEI_RECENT_TITLE_WINDOW", raising=False)
+    monkeypatch.delenv("REI_TOEI_THEME_REPEAT_PENALTY", raising=False)
+    monkeypatch.delenv("REI_TOEI_THEME_JITTER_RATIO", raising=False)
     config = ReiToeiConfig()
     assert config.enabled is True
     assert config.default_bpm == 142
     assert config.default_genre == "industrial techno, cyberpop, ai vocaloid"
     assert config.strudel_default_bars == 16
-    assert config.theme_pool_size == 20
-    assert config.recent_title_window == 20
-    assert config.theme_repeat_penalty == 0.10
-    assert config.theme_jitter_ratio == 0.10
+    assert config.theme_pool_size == 50
+    assert config.recent_title_window == 100
+    assert config.theme_repeat_penalty == 0.05
+    assert config.theme_jitter_ratio == 0.30
 
 
 def test_config_from_env(mock_env_vars):
@@ -860,6 +864,27 @@ def test_choose_diverse_theme_penalizes_recent_repeats():
     hot_count = picks.count("Hot Theme")
     fresh_count = picks.count("Fresh Theme")
     assert fresh_count > hot_count
+
+
+def test_choose_diverse_theme_excludes_recent_theme_when_fresh_alternatives_exist():
+    themes = [
+        Theme(
+            id="theme_recent", name="Hot Theme", technical_concepts=["hot"],
+            evidence_ids=[], frequency=100, recency_score=1.0,
+        ),
+        Theme(
+            id="theme_fresh", name="Fresh Theme", technical_concepts=["fresh"],
+            evidence_ids=[], frequency=1, recency_score=0.1,
+        ),
+    ]
+
+    for _ in range(20):
+        assert choose_diverse_theme(
+            themes,
+            recent_theme_names=["hot-theme"],
+            repeat_penalty=0.05,
+            jitter_ratio=0.3,
+        ).name == "Fresh Theme"
 
 
 def test_ensure_unique_rei_title_adds_suffix_on_collision():

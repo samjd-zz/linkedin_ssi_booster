@@ -320,6 +320,7 @@ class TestSunoRequestRouting:
             patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
             patch("services.console_grounding._rei_console.extract_themes", return_value=[fake_theme]),
             patch("services.console_grounding._rei_console.load_recent_rei_titles", return_value=[]),
+            patch("services.console_grounding._rei_console.load_recent_rei_themes", return_value=[]),
             patch("services.console_grounding._rei_console.choose_diverse_theme") as mock_choose,
             patch("services.console_grounding._rei_console.generate_song_concept", return_value=fake_concept) as mock_gen,
             patch("services.console_grounding._rei_console.compose_lyrics", return_value=fake_lyrics),
@@ -362,6 +363,7 @@ class TestSunoRequestRouting:
             patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
             patch("services.console_grounding._rei_console.extract_themes", return_value=[MagicMock()]),
             patch("services.console_grounding._rei_console.load_recent_rei_titles", return_value=[]),
+            patch("services.console_grounding._rei_console.load_recent_rei_themes", return_value=["Recent Theme"]),
             patch("services.console_grounding._rei_console.choose_diverse_theme", return_value=chosen_theme) as mock_choose,
             patch("services.console_grounding._rei_console.generate_song_concept", return_value=fake_concept) as mock_gen,
             patch("services.console_grounding._rei_console.compose_lyrics", return_value=fake_lyrics),
@@ -378,6 +380,7 @@ class TestSunoRequestRouting:
             )
 
         mock_choose.assert_called_once()
+        assert mock_choose.call_args.kwargs["recent_theme_names"] == ["Recent Theme"]
         assert mock_gen.call_args[0][0] is chosen_theme
 
     def test_suno_retry_reuses_last_explicit_topic(self):
@@ -400,6 +403,7 @@ class TestSunoRequestRouting:
             patch("services.console_grounding._rei_console._normalize_extracted_rei", return_value=fake_facts),
             patch("services.console_grounding._rei_console.extract_themes", return_value=[fake_theme]),
             patch("services.console_grounding._rei_console.load_recent_rei_titles", return_value=[]),
+            patch("services.console_grounding._rei_console.load_recent_rei_themes", return_value=[]),
             patch("services.console_grounding._rei_console.choose_diverse_theme") as mock_choose,
             patch("services.console_grounding._rei_console.generate_song_concept", return_value=fake_concept) as mock_gen,
             patch("services.console_grounding._rei_console.compose_lyrics", return_value=fake_lyrics),

@@ -3,7 +3,11 @@
 import json
 from pathlib import Path
 
-from services.rei_toei import load_recent_rei_titles, record_rei_title
+from services.rei_toei import (
+    load_recent_rei_themes,
+    load_recent_rei_titles,
+    record_rei_title,
+)
 from services.rei_toei import _suno_themes
 
 
@@ -26,6 +30,32 @@ def test_history_merges_with_saved_songs_without_duplicates(tmp_path: Path) -> N
 
     assert titles[0] == "Neural Net Nexus"
     assert set(titles) == {"Neural Net Nexus", "Saved Song"}
+
+
+def test_recent_themes_load_newest_first_and_merge_saved_artifacts(tmp_path: Path) -> None:
+    record_rei_title(tmp_path, "Neural Net Nexus", "neural networks")
+    record_rei_title(tmp_path, "Async Signals", "Async Systems")
+    (tmp_path / "rei_1_saved_suno.json").write_text(
+        json.dumps({"title": "Older Song", "theme": "Distributed systems"})
+    )
+    (tmp_path / "rei_2_duplicate_suno.json").write_text(
+        json.dumps({"title": "Older Duplicate", "theme": "ASYNC SYSTEMS"})
+    )
+
+    assert load_recent_rei_themes(tmp_path) == [
+        "Async Systems", "neural networks", "Distributed systems",
+    ]
+
+
+def test_recent_themes_respect_limit_and_ignore_malformed_history(
+    tmp_path: Path,
+) -> None:
+    record_rei_title(tmp_path, "First Song", "First Theme")
+    record_rei_title(tmp_path, "Second Song", "Second Theme")
+    with (tmp_path / _suno_themes.REI_TITLE_HISTORY_FILE).open("a", encoding="utf-8") as handle:
+        handle.write("not json\n")
+
+    assert load_recent_rei_themes(tmp_path, limit=1) == ["Second Theme"]
 
 
 def test_limit_and_malformed_lines_are_handled(tmp_path: Path) -> None:

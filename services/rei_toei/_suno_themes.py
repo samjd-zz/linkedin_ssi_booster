@@ -124,6 +124,50 @@ def load_recent_rei_titles(output_dir: Path, limit: int = 20) -> List[str]:
     return titles
 
 
+def load_recent_rei_themes(output_dir: Path, limit: int = 20) -> List[str]:
+    """Load recently used theme names from history and saved Suno artifacts."""
+    if limit <= 0 or not output_dir.exists():
+        return []
+
+    themes: List[str] = []
+    seen: set[str] = set()
+
+    def _add(theme: str) -> None:
+        cleaned = " ".join(theme.split()).strip()
+        key = _normalize_title(cleaned)
+        if cleaned and key and key not in seen:
+            seen.add(key)
+            themes.append(cleaned)
+
+    history_path = output_dir / REI_TITLE_HISTORY_FILE
+    try:
+        lines = history_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
+    for line in reversed(lines):
+        try:
+            theme = str(json.loads(line).get("theme", "")).strip()
+        except (json.JSONDecodeError, AttributeError):
+            continue
+        if theme:
+            _add(theme)
+            if len(themes) >= limit:
+                return themes
+
+    for path in sorted(output_dir.glob("*_suno.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        if len(themes) >= limit:
+            break
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                payload = json.load(f)
+            theme = str(payload.get("theme", "")).strip()
+            if theme:
+                _add(theme)
+        except (OSError, json.JSONDecodeError, TypeError, AttributeError):
+            continue
+    return themes
+
+
 def ensure_unique_rei_title(title: str, recent_titles: Optional[List[str]] = None) -> str:
     """Ensure generated title is unique versus recent Rei titles."""
     cleaned_title = " ".join(title.split()).strip() or "Untitled Protocol"
@@ -178,22 +222,29 @@ def choose_diverse_theme(
     if not themes:
         raise ValueError("themes must not be empty")
 
-    recent_set = {t.strip().lower() for t in (recent_theme_names or []) if t and t.strip()}
+    recent_set = {_normalize_title(t) for t in (recent_theme_names or []) if t and t.strip()}
+    fresh_themes = [
+        theme for theme in themes
+        if _normalize_title(theme.name) not in recent_set
+    ]
+    candidates = fresh_themes or themes
+    if fresh_themes and len(fresh_themes) < len(themes):
+        logger.debug("Excluded %d recently selected themes", len(themes) - len(fresh_themes))
 
     clamped_penalty = max(0.01, min(1.0, repeat_penalty))
     clamped_jitter = max(0.0, min(0.5, jitter_ratio))
 
     weights: List[float] = []
-    for theme in themes:
+    for theme in candidates:
         base = max(0.05, float(theme.frequency) * float(theme.recency_score))
-        if theme.name.strip().lower() in recent_set:
+        if _normalize_title(theme.name) in recent_set:
             base *= clamped_penalty
         # Add subtle jitter so ties do not repeatedly collapse to the same candidate.
         if clamped_jitter > 0:
             base *= random.uniform(1.0 - clamped_jitter, 1.0 + clamped_jitter)
         weights.append(max(base, 0.01))
 
-    return random.choices(themes, weights=weights, k=1)[0]
+    return random.choices(candidates, weights=weights, k=1)[0]
 
 
 def extract_themes(

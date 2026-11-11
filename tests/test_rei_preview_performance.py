@@ -15,6 +15,7 @@ import services.avatar_intelligence as avatar
 import services.rei_toei_service as rei
 from services.rei_toei import Theme
 from services.rei_toei._models import LyricCompositionError
+from services.rei_toei._suno_themes import load_recent_rei_themes
 
 
 @pytest.fixture
@@ -35,6 +36,8 @@ def preview(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> SimpleNamespace:
         evidence_ids=[],
     )
     history = Mock(return_value=["Earlier song"])
+    theme_history = Mock(return_value=["Earlier theme"])
+    choose_theme = Mock(return_value=theme)
     load_state = Mock(return_value=object())
     normalize = Mock(return_value=[])
     generate = Mock(return_value=concept)
@@ -51,8 +54,9 @@ def preview(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> SimpleNamespace:
     monkeypatch.setattr(rei, "load_rei_persona", Mock())
     monkeypatch.setattr(rei, "load_rei_domain_knowledge", Mock())
     monkeypatch.setattr(rei, "load_recent_rei_titles", history)
+    monkeypatch.setattr(rei, "load_recent_rei_themes", theme_history)
     monkeypatch.setattr(rei, "extract_themes", Mock(return_value=[theme]))
-    monkeypatch.setattr(rei, "choose_diverse_theme", Mock(return_value=theme))
+    monkeypatch.setattr(rei, "choose_diverse_theme", choose_theme)
     monkeypatch.setattr(rei, "generate_song_concept", generate)
     monkeypatch.setattr(rei, "compose_lyrics", compose)
     monkeypatch.setattr(rei, "assemble_suno_prompt", Mock(return_value=prompt))
@@ -60,6 +64,7 @@ def preview(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> SimpleNamespace:
     monkeypatch.setattr(rei, "validate_lyrics_with_dot", validate)
     return SimpleNamespace(
         ai=ai, constructor=constructor, github=github, history=history,
+        theme_history=theme_history, choose_theme=choose_theme,
         load_state=load_state, normalize=normalize, generate=generate,
         compose=compose, submit=submit, validate=validate, output_dir=tmp_path,
     )
@@ -92,6 +97,7 @@ def test_explicit_preview_skips_unused_preparation(
     assert preview.generate.call_args.args[4] is preview.ai
     assert preview.compose.call_args.args[4] is preview.ai
     preview.history.assert_called_once()
+    preview.theme_history.assert_called_once()
     preview.submit.assert_not_called()
     preview.validate.assert_not_called()
     assert not list(preview.output_dir.glob("*_suno.json"))
@@ -110,8 +116,32 @@ def test_automatic_preview_loads_knowledge_and_history_once(
     preview.load_state.assert_called_once()
     preview.normalize.assert_called_once()
     preview.history.assert_called_once()
+    preview.theme_history.assert_called_once()
+    assert preview.choose_theme.call_args.kwargs["recent_theme_names"] == ["Earlier theme"]
     preview.submit.assert_not_called()
     assert preview.generate.call_args.args[5] == ["Earlier song"]
+
+
+def test_automatic_preview_theme_is_avoided_by_the_next_preview(
+    preview: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["main.py", "--rei-generate", "--rei-preview"])
+
+    main.main()
+    capsys.readouterr()
+
+    assert load_recent_rei_themes(preview.output_dir) == ["Async"]
+
+    preview.theme_history.reset_mock()
+    preview.theme_history.side_effect = lambda *_args, **_kwargs: load_recent_rei_themes(
+        preview.output_dir
+    )
+    preview.choose_theme.reset_mock()
+    main.main()
+    capsys.readouterr()
+
+    assert preview.choose_theme.call_args.kwargs["recent_theme_names"] == ["Async"]
+    assert not list(preview.output_dir.glob("*_suno.json"))
 
 
 @pytest.mark.parametrize("preview_mode", [True, False])

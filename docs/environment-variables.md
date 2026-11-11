@@ -87,48 +87,48 @@ OLLAMA_NUM_CTX=32768
 
 Number of extracted theme candidates considered before weighted selection.
 
-Higher values increase variety; lower values keep selection focused on the strongest themes.
+Higher values increase variety; recently used themes are temporarily excluded whenever fresh candidates are available.
 
-**Default:** `20`
+**Default:** `50`
 
 ```bash
-REI_TOEI_THEME_POOL_SIZE=20
+REI_TOEI_THEME_POOL_SIZE=50
 ```
 
 ### `REI_TOEI_RECENT_TITLE_WINDOW`
 
-How many recent Rei Suno artifacts are scanned to avoid repeating title patterns.
+How many recent Rei Suno generations are scanned for title uniqueness and theme cooldown. Previously selected themes are skipped while fresh candidates remain.
 
-**Default:** `20`
+**Default:** `100`
 
 ```bash
-REI_TOEI_RECENT_TITLE_WINDOW=20
+REI_TOEI_RECENT_TITLE_WINDOW=100
 ```
 
 ### `REI_TOEI_THEME_REPEAT_PENALTY`
 
-Penalty multiplier applied when a selected theme matches recent title history.
+Fallback penalty multiplier when all available themes are in the recent-theme window.
 
-**Default:** `0.10`
+**Default:** `0.05`
 
 **Range:** `0.01` (strong anti-repeat) to `1.0` (no penalty)
 
 ```bash
-REI_TOEI_THEME_REPEAT_PENALTY=0.10
+REI_TOEI_THEME_REPEAT_PENALTY=0.05
 ```
 
 ### `REI_TOEI_THEME_JITTER_RATIO`
 
 Random jitter ratio applied to weighted theme scores before final selection.
 
-Increases randomness among similarly scored themes.
+Increases randomness among similarly scored fresh themes.
 
-**Default:** `0.10`
+**Default:** `0.30`
 
 **Range:** `0.0` (deterministic weights) to `0.5` (high variance)
 
 ```bash
-REI_TOEI_THEME_JITTER_RATIO=0.10
+REI_TOEI_THEME_JITTER_RATIO=0.30
 ```
 
 ---
