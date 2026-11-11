@@ -77,6 +77,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
   <a href="https://buffer.com/"><img src="https://img.shields.io/badge/Buffer-MCP-14B8A6.svg?logo=buffer&logoColor=white" alt="Buffer MCP"></a>
   <a href="https://github.com/williamzujkowski/live-coding-music-mcp"><img src="https://img.shields.io/badge/Strudel-MCP-7C3AED.svg" alt="Strudel MCP"></a>
   <a href="https://suno.com/"><img src="https://img.shields.io/badge/Suno-AI%20Music-0F172A.svg" alt="Suno"></a>
+  <a href="https://lounge.ai/@samjd-zz"><img src="https://lounge.ai/api/badge/samjd-zz" alt="Shawn Jackson Dyck on AI Lounge" height="28"></a>
   <a href="https://katzilla.dev/"><img src="https://img.shields.io/badge/Katzilla.dev-USGov%20Data-0057B8.svg" alt="Katzilla.dev"></a>
 </p>
 
