@@ -71,18 +71,21 @@ class FeedbackService:
             if not feedback or rec.get("selected") is not None:
                 continue
 
+            applied = False
             if upvote_as_selected and feedback.get("upvote") is True:
                 rec["selected"] = True
                 rec["selected_at"] = datetime.now(timezone.utc).isoformat()
-                updated += 1
+                applied = True
             elif downvote_as_rejected and feedback.get("downvote") is True:
                 rec["selected"] = False
                 rec["selected_at"] = datetime.now(timezone.utc).isoformat()
-                updated += 1
+                applied = True
 
             if "override" in feedback:
                 rec["selected"] = feedback["override"]
                 rec["selected_at"] = datetime.now(timezone.utc).isoformat()
+
+            if applied or "override" in feedback:
                 updated += 1
 
         if updated > 0:
