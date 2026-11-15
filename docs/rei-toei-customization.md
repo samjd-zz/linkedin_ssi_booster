@@ -223,6 +223,8 @@ Domain knowledge defines what Rei knows about music theory, genre conventions, a
 
 ### Suno Best Practices
 
+The pipeline preserves model lyric line breaks: a trailing comma is not permission to merge adjacent lines. English-first bilingual translation selects and translates original lines individually, retaining their English phrasing through final assembly. Existing section, cue, and pronunciation cleanup still applies; already-single-line comma phrases are not split.
+
 `suno_best_practices` is scoped to the `V6_MINI` model selected by default through the SunoAPI.org proxy. Suno's official v6 FAQ explicitly includes v6-mini in the model family and says all three v6 models understand musical structure and other prompt concepts; Suno also documents the 8-minute generation limit across v6, v6-wild, and v6-mini. The API proxy documents the `V6_MINI` model identifier and its style, lyric, negative-tag, and title limits. Proxy limits are not official Suno help-center claims.
 
 Bracket syntax, whether stage directions are sung, parentheses for vocalizations, and Japanese lyric behavior are not documented by Suno specifically for v6-mini. Those rules are clearly marked as community/empirical conventions, not guaranteed model behavior. Only `prompt_rules` reaches the lyric-writing model. Up to 8 rules are added to the structured prompt under "Suno v6-mini lyric-formatting practices"; rules mentioning Japanese, Romaji, kana, or kanji are sent only when that model writes Japanese or bilingual lyrics. English-first translate mode skips them. The rest of the section is reference material. Edit `prompt_rules` to change the instructions.
