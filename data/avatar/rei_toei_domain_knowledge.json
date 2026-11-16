@@ -523,7 +523,7 @@
       "profiles": {
         "cyberpop": {
           "style": {
-            "genre_tags": ["industrial techno", "cyberpop", "ai vocaloid", "Chiptune Melody"], "template": "cyberpunk_electro_template",
+            "genre_tags": ["industrial techno", "cyberpop", "ai vocaloid"], "template": "cyberpunk_electro_template",
             "bpm": {"min": 130, "max": 170, "default": 142},
             "arrangement": "Catchy electronic hooks, glitch textures and a high-energy bass climax",
             "quality": {"min_chorus_lines": 2, "min_bridge_lines": 4, "max_borrowed_lines": 1, "verse_repeat_threshold": 0.5, "uppercase_chorus": true, "remove_bridge_echoes": true}

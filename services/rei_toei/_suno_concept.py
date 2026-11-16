@@ -57,6 +57,12 @@ def generate_song_concept(
     expertise_genres = list(style.genre_tags) or persona.musical_expertise.get("genres", [])[:5]
     musical_brief = style.arrangement or "high-energy electronic music"
     production_brief = style.arrangement or ", ".join(persona.production_knowledge.get("production_techniques", [])[:5])
+    optional_tag_guidance = ""
+    if "cyberpop" in {tag.casefold() for tag in style.genre_tags}:
+        optional_tag_guidance = (
+            "\nFor a playful_technical mood, consider adding 'Chiptune Melody' as an optional "
+            "genre tag when it fits the concept; do not include it by default."
+        )
     lyric_language = resolve_lyric_language(
         lyric_config.lyric_language,
         lyric_config.japanese_lyric_probability,
@@ -163,6 +169,7 @@ Output a JSON object with these fields (output ONLY valid JSON, no markdown):
 }}
 
 Be specific to the theme. Use concrete imagery. {musical_brief if style.genre_tags else 'Think cyberpop: catchy hooks, glitchy-cute energy, futuristic charm.'}
+{optional_tag_guidance}
 The arc must move forward: the second half of the song should show consequences or discoveries that the first half could not."""
     
     # Call Ollama LLM with JSON format to ensure structured output

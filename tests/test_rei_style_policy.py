@@ -113,16 +113,22 @@ def test_concept_uses_profile_tags_and_merges_distinct_model_tags(
     assert "environment-only-genre" not in generated.genre_tags
     if name == "cyberpop":
         assert generated.genre_tags == [
-            "industrial techno", "cyberpop", "ai vocaloid", "Chiptune Melody", "glitch technology",
+            "industrial techno", "cyberpop", "ai vocaloid", "glitch technology",
         ]
     assert style.bpm_range is not None
     assert generated.bpm == style.bpm_range[1]
     system, user = ollama._chat.call_args.args[:2]
     assert style.arrangement in system
     assert ", ".join(style.genre_tags) in user
+    if name == "cyberpop":
+        assert "playful_technical" in user
+        assert "Chiptune Melody" in user
+        assert "do not include it by default" in user
+        assert "Chiptune Melody" not in generated.genre_tags
     if name != "cyberpop":
         assert "environment-only-genre" not in user
         assert "Think cyberpop" not in user
+        assert "Chiptune Melody" not in user
 
 
 def test_profile_tag_merge_drops_fragments_and_is_idempotent(
@@ -137,7 +143,7 @@ def test_profile_tag_merge_drops_fragments_and_is_idempotent(
 
     apply_song_style(concept, style)
     expected = [
-        "industrial techno", "cyberpop", "ai vocaloid", "Chiptune Melody", "glitch technology",
+        "industrial techno", "cyberpop", "ai vocaloid", "glitch technology",
     ]
     assert concept.genre_tags == expected
 

@@ -154,6 +154,9 @@ Add `style` inside a profile to make that profile the musical authority:
 
 - `genre_tags` and `template` override conflicting model output and
   `REI_TOEI_DEFAULT_GENRE`. The template must exist in `suno_prompt_templates`.
+  Cyberpop keeps `Chiptune Melody` optional; Rei is prompted to consider it when
+  the concept mood is `playful_technical`, rather than having it forced into
+  every cyberpop tag list.
 - `bpm` bounds the initial concept tempo, not the finished performance. Lyric
   density may raise BPM above the style range; lyrics are not truncated to fit.
   `density` overrides the global `bpm_and_mood.lyric_density_to_bpm` calibration.
