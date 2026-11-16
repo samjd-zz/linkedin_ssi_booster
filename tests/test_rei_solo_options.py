@@ -25,6 +25,7 @@ SOLO_OPTIONS = (
     "Melodic Synth Solo",
     "Arpeggiated Synth Solo",
     "Glitch Synth Solo",
+    "Chiptune Melody Solo",
     "Industrial Percussion Solo",
     "Modulated Bass Solo",
 )

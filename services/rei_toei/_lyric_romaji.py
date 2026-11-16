@@ -49,7 +49,7 @@ _STAGE_CUE_RE = re.compile(
     r"solo|breakdown|outro|intro|"
     r"(?!(?:i|we|you|he|she|they|it|my|our|your|his|her|their)\b)"
     r"(?:[a-z0-9][a-z0-9'/-]*\s+)*"
-    r"(?:guitar|drums?|synth|synthesizer|percussion|bass|instrumental|"
+    r"(?:guitar|drums?|synth|synthesizer|percussion|bass|melody|instrumental|"
     r"theremin|piano|keyboard|keytar|sax(?:ophone)?|flute|violin|cello|strings?)\s+solo|"
     r"(?:ah+|oh+)(?:[\s,]+(?:ah+|oh+))*)$",
     re.IGNORECASE,
