@@ -18,12 +18,12 @@ import pytest
 
 from services.console_grounding import (
     ProjectFact,
-    TruthGateMeta,
     _build_evidence_paths_for_sentence,
     _compute_fact_overlap,
     _extract_spacy_orgs,
     truth_gate_result,
 )
+from services.console_grounding._models import TruthGateMeta
 
 
 # ---------------------------------------------------------------------------
@@ -255,6 +255,14 @@ class TestExtractSpacyOrgs:
         )
         assert result == []
 
+    def test_skips_spring_ai_decision_models_feature(self) -> None:
+        """Spring AI's DecisionModels feature is not an organization."""
+        result = _extract_spacy_orgs(
+            "New Spring AI 2.1.0-RC2 adds DecisionModels for structured decisions.",
+            self._make_org_mock("DecisionModels"),
+        )
+        assert result == []
+
     def test_real_org_still_extracted(self) -> None:
         """A real org name (e.g. 'Accenture') should still be returned."""
         result = _extract_spacy_orgs(
@@ -390,7 +398,7 @@ class TestPerSentenceDoTScoring:
         )
         text = (
             "But I'd argue that what really sets apart successful projects like "
-            "S1GNAL.ZERO or Regulatory Intelligence Assistant is not just the tech "
+            "S1GNAL-ZERO or Regulatory Intelligence Assistant is not just the tech "
             "stack, but the way they're used to drive business value."
         )
 

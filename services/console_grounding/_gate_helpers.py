@@ -340,6 +340,7 @@ _CONCEPT_ABBREVS: frozenset[str] = frozenset({
     "GraphQL", "OpenAPI", "Swagger", "YAML", "JSON", "XML", "CSV",
     # Compound tech qualifiers (appear as part of multi-word ORG entities)
     "Q&A",
+    "DecisionModels",
 })
 
 # Programming-language / platform names that, when followed by a version number,
