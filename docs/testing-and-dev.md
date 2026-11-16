@@ -416,7 +416,7 @@ Validated noise reduction boundaries include:
 - **Jaccard Overlap Processing:** Measures token-level overlap patterns across active facts to successfully fuel the 4-term DoT equation.
 - **Vector Model Validation:** Enforces minimum semantic constraints via `TRUTH_GATE_SPACY_SIM_FLOOR` (default `0.10`). Standardizes the runtime pipeline on the `en_core_web_md` medium vector model, systematically erasing legacy W007 missing-word-vector warnings.
 - **Entity False-Positive Hardening:** Employs advanced spaCy Named Entity Recognition (`NER`) to handle organizational filtering. Queries project schemas directly at gate runtime via `get_project_names_from_avatar_state()`, stopping baseline developer components (`S3`, `Java 21`, `AI Q&A`) from being flagged as ungrounded external organizations.
-- **Multi-Project Collisions:** Uses contextual boundary rules inside `_check_project_claim` to ensure shared context sentences co-mentioning separate internal platforms do not cause cross-contamination false failures.
+- **Multi-Project Collisions:** 57 cases in `tests/test_truth_gate_dot.py` include project-claim regressions for sentences mentioning multiple projects and merging persona project evidence with retrieved facts, preserving supported technologies while rejecting unsupported ones.
 
 ---
 

@@ -168,10 +168,12 @@ def _build_project_tech_map(
 ) -> dict[str, str]:
     """Map each project name (lowercased) to its concatenated evidence text."""
     article_lower = article_text.lower()
-    return {
-        fact.project.lower(): f"{fact.project} {fact.details}".lower() + " " + article_lower
-        for fact in facts
-    }
+    project_map: dict[str, str] = {}
+    for fact in facts:
+        name = fact.project.lower()
+        evidence = f"{fact.project} {fact.details}".lower()
+        project_map[name] = f"{project_map.get(name, article_lower)} {evidence}"
+    return project_map
 
 
 def _check_project_claim(

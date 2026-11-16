@@ -33,6 +33,8 @@ The truth gate evaluates sentences independently and removes only those that con
 
 2. **Strict Token Matching (Complementary)** — Validates specific claim types using exact token matching: numeric claims, year references, dollar amounts, company-style context patterns, and project-technology misattributions. These checks complement BM25 by catching exact numeric or organizational mismatches that might otherwise slip through.
 
+Project-technology checks combine retrieved evidence with all available persona project details, merging entries for the same project. Other truth-gate checks still use their existing evidence and thresholds.
+
 The BM25 threshold can be tuned via `TRUTH_GATE_BM25_THRESHOLD` in `.env` (0.5 = permissive, 1.0 = balanced, 2.0 = strict, 5.0 = very strict). The gate does not rewrite text, and it is intentionally conservative rather than acting as a full external fact-checker. The documentation also notes support for an `--interactive` mode that pauses on flagged sentences for manual approval.
 
 ### Deterministic Grounding & Truth Gate Flow

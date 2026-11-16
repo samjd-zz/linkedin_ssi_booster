@@ -173,7 +173,7 @@ def truth_gate_result(
     allowed = _build_allowed_tokens(article_text, all_facts + all_persona_facts)
     known_project_names = get_project_names_from_avatar_state()
     tech_keywords = get_console_grounding_keywords()
-    project_map = _build_project_tech_map(all_facts, article_text)
+    project_map = _build_project_tech_map(all_facts + all_persona_facts, article_text)
     sentences = _SENTENCE_SPLIT_RE.split(text)
     kept: list[str] = []
     removed: list[tuple[str, str]] = []

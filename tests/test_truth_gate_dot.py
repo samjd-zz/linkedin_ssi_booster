@@ -912,6 +912,51 @@ class TestCheckProjectClaimMultiProject:
     multiple projects and a tech keyword legitimately belongs to one of them.
     """
 
+    def test_project_evidence_is_merged_for_duplicate_names(self) -> None:
+        from services.console_grounding._gate_helpers import _build_project_tech_map, _check_project_claim
+
+        supported = make_fact(project="LinkedIn SSI Booster", details="BM25 and hybrid retrieval")
+        incomplete = make_fact(project="LinkedIn SSI Booster", details="Content curation")
+        sentence = "LinkedIn SSI Booster uses BM25."
+        for facts in ([supported, incomplete], [incomplete, supported]):
+            project_map = _build_project_tech_map(facts, article_text="")
+            assert _check_project_claim(sentence, project_map, {"bm25"}) is None
+            assert _check_project_claim(
+                "LinkedIn SSI Booster uses Kubernetes.", project_map, {"kubernetes"}
+            ) is not None
+
+    @pytest.mark.parametrize(
+        ("technology", "expected_removed"),
+        [("BM25", False), ("Kubernetes", True)],
+    )
+    def test_truth_gate_uses_full_persona_project_evidence(
+        self, technology: str, expected_removed: bool
+    ) -> None:
+        sentence = (
+            f"Back then, working on LinkedIn SSI Booster, we faced similar challenges "
+            f"with {technology} and hybrid retrieval methods."
+        )
+        retrieved = make_fact(project="LinkedIn SSI Booster", details="Content curation")
+        persona = make_fact(project="LinkedIn SSI Booster", details="BM25 and hybrid retrieval")
+        with (
+            patch("services.console_grounding._truth_gate.get_domain_facts_from_avatar_state", return_value=[]),
+            patch("services.console_grounding._truth_gate.get_all_persona_facts_from_avatar_state", return_value=[persona]),
+            patch("services.console_grounding._truth_gate.get_console_grounding_keywords", return_value={technology.lower()}),
+            patch("services.console_grounding._truth_gate._score_sentence_bm25", return_value=10.0),
+            patch("services.spacy_nlp.get_spacy_nlp", return_value=None),
+            patch("services.console_grounding._truth_gate._build_evidence_paths_for_sentence", return_value=[]),
+        ):
+            filtered, meta = truth_gate_result(
+                sentence, "Article about information retrieval.", [retrieved], channel="facebook"
+            )
+
+        if expected_removed:
+            assert filtered == ""
+            assert meta.reason_codes == ["project_claim"]
+        else:
+            assert filtered == sentence
+            assert meta.removed_count == 0
+
     def _project_map(self) -> dict[str, str]:
         from services.console_grounding._gate_helpers import _build_project_tech_map
         from services.console_grounding import ProjectFact
