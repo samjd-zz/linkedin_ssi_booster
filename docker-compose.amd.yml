@@ -1,0 +1,10 @@
+# AMD Vulkan acceleration for Ollama on native Linux (including RX 5700 XT).
+# FLUX remains CUDA-only; this override does not change the app or FLUX runtime.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    devices:
+      - "/dev/dri:/dev/dri"
+    environment:
+      - OLLAMA_VULKAN=1
+      - GGML_VK_VISIBLE_DEVICES=${GGML_VK_VISIBLE_DEVICES:-0}

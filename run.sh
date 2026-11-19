@@ -22,7 +22,18 @@ if [ ! -S "$PULSE_SOCKET" ]; then
     echo "Audio might not work in the container."
 fi
 
-# 3. Auto-detect a usable GPU (NVIDIA or Intel) and layer in the appropriate Compose override
+# 3. Identify native DRM vendors before selecting an Ollama GPU runtime.
+AMD_DETECTED=false
+INTEL_DETECTED=false
+for vendor_file in /sys/class/drm/card*/device/vendor; do
+    [ -r "$vendor_file" ] || continue
+    vendor=$(cat "$vendor_file")
+    case "$vendor" in
+        0x1002) AMD_DETECTED=true ;;
+        0x8086) INTEL_DETECTED=true ;;
+    esac
+done
+
 COMPOSE_FILES=(-f docker-compose.yml)
 if command -v nvidia-smi >/dev/null 2>&1 && docker info 2>/dev/null | grep -qi nvidia; then
     if docker run --pull=never --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi >/dev/null 2>&1; then
@@ -31,7 +42,10 @@ if command -v nvidia-smi >/dev/null 2>&1 && docker info 2>/dev/null | grep -qi n
     else
         echo "⚠️  GPU probe image missing or passthrough test failed — falling back to CPU-only. Cache nvidia/cuda:12.4.1-base-ubuntu22.04 to enable the offline probe."
     fi
-elif [ -d "/dev/dri" ] || [ -e "/dev/dxg" ] || [ "${INTEL_GPU:-false}" = "true" ]; then
+elif [ "$AMD_DETECTED" = "true" ] && [ -d "/dev/dri" ]; then
+    echo "🎮 AMD GPU detected — enabling Vulkan acceleration for Ollama (FLUX remains CUDA-only)."
+    COMPOSE_FILES+=(-f docker-compose.amd.yml)
+elif [ "$INTEL_DETECTED" = "true" ] || [ -e "/dev/dxg" ] || [ "${INTEL_GPU:-false}" = "true" ]; then
     # Intel Iris Xe / Arc / Core Ultra iGPU on native Linux or Windows WSL 2.
     if [ -d "/dev/dri" ]; then
         echo "⚡ Intel GPU detected (/dev/dri) — enabling Intel GPU acceleration for Ollama."
@@ -41,7 +55,7 @@ elif [ -d "/dev/dri" ] || [ -e "/dev/dxg" ] || [ "${INTEL_GPU:-false}" = "true" 
         COMPOSE_FILES+=(-f docker-compose.intel-wsl.yml)
     fi
 else
-    echo "ℹ️  No NVIDIA or Intel GPU detected — running CPU-only."
+    echo "ℹ️  No supported NVIDIA, AMD or Intel GPU detected — running CPU-only."
 fi
 
 # 4. Reuse local images by default; pass Compose's run/up --build to rebuild.

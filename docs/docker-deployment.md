@@ -246,15 +246,50 @@ docker compose --profile full run --rm buffer-mcp-agent python agents/buffer_mcp
 `run.sh` probes for GPU availability in tiered order before every command:
 
 1. **NVIDIA GPUs (Linux / WSL 2):** Checks for `nvidia-smi` + working container GPU passthrough. When detected, it merges `docker-compose.gpu.yml` for Ollama compute (`ollama`, `ollama-init`). The full profile separately assigns NVIDIA acceleration to FLUX.
-2. **Intel GPUs / iGPUs (Iris Xe / Arc / Core Ultra):** Checks for `/dev/dri` (native Linux) or `/dev/dxg` (Windows WSL 2). When detected, it merges `docker-compose.intel.yml` (Linux) or `docker-compose.intel-wsl.yml` (WSL 2) to accelerate Ollama LLM inference via the official `intelanalytics/ipex-llm-inference-cpp-xpu` image over Level Zero / OneAPI (SYCL). Heavy generative image models (FLUX) remain restricted to NVIDIA full profile.
-3. **CPU-only Fallback:** When no GPU runtime is present, runs standard CPU-only without raising device driver errors.
+2. **AMD Radeon (native Linux):** Checks DRM vendor `0x1002` and `/dev/dri`, then merges `docker-compose.amd.yml` for Ollama Vulkan acceleration.
+3. **Intel GPUs / iGPUs (Iris Xe / Arc / Core Ultra):** Checks DRM vendor `0x8086` on native Linux or `/dev/dxg` on Windows WSL 2. It merges `docker-compose.intel.yml` or `docker-compose.intel-wsl.yml` for IPEX-LLM/SYCL. A generic `/dev/dri` directory alone no longer implies Intel hardware.
+4. **CPU-only Fallback:** When no supported GPU is detected, runs standard CPU-only. GPU detection selects a runtime; inspect Ollama logs to confirm actual offloading.
 
 ```bash
-bash run.sh --profile core up -d      # NVIDIA or Intel GPU used automatically if detected, CPU-only otherwise
+bash run.sh --profile core up -d      # NVIDIA, AMD or Intel runtime selected when detected
 ```
 
 `flux-init` and `flux_capacitor` (full profile only) always require an NVIDIA GPU and are not affected by
 this toggle — they keep a hardcoded `nvidia` reservation in `docker-compose.yml`.
+
+### Linux (AMD Radeon Vulkan)
+
+The RX 5700 XT path targets native Ubuntu Linux, including Ubuntu 26.04.1 LTS.
+It uses Ollama's bundled Vulkan backend, not ROCm: the RX 5700 XT is absent from
+[Ollama's supported ROCm list](https://docs.ollama.com/gpu).
+Install the distribution's `amdgpu` kernel driver and Mesa Vulkan userspace.
+On Ubuntu, the userspace packages are `mesa-vulkan-drivers` and `vulkan-tools`:
+
+```bash
+sudo apt update
+sudo apt install mesa-vulkan-drivers vulkan-tools
+vulkaninfo --summary
+bash run.sh --profile core pull ollama
+bash run.sh --profile core up -d ollama
+bash run.sh --profile core logs --tail 100 ollama
+```
+
+Confirm `vulkaninfo` lists the Radeon, not only a software renderer. After running
+a Rei or curator request, use `bash run.sh --profile core exec ollama ollama ps`
+to check the `PROCESSOR` column and inspect logs for Vulkan/GPU layer offloading.
+The host driver and container Vulkan runtime must both recognize the card;
+configuration validation alone cannot certify Ubuntu or physical GPU support.
+
+The override exposes `/dev/dri` only to Ollama; no privileged container, CUDA,
+ROCm target spoofing, or app changes are required. The model initializer remains
+an ordinary API client. All Ollama consumers benefit, including Rei concepts and
+lyrics and Sam console/curation. FLUX stays NVIDIA CUDA-only.
+
+On multi-GPU systems, select the Radeon Vulkan index from the Ollama logs with
+`GGML_VK_VISIBLE_DEVICES=1 bash run.sh --profile core up -d ollama` (default `0`).
+Use `core` on AMD-only hosts; `full` still requests NVIDIA devices for FLUX.
+The RX 5700 XT's 8 GB VRAM may require smaller quantized models or partial CPU
+offloading, especially with long context windows.
 
 ### Linux (NVIDIA)
 

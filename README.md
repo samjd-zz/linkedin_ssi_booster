@@ -425,11 +425,12 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 
 Run the stack with Docker Profiles: `core` provides Ollama + the SSI Booster app, while `full` adds Piper TTS, FLUX image generation, and MCP agents for Buffer and Strudel.
 
-Use `run.sh` as the main launcher. It auto-detects GPU availability (NVIDIA CUDA, or Intel Iris Xe/Arc via the official
+Use `run.sh` as the main launcher. It auto-detects GPU availability (NVIDIA CUDA, AMD Radeon Vulkan on native Linux, or Intel Iris Xe/Arc via the official
 `intelanalytics/ipex-llm-inference-cpp-xpu` image over Level Zero, on native Linux & Windows WSL 2)
-and layers in the appropriate Compose override (`docker-compose.gpu.yml`, `docker-compose.intel.yml`,
+and layers in the appropriate Compose override (`docker-compose.gpu.yml`, `docker-compose.amd.yml`, `docker-compose.intel.yml`,
 or `docker-compose.intel-wsl.yml`); on hosts without GPU acceleration it falls back to CPU-only
 automatically — no flags needed. `flux-init`/`flux_capacitor` (full profile) always require an NVIDIA GPU.
+AMD Radeon RX 5700 XT uses Vulkan for all Ollama workflows, including Rei lyrics and Sam curation; see [AMD setup and verification](docs/docker-deployment.md#linux-amd-radeon-vulkan).
 Normal runs reuse local images; rebuild explicitly with `run --build`, `up --build`, or `build app` after source changes. Cached Ollama models skip pulls; see [cache-first/offline commands](docs/features/docker-cache-first.md).
 
 **Quick Start:**

@@ -10,6 +10,49 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.parametrize(
+    ("vendor", "override"),
+    [
+        ("0x1002", "docker-compose.amd.yml"),
+        ("0x8086", "docker-compose.intel.yml"),
+        ("0x1234", None),
+    ],
+)
+def test_launcher_selects_native_drm_vendor(
+    tmp_path: Path, vendor: str, override: str | None,
+) -> None:
+    device = tmp_path / "drm" / "card0" / "device"
+    device.mkdir(parents=True)
+    (device / "vendor").write_text(vendor, encoding="utf-8")
+    dri = tmp_path / "dri"
+    dri.mkdir()
+    launcher = (PROJECT_ROOT / "run.sh").read_text(encoding="utf-8")
+    launcher = launcher.replace("/sys/class/drm", str(tmp_path / "drm"))
+    launcher = launcher.replace("/dev/dri", str(dri)).replace("/dev/dxg", str(tmp_path / "dxg"))
+    script = tmp_path / "run.sh"
+    script.write_text(launcher, encoding="utf-8")
+    docker = tmp_path / "docker"
+    docker.write_text(
+        '#!/bin/sh\n[ "$1" != info ] || exit 1\nprintf "%s\\n" "$@" > "$CAPTURED_DOCKER_ARGS"\n',
+        encoding="utf-8",
+    )
+    docker.chmod(0o755)
+    captured = tmp_path / "args.txt"
+    result = subprocess.run(
+        ["bash", str(script), "--profile", "core", "up", "-d"],
+        env={
+            **os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}",
+            "INTEL_GPU": "false", "CAPTURED_DOCKER_ARGS": str(captured),
+        },
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    expected = ["compose", "-f", "docker-compose.yml"]
+    if override:
+        expected += ["-f", override]
+    assert captured.read_text().splitlines() == expected + ["--profile", "core", "up", "-d"]
+
+
+@pytest.mark.parametrize(
     "arguments",
     [
         ["--profile", "core", "run", "--rm", "app", "python", "main.py", "--rei-preview"],
