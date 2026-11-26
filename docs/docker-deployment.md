@@ -3,7 +3,7 @@
 This document covers Docker Compose setup, profiles, GPU passthrough, and deployment best practices for the LinkedIn SSI Booster.
 
 > **Use `bash run.sh` as the main launcher.** It exports the runtime variables
-> needed by the stack, detects NVIDIA or Intel GPU support, selects the correct
+> needed by the stack, detects NVIDIA, AMD, or Intel GPU support, selects the correct
 > Compose override, and falls back to CPU. Use bare `docker compose` only for
 > low-level maintenance or when you are intentionally reproducing those settings.
 
@@ -16,9 +16,9 @@ The system uses **Docker Compose with profiles** to manage hardware resources ef
 - **`core` profile:** Lightweight daily operations (Ollama LLM + app)
 - **`full` profile:** Adds Wyoming Piper TTS, FLUX.1-schnell image generation (requires RTX 3060 12GB or better), and MCP agents
 
-`ollama` and `ollama-init` run **CPU-only by default** (no GPU required for `core`), while `app` is always GPU-neutral. `run.sh`
-auto-detects a usable NVIDIA GPU + container runtime and layers in `docker-compose.gpu.yml` to add
-GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See [GPU Passthrough](#gpu-passthrough).
+`ollama` runs **CPU-only by default** (no GPU required for `core`), while `app` is always GPU-neutral. `run.sh`
+selects an NVIDIA, AMD Vulkan, or Intel override when detected; on GPU-less hosts it falls back to CPU.
+Detection does not guarantee GPU offloading. See [GPU Passthrough](#gpu-passthrough).
 
 ---
 
@@ -28,14 +28,14 @@ GPU reservations back; on GPU-less hosts it falls back to CPU automatically. See
 
 - **Docker Engine** (Linux) or **Docker Desktop** (Windows/Mac)
   - Windows: Enable **WSL 2** in Docker Desktop settings for GPU access
-- **PulseAudio** running on the host — required for voice output (`CONSOLE_USE_VOICE=true`)
+- **PulseAudio** running on the host — required only for voice output (`CONSOLE_USE_VOICE=true`)
 
 For NVIDIA acceleration or the full FLUX profile, also install the NVIDIA Container Toolkit on Linux and CUDA 12.4.1+ host drivers. Intel iGPU acceleration uses the Intel IPEX-LLM image and does not require CUDA.
 
 ### Hardware Recommendations
 
-- **Minimum:** RTX 3060 8GB (core profile only)
-- **Recommended:** RTX 3060 12GB or better (full profile with FLUX image generation)
+- **Core:** CPU or supported NVIDIA, AMD, or Intel GPU; model size and context determine memory needs.
+- **Full:** NVIDIA RTX 3060 12GB or better for FLUX image generation.
 - **RAM:** 16GB+ system memory
 - **Storage:** 20GB+ free disk space (models + data)
 
@@ -47,10 +47,11 @@ For NVIDIA acceleration or the full FLUX profile, also install the NVIDIA Contai
 | ------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ollama`            | `core`, `full` | Ollama LLM server — CPU-only by default, GPU-accelerated when `run.sh` detects a usable NVIDIA GPU; persisted via named `ollama_data` volume |
 | `ollama-init`       | `core`, `full` | One-shot init container — reuses cached `OLLAMA_MODEL` + `OLLAMA_MODEL_FALLBACK`, pulling only unavailable models |
+| `argos-init`        | `core`, `full` | Required one-shot initializer — reuses or downloads Rei's offline English-to-Japanese model |
 | `piper`             | `full`         | Wyoming Piper TTS server on port `10200` — downloads voice model on first start                                                              |
 | `strudel-mcp-agent` | `full`         | Strudel music generation agent — uses Gemma 4 to generate Strudel.js patterns and sends to MCP server                                        |
 | `buffer-mcp-agent`  | `full`         | Buffer MCP agent — uses Gemma 4 to generate Buffer API requests and sends to official Buffer MCP server                                      |
-| `postgres`          | `core`, `full` | PostgreSQL 16 Alpine database — optional dual-write mode (set `DATABASE_ENABLED=true` in `.env`)                                             |
+| `postgres`          | `core`, `full` | PostgreSQL 16 Alpine database — always started as an app dependency; application dual-write is optional |
 | `flux-init`         | `full`         | One-shot Alpine container — downloads FLUX.1-schnell GGUF weights via Civitai; `flux_capacitor` depends on it                                |
 | `flux_capacitor`    | `full`         | FLUX.1-schnell inference service — compiles GPU-accelerated `llama-cpp-python`; waits for `flux-init` to complete                            |
 | `app`               | `core`, `full` | GPU-neutral SSI Booster application — Python 3.11 + spaCy `en_core_web_md` and `ja_core_news_md`; calls accelerated services over HTTP       |
@@ -85,18 +86,19 @@ Correct output splits the string into separate tokens (`新宿`, `LOFT`, `ライ
 
 ### 1. Configure Environment Variables
 
-Copy `.env.example` to `.env` and fill in required values:
+Copy `.env.example` to `.env` without overwriting an existing configuration:
 
 ```bash
-cp .env.example .env
+cp -n .env.example .env
 ```
 
 **Required variables:**
 
-- `BUFFER_API_KEY` — Your Buffer API access token
-- `CIVITAI_API_KEY` — Required for full profile (FLUX model download)
-- `PERSONA_SYSTEM_PROMPT` — Your persona description
-- `SSI_FOCUS_*` — SSI pillar weights (should sum to 100)
+- `POSTGRES_PASSWORD` — Set a unique, strong alphanumeric password before the
+  first start, even if `DATABASE_ENABLED=false`; the app always depends on PostgreSQL.
+- `BUFFER_API_KEY` — Required for live Buffer operations, not console chat or dry runs.
+- `CIVITAI_API_KEY` — Required for the full profile's FLUX model download.
+- `PERSONA_SYSTEM_PROMPT` and `SSI_FOCUS_*` — Optional persona and pillar customization.
 
 **Docker-specific notes:**
 
@@ -110,16 +112,14 @@ See [Environment Variables Reference](environment-variables.md) for complete doc
 ### 2. Copy Avatar Data Files
 
 ```bash
-# Required files (bind-mounted into container)
-cp data/avatar/persona_graph.example.json   data/avatar/persona_graph.json
-cp data/avatar/domain_knowledge.example.json data/avatar/domain_knowledge.json
-cp data/avatar/narrative_memory.example.json data/avatar/narrative_memory.json
-cp content_calendar.example.py               content_calendar.py
-
-# Optional domain knowledge packs (auto-merged at load time)
-cp data/avatar/domain_knowledge_java.json   data/avatar/domain_knowledge_java.json
-cp data/avatar/domain_knowledge_python.json data/avatar/domain_knowledge_python.json
+# Preserve existing files; edit these examples for your own use.
+cp -n data/avatar/persona_graph.example.json data/avatar/persona_graph.json
+cp -n data/avatar/domain_knowledge.example.json data/avatar/domain_knowledge.json
+cp -n data/avatar/narrative_memory.example.json data/avatar/narrative_memory.json
+cp -n content_calendar.example.py content_calendar.py
 ```
+
+Shipped `domain_knowledge_*.json` packs are auto-merged; no copies are needed.
 
 ### 3. Edit Persona Files
 
@@ -136,37 +136,25 @@ See [Persona and Avatar Intelligence](persona-and-avatar.md) for persona design 
 `run.sh` automatically exports `USER_UID=$(id -u)` for PulseAudio passthrough, enabling voice output in console mode.
 
 ```bash
-# Standard mode — LLM + TTS + app (daily use)
+# Standard mode — Ollama + app + PostgreSQL (daily use)
 bash run.sh --profile core up -d
 
 # Full mode — adds FLUX image generation
 bash run.sh --profile full up -d
 ```
 
-### Using `run.sh` Directly
-
-Works but audio output will be silent unless `USER_UID` is already exported:
-
-```bash
-# Core profile
-bash run.sh --profile core up -d
-
-# Full profile
-bash run.sh --profile full up -d
-```
-
 ### First Start Sequence
 
-1. **`ollama-init`** checks `OLLAMA_MODEL` and `OLLAMA_MODEL_FALLBACK` locally, pulling only unavailable models from the Ollama registry; failed pulls fail initialization.
-2. **`ollama`** starts LLM server on port `11434`
-3. **`piper`** (full profile only) downloads voice model (if not cached) and starts TTS server on port `10200`
-4. **`flux-init`** (full profile only) downloads FLUX GGUF weights from Civitai
-5. **`flux_capacitor`** (full profile only) compiles `llama-cpp-python` with GPU support and starts inference service
-6. **`strudel-mcp-agent`** and **`buffer-mcp-agent`** (full profile) start autonomous agent services
-7. **`postgres`** (if `DATABASE_ENABLED=true`) starts PostgreSQL database on port `5432`
-8. **`app`** starts SSI Booster application
+1. **`ollama`** starts the LLM server and **`postgres`** starts on port `5432`.
+2. **`ollama-init`** checks both configured models and pulls missing models.
+   The app does not wait for this service, so wait for successful completion
+   before generating; see the [first-run walkthrough](amd-linux-quickstart.md#3-build-and-initialize).
+3. **`argos-init`** reuses or downloads the offline translation model.
+   The app waits for this initializer to succeed.
+4. **`app`** starts its configured command and exits when that command finishes.
+5. The `full` profile additionally starts Piper, FLUX and the MCP agents.
 
-> **Note:** `ollama-init` and `flux-init` are one-shot containers that exit after completing their tasks. This is expected behavior.
+The initializers are one-shot containers; a successful exit is expected.
 
 ---
 
@@ -259,37 +247,12 @@ this toggle — they keep a hardcoded `nvidia` reservation in `docker-compose.ym
 
 ### Linux (AMD Radeon Vulkan)
 
-The RX 5700 XT path targets native Ubuntu Linux, including Ubuntu 26.04.1 LTS.
-It uses Ollama's bundled Vulkan backend, not ROCm: the RX 5700 XT is absent from
-[Ollama's supported ROCm list](https://docs.ollama.com/gpu).
-Install the distribution's `amdgpu` kernel driver and Mesa Vulkan userspace.
-On Ubuntu, the userspace packages are `mesa-vulkan-drivers` and `vulkan-tools`:
-
-```bash
-sudo apt update
-sudo apt install mesa-vulkan-drivers vulkan-tools
-vulkaninfo --summary
-bash run.sh --profile core pull ollama
-bash run.sh --profile core up -d ollama
-bash run.sh --profile core logs --tail 100 ollama
-```
-
-Confirm `vulkaninfo` lists the Radeon, not only a software renderer. After running
-a Rei or curator request, use `bash run.sh --profile core exec ollama ollama ps`
-to check the `PROCESSOR` column and inspect logs for Vulkan/GPU layer offloading.
-The host driver and container Vulkan runtime must both recognize the card;
-configuration validation alone cannot certify Ubuntu or physical GPU support.
-
-The override exposes `/dev/dri` only to Ollama; no privileged container, CUDA,
-ROCm target spoofing, or app changes are required. The model initializer remains
-an ordinary API client. All Ollama consumers benefit, including Rei concepts and
-lyrics and Sam console/curation. FLUX stays NVIDIA CUDA-only.
-
-On multi-GPU systems, select the Radeon Vulkan index from the Ollama logs with
-`GGML_VK_VISIBLE_DEVICES=1 bash run.sh --profile core up -d ollama` (default `0`).
-Use `core` on AMD-only hosts; `full` still requests NVIDIA devices for FLUX.
-The RX 5700 XT's 8 GB VRAM may require smaller quantized models or partial CPU
-offloading, especially with long context windows.
+Follow the [AMD Linux quickstart](amd-linux-quickstart.md) for a complete fresh
+install, model initialization, GPU verification, and troubleshooting.
+It targets native Ubuntu and uses Ollama's Vulkan backend rather than ROCm;
+the override exposes `/dev/dri` only to Ollama. Support varies by hardware and
+driver, so verify actual offloading. Use `core` on AMD-only hosts: FLUX in the
+`full` profile still requires NVIDIA CUDA.
 
 ### Linux (NVIDIA)
 
@@ -363,383 +326,6 @@ behavior automatically — no `nvidia` driver error. To force a specific GPU pro
 
 ---
 
-## Voice Output (PulseAudio)
+## Further operations
 
-Voice synthesis requires PulseAudio passthrough from host to container.
-
-### Automatic Setup (Recommended)
-
-Use `run.sh` — it exports `USER_UID` and picks the host PulseAudio socket as
-`PULSE_SOCKET`. On WSL2 with WSLg it uses `/mnt/wslg/PulseServer`, which
-accepts anonymous clients; the `/run/user/<uid>/pulse/native` socket rejects
-container cookies with `Access denied`. Elsewhere it uses
-`$XDG_RUNTIME_DIR/pulse/native`. The socket is mounted at `/run/pulse/native`,
-and the image routes ALSA's default device to PulseAudio (`/etc/asound.conf`)
-so `sounddevice` can play Piper audio.
-
-Piper is in the `full` profile. To use voice with a `core` console, start Piper
-on its own first:
-
-```bash
-bash run.sh --profile full up -d --no-deps piper
-bash run.sh --profile core run --rm app python main.py --console
-```
-
-### Manual Setup
-
-Export `USER_UID` before running `docker compose`:
-
-```bash
-export USER_UID=$(id -u)
-export PULSE_SOCKET=/mnt/wslg/PulseServer   # WSLg; else $XDG_RUNTIME_DIR/pulse/native
-docker compose --profile core up -d
-```
-
-### Verify Voice Output
-
-```bash
-# Enable voice in .env
-CONSOLE_USE_VOICE=true
-WYOMING_PIPER_HOST=piper
-WYOMING_PIPER_PORT=10200
-
-# Test in console mode
-docker compose --profile core run --rm -it app python main.py --console
-```
-
-Type a query and listen for TTS output. If silent, check:
-
-1. Piper is healthy: `docker ps --filter name=ssi_booster_piper`
-2. PulseAudio accepts the container: `bash run.sh --profile core run --rm --no-deps --entrypoint pactl app info`
-3. Socket is mounted: `docker compose config | grep pulse`
-
----
-
-## Database Integration (PostgreSQL)
-
-### Enable Database Mode
-
-Add to `.env`:
-
-```bash
-DATABASE_ENABLED=true
-POSTGRES_USER=ssi_booster
-POSTGRES_PASSWORD=your_secure_password_here
-POSTGRES_DB=linkedin_ssi_booster
-DATABASE_URL=postgresql://ssi_booster:your_password@postgres:5432/linkedin_ssi_booster
-```
-
-Start PostgreSQL container:
-
-```bash
-docker compose --profile core up -d postgres
-```
-
-### Verify Database
-
-```bash
-# Check tables created
-docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c "\dt"
-
-# Connect to database
-docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster
-```
-
-### Migrate Existing Data
-
-```bash
-# Migrate all JSON/JSONL data to database
-docker compose --profile core run --rm app python -m services.database.migrate_data
-
-# Dry-run mode (preview only)
-docker compose --profile core run --rm app python -m services.database.migrate_data --dry-run
-```
-
-### Rollback to File-Based Storage
-
-Set `DATABASE_ENABLED=false` in `.env`. All JSON/JSONL files remain untouched during dual-write mode.
-
-See [Database Integration](features/database/idea.md) for schema details and performance benchmarks.
-
----
-
-## Managing Services
-
-### Start Services
-
-```bash
-# Core profile (daily use)
-bash run.sh --profile core up -d
-
-# Full profile (image generation)
-bash run.sh --profile full up -d
-```
-
-### Stop Services
-
-```bash
-# Stop all services
-docker compose --profile core down
-
-# Stop and remove volumes (destructive)
-docker compose --profile core down -v
-```
-
-### Restart a Single Service
-
-```bash
-docker compose restart app
-docker compose restart ollama
-docker compose restart strudel-mcp-agent
-```
-
-### View Logs
-
-```bash
-# Follow all logs
-docker compose logs -f
-
-# Follow single service
-docker compose logs -f app
-docker compose logs -f ollama
-docker compose logs -f strudel-mcp-agent
-
-# View last 100 lines
-docker compose logs --tail=100 app
-```
-
-### Rebuild After Code Changes
-
-```bash
-# Rebuild app container
-docker compose build app
-
-# Rebuild and restart
-docker compose up -d --build app
-
-# Rebuild agent (if agent code changed)
-docker compose build strudel-mcp-agent
-docker compose restart strudel-mcp-agent
-```
-
----
-
-## FLUX Image Generation (Full Profile)
-
-### Prerequisites
-
-- **RTX 3060 12GB or better** — 8GB cards may struggle
-- **Civitai API key** — required for `flux-init` to download weights
-- **20GB+ free disk space** — GGUF model is ~4GB, with additional space for output images
-
-### Enable Full Profile
-
-```bash
-# Add to .env
-CIVITAI_API_KEY=your_civitai_key_here
-FLUX_MODEL_PATH=/app/models/flux
-FLUX_DIFFUSERS_CONFIG_DIR=/app/models/flux/diffusers_config
-GENERATED_CONTENT_DIR=/app/yt-vid-data
-YOUTUBE_SCRIPTS_SUBDIR=youtube_scripts
-REI_TOEI_SUBDIR=rei_toei
-
-# Launch full stack
-bash run.sh --profile full up -d
-```
-
-### First Start Sequence
-
-1. `flux-init` downloads model files to `./models/flux/`
-2. Verify local diffusers config exists at `./models/flux/diffusers_config/`
-3. `flux_capacitor` waits for `flux-init` to complete
-4. `flux_capacitor` compiles `llama-cpp-python` with CUDA support (takes 5-10 minutes)
-5. `flux_capacitor` starts inference service
-6. `app` starts and can now generate images
-
-### Pre-Download Weights (Optional)
-
-Download weights without starting the full stack:
-
-```bash
-docker compose --profile full run --rm flux-init
-```
-
-### Verify Image Generation
-
-Generated artifacts are saved under `./yt-vid-data/` on the host.
-Examples:
-
-- YouTube scripts: `./yt-vid-data/youtube_scripts/`
-- Rei Toei outputs: `./yt-vid-data/rei_toei/`
-- FLUX art-avatar images: `./yt-vid-data/flux_capacitor/`
-- FLUX art-avatar stories: `./yt-vid-data/flux_capacitor/stories/`
-
-> **Note:** Art-avatar rendering is controlled by `FLUX_CAPACITOR_ENABLED=true` in `.env`.
-> When disabled (the default), the text pipeline runs normally and no GPU work is submitted to the FLUX service.
-> When enabled, the GPU orchestrator enforces Ollama-first sequencing: FLUX jobs start only after all active Ollama work drains.
-> If the queue wait exceeds `FLUX_CAPACITOR_QUEUE_WAIT_TIMEOUT_SECONDS`, the pipeline degrades gracefully to text-only output.
-
----
-
-## Troubleshooting
-
-### Services Won't Start
-
-**Problem:** Containers exit immediately or fail health checks.
-
-**Solution:**
-
-1. Check logs: `docker compose logs <service_name>`
-2. Verify environment variables in `.env`
-3. Ensure required files exist: `persona_graph.json`, `domain_knowledge.json`, `narrative_memory.json`
-
-### GPU Not Detected / "could not select device driver nvidia"
-
-**Problem:** `nvidia-smi` fails inside container, or `docker compose` errors with
-`could not select device driver "nvidia" with capabilities: [[gpu]]`.
-
-**Solution:**
-
-- Use `bash run.sh ...` instead of calling `docker compose` directly — it auto-detects GPU
-  availability and only applies `docker-compose.gpu.yml` when a GPU actually works, falling back
-  to CPU-only otherwise.
-- **Linux:** Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
-- **Windows:** Enable WSL 2 in Docker Desktop settings
-- Verify CUDA drivers: `nvidia-smi` on host should work
-- `flux-init`/`flux_capacitor` (full profile) require NVIDIA; Ollama can use NVIDIA, Intel iGPU, or CPU, and `app` remains GPU-neutral.
-
-### Ollama Models Not Loading
-
-**Problem:** LLM generation fails with "model not found."
-
-**Solution:**
-
-1. Check `ollama-init` logs: `docker compose logs ollama-init`
-2. Verify model names in `.env`: `OLLAMA_MODEL=gemma4:e4b`
-3. Manually pull models:
-   ```bash
-   docker compose exec ollama ollama pull gemma4:e4b
-   docker compose exec ollama ollama pull qwen3.5:9b
-   ```
-
-### Voice Output Silent
-
-**Problem:** `CONSOLE_USE_VOICE=true` but no audio.
-
-**Solution:**
-
-1. Use `bash run.sh` instead of `docker compose` directly
-2. Start Piper (`full` profile) and confirm it is healthy: `docker ps --filter name=ssi_booster_piper`
-3. Check PulseAudio access: `bash run.sh --profile core run --rm --no-deps --entrypoint pactl app info` (`Access denied` on WSL means the wrong socket; set `PULSE_SOCKET=/mnt/wslg/PulseServer`)
-4. Check socket mount: `docker compose config | grep pulse`
-5. `Error querying device -1` means the app image predates `/etc/asound.conf`; rebuild it with `bash run.sh --profile core build app`
-
-### Port Conflicts
-
-**Problem:** Services fail to start with "port already in use."
-
-**Solution:**
-
-1. Check what's using the port: `sudo lsof -i :11434` (Ollama), `sudo lsof -i :10200` (Piper)
-2. Stop conflicting service or change port in `docker-compose.yml`
-
-### Out of Memory (OOM)
-
-**Problem:** Services crash with OOM errors.
-
-**Solution:**
-
-1. Use `core` profile for daily operations (skip FLUX)
-2. Reduce `OLLAMA_NUM_CTX` in `.env` (e.g., from `32768` to `16384`)
-3. Close other GPU-heavy applications
-
-### Database Connection Failed
-
-**Problem:** `DATABASE_ENABLED=true` but connection fails.
-
-**Solution:**
-
-1. Verify PostgreSQL is running: `docker ps | grep postgres`
-2. Check `DATABASE_URL` in `.env` matches credentials
-3. Test connection:
-   ```bash
-   docker exec -it ssi_booster_postgres psql -U ssi_booster -d linkedin_ssi_booster -c '\dt'
-   ```
-
-### FLUX Init Fails
-
-**Problem:** `flux-init` exits with download error.
-
-**Solution:**
-
-1. Verify `CIVITAI_API_KEY` in `.env`
-2. Check network connectivity to Civitai
-3. Manually download and place in `./models/flux/`:
-   ```bash
-   # Use the download script
-   bash scripts/download-flux1-schnell-Q4_K_S.sh
-   ```
-
----
-
-## Production Deployment
-
-### Security Best Practices
-
-- **Strong passwords:** Use long, random passwords for `POSTGRES_PASSWORD`
-- **Secrets management:** Never commit `.env` — use secrets managers in production
-- **Network isolation:** Use Docker networks to isolate services
-- **Read-only mounts:** Bind-mount sensitive files as read-only where possible
-
-### Resource Limits
-
-Add resource limits to `docker-compose.yml`:
-
-```yaml
-services:
-  app:
-    deploy:
-      resources:
-        limits:
-          cpus: "4"
-          memory: 8G
-        reservations:
-          cpus: "2"
-          memory: 4G
-```
-
-### Monitoring
-
-Use Docker health checks and monitoring tools:
-
-```bash
-# Check service health
-docker compose ps
-
-# Export logs to file
-docker compose logs > logs.txt
-
-# Use external monitoring (Prometheus, Grafana, etc.)
-```
-
-### Backups
-
-```bash
-# Backup persona data
-tar -czf backup-$(date +%Y%m%d).tar.gz data/
-
-# Backup Ollama models
-docker run --rm -v ollama_data:/data -v $(pwd):/backup alpine tar -czf /backup/ollama-backup.tar.gz /data
-
-# Backup PostgreSQL database
-docker exec ssi_booster_postgres pg_dump -U ssi_booster linkedin_ssi_booster > backup.sql
-```
-
----
-
-## See Also
-
-- [Environment Variables Reference](environment-variables.md) — Complete env var documentation
-- [Setup Guide](setup.md) — Initial setup walkthrough
-- [Usage Guide](usage-schedule-curate-console.md) — CLI commands and workflows
-- [Architecture Guide](architecture.md) — System design and data flow
+See [Docker operations](docker-operations.md) for voice, database, service management, FLUX, troubleshooting, and deployment.

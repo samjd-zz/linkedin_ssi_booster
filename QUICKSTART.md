@@ -1,22 +1,20 @@
 # 🚀 LinkedIn SSI Booster — Quickstart Cheatsheet
 
 > **Recommended launcher:** use `bash run.sh` for Docker workflows. It detects
-> NVIDIA or Intel GPU support, applies the correct Compose override, exports
+> NVIDIA, AMD Vulkan, or Intel GPU support, applies the correct Compose override, exports
 > audio runtime variables, and falls back to CPU when needed.
 
-## 1. Setup
+## 1. First-time setup
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m spacy download en_core_web_md  # Recommended: includes word vectors
-cp .env.example .env
-# Fill in PERSONA_SYSTEM_PROMPT, BUFFER_API_KEY, OLLAMA_BASE_URL, OLLAMA_MODEL, etc.
-cp data/avatar/persona_graph.example.json data/avatar/persona_graph.json
-cp data/avatar/narrative_memory.example.json data/avatar/narrative_memory.json
-cp content_calendar.example.py content_calendar.py
-```
+For native Ubuntu with AMD Radeon, follow the complete
+[AMD Linux quickstart](docs/amd-linux-quickstart.md) first: install Docker and
+Vulkan, configure your private files and database password, build the images,
+initialize the models, and verify GPU offloading. Use the `core` profile on
+AMD-only hosts; `full` requires NVIDIA for FLUX.
+
+For other hardware, see the [Docker deployment guide](docs/docker-deployment.md)
+and [setup guide](docs/setup.md). Docker users do not need a local Python venv.
+Do not overwrite existing `.env`, persona, or calendar files when updating.
 
 ## 2. Generate & Schedule Posts
 

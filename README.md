@@ -381,6 +381,7 @@ The schema covers 17 tables across avatar intelligence, selection learning, trut
 ### 🚦 Quick Start & Setup
 
 - [Setup guide](docs/setup.md) — environment, dependencies, persona graph, and calendar setup
+- [AMD Linux quickstart](docs/amd-linux-quickstart.md) — fresh Docker installation, Vulkan verification, and safe first run
 - [Usage guide](docs/usage-schedule-curate-console.md) — scheduling, curation, console mode, channels, and CLI examples
 - [CLI reference](docs/cli-reference.md) — complete command-line flag reference for schedule, curate, console, and reporting modes
 
@@ -431,10 +432,10 @@ Use `run.sh` as the main launcher. It auto-detects GPU availability (NVIDIA CUDA
 and layers in the appropriate Compose override (`docker-compose.gpu.yml`, `docker-compose.amd.yml`, `docker-compose.intel.yml`,
 or `docker-compose.intel-wsl.yml`); on hosts without GPU acceleration it falls back to CPU-only
 automatically — no flags needed. `flux-init`/`flux_capacitor` (full profile) always require an NVIDIA GPU.
-AMD Radeon RX 5700 XT uses Vulkan for all Ollama workflows, including Rei lyrics and Sam curation; see [AMD setup and verification](docs/docker-deployment.md#linux-amd-radeon-vulkan).
+For a first installation on native Ubuntu with AMD Radeon, follow the [AMD Linux quickstart](docs/amd-linux-quickstart.md). Vulkan acceleration must be verified on the actual hardware.
 Normal runs reuse local images; rebuild explicitly with `run --build`, `up --build`, or `build app` after source changes. Cached Ollama models skip pulls; see [cache-first/offline commands](docs/features/docker-cache-first.md).
 
-**Quick Start:**
+**Already set up?** For first-time configuration and model initialization, use the [AMD Linux quickstart](docs/amd-linux-quickstart.md) or [Docker deployment guide](docs/docker-deployment.md).
 
 ```bash
 # Standard mode — LLM + app + analytics (daily use)
@@ -456,33 +457,9 @@ See [docs/docker-deployment.md](docs/docker-deployment.md) for complete setup gu
 
 ## ⚡ Quickstart (local Python)
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m spacy download en_core_web_md
-python -m spacy download ja_core_news_md  # recommended: Japanese multi-language NLP
-cp .env.example .env
-cp data/avatar/persona_graph.example.json data/avatar/persona_graph.json
-cp data/avatar/domain_knowledge.example.json data/avatar/domain_knowledge.json
-cp data/avatar/narrative_memory.example.json data/avatar/narrative_memory.json
-
-# Optional extra packs: auto-discovered and merged when named domain_knowledge_*.json
-cp data/avatar/domain_knowledge_java.json data/avatar/domain_knowledge_java.json
-cp data/avatar/domain_knowledge_python.json data/avatar/domain_knowledge_python.json
-cp content_calendar.example.py content_calendar.py
-# Daily Docker workflow (recommended; enables GPU auto-detection)
-bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
-
-# Console mode (DoT scanning OFF by default)
-bash run.sh --profile core run --rm -it app python main.py --console
-
-# Console mode with DoT verification enabled
-bash run.sh --profile core run --rm -it app python main.py --console --verify
-```
-
-For direct local Python execution without Docker, activate `.venv` and use
-`python main.py ...` explicitly. Docker users should prefer `run.sh` so the same GPU, audio, and service-discovery settings are applied consistently.
+See the [local Python setup guide](docs/setup.md) for the virtual environment,
+spaCy models, configuration, and persona files. For direct execution, activate
+`.venv` and use `python main.py ...`; Docker users do not need a local venv.
 
 ### ⚙️ Environment Variables
 

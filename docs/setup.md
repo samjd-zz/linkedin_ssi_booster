@@ -2,10 +2,14 @@
 
 This guide covers the required local setup for LinkedIn SSI Booster, including Python dependencies, Ollama configuration, persona files, and content calendar initialization. The project is designed to run locally, with persona and learning data stored in gitignored files on your machine.
 
+For a fresh Docker installation on native Ubuntu with AMD Radeon, follow the
+[AMD Linux quickstart](amd-linux-quickstart.md) instead. Docker users do not
+need the local Python environment described below.
+
 ## Recommended launcher
 
 For Docker-based runs, use `bash run.sh` as the primary launcher. It detects
-NVIDIA and Intel GPU support, applies the matching Compose override, exports
+NVIDIA, AMD Vulkan, and Intel GPU support, applies the matching Compose override, exports
 the runtime variables needed for audio passthrough, and falls back to CPU when
 GPU support is unavailable. This is especially important on Windows WSL2,
 where Intel acceleration is exposed through `/dev/dxg`.
@@ -99,8 +103,10 @@ The README points users to Buffer for API key generation, Ollama for local model
 
 ## First validation run
 
-After setup, the simplest smoke test is a dry run of week 1 scheduling. This prints generated content without making Buffer calls and verifies that the local model, prompt context, and calendar are wired correctly.
+For local Python execution, start Ollama and make sure the models configured
+in `.env` are available first. A dry run of week 1 scheduling prints generated
+content without making Buffer calls:
 
 ```bash
-bash run.sh --profile core run --rm app python main.py --schedule --week 1 --dry-run
+python main.py --schedule --week 1 --dry-run
 ```
