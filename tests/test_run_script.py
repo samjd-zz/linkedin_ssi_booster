@@ -2,11 +2,64 @@
 
 import os
 import subprocess
+import zipfile
 from pathlib import Path
 
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize("complete", [True, False])
+def test_argos_initializer_reuses_complete_model_or_repairs_incomplete_model(
+    tmp_path: Path, complete: bool,
+) -> None:
+    model = tmp_path / "model"
+    (model / "model").mkdir(parents=True)
+    (model / "model" / "model.bin").write_text("old", encoding="utf-8")
+    if complete:
+        (model / "sentencepiece.model").write_text("old", encoding="utf-8")
+    archive = tmp_path / "model.zip"
+    with zipfile.ZipFile(archive, "w") as package:
+        package.writestr("translate-en_ja/model/model.bin", "new")
+        package.writestr("translate-en_ja/sentencepiece.model", "new")
+    curl = tmp_path / "curl"
+    curl.write_text(
+        '#!/bin/sh\nprintf "called\\n" > "$CURL_CALLED"\ncp "$ARCHIVE" "$5"\n',
+        encoding="utf-8",
+    )
+    curl.chmod(0o755)
+    calls = tmp_path / "curl-called"
+    result = subprocess.run(
+        ["bash", "scripts/download-argos-en-ja.sh"], cwd=PROJECT_ROOT,
+        env={
+            **os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}",
+            "REI_ARGOS_MODEL_DIR": str(model), "ARCHIVE": str(archive),
+            "CURL_CALLED": str(calls),
+        },
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    expected = "old" if complete else "new"
+    assert (model / "model" / "model.bin").read_text() == expected
+    assert (model / "sentencepiece.model").read_text() == expected
+    assert calls.exists() is not complete
+
+
+def test_argos_initializer_propagates_download_failure(tmp_path: Path) -> None:
+    curl = tmp_path / "curl"
+    curl.write_text("#!/bin/sh\nexit 22\n", encoding="utf-8")
+    curl.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "scripts/download-argos-en-ja.sh"], cwd=PROJECT_ROOT,
+        env={
+            **os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}",
+            "REI_ARGOS_MODEL_DIR": str(tmp_path / "missing"),
+        },
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode != 0
+    assert not (tmp_path / "missing").exists()
 
 
 @pytest.mark.parametrize(

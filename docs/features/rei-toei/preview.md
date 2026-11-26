@@ -164,7 +164,7 @@ valid results from partial replies. Hook text is sent without emoji. Missing
 or rejected lines (including Chinese grammar, leftover English, or emoji such
 as `📐が揺れ動く`) use the offline Argos en→ja model when
 available; it runs with CTranslate2 and is downloaded by the `argos-init`
-Docker service. Polite endings such as `します` or `消えます` become plain
+Docker service, which must succeed before the app starts. Polite endings such as `します` or `消えます` become plain
 `する` or `消える`; lines that still fail stay English. An Ollama runtime
 error stops later batches without discarding earlier results.
 Set `REI_BILINGUAL_STRATEGY=generate` for direct bilingual drafting and mix

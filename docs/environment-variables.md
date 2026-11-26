@@ -849,7 +849,7 @@ of up to 10 per Ollama call.
 
 ### `REI_ARGOS_MODEL_DIR`
 
-Directory of the unpacked Argos Translate `translate-en_ja` model used as the offline fallback. It runs with `ctranslate2` and `sentencepiece` only (no torch). The `argos-init` compose service, which runs before `app` under both profiles, downloads it into `./models/argos/`; outside Docker run `bash scripts/download-argos-en-ja.sh`. When the model is missing, Rei logs a hint and uses the Ollama translations alone.
+Directory of the unpacked Argos Translate `translate-en_ja` model used as the offline fallback. It runs with `ctranslate2` and `sentencepiece` only (no torch). Under both Docker profiles, `app` waits for the required `argos-init` service to reuse or download the model into `./models/argos/`; initialization failure prevents app startup. Outside Docker run `bash scripts/download-argos-en-ja.sh`. When the model is missing outside that startup path, Rei logs a hint and uses the Ollama translations alone.
 
 **Default:** `models/argos/translate-en_ja`
 

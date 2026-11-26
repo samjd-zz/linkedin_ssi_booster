@@ -49,12 +49,17 @@ source .venv/bin/activate && python -m pytest -q tests/ --ignore=tests/test_buff
 
 ## Test Coverage and Results (Latest)
 
-Focused launcher validation: 13 cases in `tests/test_run_script.py` cover
+Focused launcher validation: 16 cases in `tests/test_run_script.py` cover
 argument preservation, NVIDIA probing, native AMD/Intel/unknown DRM vendor
-routing, and cached model initialization. GPU routing tests use fake devices and
-Docker commands; physical RX 5700 XT offloading requires host verification.
+routing, cached model initialization, Argos model reuse and repair, and download
+failure propagation. GPU routing tests use fake devices and Docker commands;
+physical RX 5700 XT offloading requires host verification. Compose validation
+also confirms that `app` requires successful Argos initialization.
 
 ### Summary Metrics
+
+The last full-suite results below predate the latest changes. A current
+collection-only run found 2,071 tests; it did not execute them.
 
 | Collected | Passed | Skipped | Failed | Deselected | Source Coverage | Status |
 | --------- | ------ | ------- | ------ | ---------- | --------------- | ------ |

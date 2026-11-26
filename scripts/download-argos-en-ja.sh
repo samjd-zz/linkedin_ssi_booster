@@ -8,7 +8,7 @@ MODEL_URL="${ARGOS_EN_JA_URL:-https://argos-net.com/v1/translate-en_ja-1_1.argos
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEST_DIR="${REI_ARGOS_MODEL_DIR:-${SCRIPT_DIR}/../models/argos/translate-en_ja}"
 
-if [[ -f "${DEST_DIR}/model/model.bin" ]]; then
+if [[ -f "${DEST_DIR}/model/model.bin" && -f "${DEST_DIR}/sentencepiece.model" ]]; then
   echo "Argos en->ja model already present at ${DEST_DIR}"
   exit 0
 fi
