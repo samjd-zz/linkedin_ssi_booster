@@ -256,7 +256,7 @@ linkedin_ssi_booster/
 
 ## Version & Test Status
 
-- **Version**: beta-v0.0.4.0
+- **Version**: beta-v0.0.4.1
 - **Test Count**: 2,059 collected; 2,057 passed, 0 skipped, 0 failed, 2 deselected
 - **Test Isolation**: Database tests use in-memory SQLite for speed and isolation
 
