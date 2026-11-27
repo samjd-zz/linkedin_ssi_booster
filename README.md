@@ -67,7 +67,7 @@ AIシステム設計に加え、ウィリアム・ギブスンのSF小説『ア�
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-beta--v0.0.4.0-F97316.svg" alt="Version beta-v0.0.4.0"></a>
   <a href="https://developer.nvidia.com/cuda-toolkit"><img src="https://img.shields.io/badge/CUDA-13.2.0-76B900.svg?logo=nvidia" alt="CUDA 13.2.0"></a>
-  <a href="docs/amd-linux-quickstart.md"><img src="https://img.shields.io/badge/AMD%20Radeon-Vulkan-ED1C24.svg?logo=amd&logoColor=white" alt="AMD Radeon Vulkan support on Linux"></a>
+  <a href="docs/amd-linux-quickstart.md"><img src="media/amd-radeon-vulkan.svg" alt="AMD Radeon Vulkan support on Linux"></a>
   <a href="docs/docker-deployment.md#auto-detection-recommended-runsh"><img src="https://img.shields.io/badge/Intel-iGPU%20%2F%20WSL2-0071C5.svg?logo=intel&logoColor=white" alt="Intel iGPU and WSL2 support"></a>
   <a href="https://spacy.io/"><img src="https://img.shields.io/badge/spaCy-NLP-09A3D5.svg?logo=spacy&logoColor=white" alt="spaCy"></a>
   <a href="https://github.com/black-forest-labs/flux"><img src="https://img.shields.io/badge/FLUX.1-Image%20Gen-E85D75.svg" alt="FLUX.1"></a>
